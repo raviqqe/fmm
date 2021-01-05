@@ -1,19 +1,19 @@
 use super::alternative::Alternative;
+use super::default_alternative::DefaultAlternative;
 use super::expression::Expression;
-use super::instruction::Instruction;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Switch {
     condition: Expression,
     alternatives: Vec<Alternative>,
-    default_alternative: Vec<Instruction>,
+    default_alternative: DefaultAlternative,
 }
 
 impl Switch {
     pub fn new(
         condition: impl Into<Expression>,
         alternatives: Vec<Alternative>,
-        default_alternative: Vec<Instruction>,
+        default_alternative: DefaultAlternative,
     ) -> Self {
         Self {
             condition: condition.into(),
@@ -30,7 +30,7 @@ impl Switch {
         &self.alternatives
     }
 
-    pub fn default_alternative(&self) -> &[Instruction] {
+    pub fn default_alternative(&self) -> &DefaultAlternative {
         &self.default_alternative
     }
 }

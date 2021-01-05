@@ -1,32 +1,40 @@
 use super::expression::Expression;
+use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AddressCalculation {
+pub struct PointerAddress {
+    type_: types::Pointer, // type of the pointer value
     pointer: Arc<Expression>,
-    indices: Vec<Expression>,
+    offset: Arc<Expression>,
     name: String,
 }
 
-impl AddressCalculation {
+impl PointerAddress {
     pub fn new(
+        type_: types::Pointer,
         pointer: impl Into<Expression>,
-        indices: Vec<Expression>,
+        offset: impl Into<Expression>,
         name: impl Into<String>,
     ) -> Self {
         Self {
+            type_,
             pointer: pointer.into().into(),
-            indices,
+            offset: offset.into().into(),
             name: name.into(),
         }
+    }
+
+    pub fn type_(&self) -> &types::Pointer {
+        &self.type_
     }
 
     pub fn pointer(&self) -> &Expression {
         &self.pointer
     }
 
-    pub fn indices(&self) -> &[Expression] {
-        &self.indices
+    pub fn offset(&self) -> &Expression {
+        &self.offset
     }
 
     pub fn name(&self) -> &str {

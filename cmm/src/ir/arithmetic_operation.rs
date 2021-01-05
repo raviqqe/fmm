@@ -1,23 +1,34 @@
 use super::expression::Expression;
-use super::primitive_operator::PrimitiveOperator;
+use crate::types;
 use std::sync::Arc;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum ArithmeticOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+}
+
 #[derive(Clone, Debug, PartialEq)]
-pub struct PrimitiveOperation {
-    operator: PrimitiveOperator,
+pub struct ArithmeticOperation {
+    type_: types::Primitive,
+    operator: ArithmeticOperator,
     lhs: Arc<Expression>,
     rhs: Arc<Expression>,
     name: String,
 }
 
-impl PrimitiveOperation {
+impl ArithmeticOperation {
     pub fn new(
-        operator: PrimitiveOperator,
+        type_: types::Primitive,
+        operator: ArithmeticOperator,
         lhs: impl Into<Expression>,
         rhs: impl Into<Expression>,
         name: impl Into<String>,
     ) -> Self {
         Self {
+            type_,
             operator,
             lhs: Arc::new(lhs.into()),
             rhs: Arc::new(rhs.into()),
@@ -25,8 +36,12 @@ impl PrimitiveOperation {
         }
     }
 
-    pub fn operator(&self) -> &PrimitiveOperator {
-        &self.operator
+    pub fn type_(&self) -> types::Primitive {
+        self.type_
+    }
+
+    pub fn operator(&self) -> ArithmeticOperator {
+        self.operator
     }
 
     pub fn lhs(&self) -> &Expression {

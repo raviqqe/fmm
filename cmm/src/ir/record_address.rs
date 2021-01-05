@@ -1,33 +1,40 @@
 use super::expression::Expression;
-use crate::types::Type;
+use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicLoad {
-    type_: Type, // pointer element type
-    pointer: Arc<Expression>,
+pub struct RecordAddress {
+    type_: types::Record,
+    pointer: Arc<Expression>, // pointer to record
+    field_index: usize,
     name: String,
 }
 
-impl AtomicLoad {
+impl RecordAddress {
     pub fn new(
-        type_: impl Into<Type>,
+        type_: types::Record,
         pointer: impl Into<Expression>,
+        field_index: usize,
         name: impl Into<String>,
     ) -> Self {
         Self {
-            type_: type_.into(),
+            type_,
             pointer: pointer.into().into(),
+            field_index,
             name: name.into(),
         }
     }
 
-    pub fn type_(&self) -> &Type {
+    pub fn type_(&self) -> &types::Record {
         &self.type_
     }
 
     pub fn pointer(&self) -> &Expression {
         &self.pointer
+    }
+
+    pub fn field_index(&self) -> usize {
+        self.field_index
     }
 
     pub fn name(&self) -> &str {

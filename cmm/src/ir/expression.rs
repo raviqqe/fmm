@@ -32,6 +32,6 @@ impl From<Union> for Expression {
 
 impl From<Variable> for Expression {
     fn from(variable: Variable) -> Self {
-        Self::Variable(variable.into())
+        Self::Variable(variable)
     }
 }
