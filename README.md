@@ -1,6 +1,6 @@
 # F--
 
-The functionnal variant of C--
+The functional variant of C--
 
 ## Features
 
