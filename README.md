@@ -5,7 +5,7 @@ The functionnal variant of C--
 ## Features
 
 - Minimal
-  - Only two control instructions of call and switch
+  - Only two control instructions of `call` and `switch`
 - Fully-independent from backend
   - Pointer-sized integer
   - C-like union type
