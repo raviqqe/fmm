@@ -1,7 +1,6 @@
 mod address_calculation;
 mod allocate_heap;
 mod allocate_stack;
-mod alternative;
 mod argument;
 mod assignment;
 mod atomic_load;
@@ -31,7 +30,6 @@ mod variable_definition;
 pub use address_calculation::*;
 pub use allocate_heap::*;
 pub use allocate_stack::*;
-pub use alternative::*;
 pub use argument::*;
 pub use assignment::*;
 pub use atomic_load::*;
