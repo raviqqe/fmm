@@ -6,7 +6,7 @@ use std::sync::Arc;
 pub struct RecordAddress {
     type_: types::Record,
     pointer: Arc<Expression>, // pointer to record
-    field_index: usize,
+    element_index: usize,
     name: String,
 }
 
@@ -14,13 +14,13 @@ impl RecordAddress {
     pub fn new(
         type_: types::Record,
         pointer: impl Into<Expression>,
-        field_index: usize,
+        element_index: usize,
         name: impl Into<String>,
     ) -> Self {
         Self {
             type_,
             pointer: pointer.into().into(),
-            field_index,
+            element_index,
             name: name.into(),
         }
     }
@@ -33,8 +33,8 @@ impl RecordAddress {
         &self.pointer
     }
 
-    pub fn field_index(&self) -> usize {
-        self.field_index
+    pub fn element_index(&self) -> usize {
+        self.element_index
     }
 
     pub fn name(&self) -> &str {

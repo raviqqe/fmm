@@ -28,8 +28,8 @@ impl CompareAndSwap {
         }
     }
 
-    pub fn type_(&self) -> &types::Primitive {
-        &self.type_
+    pub fn type_(&self) -> types::Primitive {
+        self.type_
     }
 
     pub fn pointer(&self) -> &Expression {

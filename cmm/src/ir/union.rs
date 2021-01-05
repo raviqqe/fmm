@@ -22,8 +22,8 @@ impl Union {
         &self.type_
     }
 
-    pub fn usize(&self) -> &types::Union {
-        &self.type_
+    pub fn index(&self) -> usize {
+        self.index
     }
 
     pub fn member(&self) -> &Expression {

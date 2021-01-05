@@ -3,17 +3,17 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Pointer {
-    element: Arc<Type>,
+    type_: Arc<Type>,
 }
 
 impl Pointer {
-    pub fn new(element: impl Into<Type>) -> Self {
+    pub fn new(type_: impl Into<Type>) -> Self {
         Self {
-            element: element.into().into(),
+            type_: type_.into().into(),
         }
     }
 
     pub fn element(&self) -> &Type {
-        &self.element
+        &self.type_
     }
 }
