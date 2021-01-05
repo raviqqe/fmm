@@ -338,7 +338,7 @@ fn check_expression(
                 union
                     .type_()
                     .members()
-                    .get(union.index())
+                    .get(union.member_index())
                     .ok_or_else(|| TypeCheckError::IndexOutOfRange)?,
             )?;
 

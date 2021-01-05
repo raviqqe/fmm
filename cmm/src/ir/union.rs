@@ -5,15 +5,15 @@ use std::sync::Arc;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Union {
     type_: types::Union,
-    index: usize,
+    member_index: usize,
     member: Arc<Expression>,
 }
 
 impl Union {
-    pub fn new(type_: types::Union, index: usize, member: impl Into<Expression>) -> Self {
+    pub fn new(type_: types::Union, member_index: usize, member: impl Into<Expression>) -> Self {
         Self {
             type_,
-            index,
+            member_index,
             member: member.into().into(),
         }
     }
@@ -22,8 +22,8 @@ impl Union {
         &self.type_
     }
 
-    pub fn index(&self) -> usize {
-        self.index
+    pub fn member_index(&self) -> usize {
+        self.member_index
     }
 
     pub fn member(&self) -> &Expression {
