@@ -10,7 +10,7 @@ use super::compare_and_swap::CompareAndSwap;
 use super::deconstruct_record::DeconstructRecord;
 use super::if_::If;
 use super::load::Load;
-use super::primitive_operation::PrimitiveOperation;
+use super::arithmetic_operation::ArithmeticOperation;
 use super::return_::Return;
 use super::store::Store;
 
@@ -28,7 +28,7 @@ pub enum Instruction {
     DeconstructRecord(DeconstructRecord),
     If(If),
     Load(Load),
-    PrimitiveOperation(PrimitiveOperation),
+    ArithmeticOperation(ArithmeticOperation),
     Return(Return),
     Store(Store),
     Unreachable,
@@ -118,8 +118,8 @@ impl From<Load> for Instruction {
     }
 }
 
-impl From<PrimitiveOperation> for Instruction {
-    fn from(operation: PrimitiveOperation) -> Self {
-        Self::PrimitiveOperation(operation)
+impl From<ArithmeticOperation> for Instruction {
+    fn from(operation: ArithmeticOperation) -> Self {
+        Self::ArithmeticOperation(operation)
     }
 }

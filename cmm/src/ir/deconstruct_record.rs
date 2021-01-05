@@ -18,7 +18,7 @@ impl DeconstructRecord {
         name: impl Into<String>,
     ) -> Self {
         Self {
-            type_: type_.into(),
+            type_,
             record: record.into().into(),
             field_index,
             name: name.into(),
