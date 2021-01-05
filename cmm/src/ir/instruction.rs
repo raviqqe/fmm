@@ -13,7 +13,6 @@ use super::load::Load;
 use super::primitive_operation::PrimitiveOperation;
 use super::return_::Return;
 use super::store::Store;
-use super::switch::Switch;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
@@ -32,7 +31,6 @@ pub enum Instruction {
     PrimitiveOperation(PrimitiveOperation),
     Return(Return),
     Store(Store),
-    Switch(Switch),
     Unreachable,
 }
 
@@ -75,12 +73,6 @@ impl From<Return> for Instruction {
 impl From<Store> for Instruction {
     fn from(store: Store) -> Self {
         Self::Store(store)
-    }
-}
-
-impl From<Switch> for Instruction {
-    fn from(switch: Switch) -> Self {
-        Self::Switch(switch)
     }
 }
 
