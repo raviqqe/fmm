@@ -1,1 +1,5 @@
 # cmm
+
+## License
+
+[MIT](LICENSE)
