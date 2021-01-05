@@ -18,8 +18,8 @@ impl Bitcast {
         name: impl Into<String>,
     ) -> Self {
         Self {
-            from_type: from_type.into(),
-            to_type: to_type.into(),
+            from_type,
+            to_type,
             expression: expression.into().into(),
             name: name.into(),
         }

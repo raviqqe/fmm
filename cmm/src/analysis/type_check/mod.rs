@@ -154,12 +154,12 @@ fn check_instructions(
                     check_equality(&check_expression(argument, &variables)?, type_)?;
                 }
 
-                variables.insert(call.name().into(), call.type_().result().clone().into());
+                variables.insert(call.name().into(), call.type_().result().clone());
             }
             Instruction::CompareAndSwap(cas) => {
                 check_equality(
                     &check_expression(cas.pointer(), &variables)?,
-                    &types::Pointer::new(cas.type_().clone()).into(),
+                    &types::Pointer::new(cas.type_()).into(),
                 )?;
 
                 check_equality(
@@ -197,8 +197,7 @@ fn check_instructions(
                     deconstruct
                         .type_()
                         .elements()
-                        .get(deconstruct.element_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
+                        .get(deconstruct.element_index()).ok_or(TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -213,8 +212,7 @@ fn check_instructions(
                     deconstruct
                         .type_()
                         .members()
-                        .get(deconstruct.member_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
+                        .get(deconstruct.member_index()).ok_or(TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -250,8 +248,7 @@ fn check_instructions(
                     address
                         .type_()
                         .elements()
-                        .get(address.element_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
+                        .get(address.element_index()).ok_or(TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -303,8 +300,7 @@ fn check_instructions(
                     address
                         .type_()
                         .members()
-                        .get(address.member_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
+                        .get(address.member_index()).ok_or(TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -338,8 +334,7 @@ fn check_expression(
                 union
                     .type_()
                     .members()
-                    .get(union.member_index())
-                    .ok_or_else(|| TypeCheckError::IndexOutOfRange)?,
+                    .get(union.member_index()).ok_or(TypeCheckError::IndexOutOfRange)?,
             )?;
 
             union.type_().clone().into()
