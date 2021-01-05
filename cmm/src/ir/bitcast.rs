@@ -4,30 +4,37 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Bitcast {
+    from: Type,
+    to: Type,
     expression: Arc<Expression>,
-    type_: Type,
     name: String,
 }
 
 impl Bitcast {
     pub fn new(
+        from: impl Into<Type>,
+        to: impl Into<Type>,
         expression: impl Into<Expression>,
-        type_: impl Into<Type>,
         name: impl Into<String>,
     ) -> Self {
         Self {
+            from: from.into(),
+            to: to.into(),
             expression: expression.into().into(),
-            type_: type_.into(),
             name: name.into(),
         }
     }
 
-    pub fn expression(&self) -> &Expression {
-        &self.expression
+    pub fn from(&self) -> &Type {
+        &self.from
     }
 
-    pub fn type_(&self) -> &Type {
-        &self.type_
+    pub fn to(&self) -> &Type {
+        &self.to
+    }
+
+    pub fn expression(&self) -> &Expression {
+        &self.expression
     }
 
     pub fn name(&self) -> &str {
