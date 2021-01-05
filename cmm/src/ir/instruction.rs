@@ -15,6 +15,7 @@ use super::pointer_address::PointerAddress;
 use super::record_address::RecordAddress;
 use super::return_::Return;
 use super::store::Store;
+use super::switch::Switch;
 use super::union_address::UnionAddress;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -36,6 +37,7 @@ pub enum Instruction {
     RecordAddress(RecordAddress),
     Return(Return),
     Store(Store),
+    Switch(Switch),
     UnionAddress(UnionAddress),
     Unreachable,
 }
@@ -139,6 +141,12 @@ impl From<Return> for Instruction {
 impl From<Store> for Instruction {
     fn from(store: Store) -> Self {
         Self::Store(store)
+    }
+}
+
+impl From<Switch> for Instruction {
+    fn from(switch: Switch) -> Self {
+        Self::Switch(switch)
     }
 }
 
