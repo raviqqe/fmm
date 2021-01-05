@@ -1,4 +1,4 @@
-# fmm
+# F--
 
 The functionnal variant of C--
 
