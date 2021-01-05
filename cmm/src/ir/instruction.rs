@@ -9,7 +9,6 @@ use super::call::Call;
 use super::compare_and_swap::CompareAndSwap;
 use super::comparison_operation::ComparisonOperation;
 use super::deconstruct_record::DeconstructRecord;
-use super::if_::If;
 use super::load::Load;
 use super::pointer_address::PointerAddress;
 use super::record_address::RecordAddress;
@@ -31,7 +30,6 @@ pub enum Instruction {
     CompareAndSwap(CompareAndSwap),
     ComparisonOperation(ComparisonOperation),
     DeconstructRecord(DeconstructRecord),
-    If(If),
     Load(Load),
     PointerAddress(PointerAddress),
     RecordAddress(RecordAddress),
@@ -105,12 +103,6 @@ impl From<ComparisonOperation> for Instruction {
 impl From<DeconstructRecord> for Instruction {
     fn from(deconstruct_record: DeconstructRecord) -> Self {
         Self::DeconstructRecord(deconstruct_record)
-    }
-}
-
-impl From<If> for Instruction {
-    fn from(if_: If) -> Self {
-        Self::If(if_)
     }
 }
 
