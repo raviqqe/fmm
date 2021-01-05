@@ -1,6 +1,7 @@
 use super::address_calculation::AddressCalculation;
 use super::allocate_heap::AllocateHeap;
 use super::allocate_stack::AllocateStack;
+use super::arithmetic_operation::ArithmeticOperation;
 use super::assignment::Assignment;
 use super::atomic_load::AtomicLoad;
 use super::atomic_store::AtomicStore;
@@ -10,7 +11,6 @@ use super::compare_and_swap::CompareAndSwap;
 use super::deconstruct_record::DeconstructRecord;
 use super::if_::If;
 use super::load::Load;
-use super::arithmetic_operation::ArithmeticOperation;
 use super::return_::Return;
 use super::store::Store;
 
