@@ -198,7 +198,7 @@ fn check_instructions(
                         .type_()
                         .elements()
                         .get(deconstruct.element_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange(instruction.clone()))?
+                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -214,7 +214,7 @@ fn check_instructions(
                         .type_()
                         .members()
                         .get(deconstruct.member_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange(instruction.clone()))?
+                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -251,7 +251,7 @@ fn check_instructions(
                         .type_()
                         .elements()
                         .get(address.element_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange(instruction.clone()))?
+                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -304,7 +304,7 @@ fn check_instructions(
                         .type_()
                         .members()
                         .get(address.member_index())
-                        .ok_or_else(|| TypeCheckError::IndexOutOfRange(instruction.clone()))?
+                        .ok_or_else(|| TypeCheckError::IndexOutOfRange)?
                         .clone(),
                 );
             }
@@ -335,7 +335,11 @@ fn check_expression(
         Expression::Union(union) => {
             check_equality(
                 &check_expression(union.member(), variables)?,
-                &union.type_().members()[union.index()],
+                union
+                    .type_()
+                    .members()
+                    .get(union.index())
+                    .ok_or_else(|| TypeCheckError::IndexOutOfRange)?,
             )?;
 
             union.type_().clone().into()
