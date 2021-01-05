@@ -4,6 +4,7 @@ The functionnal variant of C--
 
 ## Features
 
+- [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form)
 - Minimal
   - Only two control instructions of `call` and `switch`
 - Fully-independent from backend
