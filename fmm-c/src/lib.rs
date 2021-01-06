@@ -123,4 +123,21 @@ mod tests {
             )));
         }
     }
+
+    mod function_declarations {
+        use super::*;
+
+        #[test]
+        fn compile_function_pointer() {
+            insta::assert_snapshot!(compile(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "x",
+                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                )],
+                vec![],
+                vec![]
+            )));
+        }
+    }
 }
