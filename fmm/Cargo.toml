@@ -1,6 +1,6 @@
 [package]
 name = "fmm"
-description = "C-like target language for ssf"
+description = "F-- programming language"
 version = "0.1.0"
 license = "MIT"
 authors = ["Yota Toyama <raviqqe@gmail.com>"]
