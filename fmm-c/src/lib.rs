@@ -61,10 +61,8 @@ fn compile_variable_forward_declaration(definition: &VariableDefinition) -> Stri
     ) + ";"
 }
 
-fn compile_function_declaration(function_declaration: &FunctionDeclaration) -> String {
-    "extern ".to_owned()
-        + &compile_function_name(function_declaration.type_(), function_declaration.name())
-        + ";"
+fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
+    "extern ".to_owned() + &compile_function_name(declaration.type_(), declaration.name()) + ";"
 }
 
 fn compile_function_forward_declaration(definition: &FunctionDefinition) -> String {
