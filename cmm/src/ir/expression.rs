@@ -1,5 +1,6 @@
 use super::primitive::Primitive;
 use super::record::Record;
+use super::undefined::Undefined;
 use super::union::Union;
 use super::variable::Variable;
 
@@ -7,7 +8,7 @@ use super::variable::Variable;
 pub enum Expression {
     Primitive(Primitive),
     Record(Record),
-    Undefined,
+    Undefined(Undefined),
     Union(Union),
     Variable(Variable),
 }
@@ -21,6 +22,12 @@ impl From<Record> for Expression {
 impl From<Primitive> for Expression {
     fn from(primitive: Primitive) -> Self {
         Self::Primitive(primitive)
+    }
+}
+
+impl From<Undefined> for Expression {
+    fn from(undefined: Undefined) -> Self {
+        Self::Undefined(undefined)
     }
 }
 

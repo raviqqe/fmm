@@ -1,36 +1,36 @@
 use super::expression::Expression;
-use crate::types::Type;
+use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Bitcast {
-    from: Type,
-    to: Type,
+    from_type: types::Primitive,
+    to_type: types::Primitive,
     expression: Arc<Expression>,
     name: String,
 }
 
 impl Bitcast {
     pub fn new(
-        from: impl Into<Type>,
-        to: impl Into<Type>,
+        from_type: types::Primitive,
+        to_type: types::Primitive,
         expression: impl Into<Expression>,
         name: impl Into<String>,
     ) -> Self {
         Self {
-            from: from.into(),
-            to: to.into(),
+            from_type,
+            to_type,
             expression: expression.into().into(),
             name: name.into(),
         }
     }
 
-    pub fn from(&self) -> &Type {
-        &self.from
+    pub fn from_type(&self) -> types::Primitive {
+        self.from_type
     }
 
-    pub fn to(&self) -> &Type {
-        &self.to
+    pub fn to_type(&self) -> types::Primitive {
+        self.to_type
     }
 
     pub fn expression(&self) -> &Expression {

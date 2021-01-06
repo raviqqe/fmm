@@ -6,22 +6,22 @@ use super::union::Union;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Type {
-    Record(Record),
     Function(Function),
+    Record(Record),
     Primitive(Primitive),
     Pointer(Pointer),
     Union(Union),
 }
 
-impl From<Record> for Type {
-    fn from(record: Record) -> Self {
-        Self::Record(record)
-    }
-}
-
 impl From<Function> for Type {
     fn from(function: Function) -> Self {
         Self::Function(function)
+    }
+}
+
+impl From<Record> for Type {
+    fn from(record: Record) -> Self {
+        Self::Record(record)
     }
 }
 

@@ -6,10 +6,12 @@ The functional variant of C--
 
 - [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form)
 - Minimal
-  - Only two control instructions of `call` and `switch`
+  - Only three control instructions of `call`, `return` and `switch`
+  - No backward jump
 - Fully-independent from backend
   - Pointer-sized integer
   - C-like union type
+  - Bool type
 
 ## Requirements for backend
 
