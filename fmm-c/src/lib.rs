@@ -1,8 +1,10 @@
 mod error;
+mod expressions;
 mod names;
 mod types;
 
 pub use error::*;
+use expressions::*;
 use fmm::ir::*;
 use indoc::indoc;
 use types::*;
@@ -41,6 +43,12 @@ pub fn compile(module: &Module) -> String {
                 .iter()
                 .map(compile_function_forward_declaration),
         )
+        .chain(
+            module
+                .variable_definitions()
+                .iter()
+                .map(compile_variable_definition),
+        )
         .collect::<Vec<_>>();
 
     strings
@@ -67,6 +75,21 @@ fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
 
 fn compile_function_forward_declaration(definition: &FunctionDefinition) -> String {
     compile_function_name(definition.type_(), definition.name()) + ";"
+}
+
+fn compile_variable_definition(definition: &VariableDefinition) -> String {
+    compile_typed_name(
+        definition.type_(),
+        &(if definition.is_mutable() {
+            ""
+        } else {
+            "const "
+        }
+        .to_owned()
+            + definition.name()),
+    ) + " = "
+        + &compile_expression(definition.body())
+        + ";"
 }
 
 #[cfg(test)]
