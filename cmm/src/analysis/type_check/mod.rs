@@ -93,12 +93,6 @@ fn check_instructions(
                     types::Pointer::new(allocate.type_().clone()).into(),
                 );
             }
-            Instruction::AllocateStack(allocate) => {
-                variables.insert(
-                    allocate.name().into(),
-                    types::Pointer::new(allocate.type_().clone()).into(),
-                );
-            }
             Instruction::ArithmeticOperation(operation) => {
                 check_equality(
                     &check_expression(operation.lhs(), &variables)?,

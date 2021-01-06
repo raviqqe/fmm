@@ -1,5 +1,4 @@
 use super::allocate_heap::AllocateHeap;
-use super::allocate_stack::AllocateStack;
 use super::arithmetic_operation::ArithmeticOperation;
 use super::assignment::Assignment;
 use super::atomic_load::AtomicLoad;
@@ -21,7 +20,6 @@ use super::union_address::UnionAddress;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
     AllocateHeap(AllocateHeap),
-    AllocateStack(AllocateStack),
     ArithmeticOperation(ArithmeticOperation),
     Assignment(Assignment),
     AtomicLoad(AtomicLoad),
@@ -45,12 +43,6 @@ pub enum Instruction {
 impl From<AllocateHeap> for Instruction {
     fn from(allocate_heap: AllocateHeap) -> Self {
         Self::AllocateHeap(allocate_heap)
-    }
-}
-
-impl From<AllocateStack> for Instruction {
-    fn from(allocate: AllocateStack) -> Self {
-        Self::AllocateStack(allocate)
     }
 }
 
