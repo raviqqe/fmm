@@ -4,8 +4,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container:
-      image: einlang/ci
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -23,15 +21,12 @@ jobs:
           args: -- --check
   lint:
     runs-on: ubuntu-latest
-    container:
-      image: einlang/ci
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-      - uses: actions-rs/cargo@v1
+      - uses: actions-rs/clippy-check@v1
         with:
-          command: clippy
           args: -- -D warnings
+          token: ${{ secrets.GITHUB_TOKEN }}
   spell-check:
     runs-on: ubuntu-latest
     steps:
