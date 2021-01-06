@@ -376,6 +376,97 @@ mod tests {
     }
 
     #[test]
+    fn check_variable_declaration() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![VariableDeclaration::new(
+                "x",
+                types::Primitive::PointerInteger,
+            )],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![
+                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    )
+                    .into(),
+                ],
+                types::Primitive::PointerInteger,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_variable_definition() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                Primitive::PointerInteger(42),
+                types::Primitive::PointerInteger,
+                false,
+            )],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![
+                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    )
+                    .into(),
+                ],
+                types::Primitive::PointerInteger,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_function_declaration() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new(
+                "f",
+                types::Function::new(
+                    vec![types::Primitive::PointerInteger.into()],
+                    types::Primitive::Float64,
+                ),
+            )],
+            vec![],
+            vec![FunctionDefinition::new(
+                "g",
+                vec![Argument::new("x", types::Primitive::PointerInteger)],
+                vec![
+                    Call::new(
+                        types::Function::new(
+                            vec![types::Primitive::PointerInteger.into()],
+                            types::Primitive::Float64,
+                        ),
+                        Variable::new("f"),
+                        vec![Primitive::PointerInteger(42).into()],
+                        "x",
+                    )
+                    .into(),
+                    Return::new(types::Primitive::Float64, Variable::new("x")).into(),
+                ],
+                types::Primitive::Float64,
+            )],
+        ))
+    }
+
+    #[test]
     fn check_return() -> Result<(), TypeCheckError> {
         check_types(&Module::new(
             vec![],
@@ -447,6 +538,109 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")).into(),
                 ],
                 types::Primitive::Float64,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_load() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![
+                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")).into(),
+                ],
+                types::Primitive::PointerInteger,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_store() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![
+                    Store::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                        Variable::new("x"),
+                    )
+                    .into(),
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    )
+                    .into(),
+                ],
+                types::Primitive::PointerInteger,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_atomic_load() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![
+                    AtomicLoad::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                        .into(),
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")).into(),
+                ],
+                types::Primitive::PointerInteger,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_atomic_store() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![
+                    AtomicStore::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                        Variable::new("x"),
+                    )
+                    .into(),
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    )
+                    .into(),
+                ],
+                types::Primitive::PointerInteger,
             )],
         ))
     }
