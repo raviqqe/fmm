@@ -1,13 +1,14 @@
 use super::block::Block;
 use super::expression::Expression;
 use crate::types::Type;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct If {
     type_: Type,
     condition: Expression,
-    then: Block,
-    else_: Block,
+    then: Arc<Block>,
+    else_: Arc<Block>,
     name: String,
 }
 
@@ -22,8 +23,8 @@ impl If {
         Self {
             type_: type_.into(),
             condition: condition.into(),
-            then,
-            else_,
+            then: then.into(),
+            else_: else_.into(),
             name: name.into(),
         }
     }
