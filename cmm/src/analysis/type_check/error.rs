@@ -5,6 +5,7 @@ use crate::types::Type;
 pub enum TypeCheckError {
     FunctionArguments(Call),
     IndexOutOfRange,
+    InvalidBranch(Branch),
     RecordElements(Record),
     TypesNotMatched(Type, Type),
     VariableNotFound(Variable),

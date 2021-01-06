@@ -60,7 +60,7 @@ fn check_function_definition(
     definition: &FunctionDefinition,
     variables: &HashMap<String, Type>,
 ) -> Result<(), TypeCheckError> {
-    check_instructions(
+    check_block(
         definition.body(),
         &variables
             .iter()
@@ -73,19 +73,21 @@ fn check_function_definition(
             )
             .collect(),
         definition.result_type(),
+        None,
     )?;
 
     Ok(())
 }
 
-fn check_instructions(
-    instructions: &[Instruction],
+fn check_block(
+    block: &Block,
     variables: &HashMap<String, Type>,
     return_type: &Type,
-) -> Result<HashMap<String, Type>, TypeCheckError> {
+    branch_type: Option<&Type>,
+) -> Result<(), TypeCheckError> {
     let mut variables = variables.clone();
 
-    for instruction in instructions {
+    for instruction in block.instructions() {
         match instruction {
             Instruction::AllocateHeap(allocate) => {
                 variables.insert(
@@ -212,6 +214,17 @@ fn check_instructions(
                         .clone(),
                 );
             }
+            Instruction::If(if_) => {
+                check_equality(
+                    &check_expression(if_.condition(), &variables)?,
+                    &types::Primitive::Bool.into(),
+                )?;
+
+                check_block(if_.then(), &variables, return_type, Some(if_.type_()))?;
+                check_block(if_.else_(), &variables, return_type, Some(if_.type_()))?;
+
+                variables.insert(if_.name().into(), if_.type_().clone());
+            }
             Instruction::Load(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
@@ -263,29 +276,6 @@ fn check_instructions(
                     &types::Pointer::new(store.type_().clone()).into(),
                 )?;
             }
-            Instruction::Switch(switch) => {
-                check_equality(
-                    &check_expression(switch.condition(), &variables)?,
-                    switch.condition_type(),
-                )?;
-
-                for alternative in switch.alternatives() {
-                    check_equality(
-                        &check_expression(alternative.condition(), &variables)?,
-                        switch.condition_type(),
-                    )?;
-
-                    let variables =
-                        check_instructions(alternative.instructions(), &variables, return_type)?;
-
-                    check_equality(
-                        &check_expression(alternative.result(), &variables)?,
-                        switch.result_type(),
-                    )?;
-                }
-
-                variables.insert(switch.name().into(), switch.result_type().clone());
-            }
             Instruction::UnionAddress(address) => {
                 check_equality(
                     &check_expression(address.pointer(), &variables)?,
@@ -306,7 +296,28 @@ fn check_instructions(
         }
     }
 
-    Ok(variables)
+    match block.terminal_instruction() {
+        TerminalInstruction::Branch(branch) => {
+            let branch_type =
+                branch_type.ok_or_else(|| TypeCheckError::InvalidBranch(branch.clone()))?;
+
+            check_equality(branch.type_(), branch_type)?;
+            check_equality(
+                &check_expression(branch.expression(), &variables)?,
+                branch_type,
+            )?;
+        }
+        TerminalInstruction::Return(return_) => {
+            check_equality(return_.type_(), return_type)?;
+            check_equality(
+                &check_expression(return_.expression(), &variables)?,
+                return_type,
+            )?;
+        }
+        TerminalInstruction::Unreachable => {}
+    }
+
+    Ok(())
 }
 
 fn check_expression(
@@ -390,14 +401,15 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
-                vec![
-                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    ],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
-                    )
-                    .into(),
-                ],
+                    ),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))
@@ -420,14 +432,15 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
-                vec![
-                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    ],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
-                    )
-                    .into(),
-                ],
+                    ),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))
@@ -448,8 +461,8 @@ mod tests {
             vec![FunctionDefinition::new(
                 "g",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
-                vec![
-                    Call::new(
+                Block::new(
+                    vec![Call::new(
                         types::Function::new(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
@@ -458,9 +471,9 @@ mod tests {
                         vec![Primitive::PointerInteger(42).into()],
                         "x",
                     )
-                    .into(),
-                    Return::new(types::Primitive::Float64, Variable::new("x")).into(),
-                ],
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
                 types::Primitive::Float64,
             )],
         ))
@@ -475,11 +488,13 @@ mod tests {
             vec![FunctionDefinition::new(
                 "f",
                 vec![],
-                vec![Return::new(
-                    types::Primitive::PointerInteger,
-                    Primitive::PointerInteger(42),
-                )
-                .into()],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    ),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))
@@ -494,8 +509,8 @@ mod tests {
             vec![FunctionDefinition::new(
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
-                vec![
-                    Call::new(
+                Block::new(
+                    vec![Call::new(
                         types::Function::new(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
@@ -504,16 +519,16 @@ mod tests {
                         vec![Primitive::PointerInteger(42).into()],
                         "x",
                     )
-                    .into(),
-                    Return::new(types::Primitive::Float64, Variable::new("x")).into(),
-                ],
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
                 types::Primitive::Float64,
             )],
         ))
     }
 
     #[test]
-    fn check_switch() -> Result<(), TypeCheckError> {
+    fn check_if() -> Result<(), TypeCheckError> {
         check_types(&Module::new(
             vec![],
             vec![],
@@ -521,22 +536,23 @@ mod tests {
             vec![FunctionDefinition::new(
                 "f",
                 vec![],
-                vec![
-                    Switch::new(
-                        types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
                         types::Primitive::Float64,
-                        Primitive::PointerInteger(42),
-                        vec![Alternative::new(
-                            Primitive::PointerInteger(42),
+                        Primitive::Bool(true),
+                        Block::new(
                             vec![],
-                            Primitive::Float64(42.0),
-                        )],
-                        DefaultAlternative::new(vec![], Primitive::Float64(42.0)),
+                            Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
+                        ),
                         "x",
                     )
-                    .into(),
-                    Return::new(types::Primitive::Float64, Variable::new("x")).into(),
-                ],
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
                 types::Primitive::Float64,
             )],
         ))
@@ -554,10 +570,12 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
-                vec![
-                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
-                    Return::new(types::Primitive::PointerInteger, Variable::new("y")).into(),
-                ],
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    ],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))
@@ -575,19 +593,18 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
-                vec![
-                    Store::new(
+                Block::new(
+                    vec![Store::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
                         Variable::new("x"),
                     )
-                    .into(),
+                    .into()],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
-                    )
-                    .into(),
-                ],
+                    ),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))
@@ -605,11 +622,15 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
-                vec![
-                    AtomicLoad::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
-                        .into(),
-                    Return::new(types::Primitive::PointerInteger, Variable::new("y")).into(),
-                ],
+                Block::new(
+                    vec![AtomicLoad::new(
+                        types::Primitive::PointerInteger,
+                        Variable::new("x"),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))
@@ -627,19 +648,18 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
-                vec![
-                    AtomicStore::new(
+                Block::new(
+                    vec![AtomicStore::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
                         Variable::new("x"),
                     )
-                    .into(),
+                    .into()],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
-                    )
-                    .into(),
-                ],
+                    ),
+                ),
                 types::Primitive::PointerInteger,
             )],
         ))

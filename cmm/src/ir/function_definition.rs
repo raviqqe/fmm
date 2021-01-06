@@ -1,12 +1,12 @@
 use super::argument::Argument;
-use super::instruction::Instruction;
+use super::block::Block;
 use crate::types::{self, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
     name: String,
     arguments: Vec<Argument>,
-    body: Vec<Instruction>,
+    body: Block,
     result_type: Type,
     type_: types::Function,
 }
@@ -15,7 +15,7 @@ impl FunctionDefinition {
     pub fn new(
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: Vec<Instruction>,
+        body: Block,
         result_type: impl Into<Type> + Clone,
     ) -> Self {
         Self {
@@ -41,7 +41,7 @@ impl FunctionDefinition {
         &self.arguments
     }
 
-    pub fn body(&self) -> &[Instruction] {
+    pub fn body(&self) -> &Block {
         &self.body
     }
 
