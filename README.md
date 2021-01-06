@@ -6,7 +6,11 @@ The functional variant of C--
 
 - [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form)
 - Minimal
-  - Only three control instructions of `call`, `return` and `switch`
+  - Only three control instructions
+    - `branch`
+    - `call`
+    - `if`
+    - `return`
   - No backward jump
 - Fully-independent from backend
   - Pointer-sized integer
