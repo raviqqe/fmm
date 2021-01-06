@@ -11,6 +11,7 @@ The functional variant of C--
 - Fully-independent from backend
   - Pointer-sized integer
   - C-like union type
+  - Bool type
 
 ## Requirements for backend
 
@@ -18,6 +19,7 @@ The functional variant of C--
 - Heap allocation
 - Atomic memory instructions
   - Or something equivalent if threading is not supported
+- 8-bit byte
 
 ## License
 
