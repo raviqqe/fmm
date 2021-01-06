@@ -6,7 +6,7 @@ The functional variant of C--
 
 - [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form)
 - Minimal
-  - Only three control instructions
+  - Only 4 control instructions
     - `branch`
     - `call`
     - `if`
