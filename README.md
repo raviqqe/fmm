@@ -11,6 +11,7 @@ The functional variant of C--
 - Fully-independent from backend
   - Pointer-sized integer
   - C-like union type
+  - Bool type
 
 ## Requirements for backend
 
