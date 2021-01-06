@@ -1,0 +1,8 @@
+---
+source: fmm-c/src/lib.rs
+expression: "compile(&Module::new(vec![], vec![], vec![], vec![]))"
+---
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>

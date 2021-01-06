@@ -70,3 +70,57 @@ fn compile_function_declaration(function_declaration: &FunctionDeclaration) -> S
 fn compile_function_forward_declaration(definition: &FunctionDefinition) -> String {
     compile_function_name(definition.type_(), definition.name()) + ";"
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use fmm::types;
+
+    #[test]
+    fn compile_empty_module() {
+        insta::assert_snapshot!(compile(&Module::new(vec![], vec![], vec![], vec![])));
+    }
+
+    mod variable_declarations {
+        use super::*;
+
+        #[test]
+        fn compile_pointer_integer() {
+            insta::assert_snapshot!(compile(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger
+                )],
+                vec![],
+                vec![],
+                vec![]
+            )));
+        }
+
+        #[test]
+        fn compile_pointer_integer_pointer() {
+            insta::assert_snapshot!(compile(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger)
+                )],
+                vec![],
+                vec![],
+                vec![]
+            )));
+        }
+
+        #[test]
+        fn compile_function_pointer() {
+            insta::assert_snapshot!(compile(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                )],
+                vec![],
+                vec![],
+                vec![]
+            )));
+        }
+    }
+}

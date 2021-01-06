@@ -6,7 +6,7 @@ pub fn compile_typed_name(type_: &Type, name: &str) -> String {
         Type::Function(function) => compile_function_name(function, &format!("(*{})", name)),
         Type::Primitive(primitive) => compile_primitive(*primitive) + " " + name,
         Type::Record(record) => compile_record(record) + " " + name,
-        Type::Pointer(pointer) => compile_typed_name(pointer.element(), &format!("(*{})", name)),
+        Type::Pointer(pointer) => compile_typed_name(pointer.element(), &format!("*{}", name)),
         Type::Union(union) => compile_union(union) + " " + name,
     }
 }
