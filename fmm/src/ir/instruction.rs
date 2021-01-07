@@ -13,7 +13,6 @@ use super::if_::If;
 use super::load::Load;
 use super::pointer_address::PointerAddress;
 use super::record_address::RecordAddress;
-use super::return_::Return;
 use super::store::Store;
 use super::union_address::UnionAddress;
 
@@ -34,10 +33,8 @@ pub enum Instruction {
     Load(Load),
     PointerAddress(PointerAddress),
     RecordAddress(RecordAddress),
-    Return(Return),
     Store(Store),
     UnionAddress(UnionAddress),
-    Unreachable,
 }
 
 impl From<AllocateHeap> for Instruction {
@@ -127,12 +124,6 @@ impl From<PointerAddress> for Instruction {
 impl From<RecordAddress> for Instruction {
     fn from(address: RecordAddress) -> Self {
         Self::RecordAddress(address)
-    }
-}
-
-impl From<Return> for Instruction {
-    fn from(return_: Return) -> Self {
-        Self::Return(return_)
     }
 }
 
