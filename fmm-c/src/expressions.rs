@@ -1,6 +1,7 @@
+use super::types::*;
 use crate::names::*;
 use fmm::ir::*;
-use fmm::types::{self, Type};
+use fmm::types;
 
 pub fn compile_expression(expression: &Expression) -> String {
     match expression {
@@ -32,11 +33,11 @@ pub fn compile_expression(expression: &Expression) -> String {
 
 fn compile_undefined(undefined: &Undefined) -> String {
     match undefined.type_() {
-        Type::Function(_) => "NULL".into(),
-        Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
-        Type::Pointer(_) => "NULL".into(),
-        Type::Record(record) => format!("(struct {}){{}}", generate_record_type_name(record)),
-        Type::Union(union) => format!("(union {}){{}}", generate_union_type_name(union)),
+        types::Type::Function(_) => "NULL".into(),
+        types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
+        types::Type::Pointer(_) => "NULL".into(),
+        types::Type::Record(record) => format!("({}){{}}", compile_record_type(record)),
+        types::Type::Union(union) => format!("({}){{}}", compile_union_type(union)),
     }
 }
 

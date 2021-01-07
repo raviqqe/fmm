@@ -5,9 +5,9 @@ pub fn compile_typed_name(type_: &Type, name: &str) -> String {
     match type_ {
         Type::Function(function) => compile_function_name(function, &format!("(*{})", name)),
         Type::Primitive(primitive) => compile_primitive(*primitive) + " " + name,
-        Type::Record(record) => compile_record(record) + " " + name,
+        Type::Record(record) => compile_record_type(record) + " " + name,
         Type::Pointer(pointer) => compile_typed_name(pointer.element(), &format!("*{}", name)),
-        Type::Union(union) => compile_union(union) + " " + name,
+        Type::Union(union) => compile_union_type(union) + " " + name,
     }
 }
 
@@ -41,30 +41,30 @@ fn compile_primitive(primitive: types::Primitive) -> String {
     .into()
 }
 
-fn compile_record(record: &types::Record) -> String {
-    "struct{".to_owned()
-        + &record
-            .elements()
-            .iter()
-            .enumerate()
-            .map(|(index, type_)| {
-                compile_typed_name(type_, &generate_record_element_name(index)) + ";"
-            })
-            .collect::<Vec<_>>()
-            .join("")
-        + "}"
+pub fn compile_record_type(record: &types::Record) -> String {
+    "struct ".to_owned() + &generate_record_type_name(record)
 }
 
-fn compile_union(union: &types::Union) -> String {
-    "union{".to_owned()
-        + &union
-            .members()
-            .iter()
-            .enumerate()
-            .map(|(index, type_)| {
-                compile_typed_name(type_, &generate_union_member_name(index)) + ";"
-            })
-            .collect::<Vec<_>>()
-            .join("")
-        + "}"
+pub fn compile_union_type(union: &types::Union) -> String {
+    "union ".to_owned() + &generate_union_type_name(union)
+}
+
+pub fn compile_record_elements(record: &types::Record) -> String {
+    record
+        .elements()
+        .iter()
+        .enumerate()
+        .map(|(index, type_)| compile_typed_name(type_, &generate_record_element_name(index)) + ";")
+        .collect::<Vec<_>>()
+        .join("")
+}
+
+pub fn compile_union_members(union: &types::Union) -> String {
+    union
+        .members()
+        .iter()
+        .enumerate()
+        .map(|(index, type_)| compile_typed_name(type_, &generate_union_member_name(index)) + ";")
+        .collect::<Vec<_>>()
+        .join("")
 }

@@ -1,0 +1,10 @@
+---
+source: fmm-c/src/lib.rs
+expression: "compile(&Module::new(vec![VariableDeclaration ::\n                          new(\"x\", types :: Record ::\n                              new(vec !\n                                  [types :: Primitive :: PointerInteger .\n                                   into()]))], vec![], vec![], vec![]))"
+---
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+struct t_8401336768429464885 {size_t e0;};
+extern struct t_8401336768429464885 x;
