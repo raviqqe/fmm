@@ -262,13 +262,6 @@ fn check_block(
                         .clone(),
                 );
             }
-            Instruction::Return(return_) => {
-                check_equality(
-                    &check_expression(return_.expression(), &variables)?,
-                    return_.type_(),
-                )?;
-                check_equality(return_.type_(), return_type)?;
-            }
             Instruction::Store(store) => {
                 check_equality(&check_expression(store.value(), &variables)?, store.type_())?;
                 check_equality(
@@ -292,7 +285,6 @@ fn check_block(
                         .clone(),
                 );
             }
-            Instruction::Unreachable => {}
         }
     }
 
