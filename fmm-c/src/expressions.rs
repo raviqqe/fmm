@@ -8,8 +8,8 @@ pub fn compile_expression(expression: &Expression) -> String {
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
-                "(struct {}){{{}}}",
-                generate_record_type_name(record.type_()),
+                "({}){{{}}}",
+                compile_record_type(record.type_()),
                 record
                     .elements()
                     .iter()
@@ -21,8 +21,8 @@ pub fn compile_expression(expression: &Expression) -> String {
         Expression::Undefined(undefined) => compile_undefined(undefined),
         Expression::Union(union) => {
             format!(
-                "(union {}){{.{}={}}}",
-                generate_union_type_name(union.type_()),
+                "({}){{.{}={}}}",
+                compile_union_type(union.type_()),
                 generate_union_member_name(union.member_index()),
                 compile_expression(union.member())
             )
