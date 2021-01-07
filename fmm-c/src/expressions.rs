@@ -5,9 +5,27 @@ use fmm::types::{self, Type};
 pub fn compile_expression(expression: &Expression) -> String {
     match expression {
         Expression::Primitive(primitive) => compile_primitive(*primitive),
-        Expression::Record(_) => todo!(),
+        Expression::Record(record) => {
+            format!(
+                "(struct {}){{{}}}",
+                generate_record_type_name(record.type_()),
+                record
+                    .elements()
+                    .iter()
+                    .map(compile_expression)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
         Expression::Undefined(undefined) => compile_undefined(undefined),
-        Expression::Union(_) => todo!(),
+        Expression::Union(union) => {
+            format!(
+                "(union {}){{.{} = {}}}",
+                generate_union_type_name(union.type_()),
+                generate_union_member_name(union.member_index()),
+                compile_expression(union.member())
+            )
+        }
         Expression::Variable(variable) => variable.name().into(),
     }
 }
@@ -17,8 +35,8 @@ fn compile_undefined(undefined: &Undefined) -> String {
         Type::Function(_) => "NULL".into(),
         Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
         Type::Pointer(_) => "NULL".into(),
-        Type::Record(record) => format!("struct {}", generate_record_type_name(record)) + "{}",
-        Type::Union(union) => format!("union {}", generate_union_type_name(union)) + "{}",
+        Type::Record(record) => format!("(struct {}){{}}", generate_record_type_name(record)),
+        Type::Union(union) => format!("(union {}){{}}", generate_union_type_name(union)),
     }
 }
 
