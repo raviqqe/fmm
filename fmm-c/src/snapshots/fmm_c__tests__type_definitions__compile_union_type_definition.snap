@@ -6,5 +6,5 @@ expression: "compile(&Module::new(vec![VariableDeclaration ::\n                 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-union t_74978b4758aa9d35 {size_t m0;};
-extern union t_74978b4758aa9d35 x;
+union u_74978b4758aa9d35 {size_t m0;};
+extern union u_74978b4758aa9d35 x;

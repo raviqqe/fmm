@@ -6,5 +6,5 @@ expression: "compile(&Module::new(vec![VariableDeclaration ::\n                 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-struct t_8401336768429464885 {size_t e0;};
-extern struct t_8401336768429464885 x;
+struct r_8401336768429464885 {size_t e0;};
+extern struct r_8401336768429464885 x;

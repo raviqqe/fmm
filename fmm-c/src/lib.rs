@@ -1,5 +1,6 @@
 mod error;
 mod expressions;
+mod instructions;
 mod names;
 mod types;
 
@@ -8,6 +9,7 @@ use expressions::*;
 use fmm::analysis::*;
 use fmm::ir::*;
 use indoc::indoc;
+use instructions::*;
 use names::*;
 
 const INCLUDES: &str = indoc! {"
@@ -61,6 +63,12 @@ pub fn compile(module: &Module) -> String {
                 .variable_definitions()
                 .iter()
                 .map(compile_variable_definition),
+        )
+        .chain(
+            module
+                .function_definitions()
+                .iter()
+                .map(compile_function_definition),
         )
         .collect::<Vec<_>>();
 
@@ -121,6 +129,13 @@ fn compile_variable_definition(definition: &VariableDefinition) -> String {
     ) + " = "
         + &compile_expression(definition.body())
         + ";"
+}
+
+fn compile_function_definition(definition: &FunctionDefinition) -> String {
+    types::compile_function_name(definition.type_(), definition.name())
+        + "{"
+        + &compile_block(definition.body())
+        + "}"
 }
 
 #[cfg(test)]
