@@ -41,12 +41,12 @@ pub fn collect_types(module: &Module) -> HashSet<Type> {
                     .map(|declaration| declaration.type_().clone().into()),
             )
             .chain(module.variable_definitions().iter().flat_map(|definition| {
-                Some(definition.type_().clone().into())
+                Some(definition.type_().clone())
                     .into_iter()
                     .chain(collect_from_expression(definition.body()))
             }))
             .chain(module.variable_definitions().iter().flat_map(|definition| {
-                Some(definition.type_().clone().into())
+                Some(definition.type_().clone())
                     .into_iter()
                     .chain(collect_from_expression(definition.body()))
             }))
@@ -77,9 +77,7 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(union.member()))
             .collect(),
-        Expression::Undefined(undefined) => {
-            vec![undefined.type_().clone().into()].into_iter().collect()
-        }
+        Expression::Undefined(undefined) => vec![undefined.type_().clone()].into_iter().collect(),
         Expression::Primitive(_) | Expression::Variable(_) => Default::default(),
     }
 }
@@ -129,13 +127,13 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(deconstruct.union()))
             .collect(),
-        Instruction::If(if_) => vec![if_.type_().clone().into()]
+        Instruction::If(if_) => vec![if_.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(if_.condition()))
             .chain(collect_from_block(if_.then()))
             .chain(collect_from_block(if_.else_()))
             .collect(),
-        Instruction::Load(load) => vec![load.type_().clone().into()]
+        Instruction::Load(load) => vec![load.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(load.pointer()))
             .collect(),
@@ -147,7 +145,7 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
-        Instruction::Store(store) => vec![store.type_().clone().into()]
+        Instruction::Store(store) => vec![store.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(store.value()))
             .chain(collect_from_expression(store.pointer()))
@@ -169,7 +167,7 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashS
 
 fn collect_from_type(type_: &Type) -> HashSet<Type> {
     match type_ {
-        Type::Function(function) => vec![function.result().clone().into()]
+        Type::Function(function) => vec![function.result().clone()]
             .into_iter()
             .chain(function.arguments().iter().flat_map(collect_from_type))
             .collect(),
