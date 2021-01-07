@@ -20,7 +20,7 @@ pub fn compile_expression(expression: &Expression) -> String {
         Expression::Undefined(undefined) => compile_undefined(undefined),
         Expression::Union(union) => {
             format!(
-                "(union {}){{.{} = {}}}",
+                "(union {}){{.{}={}}}",
                 generate_union_type_name(union.type_()),
                 generate_union_member_name(union.member_index()),
                 compile_expression(union.member())
