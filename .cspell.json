@@ -1,6 +1,7 @@
 {
   "words": [
     "bitcast",
+    "hasher",
     "indoc",
     "insta",
     "stdatomic",
