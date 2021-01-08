@@ -118,28 +118,20 @@ fn check_block(
             Instruction::AtomicLoad(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
-                    &types::Pointer::new(load.type_()).into(),
+                    &types::Pointer::new(load.type_().clone()).clone().into(),
                 )?;
 
-                variables.insert(load.name().into(), load.type_().clone().into());
+                variables.insert(load.name().into(), load.type_().clone());
             }
             Instruction::AtomicStore(store) => {
                 check_equality(
                     &check_expression(store.value(), &variables)?,
-                    &store.type_().into(),
+                    &store.type_().clone(),
                 )?;
                 check_equality(
                     &check_expression(store.pointer(), &variables)?,
-                    &types::Pointer::new(store.type_()).into(),
+                    &types::Pointer::new(store.type_().clone()).into(),
                 )?;
-            }
-            Instruction::Bitcast(bitcast) => {
-                check_equality(
-                    &check_expression(bitcast.expression(), &variables)?,
-                    &types::Pointer::new(bitcast.from_type()).into(),
-                )?;
-
-                variables.insert(bitcast.name().into(), bitcast.to_type().into());
             }
             Instruction::Call(call) => {
                 if call.arguments().len() != call.type_().arguments().len() {
@@ -155,17 +147,17 @@ fn check_block(
             Instruction::CompareAndSwap(cas) => {
                 check_equality(
                     &check_expression(cas.pointer(), &variables)?,
-                    &types::Pointer::new(cas.type_()).into(),
+                    &types::Pointer::new(cas.type_().clone()).into(),
                 )?;
 
                 check_equality(
                     &check_expression(cas.old_value(), &variables)?,
-                    &cas.type_().into(),
+                    &cas.type_().clone(),
                 )?;
 
                 check_equality(
                     &check_expression(cas.new_value(), &variables)?,
-                    &cas.type_().into(),
+                    &cas.type_().clone(),
                 )?;
 
                 variables.insert(cas.name().into(), types::Primitive::Bool.into());

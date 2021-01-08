@@ -1,10 +1,10 @@
 use super::expression::Expression;
-use crate::types;
+use crate::types::Type;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompareAndSwap {
-    type_: types::Primitive,
+    type_: Type,
     pointer: Arc<Expression>,
     old_value: Arc<Expression>,
     new_value: Arc<Expression>,
@@ -13,14 +13,14 @@ pub struct CompareAndSwap {
 
 impl CompareAndSwap {
     pub fn new(
-        type_: types::Primitive,
+        type_: impl Into<Type>,
         pointer: impl Into<Expression>,
         old_value: impl Into<Expression>,
         new_value: impl Into<Expression>,
         name: impl Into<String>,
     ) -> Self {
         Self {
-            type_,
+            type_: type_.into(),
             pointer: pointer.into().into(),
             old_value: old_value.into().into(),
             new_value: new_value.into().into(),
@@ -28,8 +28,8 @@ impl CompareAndSwap {
         }
     }
 
-    pub fn type_(&self) -> types::Primitive {
-        self.type_
+    pub fn type_(&self) -> &Type {
+        &self.type_
     }
 
     pub fn pointer(&self) -> &Expression {

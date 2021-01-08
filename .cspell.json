@@ -1,3 +1,14 @@
 {
-  "words": ["bitcast"]
+  "words": [
+    "bitcast",
+    "hasher",
+    "indoc",
+    "malloc",
+    "stdatomic",
+    "stdbool",
+    "stdint",
+    "stdlib",
+    "tempdir",
+    "tempfile"
+  ]
 }

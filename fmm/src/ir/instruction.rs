@@ -3,7 +3,6 @@ use super::arithmetic_operation::ArithmeticOperation;
 use super::assignment::Assignment;
 use super::atomic_load::AtomicLoad;
 use super::atomic_store::AtomicStore;
-use super::bitcast::Bitcast;
 use super::call::Call;
 use super::compare_and_swap::CompareAndSwap;
 use super::comparison_operation::ComparisonOperation;
@@ -23,7 +22,6 @@ pub enum Instruction {
     Assignment(Assignment),
     AtomicLoad(AtomicLoad),
     AtomicStore(AtomicStore),
-    Bitcast(Bitcast),
     Call(Call),
     CompareAndSwap(CompareAndSwap),
     ComparisonOperation(ComparisonOperation),
@@ -64,12 +62,6 @@ impl From<AtomicLoad> for Instruction {
 impl From<AtomicStore> for Instruction {
     fn from(store: AtomicStore) -> Self {
         Self::AtomicStore(store)
-    }
-}
-
-impl From<Bitcast> for Instruction {
-    fn from(bitcast: Bitcast) -> Self {
-        Self::Bitcast(bitcast)
     }
 }
 
