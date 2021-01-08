@@ -132,10 +132,21 @@ fn compile_variable_definition(definition: &VariableDefinition) -> String {
 }
 
 fn compile_function_definition(definition: &FunctionDefinition) -> String {
-    types::compile_function_name(definition.type_(), definition.name())
-        + "{"
+    types::compile_typed_name(
+        definition.result_type(),
+        &format!(
+            "{}({})",
+            definition.name(),
+            definition
+                .arguments()
+                .iter()
+                .map(|argument| types::compile_typed_name(argument.type_(), argument.name()))
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+    ) + "{\n"
         + &compile_block(definition.body())
-        + "}"
+        + "\n}"
 }
 
 #[cfg(test)]
@@ -143,9 +154,30 @@ mod tests {
     use super::*;
     use fmm::types;
 
+    fn compile_module(module: &Module) {
+        let directory = tempfile::tempdir().unwrap();
+        let file_path = directory.path().join("foo.c");
+        let source = compile(module);
+
+        println!("{}", source);
+
+        std::fs::write(&file_path, source).unwrap();
+        let output = std::process::Command::new("clang")
+            .arg("-o")
+            .arg(directory.path().join("foo.o"))
+            .arg("-c")
+            .arg(&file_path)
+            .output()
+            .unwrap();
+
+        assert_eq!(String::from_utf8_lossy(&output.stdout), "");
+        assert_eq!(String::from_utf8_lossy(&output.stderr), "");
+        assert!(output.status.success());
+    }
+
     #[test]
     fn compile_empty_module() {
-        insta::assert_snapshot!(compile(&Module::new(vec![], vec![], vec![], vec![])));
+        compile_module(&Module::new(vec![], vec![], vec![], vec![]));
     }
 
     mod variable_declarations {
@@ -153,41 +185,41 @@ mod tests {
 
         #[test]
         fn compile_pointer_integer() {
-            insta::assert_snapshot!(compile(&Module::new(
+            compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Primitive::PointerInteger
+                    types::Primitive::PointerInteger,
                 )],
                 vec![],
                 vec![],
-                vec![]
-            )));
+                vec![],
+            ));
         }
 
         #[test]
         fn compile_pointer_integer_pointer() {
-            insta::assert_snapshot!(compile(&Module::new(
+            compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Pointer::new(types::Primitive::PointerInteger)
+                    types::Pointer::new(types::Primitive::PointerInteger),
                 )],
                 vec![],
                 vec![],
-                vec![]
-            )));
+                vec![],
+            ));
         }
 
         #[test]
         fn compile_function_pointer() {
-            insta::assert_snapshot!(compile(&Module::new(
+            compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                    types::Function::new(vec![], types::Primitive::PointerInteger),
                 )],
                 vec![],
                 vec![],
-                vec![]
-            )));
+                vec![],
+            ));
         }
     }
 
@@ -196,15 +228,15 @@ mod tests {
 
         #[test]
         fn compile_function_pointer() {
-            insta::assert_snapshot!(compile(&Module::new(
+            compile_module(&Module::new(
                 vec![],
                 vec![FunctionDeclaration::new(
                     "x",
-                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                    types::Function::new(vec![], types::Primitive::PointerInteger),
                 )],
                 vec![],
-                vec![]
-            )));
+                vec![],
+            ));
         }
     }
 
@@ -213,28 +245,131 @@ mod tests {
 
         #[test]
         fn compile_record_type_definition() {
-            insta::assert_snapshot!(compile(&Module::new(
+            compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Record::new(vec![types::Primitive::PointerInteger.into()])
+                    types::Record::new(vec![types::Primitive::PointerInteger.into()]),
                 )],
                 vec![],
                 vec![],
-                vec![]
-            )));
+                vec![],
+            ));
         }
 
         #[test]
         fn compile_union_type_definition() {
-            insta::assert_snapshot!(compile(&Module::new(
+            compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Union::new(vec![types::Primitive::PointerInteger.into()])
+                    types::Union::new(vec![types::Primitive::PointerInteger.into()]),
                 )],
                 vec![],
                 vec![],
-                vec![]
-            )));
+                vec![],
+            ));
+        }
+    }
+
+    mod instructions {
+        use super::*;
+
+        fn compile_function_definition(definition: FunctionDefinition) {
+            compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
+        }
+
+        #[test]
+        fn compile_atomic_load() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![AtomicLoad::new(
+                        types::Primitive::PointerInteger,
+                        Variable::new("x"),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_atomic_load_with_function_pointer() {
+            let function_type = types::Function::new(
+                vec![types::Primitive::PointerInteger.into()],
+                types::Primitive::PointerInteger,
+            );
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(function_type.clone()),
+                )],
+                Block::new(
+                    vec![AtomicLoad::new(function_type.clone(), Variable::new("x"), "y").into()],
+                    Return::new(function_type.clone(), Variable::new("y")),
+                ),
+                function_type,
+            ));
+        }
+
+        #[test]
+        fn compile_atomic_store() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![AtomicStore::new(
+                        types::Primitive::PointerInteger,
+                        Undefined::new(types::Primitive::PointerInteger),
+                        Variable::new("x"),
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    ),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_atomic_store_with_function_pointer() {
+            let function_type = types::Function::new(
+                vec![types::Primitive::PointerInteger.into()],
+                types::Primitive::PointerInteger,
+            );
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(function_type.clone()),
+                )],
+                Block::new(
+                    vec![AtomicStore::new(
+                        function_type.clone(),
+                        Undefined::new(function_type),
+                        Variable::new("x"),
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                    ),
+                ),
+                types::Primitive::PointerInteger,
+            ));
         }
     }
 }

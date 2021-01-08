@@ -9,7 +9,7 @@ pub fn compile_expression(expression: &Expression) -> String {
         Expression::Record(record) => {
             format!(
                 "({}){{{}}}",
-                compile_record_type(record.type_()),
+                compile_record_type_id(record.type_()),
                 record
                     .elements()
                     .iter()
@@ -22,7 +22,7 @@ pub fn compile_expression(expression: &Expression) -> String {
         Expression::Union(union) => {
             format!(
                 "({}){{.{}={}}}",
-                compile_union_type(union.type_()),
+                compile_union_type_id(union.type_()),
                 generate_union_member_name(union.member_index()),
                 compile_expression(union.member())
             )
@@ -36,8 +36,8 @@ fn compile_undefined(undefined: &Undefined) -> String {
         types::Type::Function(_) => "NULL".into(),
         types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
         types::Type::Pointer(_) => "NULL".into(),
-        types::Type::Record(record) => format!("({}){{}}", compile_record_type(record)),
-        types::Type::Union(union) => format!("({}){{}}", compile_union_type(union)),
+        types::Type::Record(record) => format!("({}){{}}", compile_record_type_id(record)),
+        types::Type::Union(union) => format!("({}){{}}", compile_union_type_id(union)),
     }
 }
 

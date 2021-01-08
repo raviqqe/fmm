@@ -10,3 +10,4 @@ edition = "2018"
 fmm = { path = "../fmm" }
 indoc = "1"
 insta = "1"
+tempfile = "3"
