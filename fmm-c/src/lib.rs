@@ -280,6 +280,16 @@ mod tests {
         }
 
         #[test]
+        fn compile_unreachable() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(vec![], TerminalInstruction::Unreachable),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
         fn compile_allocate_heap() {
             compile_function_definition(FunctionDefinition::new(
                 "f",
@@ -454,6 +464,64 @@ mod tests {
                                 Primitive::PointerInteger(42),
                             ),
                         ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(42),
+                            ),
+                        ),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_if_with_return() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Bool(true),
+                        Block::new(
+                            vec![],
+                            Return::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(42),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(42),
+                            ),
+                        ),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_if_with_unreachable() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Bool(true),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
                         Block::new(
                             vec![],
                             Branch::new(
