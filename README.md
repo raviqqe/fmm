@@ -1,6 +1,6 @@
 # F--
 
-The functional variant of C--
+The more functional variant of C programming language
 
 It's designed to be a target language for high-level strict functional programming languages.
 
