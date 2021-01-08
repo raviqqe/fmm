@@ -3,6 +3,7 @@
     "bitcast",
     "hasher",
     "indoc",
+    "malloc",
     "stdatomic",
     "stdbool",
     "stdint",
