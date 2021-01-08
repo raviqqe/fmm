@@ -2,6 +2,8 @@
 
 The functional variant of C--
 
+It's designed to be a target language for high-level strict functional languages.
+
 ## Features
 
 - [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form)
@@ -12,7 +14,7 @@ The functional variant of C--
     - `if`
     - `return`
   - No backward jump
-- Fully-independent from backend
+- Portability
   - Pointer-sized integer
   - C-like union type
   - Bool type
