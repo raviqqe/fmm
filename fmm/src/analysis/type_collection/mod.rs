@@ -109,15 +109,14 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(assignment.expression()))
             .collect(),
-        Instruction::AtomicLoad(_) => Default::default(),
-        Instruction::AtomicStore(_) => Default::default(),
-        Instruction::Bitcast(_) => Default::default(),
+        Instruction::AtomicLoad(load) => vec![load.type_().clone()].into_iter().collect(),
+        Instruction::AtomicStore(store) => vec![store.type_().clone()].into_iter().collect(),
         Instruction::Call(call) => vec![call.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(call.function()))
             .chain(call.arguments().iter().flat_map(collect_from_expression))
             .collect(),
-        Instruction::CompareAndSwap(_) => Default::default(),
+        Instruction::CompareAndSwap(cas) => vec![cas.type_().clone()].into_iter().collect(),
         Instruction::ComparisonOperation(_) => Default::default(),
         Instruction::DeconstructRecord(deconstruct) => vec![deconstruct.type_().clone().into()]
             .into_iter()

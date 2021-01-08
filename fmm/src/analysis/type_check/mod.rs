@@ -133,14 +133,6 @@ fn check_block(
                     &types::Pointer::new(store.type_().clone()).into(),
                 )?;
             }
-            Instruction::Bitcast(bitcast) => {
-                check_equality(
-                    &check_expression(bitcast.expression(), &variables)?,
-                    &types::Pointer::new(bitcast.from_type()).into(),
-                )?;
-
-                variables.insert(bitcast.name().into(), bitcast.to_type().into());
-            }
             Instruction::Call(call) => {
                 if call.arguments().len() != call.type_().arguments().len() {
                     return Err(TypeCheckError::FunctionArguments(call.clone()));

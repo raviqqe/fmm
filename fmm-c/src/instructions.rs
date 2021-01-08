@@ -55,7 +55,6 @@ fn compile_instruction(instruction: &Instruction) -> String {
             compile_expression(store.pointer()),
             compile_expression(store.value()),
         ),
-        Instruction::Bitcast(_) => todo!(),
         Instruction::Call(call) => format!(
             "{}={}({});",
             compile_typed_name(call.type_().result(), call.name()),
