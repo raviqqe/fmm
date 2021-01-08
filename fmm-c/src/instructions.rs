@@ -103,7 +103,8 @@ fn compile_terminal_instruction(
 ) -> String {
     match instruction {
         TerminalInstruction::Branch(branch) => block_variable_name
-            .map(|name| format!("{}={};", name, compile_expression(branch.expression()))).unwrap_or_default(),
+            .map(|name| format!("{}={};", name, compile_expression(branch.expression())))
+            .unwrap_or_default(),
         TerminalInstruction::Return(return_) => {
             format!("return {};", compile_expression(return_.expression()))
         }
