@@ -66,7 +66,20 @@ fn compile_instruction(instruction: &Instruction) -> String {
                 .collect::<Vec<_>>()
                 .join(",")
         ),
-        Instruction::CompareAndSwap(_) => todo!(),
+        Instruction::CompareAndSwap(cas) => {
+            let name = "_cas_".to_owned() + cas.name();
+
+            format!(
+                "{}={};\n  bool {}=atomic_compare_exchange_strong(({}){},&{},{});",
+                compile_typed_name(cas.type_(), &name),
+                compile_expression(cas.old_value()),
+                cas.name(),
+                compile_atomic_pointer_type_id(cas.type_()),
+                compile_expression(cas.pointer()),
+                name,
+                compile_expression(cas.new_value()),
+            )
+        }
         Instruction::ComparisonOperation(_) => todo!(),
         Instruction::DeconstructRecord(deconstruct) => format!(
             "{}={}.{};",

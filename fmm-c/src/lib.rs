@@ -579,5 +579,28 @@ mod tests {
                 types::Primitive::PointerInteger,
             ));
         }
+
+        #[test]
+        fn compile_compare_and_swap() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![CompareAndSwap::new(
+                        types::Primitive::PointerInteger,
+                        Variable::new("x"),
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Bool, Variable::new("y")),
+                ),
+                types::Primitive::Bool,
+            ));
+        }
     }
 }
