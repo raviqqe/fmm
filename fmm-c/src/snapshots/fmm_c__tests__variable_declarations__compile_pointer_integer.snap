@@ -1,9 +1,0 @@
----
-source: fmm-c/src/lib.rs
-expression: "compile(&Module::new(vec![VariableDeclaration ::\n                          new(\"x\", types :: Primitive :: PointerInteger)],\n                     vec![], vec![], vec![]))"
----
-#include <stdatomic.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-extern size_t x;

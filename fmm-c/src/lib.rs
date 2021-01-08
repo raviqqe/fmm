@@ -8,22 +8,22 @@ pub use error::*;
 use expressions::*;
 use fmm::analysis::*;
 use fmm::ir::*;
-use indoc::indoc;
 use instructions::*;
 use names::*;
 
-const INCLUDES: &str = indoc! {"
-    #include <stdatomic.h>
-    #include <stdbool.h>
-    #include <stdint.h>
-    #include <stdlib.h>
-"};
+const INCLUDES: &[&str] = &[
+    "#include <stdatomic.h>",
+    "#include <stdbool.h>",
+    "#include <stdint.h>",
+    "#include <stdlib.h>",
+];
 
 pub fn compile(module: &Module) -> String {
     let types = collect_types(module);
 
-    let strings = vec![INCLUDES.into()]
-        .into_iter()
+    let strings = INCLUDES
+        .iter()
+        .map(|&string| string.into())
         .chain(
             collect_record_types(&types)
                 .iter()
