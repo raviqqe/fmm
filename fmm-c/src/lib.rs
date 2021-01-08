@@ -10,6 +10,7 @@ use fmm::analysis::*;
 use fmm::ir::*;
 use instructions::*;
 use names::*;
+use types::*;
 
 const INCLUDES: &[&str] = &[
     "#include <stdatomic.h>",
@@ -85,7 +86,7 @@ fn compile_record_type_definition(record: &fmm::types::Record) -> String {
     format!(
         "struct {} {{{}}};",
         generate_record_type_name(record),
-        types::compile_record_elements(record)
+        compile_record_elements(record)
     )
 }
 
@@ -93,33 +94,31 @@ fn compile_union_type_definition(union: &fmm::types::Union) -> String {
     format!(
         "union {} {{{}}};",
         generate_union_type_name(union),
-        types::compile_union_members(union)
+        compile_union_members(union)
     )
 }
 
 fn compile_variable_declaration(declaration: &VariableDeclaration) -> String {
-    "extern ".to_owned() + &types::compile_typed_name(declaration.type_(), declaration.name()) + ";"
+    "extern ".to_owned() + &compile_typed_name(declaration.type_(), declaration.name()) + ";"
 }
 
 fn compile_variable_forward_declaration(definition: &VariableDefinition) -> String {
-    types::compile_typed_name(
+    compile_typed_name(
         definition.type_(),
         &(if definition.is_mutable() { "" } else { "const" }.to_owned() + " " + definition.name()),
     ) + ";"
 }
 
 fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
-    "extern ".to_owned()
-        + &types::compile_function_name(declaration.type_(), declaration.name())
-        + ";"
+    "extern ".to_owned() + &compile_function_name(declaration.type_(), declaration.name()) + ";"
 }
 
 fn compile_function_forward_declaration(definition: &FunctionDefinition) -> String {
-    types::compile_function_name(definition.type_(), definition.name()) + ";"
+    compile_function_name(definition.type_(), definition.name()) + ";"
 }
 
 fn compile_variable_definition(definition: &VariableDefinition) -> String {
-    types::compile_typed_name(
+    compile_typed_name(
         definition.type_(),
         &(if definition.is_mutable() {
             ""
@@ -134,7 +133,7 @@ fn compile_variable_definition(definition: &VariableDefinition) -> String {
 }
 
 fn compile_function_definition(definition: &FunctionDefinition) -> String {
-    types::compile_typed_name(
+    compile_typed_name(
         definition.result_type(),
         &format!(
             "{}({})",
@@ -142,7 +141,7 @@ fn compile_function_definition(definition: &FunctionDefinition) -> String {
             definition
                 .arguments()
                 .iter()
-                .map(|argument| types::compile_typed_name(argument.type_(), argument.name()))
+                .map(|argument| compile_typed_name(argument.type_(), argument.name()))
                 .collect::<Vec<_>>()
                 .join(",")
         ),
