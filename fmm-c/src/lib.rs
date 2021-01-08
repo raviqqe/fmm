@@ -317,6 +317,33 @@ mod tests {
         }
 
         #[test]
+        fn compile_arithmetic_operation() {
+            for &operator in &[
+                ArithmeticOperator::Add,
+                ArithmeticOperator::Subtract,
+                ArithmeticOperator::Multiply,
+                ArithmeticOperator::Divide,
+            ] {
+                compile_function_definition(FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            operator,
+                            Primitive::PointerInteger(1),
+                            Primitive::PointerInteger(1),
+                            "x",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                    ),
+                    types::Primitive::PointerInteger,
+                ));
+            }
+        }
+
+        #[test]
         fn compile_atomic_load() {
             compile_function_definition(FunctionDefinition::new(
                 "f",

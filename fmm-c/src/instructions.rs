@@ -30,7 +30,13 @@ fn compile_instruction(instruction: &Instruction) -> String {
                 compile_type_id(allocate.type_())
             )
         }
-        Instruction::ArithmeticOperation(_) => todo!(),
+        Instruction::ArithmeticOperation(operation) => format!(
+            "{}={}{}{};",
+            compile_typed_name(&operation.type_().into(), operation.name()),
+            compile_expression(operation.lhs()),
+            compile_arithmetic_operator(operation.operator()),
+            compile_expression(operation.rhs()),
+        ),
         Instruction::Assignment(assignment) => format!(
             "{}={};",
             compile_typed_name(&assignment.type_(), assignment.name()),
@@ -118,5 +124,14 @@ fn compile_terminal_instruction(
             format!("return {};", compile_expression(return_.expression()))
         }
         TerminalInstruction::Unreachable => "abort();".into(),
+    }
+}
+
+fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
+    match operator {
+        ArithmeticOperator::Add => "+",
+        ArithmeticOperator::Subtract => "-",
+        ArithmeticOperator::Multiply => "*",
+        ArithmeticOperator::Divide => "/",
     }
 }
