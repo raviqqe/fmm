@@ -147,7 +147,7 @@ fn compile_function_definition(definition: &FunctionDefinition) -> String {
                 .join(",")
         ),
     ) + "{\n"
-        + &compile_block(definition.body())
+        + &compile_block(definition.body(), None)
         + "\n}"
 }
 
@@ -433,6 +433,83 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
                     ),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_if() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Bool(true),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(42),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(42),
+                            ),
+                        ),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_deconstruct_record() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![DeconstructRecord::new(
+                        record_type.clone(),
+                        Record::new(
+                            record_type.clone(),
+                            vec![Primitive::PointerInteger(42).into()],
+                        ),
+                        0,
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+            ));
+        }
+
+        #[test]
+        fn compile_deconstruct_union() {
+            let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![DeconstructUnion::new(
+                        union_type.clone(),
+                        Union::new(union_type.clone(), 0, Primitive::PointerInteger(42)),
+                        0,
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
             ));

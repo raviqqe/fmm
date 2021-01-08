@@ -4,14 +4,14 @@ use crate::types::*;
 use fmm::ir::*;
 use fmm::types;
 
-pub fn compile_block(block: &Block) -> String {
+pub fn compile_block(block: &Block, branch_variable_name: Option<&str>) -> String {
     block
         .instructions()
         .iter()
         .map(compile_instruction)
         .chain(vec![compile_terminal_instruction(
             block.terminal_instruction(),
-            None,
+            branch_variable_name,
         )])
         .map(|string| "  ".to_owned() + &string)
         .collect::<Vec<_>>()
@@ -68,9 +68,31 @@ fn compile_instruction(instruction: &Instruction) -> String {
         ),
         Instruction::CompareAndSwap(_) => todo!(),
         Instruction::ComparisonOperation(_) => todo!(),
-        Instruction::DeconstructRecord(_) => todo!(),
-        Instruction::DeconstructUnion(_) => todo!(),
-        Instruction::If(_) => todo!(),
+        Instruction::DeconstructRecord(deconstruct) => format!(
+            "{}={}.{};",
+            compile_typed_name(
+                &deconstruct.type_().elements()[deconstruct.element_index()],
+                deconstruct.name(),
+            ),
+            compile_expression(deconstruct.record()),
+            generate_record_element_name(deconstruct.element_index()),
+        ),
+        Instruction::DeconstructUnion(deconstruct) => format!(
+            "{}={}.{};",
+            compile_typed_name(
+                &deconstruct.type_().members()[deconstruct.member_index()],
+                deconstruct.name(),
+            ),
+            compile_expression(deconstruct.union()),
+            generate_union_member_name(deconstruct.member_index()),
+        ),
+        Instruction::If(if_) => format!(
+            "{};if({}){{\n{}\n  }}else{{\n{}\n  }}",
+            compile_typed_name(&if_.type_().clone().into(), if_.name()),
+            compile_expression(if_.condition()),
+            compile_block(if_.then(), Some(if_.name())),
+            compile_block(if_.else_(), Some(if_.name()))
+        ),
         Instruction::Load(load) => format!(
             "{}=*{};",
             compile_typed_name(load.type_(), load.name()),
