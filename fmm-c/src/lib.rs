@@ -19,6 +19,8 @@ const INCLUDES: &[&str] = &[
 ];
 
 pub fn compile(module: &Module) -> String {
+    check_types(module).unwrap();
+
     let types = collect_types(module);
 
     let strings = INCLUDES
@@ -275,6 +277,43 @@ mod tests {
 
         fn compile_function_definition(definition: FunctionDefinition) {
             compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
+        }
+
+        #[test]
+        fn compile_allocate_heap() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![AllocateHeap::new(types::Primitive::PointerInteger, "y").into()],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::PointerInteger),
+            ));
+        }
+
+        #[test]
+        fn compile_allocate_heap_with_function_pointer() {
+            let function_type = types::Function::new(
+                vec![types::Primitive::PointerInteger.into()],
+                types::Primitive::PointerInteger,
+            );
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![AllocateHeap::new(function_type.clone(), "y").into()],
+                    Return::new(
+                        types::Pointer::new(function_type.clone()),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(function_type.clone()),
+            ));
         }
 
         #[test]

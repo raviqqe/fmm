@@ -20,7 +20,16 @@ pub fn compile_block(block: &Block) -> String {
 
 fn compile_instruction(instruction: &Instruction) -> String {
     match instruction {
-        Instruction::AllocateHeap(_) => todo!(),
+        Instruction::AllocateHeap(allocate) => {
+            format!(
+                "{}=malloc(sizeof({}));",
+                compile_typed_name(
+                    &types::Pointer::new(allocate.type_().clone()).into(),
+                    allocate.name()
+                ),
+                compile_type_id(allocate.type_())
+            )
+        }
         Instruction::ArithmeticOperation(_) => todo!(),
         Instruction::Assignment(assignment) => format!(
             "{}={};",
