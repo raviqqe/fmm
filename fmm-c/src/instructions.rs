@@ -80,7 +80,13 @@ fn compile_instruction(instruction: &Instruction) -> String {
                 compile_expression(cas.new_value()),
             )
         }
-        Instruction::ComparisonOperation(_) => todo!(),
+        Instruction::ComparisonOperation(operation) => format!(
+            "bool {}={}{}{};",
+            operation.name(),
+            compile_expression(operation.lhs()),
+            compile_comparison_operator(operation.operator()),
+            compile_expression(operation.rhs()),
+        ),
         Instruction::DeconstructRecord(deconstruct) => format!(
             "{}={}.{};",
             compile_typed_name(
@@ -168,5 +174,16 @@ fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
         ArithmeticOperator::Subtract => "-",
         ArithmeticOperator::Multiply => "*",
         ArithmeticOperator::Divide => "/",
+    }
+}
+
+fn compile_comparison_operator(operator: ComparisonOperator) -> &'static str {
+    match operator {
+        ComparisonOperator::Equal => "==",
+        ComparisonOperator::NotEqual => "!=",
+        ComparisonOperator::LessThan => "<",
+        ComparisonOperator::LessThanOrEqual => "<=",
+        ComparisonOperator::GreaterThan => ">",
+        ComparisonOperator::GreaterThanOrEqual => ">=",
     }
 }

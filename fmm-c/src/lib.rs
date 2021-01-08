@@ -354,6 +354,35 @@ mod tests {
         }
 
         #[test]
+        fn compile_comparison_operation() {
+            for &operator in &[
+                ComparisonOperator::Equal,
+                ComparisonOperator::NotEqual,
+                ComparisonOperator::LessThan,
+                ComparisonOperator::GreaterThan,
+                ComparisonOperator::LessThanOrEqual,
+                ComparisonOperator::GreaterThanOrEqual,
+            ] {
+                compile_function_definition(FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![ComparisonOperation::new(
+                            types::Primitive::PointerInteger,
+                            operator,
+                            Primitive::PointerInteger(1),
+                            Primitive::PointerInteger(1),
+                            "x",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Bool, Variable::new("x")),
+                    ),
+                    types::Primitive::Bool,
+                ));
+            }
+        }
+
+        #[test]
         fn compile_atomic_load() {
             compile_function_definition(FunctionDefinition::new(
                 "f",
