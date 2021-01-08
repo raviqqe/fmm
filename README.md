@@ -18,6 +18,11 @@ The functional variant of C--
   - Bool type
 - Structural typing
 
+## Limitations
+
+- Inductive types
+- Weakly typed
+
 ## Requirements for backend
 
 - Tail call
