@@ -22,6 +22,7 @@ The functional variant of C--
 
 - Inductive types
 - Weakly typed
+- No type inference
 
 ## Requirements for backend
 
