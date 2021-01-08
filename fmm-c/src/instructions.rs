@@ -88,7 +88,7 @@ fn compile_instruction(instruction: &Instruction) -> String {
         ),
         Instruction::If(if_) => format!(
             "{};if({}){{\n{}\n  }}else{{\n{}\n  }}",
-            compile_typed_name(&if_.type_().clone().into(), if_.name()),
+            compile_typed_name(&if_.type_().clone(), if_.name()),
             compile_expression(if_.condition()),
             compile_block(if_.then(), Some(if_.name())),
             compile_block(if_.else_(), Some(if_.name()))

@@ -322,7 +322,7 @@ mod tests {
                         Variable::new("y"),
                     ),
                 ),
-                types::Pointer::new(function_type.clone()),
+                types::Pointer::new(function_type),
             ));
         }
 
@@ -548,10 +548,7 @@ mod tests {
                 Block::new(
                     vec![DeconstructRecord::new(
                         record_type.clone(),
-                        Record::new(
-                            record_type.clone(),
-                            vec![Primitive::PointerInteger(42).into()],
-                        ),
+                        Record::new(record_type, vec![Primitive::PointerInteger(42).into()]),
                         0,
                         "x",
                     )
@@ -572,7 +569,7 @@ mod tests {
                 Block::new(
                     vec![DeconstructUnion::new(
                         union_type.clone(),
-                        Union::new(union_type.clone(), 0, Primitive::PointerInteger(42)),
+                        Union::new(union_type, 0, Primitive::PointerInteger(42)),
                         0,
                         "x",
                     )
