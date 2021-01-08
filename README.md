@@ -16,6 +16,7 @@ The functional variant of C--
   - Pointer-sized integer
   - C-like union type
   - Bool type
+- Structural typing
 
 ## Requirements for backend
 
