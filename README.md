@@ -2,7 +2,7 @@
 
 The functional variant of C--
 
-It's designed to be a target language for high-level strict functional languages.
+It's designed to be a target language for high-level strict functional programming languages.
 
 ## Features
 
