@@ -10,7 +10,7 @@ pub fn arithmetic_operation(
 ) -> ExpressionContext {
     let lhs = lhs.into();
     let rhs = rhs.into();
-    let type_ = lhs.type_().to_primitive().unwrap().clone();
+    let type_ = lhs.type_().to_primitive().unwrap();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -98,7 +98,7 @@ pub fn comparison_operation(
             .chain(rhs.instructions())
             .cloned()
             .chain(vec![ComparisonOperation::new(
-                lhs.type_().to_primitive().unwrap().clone(),
+                lhs.type_().to_primitive().unwrap(),
                 operator,
                 lhs.expression().clone(),
                 rhs.expression().clone(),
@@ -173,7 +173,7 @@ pub fn load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
         )
         .into()]),
         Variable::new(name),
-        type_.clone(),
+        type_,
     )
 }
 
@@ -200,7 +200,7 @@ pub fn pointer_address(
             )
             .into()]),
         Variable::new(name),
-        type_.clone(),
+        type_,
     )
 }
 
