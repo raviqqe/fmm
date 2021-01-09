@@ -21,6 +21,10 @@ impl ContextfulExpression {
         }
     }
 
+    pub fn from_expression(expression: impl Into<Expression>, type_: impl Into<Type>) -> Self {
+        Self::new(vec![], expression, type_)
+    }
+
     pub fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
@@ -36,8 +40,7 @@ impl ContextfulExpression {
 
 impl From<Primitive> for ContextfulExpression {
     fn from(primitive: Primitive) -> Self {
-        Self::new(
-            vec![],
+        Self::from_expression(
             primitive,
             match primitive {
                 Primitive::Bool(_) => types::Primitive::Bool,
@@ -54,18 +57,18 @@ impl From<Primitive> for ContextfulExpression {
 
 impl From<Record> for ContextfulExpression {
     fn from(record: Record) -> Self {
-        Self::new(vec![], record.clone(), record.type_().clone())
+        Self::from_expression(record.clone(), record.type_().clone())
     }
 }
 
 impl From<Undefined> for ContextfulExpression {
     fn from(undefined: Undefined) -> Self {
-        Self::new(vec![], undefined.clone(), undefined.type_().clone())
+        Self::from_expression(undefined.clone(), undefined.type_().clone())
     }
 }
 
 impl From<Union> for ContextfulExpression {
     fn from(union: Union) -> Self {
-        Self::new(vec![], union.clone(), union.type_().clone())
+        Self::from_expression(union.clone(), union.type_().clone())
     }
 }
