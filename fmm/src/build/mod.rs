@@ -56,6 +56,36 @@ pub fn atomic_load(
     )
 }
 
+pub fn call(
+    type_: types::Function,
+    function: impl Into<InstructionContext>,
+    arguments: impl IntoIterator<Item = InstructionContext>,
+) -> InstructionContext {
+    let function = function.into();
+    let arguments = arguments.into_iter().collect::<Vec<_>>();
+    let name = generate_name();
+
+    InstructionContext::new(
+        function
+            .instructions()
+            .iter()
+            .chain(arguments.iter().flat_map(|context| context.instructions()))
+            .cloned()
+            .chain(vec![Call::new(
+                type_,
+                function.expression().clone(),
+                arguments
+                    .iter()
+                    .map(|context| context.expression())
+                    .cloned()
+                    .collect(),
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+    )
+}
+
 pub fn comparison_operation(
     type_: types::Primitive,
     operator: ComparisonOperator,
@@ -76,6 +106,54 @@ pub fn comparison_operation(
                 operator,
                 lhs.expression().clone(),
                 rhs.expression().clone(),
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+    )
+}
+
+pub fn deconstruct_record(
+    type_: types::Record,
+    record: impl Into<InstructionContext>,
+    element_index: usize,
+) -> InstructionContext {
+    let record = record.into();
+    let name = generate_name();
+
+    InstructionContext::new(
+        record
+            .instructions()
+            .iter()
+            .cloned()
+            .chain(vec![DeconstructRecord::new(
+                type_,
+                record.expression().clone(),
+                element_index,
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+    )
+}
+
+pub fn deconstruct_union(
+    type_: types::Union,
+    union: impl Into<InstructionContext>,
+    member_index: usize,
+) -> InstructionContext {
+    let union = union.into();
+    let name = generate_name();
+
+    InstructionContext::new(
+        union
+            .instructions()
+            .iter()
+            .cloned()
+            .chain(vec![DeconstructUnion::new(
+                type_,
+                union.expression().clone(),
+                member_index,
                 &name,
             )
             .into()]),
