@@ -1,19 +1,19 @@
-use super::expression_context::*;
+use super::instructioned_expression::*;
 use super::names::*;
 use crate::ir::*;
 use crate::types;
 
 pub fn arithmetic_operation(
     operator: ArithmeticOperator,
-    lhs: impl Into<ExpressionContext>,
-    rhs: impl Into<ExpressionContext>,
-) -> ExpressionContext {
+    lhs: impl Into<InstructionedExpression>,
+    rhs: impl Into<InstructionedExpression>,
+) -> InstructionedExpression {
     let lhs = lhs.into();
     let rhs = rhs.into();
     let type_ = lhs.type_().to_primitive().unwrap();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         lhs.instructions()
             .iter()
             .chain(rhs.instructions())
@@ -31,12 +31,12 @@ pub fn arithmetic_operation(
     )
 }
 
-pub fn atomic_load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
+pub fn atomic_load(pointer: impl Into<InstructionedExpression>) -> InstructionedExpression {
     let pointer = pointer.into();
     let type_ = pointer.type_().to_pointer().unwrap().element().clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         pointer
             .instructions()
             .iter()
@@ -53,15 +53,15 @@ pub fn atomic_load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
 }
 
 pub fn call(
-    function: impl Into<ExpressionContext>,
-    arguments: impl IntoIterator<Item = ExpressionContext>,
-) -> ExpressionContext {
+    function: impl Into<InstructionedExpression>,
+    arguments: impl IntoIterator<Item = InstructionedExpression>,
+) -> InstructionedExpression {
     let function = function.into();
     let arguments = arguments.into_iter().collect::<Vec<_>>();
     let type_ = function.type_().to_function().unwrap().clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         function
             .instructions()
             .iter()
@@ -85,14 +85,14 @@ pub fn call(
 
 pub fn comparison_operation(
     operator: ComparisonOperator,
-    lhs: impl Into<ExpressionContext>,
-    rhs: impl Into<ExpressionContext>,
-) -> ExpressionContext {
+    lhs: impl Into<InstructionedExpression>,
+    rhs: impl Into<InstructionedExpression>,
+) -> InstructionedExpression {
     let lhs = lhs.into();
     let rhs = rhs.into();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         lhs.instructions()
             .iter()
             .chain(rhs.instructions())
@@ -111,14 +111,14 @@ pub fn comparison_operation(
 }
 
 pub fn deconstruct_record(
-    record: impl Into<ExpressionContext>,
+    record: impl Into<InstructionedExpression>,
     element_index: usize,
-) -> ExpressionContext {
+) -> InstructionedExpression {
     let record = record.into();
     let type_ = record.type_().to_record().unwrap().clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         record
             .instructions()
             .iter()
@@ -136,14 +136,14 @@ pub fn deconstruct_record(
 }
 
 pub fn deconstruct_union(
-    union: impl Into<ExpressionContext>,
+    union: impl Into<InstructionedExpression>,
     member_index: usize,
-) -> ExpressionContext {
+) -> InstructionedExpression {
     let union = union.into();
     let type_ = union.type_().to_union().unwrap().clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         union
             .instructions()
             .iter()
@@ -160,12 +160,12 @@ pub fn deconstruct_union(
     )
 }
 
-pub fn load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
+pub fn load(pointer: impl Into<InstructionedExpression>) -> InstructionedExpression {
     let pointer = pointer.into();
     let type_ = pointer.type_().to_pointer().unwrap().element().clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         pointer.instructions().iter().cloned().chain(vec![Load::new(
             type_.clone(),
             pointer.expression().clone(),
@@ -178,15 +178,15 @@ pub fn load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
 }
 
 pub fn pointer_address(
-    pointer: impl Into<ExpressionContext>,
-    offset: impl Into<ExpressionContext>,
-) -> ExpressionContext {
+    pointer: impl Into<InstructionedExpression>,
+    offset: impl Into<InstructionedExpression>,
+) -> InstructionedExpression {
     let pointer = pointer.into();
     let offset = offset.into();
     let type_ = pointer.type_().to_pointer().unwrap().clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         pointer
             .instructions()
             .iter()
@@ -205,9 +205,9 @@ pub fn pointer_address(
 }
 
 pub fn record_address(
-    pointer: impl Into<ExpressionContext>,
+    pointer: impl Into<InstructionedExpression>,
     element_index: usize,
-) -> ExpressionContext {
+) -> InstructionedExpression {
     let pointer = pointer.into();
     let type_ = pointer
         .type_()
@@ -219,7 +219,7 @@ pub fn record_address(
         .clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         pointer
             .instructions()
             .iter()
@@ -237,9 +237,9 @@ pub fn record_address(
 }
 
 pub fn union_address(
-    pointer: impl Into<ExpressionContext>,
+    pointer: impl Into<InstructionedExpression>,
     member_index: usize,
-) -> ExpressionContext {
+) -> InstructionedExpression {
     let pointer = pointer.into();
     let type_ = pointer
         .type_()
@@ -251,7 +251,7 @@ pub fn union_address(
         .clone();
     let name = generate_name();
 
-    ExpressionContext::new(
+    InstructionedExpression::new(
         pointer
             .instructions()
             .iter()

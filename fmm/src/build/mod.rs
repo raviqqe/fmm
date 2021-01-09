@@ -1,6 +1,6 @@
-mod expression_context;
+mod instructioned_expression;
 mod instructions;
 mod names;
 
-pub use expression_context::*;
+pub use instructioned_expression::*;
 pub use instructions::*;
