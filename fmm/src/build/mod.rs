@@ -3,7 +3,6 @@ mod names;
 
 use crate::ir::*;
 use crate::types::{self, Type};
-use instruction_context::InstructionContext;
 pub use instruction_context::*;
 use names::*;
 
