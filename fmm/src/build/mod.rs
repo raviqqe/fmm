@@ -7,6 +7,33 @@ use instruction_context::InstructionContext;
 pub use instruction_context::*;
 use names::*;
 
+pub fn arithmetic_operation(
+    type_: types::Primitive,
+    operator: ArithmeticOperator,
+    lhs: impl Into<InstructionContext>,
+    rhs: impl Into<InstructionContext>,
+) -> InstructionContext {
+    let lhs = lhs.into();
+    let rhs = rhs.into();
+    let name = generate_name();
+
+    InstructionContext::new(
+        lhs.instructions()
+            .iter()
+            .chain(rhs.instructions())
+            .cloned()
+            .chain(vec![ArithmeticOperation::new(
+                type_,
+                operator,
+                lhs.expression().clone(),
+                rhs.expression().clone(),
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+    )
+}
+
 pub fn atomic_load(
     type_: impl Into<Type>,
     pointer: impl Into<InstructionContext>,
@@ -22,6 +49,33 @@ pub fn atomic_load(
             .chain(vec![AtomicLoad::new(
                 type_,
                 pointer.expression().clone(),
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+    )
+}
+
+pub fn comparison_operation(
+    type_: types::Primitive,
+    operator: ComparisonOperator,
+    lhs: impl Into<InstructionContext>,
+    rhs: impl Into<InstructionContext>,
+) -> InstructionContext {
+    let lhs = lhs.into();
+    let rhs = rhs.into();
+    let name = generate_name();
+
+    InstructionContext::new(
+        lhs.instructions()
+            .iter()
+            .chain(rhs.instructions())
+            .cloned()
+            .chain(vec![ComparisonOperation::new(
+                type_,
+                operator,
+                lhs.expression().clone(),
+                rhs.expression().clone(),
                 &name,
             )
             .into()]),
