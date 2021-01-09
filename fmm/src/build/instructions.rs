@@ -1,16 +1,16 @@
 use super::expression_context::*;
 use super::names::*;
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types;
 
 pub fn arithmetic_operation(
-    type_: types::Primitive,
     operator: ArithmeticOperator,
     lhs: impl Into<ExpressionContext>,
     rhs: impl Into<ExpressionContext>,
 ) -> ExpressionContext {
     let lhs = lhs.into();
     let rhs = rhs.into();
+    let type_ = lhs.type_().to_primitive().unwrap().clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -27,14 +27,13 @@ pub fn arithmetic_operation(
             )
             .into()]),
         Variable::new(name),
+        type_,
     )
 }
 
-pub fn atomic_load(
-    type_: impl Into<Type>,
-    pointer: impl Into<ExpressionContext>,
-) -> ExpressionContext {
+pub fn atomic_load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
     let pointer = pointer.into();
+    let type_ = pointer.type_().to_pointer().unwrap().element().clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -43,22 +42,23 @@ pub fn atomic_load(
             .iter()
             .cloned()
             .chain(vec![AtomicLoad::new(
-                type_,
+                type_.clone(),
                 pointer.expression().clone(),
                 &name,
             )
             .into()]),
         Variable::new(name),
+        type_,
     )
 }
 
 pub fn call(
-    type_: types::Function,
     function: impl Into<ExpressionContext>,
     arguments: impl IntoIterator<Item = ExpressionContext>,
 ) -> ExpressionContext {
     let function = function.into();
     let arguments = arguments.into_iter().collect::<Vec<_>>();
+    let type_ = function.type_().to_function().unwrap().clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -68,7 +68,7 @@ pub fn call(
             .chain(arguments.iter().flat_map(|context| context.instructions()))
             .cloned()
             .chain(vec![Call::new(
-                type_,
+                type_.clone(),
                 function.expression().clone(),
                 arguments
                     .iter()
@@ -79,11 +79,11 @@ pub fn call(
             )
             .into()]),
         Variable::new(name),
+        type_.result().clone(),
     )
 }
 
 pub fn comparison_operation(
-    type_: types::Primitive,
     operator: ComparisonOperator,
     lhs: impl Into<ExpressionContext>,
     rhs: impl Into<ExpressionContext>,
@@ -98,7 +98,7 @@ pub fn comparison_operation(
             .chain(rhs.instructions())
             .cloned()
             .chain(vec![ComparisonOperation::new(
-                type_,
+                lhs.type_().to_primitive().unwrap().clone(),
                 operator,
                 lhs.expression().clone(),
                 rhs.expression().clone(),
@@ -106,15 +106,16 @@ pub fn comparison_operation(
             )
             .into()]),
         Variable::new(name),
+        types::Primitive::Bool,
     )
 }
 
 pub fn deconstruct_record(
-    type_: types::Record,
     record: impl Into<ExpressionContext>,
     element_index: usize,
 ) -> ExpressionContext {
     let record = record.into();
+    let type_ = record.type_().to_record().unwrap().clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -123,22 +124,23 @@ pub fn deconstruct_record(
             .iter()
             .cloned()
             .chain(vec![DeconstructRecord::new(
-                type_,
+                type_.clone(),
                 record.expression().clone(),
                 element_index,
                 &name,
             )
             .into()]),
         Variable::new(name),
+        type_.elements()[element_index].clone(),
     )
 }
 
 pub fn deconstruct_union(
-    type_: types::Union,
     union: impl Into<ExpressionContext>,
     member_index: usize,
 ) -> ExpressionContext {
     let union = union.into();
+    let type_ = union.type_().to_union().unwrap().clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -147,38 +149,41 @@ pub fn deconstruct_union(
             .iter()
             .cloned()
             .chain(vec![DeconstructUnion::new(
-                type_,
+                type_.clone(),
                 union.expression().clone(),
                 member_index,
                 &name,
             )
             .into()]),
         Variable::new(name),
+        type_.members()[member_index].clone(),
     )
 }
 
-pub fn load(type_: impl Into<Type>, pointer: impl Into<ExpressionContext>) -> ExpressionContext {
+pub fn load(pointer: impl Into<ExpressionContext>) -> ExpressionContext {
     let pointer = pointer.into();
+    let type_ = pointer.type_().to_pointer().unwrap().element().clone();
     let name = generate_name();
 
     ExpressionContext::new(
         pointer.instructions().iter().cloned().chain(vec![Load::new(
-            type_,
+            type_.clone(),
             pointer.expression().clone(),
             &name,
         )
         .into()]),
         Variable::new(name),
+        type_.clone(),
     )
 }
 
 pub fn pointer_address(
-    type_: types::Pointer,
     pointer: impl Into<ExpressionContext>,
     offset: impl Into<ExpressionContext>,
 ) -> ExpressionContext {
     let pointer = pointer.into();
     let offset = offset.into();
+    let type_ = pointer.type_().to_pointer().unwrap().clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -188,22 +193,30 @@ pub fn pointer_address(
             .chain(offset.instructions())
             .cloned()
             .chain(vec![PointerAddress::new(
-                type_,
+                type_.clone(),
                 pointer.expression().clone(),
                 offset.expression().clone(),
                 &name,
             )
             .into()]),
         Variable::new(name),
+        type_.clone(),
     )
 }
 
 pub fn record_address(
-    type_: types::Record,
     pointer: impl Into<ExpressionContext>,
     element_index: usize,
 ) -> ExpressionContext {
     let pointer = pointer.into();
+    let type_ = pointer
+        .type_()
+        .to_pointer()
+        .unwrap()
+        .element()
+        .to_record()
+        .unwrap()
+        .clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -212,22 +225,30 @@ pub fn record_address(
             .iter()
             .cloned()
             .chain(vec![RecordAddress::new(
-                type_,
+                type_.clone(),
                 pointer.expression().clone(),
                 element_index,
                 &name,
             )
             .into()]),
         Variable::new(name),
+        types::Pointer::new(type_.elements()[element_index].clone()),
     )
 }
 
 pub fn union_address(
-    type_: types::Union,
     pointer: impl Into<ExpressionContext>,
     member_index: usize,
 ) -> ExpressionContext {
     let pointer = pointer.into();
+    let type_ = pointer
+        .type_()
+        .to_pointer()
+        .unwrap()
+        .element()
+        .to_union()
+        .unwrap()
+        .clone();
     let name = generate_name();
 
     ExpressionContext::new(
@@ -236,12 +257,13 @@ pub fn union_address(
             .iter()
             .cloned()
             .chain(vec![UnionAddress::new(
-                type_,
+                type_.clone(),
                 pointer.expression().clone(),
                 member_index,
                 &name,
             )
             .into()]),
         Variable::new(name),
+        types::Pointer::new(type_.members()[member_index].clone()),
     )
 }

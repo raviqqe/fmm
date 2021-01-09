@@ -13,6 +13,48 @@ pub enum Type {
     Union(Union),
 }
 
+impl Type {
+    pub fn to_function(&self) -> Option<&Function> {
+        if let Type::Function(function) = self {
+            Some(function)
+        } else {
+            None
+        }
+    }
+
+    pub fn to_record(&self) -> Option<&Record> {
+        if let Type::Record(record) = self {
+            Some(record)
+        } else {
+            None
+        }
+    }
+
+    pub fn to_primitive(&self) -> Option<Primitive> {
+        if let Type::Primitive(primitive) = self {
+            Some(*primitive)
+        } else {
+            None
+        }
+    }
+
+    pub fn to_pointer(&self) -> Option<&Pointer> {
+        if let Type::Pointer(pointer) = self {
+            Some(pointer)
+        } else {
+            None
+        }
+    }
+
+    pub fn to_union(&self) -> Option<&Union> {
+        if let Type::Union(union) = self {
+            Some(union)
+        } else {
+            None
+        }
+    }
+}
+
 impl From<Function> for Type {
     fn from(function: Function) -> Self {
         Self::Function(function)
