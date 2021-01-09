@@ -2,13 +2,13 @@ use crate::ir::*;
 use crate::types::{self, Type};
 
 // Do not derive Clone to guarantee that it's consumed only once!
-pub struct InstructionedExpression {
+pub struct ContextfulExpression {
     instructions: Vec<Instruction>,
     expression: Expression,
     type_: Type,
 }
 
-impl InstructionedExpression {
+impl ContextfulExpression {
     pub fn new(
         instructions: impl IntoIterator<Item = Instruction>,
         expression: impl Into<Expression>,
@@ -34,7 +34,7 @@ impl InstructionedExpression {
     }
 }
 
-impl From<Primitive> for InstructionedExpression {
+impl From<Primitive> for ContextfulExpression {
     fn from(primitive: Primitive) -> Self {
         Self::new(
             vec![],
@@ -52,19 +52,19 @@ impl From<Primitive> for InstructionedExpression {
     }
 }
 
-impl From<Record> for InstructionedExpression {
+impl From<Record> for ContextfulExpression {
     fn from(record: Record) -> Self {
         Self::new(vec![], record.clone(), record.type_().clone())
     }
 }
 
-impl From<Undefined> for InstructionedExpression {
+impl From<Undefined> for ContextfulExpression {
     fn from(undefined: Undefined) -> Self {
         Self::new(vec![], undefined.clone(), undefined.type_().clone())
     }
 }
 
-impl From<Union> for InstructionedExpression {
+impl From<Union> for ContextfulExpression {
     fn from(union: Union) -> Self {
         Self::new(vec![], union.clone(), union.type_().clone())
     }
