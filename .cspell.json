@@ -3,6 +3,7 @@
     "bitcast",
     "hasher",
     "indoc",
+    "instructioned",
     "malloc",
     "stdatomic",
     "stdbool",
