@@ -29,6 +29,21 @@ pub fn atomic_load(
     )
 }
 
+pub fn load(type_: impl Into<Type>, pointer: impl Into<InstructionContext>) -> InstructionContext {
+    let pointer = pointer.into();
+    let name = generate_name();
+
+    InstructionContext::new(
+        pointer.instructions().iter().cloned().chain(vec![Load::new(
+            type_,
+            pointer.expression().clone(),
+            &name,
+        )
+        .into()]),
+        Variable::new(name),
+    )
+}
+
 pub fn pointer_address(
     type_: types::Pointer,
     pointer: impl Into<InstructionContext>,
