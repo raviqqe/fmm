@@ -1,4 +1,4 @@
-use super::instruction_context::*;
+use super::expression_context::*;
 use super::names::*;
 use crate::ir::*;
 use crate::types::{self, Type};
@@ -6,14 +6,14 @@ use crate::types::{self, Type};
 pub fn arithmetic_operation(
     type_: types::Primitive,
     operator: ArithmeticOperator,
-    lhs: impl Into<InstructionContext>,
-    rhs: impl Into<InstructionContext>,
-) -> InstructionContext {
+    lhs: impl Into<ExpressionContext>,
+    rhs: impl Into<ExpressionContext>,
+) -> ExpressionContext {
     let lhs = lhs.into();
     let rhs = rhs.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         lhs.instructions()
             .iter()
             .chain(rhs.instructions())
@@ -32,12 +32,12 @@ pub fn arithmetic_operation(
 
 pub fn atomic_load(
     type_: impl Into<Type>,
-    pointer: impl Into<InstructionContext>,
-) -> InstructionContext {
+    pointer: impl Into<ExpressionContext>,
+) -> ExpressionContext {
     let pointer = pointer.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         pointer
             .instructions()
             .iter()
@@ -54,14 +54,14 @@ pub fn atomic_load(
 
 pub fn call(
     type_: types::Function,
-    function: impl Into<InstructionContext>,
-    arguments: impl IntoIterator<Item = InstructionContext>,
-) -> InstructionContext {
+    function: impl Into<ExpressionContext>,
+    arguments: impl IntoIterator<Item = ExpressionContext>,
+) -> ExpressionContext {
     let function = function.into();
     let arguments = arguments.into_iter().collect::<Vec<_>>();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         function
             .instructions()
             .iter()
@@ -85,14 +85,14 @@ pub fn call(
 pub fn comparison_operation(
     type_: types::Primitive,
     operator: ComparisonOperator,
-    lhs: impl Into<InstructionContext>,
-    rhs: impl Into<InstructionContext>,
-) -> InstructionContext {
+    lhs: impl Into<ExpressionContext>,
+    rhs: impl Into<ExpressionContext>,
+) -> ExpressionContext {
     let lhs = lhs.into();
     let rhs = rhs.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         lhs.instructions()
             .iter()
             .chain(rhs.instructions())
@@ -111,13 +111,13 @@ pub fn comparison_operation(
 
 pub fn deconstruct_record(
     type_: types::Record,
-    record: impl Into<InstructionContext>,
+    record: impl Into<ExpressionContext>,
     element_index: usize,
-) -> InstructionContext {
+) -> ExpressionContext {
     let record = record.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         record
             .instructions()
             .iter()
@@ -135,13 +135,13 @@ pub fn deconstruct_record(
 
 pub fn deconstruct_union(
     type_: types::Union,
-    union: impl Into<InstructionContext>,
+    union: impl Into<ExpressionContext>,
     member_index: usize,
-) -> InstructionContext {
+) -> ExpressionContext {
     let union = union.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         union
             .instructions()
             .iter()
@@ -157,11 +157,11 @@ pub fn deconstruct_union(
     )
 }
 
-pub fn load(type_: impl Into<Type>, pointer: impl Into<InstructionContext>) -> InstructionContext {
+pub fn load(type_: impl Into<Type>, pointer: impl Into<ExpressionContext>) -> ExpressionContext {
     let pointer = pointer.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         pointer.instructions().iter().cloned().chain(vec![Load::new(
             type_,
             pointer.expression().clone(),
@@ -174,14 +174,14 @@ pub fn load(type_: impl Into<Type>, pointer: impl Into<InstructionContext>) -> I
 
 pub fn pointer_address(
     type_: types::Pointer,
-    pointer: impl Into<InstructionContext>,
-    offset: impl Into<InstructionContext>,
-) -> InstructionContext {
+    pointer: impl Into<ExpressionContext>,
+    offset: impl Into<ExpressionContext>,
+) -> ExpressionContext {
     let pointer = pointer.into();
     let offset = offset.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         pointer
             .instructions()
             .iter()
@@ -200,13 +200,13 @@ pub fn pointer_address(
 
 pub fn record_address(
     type_: types::Record,
-    pointer: impl Into<InstructionContext>,
+    pointer: impl Into<ExpressionContext>,
     element_index: usize,
-) -> InstructionContext {
+) -> ExpressionContext {
     let pointer = pointer.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         pointer
             .instructions()
             .iter()
@@ -224,13 +224,13 @@ pub fn record_address(
 
 pub fn union_address(
     type_: types::Union,
-    pointer: impl Into<InstructionContext>,
+    pointer: impl Into<ExpressionContext>,
     member_index: usize,
-) -> InstructionContext {
+) -> ExpressionContext {
     let pointer = pointer.into();
     let name = generate_name();
 
-    InstructionContext::new(
+    ExpressionContext::new(
         pointer
             .instructions()
             .iter()

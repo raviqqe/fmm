@@ -1,12 +1,12 @@
 use crate::ir::*;
 
 // Do not derive Clone to guarantee that it's consumed only once!
-pub struct InstructionContext {
+pub struct ExpressionContext {
     instructions: Vec<Instruction>,
     expression: Expression,
 }
 
-impl InstructionContext {
+impl ExpressionContext {
     pub fn new(
         instructions: impl IntoIterator<Item = Instruction>,
         expression: impl Into<Expression>,
@@ -26,7 +26,7 @@ impl InstructionContext {
     }
 }
 
-impl<T: Into<Expression>> From<T> for InstructionContext {
+impl<T: Into<Expression>> From<T> for ExpressionContext {
     fn from(expression: T) -> Self {
         Self::new(vec![], expression)
     }
