@@ -2,13 +2,13 @@ use crate::ir::*;
 use crate::types::{self, Type};
 
 // Do not derive Clone to guarantee that it's consumed only once!
-pub struct ContextualExpression {
+pub struct BuildContext {
     instructions: Vec<Instruction>,
     expression: Expression,
     type_: Type,
 }
 
-impl ContextualExpression {
+impl BuildContext {
     pub fn new(
         instructions: impl IntoIterator<Item = Instruction>,
         expression: impl Into<Expression>,
@@ -38,7 +38,7 @@ impl ContextualExpression {
     }
 }
 
-impl From<Primitive> for ContextualExpression {
+impl From<Primitive> for BuildContext {
     fn from(primitive: Primitive) -> Self {
         Self::from_expression(
             primitive,
@@ -55,19 +55,19 @@ impl From<Primitive> for ContextualExpression {
     }
 }
 
-impl From<Record> for ContextualExpression {
+impl From<Record> for BuildContext {
     fn from(record: Record) -> Self {
         Self::from_expression(record.clone(), record.type_().clone())
     }
 }
 
-impl From<Undefined> for ContextualExpression {
+impl From<Undefined> for BuildContext {
     fn from(undefined: Undefined) -> Self {
         Self::from_expression(undefined.clone(), undefined.type_().clone())
     }
 }
 
-impl From<Union> for ContextualExpression {
+impl From<Union> for BuildContext {
     fn from(union: Union) -> Self {
         Self::from_expression(union.clone(), union.type_().clone())
     }

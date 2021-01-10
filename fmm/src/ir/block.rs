@@ -9,11 +9,11 @@ pub struct Block {
 
 impl Block {
     pub fn new(
-        instructions: Vec<Instruction>,
+        instructions: impl IntoIterator<Item = Instruction>,
         terminal_instruction: impl Into<TerminalInstruction>,
     ) -> Self {
         Self {
-            instructions,
+            instructions: instructions.into_iter().collect(),
             terminal_instruction: terminal_instruction.into(),
         }
     }
