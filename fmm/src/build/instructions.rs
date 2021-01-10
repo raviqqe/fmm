@@ -1,19 +1,19 @@
-use super::contextful_expression::*;
+use super::contextual_expression::*;
 use super::names::*;
 use crate::ir::*;
 use crate::types;
 
 pub fn arithmetic_operation(
     operator: ArithmeticOperator,
-    lhs: impl Into<ContextfulExpression>,
-    rhs: impl Into<ContextfulExpression>,
-) -> ContextfulExpression {
+    lhs: impl Into<ContextualExpression>,
+    rhs: impl Into<ContextualExpression>,
+) -> ContextualExpression {
     let lhs = lhs.into();
     let rhs = rhs.into();
     let type_ = lhs.type_().to_primitive().unwrap();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         lhs.instructions()
             .iter()
             .chain(rhs.instructions())
@@ -31,12 +31,12 @@ pub fn arithmetic_operation(
     )
 }
 
-pub fn atomic_load(pointer: impl Into<ContextfulExpression>) -> ContextfulExpression {
+pub fn atomic_load(pointer: impl Into<ContextualExpression>) -> ContextualExpression {
     let pointer = pointer.into();
     let type_ = pointer.type_().to_pointer().unwrap().element().clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         pointer
             .instructions()
             .iter()
@@ -53,15 +53,15 @@ pub fn atomic_load(pointer: impl Into<ContextfulExpression>) -> ContextfulExpres
 }
 
 pub fn call(
-    function: impl Into<ContextfulExpression>,
-    arguments: impl IntoIterator<Item = ContextfulExpression>,
-) -> ContextfulExpression {
+    function: impl Into<ContextualExpression>,
+    arguments: impl IntoIterator<Item = ContextualExpression>,
+) -> ContextualExpression {
     let function = function.into();
     let arguments = arguments.into_iter().collect::<Vec<_>>();
     let type_ = function.type_().to_function().unwrap().clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         function
             .instructions()
             .iter()
@@ -85,14 +85,14 @@ pub fn call(
 
 pub fn comparison_operation(
     operator: ComparisonOperator,
-    lhs: impl Into<ContextfulExpression>,
-    rhs: impl Into<ContextfulExpression>,
-) -> ContextfulExpression {
+    lhs: impl Into<ContextualExpression>,
+    rhs: impl Into<ContextualExpression>,
+) -> ContextualExpression {
     let lhs = lhs.into();
     let rhs = rhs.into();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         lhs.instructions()
             .iter()
             .chain(rhs.instructions())
@@ -111,14 +111,14 @@ pub fn comparison_operation(
 }
 
 pub fn deconstruct_record(
-    record: impl Into<ContextfulExpression>,
+    record: impl Into<ContextualExpression>,
     element_index: usize,
-) -> ContextfulExpression {
+) -> ContextualExpression {
     let record = record.into();
     let type_ = record.type_().to_record().unwrap().clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         record
             .instructions()
             .iter()
@@ -136,14 +136,14 @@ pub fn deconstruct_record(
 }
 
 pub fn deconstruct_union(
-    union: impl Into<ContextfulExpression>,
+    union: impl Into<ContextualExpression>,
     member_index: usize,
-) -> ContextfulExpression {
+) -> ContextualExpression {
     let union = union.into();
     let type_ = union.type_().to_union().unwrap().clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         union
             .instructions()
             .iter()
@@ -160,12 +160,12 @@ pub fn deconstruct_union(
     )
 }
 
-pub fn load(pointer: impl Into<ContextfulExpression>) -> ContextfulExpression {
+pub fn load(pointer: impl Into<ContextualExpression>) -> ContextualExpression {
     let pointer = pointer.into();
     let type_ = pointer.type_().to_pointer().unwrap().element().clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         pointer.instructions().iter().cloned().chain(vec![Load::new(
             type_.clone(),
             pointer.expression().clone(),
@@ -178,15 +178,15 @@ pub fn load(pointer: impl Into<ContextfulExpression>) -> ContextfulExpression {
 }
 
 pub fn pointer_address(
-    pointer: impl Into<ContextfulExpression>,
-    offset: impl Into<ContextfulExpression>,
-) -> ContextfulExpression {
+    pointer: impl Into<ContextualExpression>,
+    offset: impl Into<ContextualExpression>,
+) -> ContextualExpression {
     let pointer = pointer.into();
     let offset = offset.into();
     let type_ = pointer.type_().to_pointer().unwrap().clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         pointer
             .instructions()
             .iter()
@@ -205,9 +205,9 @@ pub fn pointer_address(
 }
 
 pub fn record_address(
-    pointer: impl Into<ContextfulExpression>,
+    pointer: impl Into<ContextualExpression>,
     element_index: usize,
-) -> ContextfulExpression {
+) -> ContextualExpression {
     let pointer = pointer.into();
     let type_ = pointer
         .type_()
@@ -219,7 +219,7 @@ pub fn record_address(
         .clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         pointer
             .instructions()
             .iter()
@@ -237,9 +237,9 @@ pub fn record_address(
 }
 
 pub fn union_address(
-    pointer: impl Into<ContextfulExpression>,
+    pointer: impl Into<ContextualExpression>,
     member_index: usize,
-) -> ContextfulExpression {
+) -> ContextualExpression {
     let pointer = pointer.into();
     let type_ = pointer
         .type_()
@@ -251,7 +251,7 @@ pub fn union_address(
         .clone();
     let name = generate_name();
 
-    ContextfulExpression::new(
+    ContextualExpression::new(
         pointer
             .instructions()
             .iter()
