@@ -52,6 +52,27 @@ pub fn atomic_load(pointer: impl Into<BuildContext>) -> BuildContext {
     )
 }
 
+pub fn atomic_store(
+    pointer: impl Into<BuildContext>,
+    value: impl Into<BuildContext>,
+) -> Vec<Instruction> {
+    let pointer = pointer.into();
+    let value = value.into();
+
+    pointer
+        .instructions()
+        .iter()
+        .chain(value.instructions())
+        .cloned()
+        .chain(vec![AtomicStore::new(
+            value.type_().clone(),
+            value.expression().clone(),
+            pointer.expression().clone(),
+        )
+        .into()])
+        .collect()
+}
+
 pub fn call(
     function: impl Into<BuildContext>,
     arguments: impl IntoIterator<Item = BuildContext>,
@@ -255,6 +276,24 @@ pub fn record_address(pointer: impl Into<BuildContext>, element_index: usize) ->
         Variable::new(name),
         types::Pointer::new(type_.elements()[element_index].clone()),
     )
+}
+
+pub fn store(pointer: impl Into<BuildContext>, value: impl Into<BuildContext>) -> Vec<Instruction> {
+    let pointer = pointer.into();
+    let value = value.into();
+
+    pointer
+        .instructions()
+        .iter()
+        .chain(value.instructions())
+        .cloned()
+        .chain(vec![Store::new(
+            value.type_().clone(),
+            value.expression().clone(),
+            pointer.expression().clone(),
+        )
+        .into()])
+        .collect()
 }
 
 pub fn union_address(pointer: impl Into<BuildContext>, member_index: usize) -> BuildContext {
