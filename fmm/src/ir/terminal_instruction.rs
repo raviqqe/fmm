@@ -8,6 +8,24 @@ pub enum TerminalInstruction {
     Unreachable,
 }
 
+impl TerminalInstruction {
+    pub fn to_branch(&self) -> Option<&Branch> {
+        if let TerminalInstruction::Branch(branch) = self {
+            Some(branch)
+        } else {
+            None
+        }
+    }
+
+    pub fn to_return(&self) -> Option<&Branch> {
+        if let TerminalInstruction::Branch(return_) = self {
+            Some(return_)
+        } else {
+            None
+        }
+    }
+}
+
 impl From<Branch> for TerminalInstruction {
     fn from(branch: Branch) -> Self {
         Self::Branch(branch)
