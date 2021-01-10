@@ -110,10 +110,7 @@ pub fn comparison_operation(
     )
 }
 
-pub fn deconstruct_record(
-    record: impl Into<BuildContext>,
-    element_index: usize,
-) -> BuildContext {
+pub fn deconstruct_record(record: impl Into<BuildContext>, element_index: usize) -> BuildContext {
     let record = record.into();
     let type_ = record.type_().to_record().unwrap().clone();
     let name = generate_name();
@@ -135,10 +132,7 @@ pub fn deconstruct_record(
     )
 }
 
-pub fn deconstruct_union(
-    union: impl Into<BuildContext>,
-    member_index: usize,
-) -> BuildContext {
+pub fn deconstruct_union(union: impl Into<BuildContext>, member_index: usize) -> BuildContext {
     let union = union.into();
     let type_ = union.type_().to_union().unwrap().clone();
     let name = generate_name();
@@ -204,10 +198,7 @@ pub fn pointer_address(
     )
 }
 
-pub fn record_address(
-    pointer: impl Into<BuildContext>,
-    element_index: usize,
-) -> BuildContext {
+pub fn record_address(pointer: impl Into<BuildContext>, element_index: usize) -> BuildContext {
     let pointer = pointer.into();
     let type_ = pointer
         .type_()
@@ -236,10 +227,7 @@ pub fn record_address(
     )
 }
 
-pub fn union_address(
-    pointer: impl Into<BuildContext>,
-    member_index: usize,
-) -> BuildContext {
+pub fn union_address(pointer: impl Into<BuildContext>, member_index: usize) -> BuildContext {
     let pointer = pointer.into();
     let type_ = pointer
         .type_()
