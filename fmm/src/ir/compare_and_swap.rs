@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompareAndSwap {
-    type_: Type,
+    type_: Type, // pointer element type
     pointer: Arc<Expression>,
     old_value: Arc<Expression>,
     new_value: Arc<Expression>,

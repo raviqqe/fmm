@@ -52,6 +52,27 @@ pub fn atomic_load(pointer: impl Into<BuildContext>) -> BuildContext {
     )
 }
 
+pub fn atomic_store(
+    pointer: impl Into<BuildContext>,
+    value: impl Into<BuildContext>,
+) -> Vec<Instruction> {
+    let pointer = pointer.into();
+    let value = value.into();
+
+    pointer
+        .instructions()
+        .iter()
+        .chain(value.instructions())
+        .cloned()
+        .chain(vec![AtomicStore::new(
+            value.type_().clone(),
+            value.expression().clone(),
+            pointer.expression().clone(),
+        )
+        .into()])
+        .collect()
+}
+
 pub fn call(
     function: impl Into<BuildContext>,
     arguments: impl IntoIterator<Item = BuildContext>,
@@ -80,6 +101,36 @@ pub fn call(
             .into()]),
         Variable::new(name),
         type_.result().clone(),
+    )
+}
+
+pub fn compare_and_swap(
+    pointer: impl Into<BuildContext>,
+    old_value: impl Into<BuildContext>,
+    new_value: impl Into<BuildContext>,
+) -> BuildContext {
+    let pointer = pointer.into();
+    let old_value = old_value.into();
+    let new_value = new_value.into();
+    let name = generate_name();
+
+    BuildContext::new(
+        pointer
+            .instructions()
+            .iter()
+            .chain(old_value.instructions())
+            .chain(new_value.instructions())
+            .cloned()
+            .chain(vec![CompareAndSwap::new(
+                old_value.type_().clone(),
+                pointer.expression().clone(),
+                old_value.expression().clone(),
+                new_value.expression().clone(),
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+        types::Primitive::Bool,
     )
 }
 
@@ -225,6 +276,24 @@ pub fn record_address(pointer: impl Into<BuildContext>, element_index: usize) ->
         Variable::new(name),
         types::Pointer::new(type_.elements()[element_index].clone()),
     )
+}
+
+pub fn store(pointer: impl Into<BuildContext>, value: impl Into<BuildContext>) -> Vec<Instruction> {
+    let pointer = pointer.into();
+    let value = value.into();
+
+    pointer
+        .instructions()
+        .iter()
+        .chain(value.instructions())
+        .cloned()
+        .chain(vec![Store::new(
+            value.type_().clone(),
+            value.expression().clone(),
+            pointer.expression().clone(),
+        )
+        .into()])
+        .collect()
 }
 
 pub fn union_address(pointer: impl Into<BuildContext>, member_index: usize) -> BuildContext {
