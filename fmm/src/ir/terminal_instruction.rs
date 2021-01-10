@@ -17,8 +17,8 @@ impl TerminalInstruction {
         }
     }
 
-    pub fn to_return(&self) -> Option<&Branch> {
-        if let TerminalInstruction::Branch(return_) = self {
+    pub fn to_return(&self) -> Option<&Return> {
+        if let TerminalInstruction::Return(return_) = self {
             Some(return_)
         } else {
             None
