@@ -83,6 +83,36 @@ pub fn call(
     )
 }
 
+pub fn compare_and_swap(
+    pointer: impl Into<BuildContext>,
+    old_value: impl Into<BuildContext>,
+    new_value: impl Into<BuildContext>,
+) -> BuildContext {
+    let pointer = pointer.into();
+    let old_value = old_value.into();
+    let new_value = new_value.into();
+    let name = generate_name();
+
+    BuildContext::new(
+        pointer
+            .instructions()
+            .iter()
+            .chain(old_value.instructions())
+            .chain(new_value.instructions())
+            .cloned()
+            .chain(vec![CompareAndSwap::new(
+                old_value.type_().clone(),
+                pointer.expression().clone(),
+                old_value.expression().clone(),
+                new_value.expression().clone(),
+                &name,
+            )
+            .into()]),
+        Variable::new(name),
+        types::Primitive::Bool,
+    )
+}
+
 pub fn comparison_operation(
     operator: ComparisonOperator,
     lhs: impl Into<BuildContext>,
