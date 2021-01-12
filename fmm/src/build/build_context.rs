@@ -1,7 +1,7 @@
 use crate::ir::*;
 use crate::types::{self, Type};
 
-// Do not derive Clone to guarantee that it's consumed only once!
+#[derive(Clone, Debug, PartialEq)]
 pub struct BuildContext {
     instructions: Vec<Instruction>,
     expression: Expression,
