@@ -64,16 +64,16 @@ pub fn atomic_load(pointer: impl Into<BuildContext>) -> BuildContext {
 }
 
 pub fn atomic_store(
-    pointer: impl Into<BuildContext>,
     value: impl Into<BuildContext>,
+    pointer: impl Into<BuildContext>,
 ) -> Vec<Instruction> {
-    let pointer = pointer.into();
     let value = value.into();
+    let pointer = pointer.into();
 
-    pointer
+    value
         .instructions()
         .iter()
-        .chain(value.instructions())
+        .chain(pointer.instructions())
         .cloned()
         .chain(vec![AtomicStore::new(
             value.type_().clone(),
@@ -289,14 +289,14 @@ pub fn record_address(pointer: impl Into<BuildContext>, element_index: usize) ->
     )
 }
 
-pub fn store(pointer: impl Into<BuildContext>, value: impl Into<BuildContext>) -> Vec<Instruction> {
-    let pointer = pointer.into();
+pub fn store(value: impl Into<BuildContext>, pointer: impl Into<BuildContext>) -> Vec<Instruction> {
     let value = value.into();
+    let pointer = pointer.into();
 
-    pointer
+    value
         .instructions()
         .iter()
-        .chain(value.instructions())
+        .chain(pointer.instructions())
         .cloned()
         .chain(vec![Store::new(
             value.type_().clone(),
