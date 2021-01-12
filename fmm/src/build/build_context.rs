@@ -1,7 +1,6 @@
 use crate::ir::*;
 use crate::types::{self, Type};
 
-#[derive(Clone, Debug, PartialEq)]
 pub struct BuildContext {
     instructions: Vec<Instruction>,
     expression: Expression,
@@ -21,7 +20,10 @@ impl BuildContext {
         }
     }
 
-    pub fn from_expression(expression: impl Into<Expression>, type_: impl Into<Type>) -> Self {
+    pub(crate) fn from_expression(
+        expression: impl Into<Expression>,
+        type_: impl Into<Type>,
+    ) -> Self {
         Self::new(vec![], expression, type_)
     }
 
@@ -35,6 +37,14 @@ impl BuildContext {
 
     pub fn type_(&self) -> &Type {
         &self.type_
+    }
+
+    pub fn clone_expression(&self) -> Self {
+        Self {
+            instructions: vec![],
+            expression: self.expression.clone(),
+            type_: self.type_.clone(),
+        }
     }
 }
 
