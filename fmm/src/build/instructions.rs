@@ -1,7 +1,18 @@
 use super::build_context::*;
 use super::names::*;
 use crate::ir::*;
-use crate::types;
+use crate::types::{self, Type};
+
+pub fn allocate_heap(type_: impl Into<Type>) -> BuildContext {
+    let name = generate_name();
+    let type_ = type_.into();
+
+    BuildContext::new(
+        vec![AllocateHeap::new(type_.clone(), &name).into()],
+        Variable::new(name),
+        types::Pointer::new(type_),
+    )
+}
 
 pub fn arithmetic_operation(
     operator: ArithmeticOperator,
