@@ -1,6 +1,6 @@
-mod build_state;
+mod context;
 mod names;
 mod typed_expression;
 
-pub use build_state::*;
+pub use context::*;
 pub use typed_expression::*;
