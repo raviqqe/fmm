@@ -19,11 +19,6 @@ pub fn return_(context: impl Into<BuildContext>) -> Block {
     )
 }
 
-pub fn unreachable(context: impl Into<BuildContext>) -> Block {
-    let context = context.into();
-
-    Block::new(
-        context.instructions().iter().cloned(),
-        TerminalInstruction::Unreachable,
-    )
+pub fn unreachable() -> Block {
+    Block::new(vec![], TerminalInstruction::Unreachable)
 }
