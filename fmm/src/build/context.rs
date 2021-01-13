@@ -203,6 +203,36 @@ impl Context {
         TypedExpression::new(Variable::new(name), type_.members()[member_index].clone())
     }
 
+    pub fn if_(
+        &mut self,
+        condition: impl Into<TypedExpression>,
+        then: Block,
+        else_: Block,
+    ) -> TypedExpression {
+        let condition = condition.into();
+        let name = generate_name();
+        let type_ = if let Some(branch) = then.terminal_instruction().to_branch() {
+            branch.type_().clone()
+        } else if let Some(branch) = else_.terminal_instruction().to_branch() {
+            branch.type_().clone()
+        } else {
+            types::Record::new(vec![]).into()
+        };
+
+        self.instructions.push(
+            If::new(
+                type_.clone(),
+                condition.expression().clone(),
+                then,
+                else_,
+                &name,
+            )
+            .into(),
+        );
+
+        TypedExpression::new(Variable::new(name), type_)
+    }
+
     pub fn load(&mut self, pointer: impl Into<TypedExpression>) -> TypedExpression {
         let pointer = pointer.into();
         let type_ = pointer.type_().to_pointer().unwrap().element().clone();
