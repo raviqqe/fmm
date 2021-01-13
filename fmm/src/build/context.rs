@@ -230,7 +230,7 @@ impl Context {
             .into(),
         );
 
-        TypedExpression::from_variable(name, type_)
+        TypedExpression::new(Variable::new(name), type_)
     }
 
     pub fn load(&mut self, pointer: impl Into<TypedExpression>) -> TypedExpression {

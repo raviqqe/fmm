@@ -15,10 +15,6 @@ impl TypedExpression {
         }
     }
 
-    pub fn from_variable(name: impl Into<String>, type_: impl Into<Type>) -> TypedExpression {
-        Self::new(Variable::new(name), type_)
-    }
-
     pub fn expression(&self) -> &Expression {
         &self.expression
     }
