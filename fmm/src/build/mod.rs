@@ -1,10 +1,6 @@
-mod build_context;
-mod expressions;
-mod instructions;
+mod build_state;
 mod names;
-mod terminal_instructions;
+mod typed_expression;
 
-pub use build_context::*;
-pub use expressions::*;
-pub use instructions::*;
-pub use terminal_instructions::*;
+pub use build_state::*;
+pub use typed_expression::*;
