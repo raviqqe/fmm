@@ -9,7 +9,7 @@ pub struct Block {
 
 impl Block {
     pub fn new(
-        instructions: impl IntoIterator<Item = Instruction>,
+        instructions: Vec<Instruction>,
         terminal_instruction: impl Into<TerminalInstruction>,
     ) -> Self {
         Self {
