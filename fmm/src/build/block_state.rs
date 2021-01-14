@@ -79,7 +79,7 @@ impl BlockState {
     pub fn call(
         &self,
         function: impl Into<TypedExpression>,
-        arguments: impl IntoIterator<Item = TypedExpression>,
+        arguments: Vec<TypedExpression>,
     ) -> TypedExpression {
         let function = function.into();
         let arguments = arguments.into_iter().collect::<Vec<_>>();
@@ -315,7 +315,7 @@ impl BlockState {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.borrow().iter().cloned(),
+            self.instructions.borrow().clone(),
             Branch::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -327,7 +327,7 @@ impl BlockState {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.borrow().iter().cloned(),
+            self.instructions.borrow().clone(),
             Return::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -337,7 +337,7 @@ impl BlockState {
 
     pub fn unreachable(&self) -> Block {
         Block::new(
-            self.instructions.borrow().iter().cloned(),
+            self.instructions.borrow().clone(),
             TerminalInstruction::Unreachable,
         )
     }
