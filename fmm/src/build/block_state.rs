@@ -4,11 +4,11 @@ use crate::ir::*;
 use crate::types::{self, Type};
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Context {
+pub struct BlockState {
     instructions: Vec<Instruction>,
 }
 
-impl Context {
+impl BlockState {
     pub fn new() -> Self {
         Self {
             instructions: vec![],
