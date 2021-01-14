@@ -336,7 +336,10 @@ impl BlockState {
     }
 
     pub fn unreachable(&self) -> Block {
-        Block::new(vec![], TerminalInstruction::Unreachable)
+        Block::new(
+            self.instructions.borrow().iter().cloned(),
+            TerminalInstruction::Unreachable,
+        )
     }
 
     fn add_instruction(&self, instruction: impl Into<Instruction>) {
