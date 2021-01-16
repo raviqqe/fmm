@@ -184,10 +184,13 @@ impl BlockState {
     pub fn if_(
         &self,
         condition: impl Into<TypedExpression>,
-        then: Block,
-        else_: Block,
+        then: impl Fn(Self) -> Block,
+        else_: impl Fn(Self) -> Block,
     ) -> TypedExpression {
         let condition = condition.into();
+        let then = then(Self::new());
+        let else_ = else_(Self::new());
+
         let name = generate_name();
         let type_ = if let Some(branch) = then.terminal_instruction().to_branch() {
             branch.type_().clone()
