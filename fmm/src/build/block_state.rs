@@ -314,11 +314,11 @@ impl BlockState {
         )
     }
 
-    pub fn branch(self, typed_expression: impl Into<TypedExpression>) -> Block {
+    pub fn branch(&self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.into_inner(),
+            self.instructions.borrow().clone(),
             Branch::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -326,11 +326,11 @@ impl BlockState {
         )
     }
 
-    pub fn return_(self, typed_expression: impl Into<TypedExpression>) -> Block {
+    pub fn return_(&self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.into_inner(),
+            self.instructions.borrow().clone(),
             Return::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -338,9 +338,9 @@ impl BlockState {
         )
     }
 
-    pub fn unreachable(self) -> Block {
+    pub fn unreachable(&self) -> Block {
         Block::new(
-            self.instructions.into_inner(),
+            self.instructions.borrow().clone(),
             TerminalInstruction::Unreachable,
         )
     }
