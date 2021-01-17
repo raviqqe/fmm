@@ -24,6 +24,15 @@ impl ModuleState {
         }
     }
 
+    pub fn as_module(&self) -> Module {
+        Module::new(
+            self.variable_declarations.as_ref().borrow().clone(),
+            self.function_declarations.as_ref().borrow().clone(),
+            self.variable_definitions.as_ref().borrow().clone(),
+            self.function_definitions.as_ref().borrow().clone(),
+        )
+    }
+
     pub fn declare_variable(
         &self,
         name: impl Into<String>,
