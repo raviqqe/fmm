@@ -28,13 +28,15 @@ pub fn compile(module: &Module) -> String {
         .iter()
         .map(|&string| string.into())
         .chain(
-            collect_record_types(&types)
+            types
                 .iter()
+                .filter_map(|type_| type_.to_record())
                 .map(compile_record_type_definition),
         )
         .chain(
-            collect_union_types(&types)
+            types
                 .iter()
+                .filter_map(|type_| type_.to_union())
                 .map(compile_union_type_definition),
         )
         .chain(
