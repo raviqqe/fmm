@@ -2,7 +2,7 @@
 
 The more functional variant of C programming language
 
-It's designed to be a target language for high-level strict functional programming languages.
+It's designed to be a target language for high-level functional programming languages.
 
 ## Features
 
@@ -19,6 +19,7 @@ It's designed to be a target language for high-level strict functional programmi
   - C-like union type
   - Bool type
 - Structural typing
+- Easy to use IR builders
 
 ## Limitations
 
