@@ -12,6 +12,7 @@
     "stdlib",
     "tempdir",
     "tempfile",
-    "toposort"
+    "toposort",
+    "werror"
   ]
 }
