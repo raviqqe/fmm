@@ -86,15 +86,14 @@ impl ModuleState {
         )
     }
 
-    pub fn define_function(
+    pub fn define_anonymous_function(
         &self,
-        name: Option<impl Into<String>>,
         arguments: Vec<Argument>,
         body: impl Fn(BlockState) -> Block,
         result_type: impl Into<Type>,
     ) -> TypedExpression {
         let result_type = result_type.into();
-        let name = name.map(|name| name.into()).unwrap_or_else(generate_name);
+        let name = generate_name();
 
         self.function_definitions
             .borrow_mut()
