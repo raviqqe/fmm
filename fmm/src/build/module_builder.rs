@@ -1,22 +1,24 @@
-use super::block_state::BlockState;
-use super::names::*;
+use super::block_builder::BlockBuilder;
 use super::typed_expression::*;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct ModuleState {
+#[derive(Clone, Debug, Default)]
+pub struct ModuleBuilder {
+    name_index: Rc<AtomicU64>,
     variable_declarations: Rc<RefCell<Vec<VariableDeclaration>>>,
     function_declarations: Rc<RefCell<Vec<FunctionDeclaration>>>,
     variable_definitions: Rc<RefCell<Vec<VariableDefinition>>>,
     function_definitions: Rc<RefCell<Vec<FunctionDefinition>>>,
 }
 
-impl ModuleState {
+impl ModuleBuilder {
     pub fn new() -> Self {
         Self {
+            name_index: AtomicU64::new(0).into(),
             variable_declarations: RefCell::new(vec![]).into(),
             function_declarations: RefCell::new(vec![]).into(),
             variable_definitions: RefCell::new(vec![]).into(),
@@ -88,23 +90,25 @@ impl ModuleState {
         )
     }
 
-    pub fn define_anonymous_function(
+    pub fn define_function(
         &self,
+        name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: impl Fn(BlockState) -> Block,
+        body: impl Fn(BlockBuilder) -> Block,
         result_type: impl Into<Type>,
+        global: bool,
     ) -> TypedExpression {
         let result_type = result_type.into();
-        let name = generate_name();
+        let name = name.into();
 
         self.function_definitions
             .borrow_mut()
             .push(FunctionDefinition::new(
                 &name,
                 arguments.clone(),
-                body(BlockState::new(self.clone())),
+                body(BlockBuilder::new(self.clone())),
                 result_type.clone(),
-                false,
+                global,
             ));
 
         TypedExpression::new(
@@ -117,5 +121,18 @@ impl ModuleState {
                 result_type,
             ),
         )
+    }
+
+    pub fn define_anonymous_function(
+        &self,
+        arguments: Vec<Argument>,
+        body: impl Fn(BlockBuilder) -> Block,
+        result_type: impl Into<Type>,
+    ) -> TypedExpression {
+        self.define_function(self.generate_name(), arguments, body, result_type, false)
+    }
+
+    pub fn generate_name(&self) -> String {
+        format!("_fmm_{:x}", self.name_index.fetch_add(1, Ordering::SeqCst))
     }
 }
