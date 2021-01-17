@@ -1,5 +1,5 @@
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types::Type;
 use std::collections::HashSet;
 
 pub fn collect_types(module: &Module) -> HashSet<Type> {
