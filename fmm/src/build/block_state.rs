@@ -1,3 +1,4 @@
+use super::module_state::ModuleState;
 use super::names::*;
 use super::typed_expression::*;
 use crate::ir::*;
@@ -6,14 +7,24 @@ use std::cell::RefCell;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct BlockState {
+    module_state: ModuleState,
     instructions: RefCell<Vec<Instruction>>,
 }
 
 impl BlockState {
-    pub fn new() -> Self {
+    pub(crate) fn new(module_state: ModuleState) -> Self {
         Self {
+            module_state,
             instructions: vec![].into(),
         }
+    }
+
+    fn clone_empty(&self) -> Self {
+        Self::new(self.module_state.clone())
+    }
+
+    pub fn module_state(&self) -> &ModuleState {
+        &self.module_state
     }
 
     pub fn allocate_heap(&self, type_: impl Into<Type>) -> TypedExpression {
@@ -188,8 +199,8 @@ impl BlockState {
         else_: impl Fn(Self) -> Block,
     ) -> TypedExpression {
         let condition = condition.into();
-        let then = then(Self::new());
-        let else_ = else_(Self::new());
+        let then = then(self.clone_empty());
+        let else_ = else_(self.clone_empty());
 
         let name = generate_name();
         let type_ = if let Some(branch) = then.terminal_instruction().to_branch() {
