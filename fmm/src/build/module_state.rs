@@ -67,6 +67,7 @@ impl ModuleState {
         name: impl Into<String>,
         body: impl Into<TypedExpression>,
         mutable: bool,
+        global: bool,
     ) -> TypedExpression {
         let name = name.into();
         let body = body.into();
@@ -78,6 +79,7 @@ impl ModuleState {
                 body.expression().clone(),
                 body.type_().clone(),
                 mutable,
+                global,
             ));
 
         TypedExpression::new(
@@ -102,6 +104,7 @@ impl ModuleState {
                 arguments.clone(),
                 body(BlockState::new(self.clone())),
                 result_type.clone(),
+                false,
             ));
 
         TypedExpression::new(

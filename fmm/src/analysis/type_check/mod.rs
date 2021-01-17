@@ -395,6 +395,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }
@@ -409,6 +410,7 @@ mod tests {
                 Primitive::PointerInteger(42),
                 types::Primitive::PointerInteger,
                 false,
+                true,
             )],
             vec![FunctionDefinition::new(
                 "f",
@@ -426,6 +428,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }
@@ -459,6 +462,7 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+                true,
             )],
         ))
     }
@@ -480,6 +484,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }
@@ -507,6 +512,7 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+                true,
             )],
         ))
     }
@@ -538,6 +544,7 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+                true,
             )],
         ))
     }
@@ -561,6 +568,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }
@@ -590,6 +598,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }
@@ -616,6 +625,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }
@@ -645,6 +655,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             )],
         ))
     }

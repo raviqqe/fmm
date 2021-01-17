@@ -103,10 +103,23 @@ fn compile_variable_declaration(declaration: &VariableDeclaration) -> String {
 }
 
 fn compile_variable_forward_declaration(definition: &VariableDefinition) -> String {
-    compile_typed_name(
-        definition.type_(),
-        &(if definition.is_mutable() { "" } else { "const" }.to_owned() + " " + definition.name()),
-    ) + ";"
+    if definition.is_global() {
+        ""
+    } else {
+        "static "
+    }
+    .to_owned()
+        + &compile_typed_name(
+            definition.type_(),
+            &(if definition.is_mutable() {
+                ""
+            } else {
+                "const "
+            }
+            .to_owned()
+                + definition.name()),
+        )
+        + ";"
 }
 
 fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
@@ -114,38 +127,59 @@ fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
 }
 
 fn compile_function_forward_declaration(definition: &FunctionDefinition) -> String {
-    compile_function_name(definition.type_(), definition.name()) + ";"
+    if definition.is_global() {
+        ""
+    } else {
+        "static "
+    }
+    .to_owned()
+        + &compile_function_name(definition.type_(), definition.name())
+        + ";"
 }
 
 fn compile_variable_definition(definition: &VariableDefinition) -> String {
-    compile_typed_name(
-        definition.type_(),
-        &(if definition.is_mutable() {
-            ""
-        } else {
-            "const "
-        }
-        .to_owned()
-            + definition.name()),
-    ) + " = "
+    if definition.is_global() {
+        ""
+    } else {
+        "static "
+    }
+    .to_owned()
+        + &compile_typed_name(
+            definition.type_(),
+            &(if definition.is_mutable() {
+                ""
+            } else {
+                "const "
+            }
+            .to_owned()
+                + definition.name()),
+        )
+        + " = "
         + &compile_expression(definition.body())
         + ";"
 }
 
 fn compile_function_definition(definition: &FunctionDefinition) -> String {
-    compile_typed_name(
-        definition.result_type(),
-        &format!(
-            "{}({})",
-            definition.name(),
-            definition
-                .arguments()
-                .iter()
-                .map(|argument| compile_typed_name(argument.type_(), argument.name()))
-                .collect::<Vec<_>>()
-                .join(",")
-        ),
-    ) + "{\n"
+    if definition.is_global() {
+        ""
+    } else {
+        "static "
+    }
+    .to_owned()
+        + &compile_typed_name(
+            definition.result_type(),
+            &format!(
+                "{}({})",
+                definition.name(),
+                definition
+                    .arguments()
+                    .iter()
+                    .map(|argument| compile_typed_name(argument.type_(), argument.name()))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+        )
+        + "{\n"
         + &compile_block(definition.body(), None)
         + "\n}"
 }
@@ -271,6 +305,106 @@ mod tests {
         }
     }
 
+    mod variable_definitions {
+        use super::*;
+
+        #[test]
+        fn compile_constant_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    false,
+                    true,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_mutable_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    true,
+                    true,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_local_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    true,
+                    false,
+                )],
+                vec![],
+            ));
+        }
+    }
+
+    mod function_definitions {
+        use super::*;
+
+        #[test]
+        fn compile_global_function() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "x",
+                    vec![],
+                    fmm::ir::Block::new(
+                        vec![],
+                        fmm::ir::Return::new(
+                            types::Primitive::PointerInteger,
+                            fmm::ir::Primitive::PointerInteger(0),
+                        ),
+                    ),
+                    types::Primitive::PointerInteger,
+                    true,
+                )],
+            ));
+        }
+
+        #[test]
+        fn compile_local_function() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "x",
+                    vec![],
+                    fmm::ir::Block::new(
+                        vec![],
+                        fmm::ir::Return::new(
+                            types::Primitive::PointerInteger,
+                            fmm::ir::Primitive::PointerInteger(0),
+                        ),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                )],
+            ));
+        }
+    }
+
     mod instructions {
         use super::*;
 
@@ -285,6 +419,7 @@ mod tests {
                 vec![],
                 Block::new(vec![], TerminalInstruction::Unreachable),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -301,6 +436,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
+                true,
             ));
         }
 
@@ -322,6 +458,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(function_type),
+                true,
             ));
         }
 
@@ -348,6 +485,7 @@ mod tests {
                         Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                     ),
                     types::Primitive::PointerInteger,
+                    true,
                 ));
             }
         }
@@ -377,6 +515,7 @@ mod tests {
                         Return::new(types::Primitive::Bool, Variable::new("x")),
                     ),
                     types::Primitive::Bool,
+                    true,
                 ));
             }
         }
@@ -399,6 +538,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -420,6 +560,7 @@ mod tests {
                     Return::new(function_type.clone(), Variable::new("y")),
                 ),
                 function_type,
+                true,
             ));
         }
 
@@ -444,6 +585,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -473,6 +615,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -505,6 +648,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -537,6 +681,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -563,6 +708,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -584,6 +730,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -605,6 +752,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
             ));
         }
 
@@ -628,6 +776,7 @@ mod tests {
                     Return::new(types::Primitive::Bool, Variable::new("y")),
                 ),
                 types::Primitive::Bool,
+                true,
             ));
         }
     }
