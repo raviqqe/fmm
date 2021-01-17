@@ -4,7 +4,7 @@ use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct BlockBuilder {
     module_builder: ModuleBuilder,
     instructions: RefCell<Vec<Instruction>>,

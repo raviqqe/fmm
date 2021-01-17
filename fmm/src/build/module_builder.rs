@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ModuleBuilder {
     name_index: Rc<AtomicU64>,
     variable_declarations: Rc<RefCell<Vec<VariableDeclaration>>>,
