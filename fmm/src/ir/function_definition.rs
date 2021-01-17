@@ -16,8 +16,10 @@ impl FunctionDefinition {
         name: impl Into<String>,
         arguments: Vec<Argument>,
         body: Block,
-        result_type: impl Into<Type> + Clone,
+        result_type: impl Into<Type>,
     ) -> Self {
+        let result_type = result_type.into();
+
         Self {
             type_: types::Function::new(
                 arguments
@@ -29,7 +31,7 @@ impl FunctionDefinition {
             name: name.into(),
             arguments,
             body,
-            result_type: result_type.into(),
+            result_type,
         }
     }
 
