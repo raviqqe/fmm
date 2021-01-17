@@ -15,7 +15,7 @@ pub fn generate_union_member_name(index: usize) -> String {
 }
 
 pub fn generate_record_type_name(record: &types::Record) -> String {
-    format!("r_{}", hash(record))
+    format!("r_{:x}", hash(record))
 }
 
 pub fn generate_union_type_name(union: &types::Union) -> String {
