@@ -1,4 +1,4 @@
-use super::block_state::BlockState;
+use super::block_builder::BlockBuilder;
 use super::typed_expression::*;
 use crate::ir::*;
 use crate::types::{self, Type};
@@ -7,7 +7,7 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Clone, Debug)]
-pub struct ModuleState {
+pub struct ModuleBuilder {
     name_index: Rc<AtomicU64>,
     variable_declarations: Rc<RefCell<Vec<VariableDeclaration>>>,
     function_declarations: Rc<RefCell<Vec<FunctionDeclaration>>>,
@@ -15,7 +15,7 @@ pub struct ModuleState {
     function_definitions: Rc<RefCell<Vec<FunctionDefinition>>>,
 }
 
-impl ModuleState {
+impl ModuleBuilder {
     pub fn new() -> Self {
         Self {
             name_index: AtomicU64::new(0).into(),
@@ -93,7 +93,7 @@ impl ModuleState {
     pub fn define_anonymous_function(
         &self,
         arguments: Vec<Argument>,
-        body: impl Fn(BlockState) -> Block,
+        body: impl Fn(BlockBuilder) -> Block,
         result_type: impl Into<Type>,
     ) -> TypedExpression {
         let result_type = result_type.into();
@@ -104,7 +104,7 @@ impl ModuleState {
             .push(FunctionDefinition::new(
                 &name,
                 arguments.clone(),
-                body(BlockState::new(self.clone())),
+                body(BlockBuilder::new(self.clone())),
                 result_type.clone(),
                 false,
             ));

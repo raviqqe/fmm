@@ -1,29 +1,29 @@
-use super::module_state::ModuleState;
+use super::module_builder::ModuleBuilder;
 use super::typed_expression::*;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
 
 #[derive(Clone, Debug)]
-pub struct BlockState {
-    module_state: ModuleState,
+pub struct BlockBuilder {
+    module_builder: ModuleBuilder,
     instructions: RefCell<Vec<Instruction>>,
 }
 
-impl BlockState {
-    pub(crate) fn new(module_state: ModuleState) -> Self {
+impl BlockBuilder {
+    pub(crate) fn new(module_builder: ModuleBuilder) -> Self {
         Self {
-            module_state,
+            module_builder,
             instructions: vec![].into(),
         }
     }
 
     fn clone_empty(&self) -> Self {
-        Self::new(self.module_state.clone())
+        Self::new(self.module_builder.clone())
     }
 
-    pub fn module_state(&self) -> &ModuleState {
-        &self.module_state
+    pub fn module_builder(&self) -> &ModuleBuilder {
+        &self.module_builder
     }
 
     pub fn allocate_heap(&self, type_: impl Into<Type>) -> TypedExpression {
@@ -360,6 +360,6 @@ impl BlockState {
     }
 
     fn generate_name(&self) -> String {
-        self.module_state.generate_name()
+        self.module_builder.generate_name()
     }
 }
