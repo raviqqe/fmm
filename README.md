@@ -19,7 +19,7 @@ It's designed to be a target language for high-level functional programming lang
   - C-like union type
   - Bool type
 - Structural typing
-- Easy to use IR builders
+- IR builder library
 
 ## Limitations
 
