@@ -98,7 +98,12 @@ fn compile_union_type_definition(union: &fmm::types::Union) -> String {
 }
 
 fn compile_variable_declaration(declaration: &VariableDeclaration) -> String {
-    "extern ".to_owned() + &compile_typed_name(declaration.type_(), declaration.name()) + ";"
+    "extern ".to_owned()
+        + &compile_typed_name(
+            declaration.type_(),
+            &("*const ".to_owned() + declaration.name()),
+        )
+        + ";"
 }
 
 fn compile_variable_forward_declaration(definition: &VariableDefinition) -> String {
@@ -200,7 +205,8 @@ mod tests {
 
         std::fs::write(&file_path, source).unwrap();
         let output = std::process::Command::new("clang")
-            .arg("-Werror")
+            .arg("-Werror") // cspell:disable-line
+            .arg("-Wno-incompatible-pointer-types-discards-qualifiers") // cspell:disable-line
             .arg("-o")
             .arg(directory.path().join("foo.o"))
             .arg("-c")
@@ -257,6 +263,31 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_reference_to_declared_varaible() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            types::Pointer::new(types::Primitive::PointerInteger),
+                            Variable::new("x"),
+                        ),
+                    ),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                )],
             ));
         }
     }
@@ -414,6 +445,34 @@ mod tests {
                     false,
                 )],
                 vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_reference_to_defined_varaible() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            types::Pointer::new(types::Primitive::PointerInteger),
+                            Variable::new("x"),
+                        ),
+                    ),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                )],
             ));
         }
     }
