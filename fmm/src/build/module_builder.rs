@@ -90,14 +90,16 @@ impl ModuleBuilder {
         )
     }
 
-    pub fn define_anonymous_function(
+    pub fn define_function(
         &self,
+        name: impl Into<String>,
         arguments: Vec<Argument>,
         body: impl Fn(BlockBuilder) -> Block,
         result_type: impl Into<Type>,
+        global: bool,
     ) -> TypedExpression {
         let result_type = result_type.into();
-        let name = self.generate_name();
+        let name = name.into();
 
         self.function_definitions
             .borrow_mut()
@@ -106,7 +108,7 @@ impl ModuleBuilder {
                 arguments.clone(),
                 body(BlockBuilder::new(self.clone())),
                 result_type.clone(),
-                false,
+                global,
             ));
 
         TypedExpression::new(
@@ -121,7 +123,16 @@ impl ModuleBuilder {
         )
     }
 
-    pub(crate) fn generate_name(&self) -> String {
+    pub fn define_anonymous_function(
+        &self,
+        arguments: Vec<Argument>,
+        body: impl Fn(BlockBuilder) -> Block,
+        result_type: impl Into<Type>,
+    ) -> TypedExpression {
+        self.define_function(self.generate_name(), arguments, body, result_type, false)
+    }
+
+    pub fn generate_name(&self) -> String {
         format!("_fmm_{:x}", self.name_index.fetch_add(1, Ordering::SeqCst))
     }
 }
