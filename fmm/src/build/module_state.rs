@@ -45,7 +45,7 @@ impl ModuleState {
             .borrow_mut()
             .push(VariableDeclaration::new(&name, type_.clone()));
 
-        TypedExpression::new(Variable::new(name), types::Pointer::new(type_.clone()))
+        TypedExpression::new(Variable::new(name), types::Pointer::new(type_))
     }
 
     pub fn declare_function(
@@ -59,7 +59,7 @@ impl ModuleState {
             .borrow_mut()
             .push(FunctionDeclaration::new(&name, type_.clone()));
 
-        TypedExpression::new(Variable::new(name), type_.clone())
+        TypedExpression::new(Variable::new(name), type_)
     }
 
     pub fn define_variable(
