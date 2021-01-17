@@ -9,6 +9,7 @@ pub struct FunctionDefinition {
     body: Block,
     result_type: Type,
     type_: types::Function,
+    global: bool,
 }
 
 impl FunctionDefinition {
@@ -17,6 +18,7 @@ impl FunctionDefinition {
         arguments: Vec<Argument>,
         body: Block,
         result_type: impl Into<Type>,
+        global: bool,
     ) -> Self {
         let result_type = result_type.into();
 
@@ -32,6 +34,7 @@ impl FunctionDefinition {
             arguments,
             body,
             result_type,
+            global,
         }
     }
 
@@ -53,5 +56,9 @@ impl FunctionDefinition {
 
     pub fn type_(&self) -> &types::Function {
         &self.type_
+    }
+
+    pub fn is_global(&self) -> bool {
+        self.global
     }
 }

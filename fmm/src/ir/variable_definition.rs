@@ -7,6 +7,7 @@ pub struct VariableDefinition {
     body: Expression,
     type_: Type,
     mutable: bool,
+    global: bool,
 }
 
 impl VariableDefinition {
@@ -15,12 +16,14 @@ impl VariableDefinition {
         body: impl Into<Expression>,
         type_: impl Into<Type>,
         mutable: bool,
+        global: bool,
     ) -> Self {
         Self {
             name: name.into(),
             body: body.into(),
             type_: type_.into(),
             mutable,
+            global,
         }
     }
 
@@ -38,5 +41,9 @@ impl VariableDefinition {
 
     pub fn is_mutable(&self) -> bool {
         self.mutable
+    }
+
+    pub fn is_global(&self) -> bool {
+        self.global
     }
 }
