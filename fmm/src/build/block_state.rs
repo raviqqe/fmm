@@ -1,11 +1,10 @@
 use super::module_state::ModuleState;
-use super::names::*;
 use super::typed_expression::*;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct BlockState {
     module_state: ModuleState,
     instructions: RefCell<Vec<Instruction>>,
@@ -28,7 +27,7 @@ impl BlockState {
     }
 
     pub fn allocate_heap(&self, type_: impl Into<Type>) -> TypedExpression {
-        let name = generate_name();
+        let name = self.generate_name();
         let type_ = type_.into();
 
         self.add_instruction(AllocateHeap::new(type_.clone(), &name));
@@ -45,7 +44,7 @@ impl BlockState {
         let lhs = lhs.into();
         let rhs = rhs.into();
         let type_ = lhs.type_().to_primitive().unwrap();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(ArithmeticOperation::new(
             type_,
@@ -61,7 +60,7 @@ impl BlockState {
     pub fn atomic_load(&self, pointer: impl Into<TypedExpression>) -> TypedExpression {
         let pointer = pointer.into();
         let type_ = pointer.type_().to_pointer().unwrap().element().clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(AtomicLoad::new(
             type_.clone(),
@@ -95,7 +94,7 @@ impl BlockState {
         let function = function.into();
         let arguments = arguments.into_iter().collect::<Vec<_>>();
         let type_ = function.type_().to_function().unwrap().clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(Call::new(
             type_.clone(),
@@ -120,7 +119,7 @@ impl BlockState {
         let pointer = pointer.into();
         let old_value = old_value.into();
         let new_value = new_value.into();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(CompareAndSwap::new(
             old_value.type_().clone(),
@@ -141,7 +140,7 @@ impl BlockState {
     ) -> TypedExpression {
         let lhs = lhs.into();
         let rhs = rhs.into();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(ComparisonOperation::new(
             lhs.type_().to_primitive().unwrap(),
@@ -161,7 +160,7 @@ impl BlockState {
     ) -> TypedExpression {
         let record = record.into();
         let type_ = record.type_().to_record().unwrap().clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(DeconstructRecord::new(
             type_.clone(),
@@ -180,7 +179,7 @@ impl BlockState {
     ) -> TypedExpression {
         let union = union.into();
         let type_ = union.type_().to_union().unwrap().clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(DeconstructUnion::new(
             type_.clone(),
@@ -202,7 +201,7 @@ impl BlockState {
         let then = then(self.clone_empty());
         let else_ = else_(self.clone_empty());
 
-        let name = generate_name();
+        let name = self.generate_name();
         let type_ = if let Some(branch) = then.terminal_instruction().to_branch() {
             branch.type_().clone()
         } else if let Some(branch) = else_.terminal_instruction().to_branch() {
@@ -225,7 +224,7 @@ impl BlockState {
     pub fn load(&self, pointer: impl Into<TypedExpression>) -> TypedExpression {
         let pointer = pointer.into();
         let type_ = pointer.type_().to_pointer().unwrap().element().clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(Load::new(
             type_.clone(),
@@ -244,7 +243,7 @@ impl BlockState {
         let pointer = pointer.into();
         let offset = offset.into();
         let type_ = pointer.type_().to_pointer().unwrap().clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(PointerAddress::new(
             type_.clone(),
@@ -270,7 +269,7 @@ impl BlockState {
             .to_record()
             .unwrap()
             .clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(RecordAddress::new(
             type_.clone(),
@@ -310,7 +309,7 @@ impl BlockState {
             .to_union()
             .unwrap()
             .clone();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.add_instruction(UnionAddress::new(
             type_.clone(),
@@ -358,5 +357,9 @@ impl BlockState {
 
     fn add_instruction(&self, instruction: impl Into<Instruction>) {
         self.instructions.borrow_mut().push(instruction.into());
+    }
+
+    fn generate_name(&self) -> String {
+        self.module_state.generate_name()
     }
 }

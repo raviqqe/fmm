@@ -1,13 +1,14 @@
 use super::block_state::BlockState;
-use super::names::*;
 use super::typed_expression::*;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct ModuleState {
+    name_index: Rc<AtomicU64>,
     variable_declarations: Rc<RefCell<Vec<VariableDeclaration>>>,
     function_declarations: Rc<RefCell<Vec<FunctionDeclaration>>>,
     variable_definitions: Rc<RefCell<Vec<VariableDefinition>>>,
@@ -17,6 +18,7 @@ pub struct ModuleState {
 impl ModuleState {
     pub fn new() -> Self {
         Self {
+            name_index: AtomicU64::new(0).into(),
             variable_declarations: RefCell::new(vec![]).into(),
             function_declarations: RefCell::new(vec![]).into(),
             variable_definitions: RefCell::new(vec![]).into(),
@@ -95,7 +97,7 @@ impl ModuleState {
         result_type: impl Into<Type>,
     ) -> TypedExpression {
         let result_type = result_type.into();
-        let name = generate_name();
+        let name = self.generate_name();
 
         self.function_definitions
             .borrow_mut()
@@ -117,5 +119,9 @@ impl ModuleState {
                 result_type,
             ),
         )
+    }
+
+    pub(crate) fn generate_name(&self) -> String {
+        format!("_fmm_{:x}", self.name_index.fetch_add(1, Ordering::SeqCst))
     }
 }
