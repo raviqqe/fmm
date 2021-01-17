@@ -103,23 +103,7 @@ fn compile_variable_declaration(declaration: &VariableDeclaration) -> String {
 }
 
 fn compile_variable_forward_declaration(definition: &VariableDefinition) -> String {
-    if definition.is_global() {
-        ""
-    } else {
-        "static "
-    }
-    .to_owned()
-        + &compile_typed_name(
-            definition.type_(),
-            &(if definition.is_mutable() {
-                ""
-            } else {
-                "const "
-            }
-            .to_owned()
-                + definition.name()),
-        )
-        + ";"
+    compile_variable_definition_lhs(definition) + ";"
 }
 
 fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
@@ -138,6 +122,27 @@ fn compile_function_forward_declaration(definition: &FunctionDefinition) -> Stri
 }
 
 fn compile_variable_definition(definition: &VariableDefinition) -> String {
+    let entity_name = format!("{}_entity", definition.name());
+
+    "static ".to_owned()
+        + &compile_typed_name(
+            definition.type_(),
+            &(if definition.is_mutable() {
+                ""
+            } else {
+                "const "
+            }
+            .to_owned()
+                + &entity_name),
+        )
+        + " = "
+        + &compile_expression(definition.body())
+        + ";\n"
+        + &compile_variable_definition_lhs(definition)
+        + &format!(" = &{};", entity_name)
+}
+
+fn compile_variable_definition_lhs(definition: &VariableDefinition) -> String {
     if definition.is_global() {
         ""
     } else {
@@ -152,11 +157,9 @@ fn compile_variable_definition(definition: &VariableDefinition) -> String {
                 "const "
             }
             .to_owned()
+                + "*const "
                 + definition.name()),
         )
-        + " = "
-        + &compile_expression(definition.body())
-        + ";"
 }
 
 fn compile_function_definition(definition: &FunctionDefinition) -> String {
