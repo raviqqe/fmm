@@ -1,14 +1,18 @@
 {
   "words": [
+    "algo",
     "bitcast",
     "hasher",
     "indoc",
     "malloc",
+    "petgraph",
     "stdatomic",
     "stdbool",
     "stdint",
     "stdlib",
     "tempdir",
-    "tempfile"
+    "tempfile",
+    "toposort",
+    "werror"
   ]
 }

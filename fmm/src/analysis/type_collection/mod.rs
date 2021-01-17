@@ -1,9 +1,9 @@
 use crate::ir::*;
 use crate::types::Type;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-pub fn collect_types(module: &Module) -> HashSet<Type> {
-    flat_types(
+pub fn collect_types(module: &Module) -> Vec<Type> {
+    sort_types(&flat_types(
         &module
             .variable_declarations()
             .iter()
@@ -30,13 +30,33 @@ pub fn collect_types(module: &Module) -> HashSet<Type> {
                     .chain(collect_from_block(definition.body()))
             }))
             .collect(),
-    )
+    ))
+}
+
+fn sort_types(types: &HashSet<Type>) -> Vec<Type> {
+    let mut graph = petgraph::graph::Graph::<&Type, ()>::new();
+    let mut indices = HashMap::<&Type, _>::new();
+
+    for type_ in types {
+        indices.insert(type_, graph.add_node(type_));
+    }
+
+    for type_ in types {
+        for child_type in collect_child_types(type_) {
+            graph.add_edge(indices[&child_type], indices[type_], ());
+        }
+    }
+
+    petgraph::algo::toposort(&graph, None)
+        .unwrap()
+        .into_iter()
+        .map(|index| graph[index].clone())
+        .collect()
 }
 
 fn flat_types(types: &HashSet<Type>) -> HashSet<Type> {
-    types
-        .iter()
-        .cloned()
+    vec![]
+        .into_iter()
         .chain(types.iter().flat_map(collect_from_type))
         .collect()
 }
@@ -139,6 +159,13 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashS
 }
 
 fn collect_from_type(type_: &Type) -> HashSet<Type> {
+    vec![type_.clone()]
+        .into_iter()
+        .chain(collect_child_types(type_))
+        .collect()
+}
+
+fn collect_child_types(type_: &Type) -> HashSet<Type> {
     match type_ {
         Type::Function(function) => vec![function.result().clone()]
             .into_iter()
@@ -152,5 +179,30 @@ fn collect_from_type(type_: &Type) -> HashSet<Type> {
             .collect(),
         Type::Pointer(pointer) => collect_from_type(pointer.element()),
         Type::Union(union) => union.members().iter().flat_map(collect_from_type).collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types;
+
+    #[test]
+    fn sort_types() {
+        assert_eq!(
+            collect_types(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Record::new(vec![types::Record::new(vec![]).into()])
+                )],
+                vec![],
+                vec![],
+                vec![]
+            )),
+            vec![
+                types::Record::new(vec![]).into(),
+                types::Record::new(vec![types::Record::new(vec![]).into()]).into()
+            ]
+        );
     }
 }
