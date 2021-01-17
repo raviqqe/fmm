@@ -1,32 +1,6 @@
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types::Type;
 use std::collections::HashSet;
-
-pub fn collect_record_types(types: &HashSet<Type>) -> HashSet<types::Record> {
-    types
-        .iter()
-        .filter_map(|type_| {
-            if let Type::Record(record) = type_ {
-                Some(record.clone())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-pub fn collect_union_types(types: &HashSet<Type>) -> HashSet<types::Union> {
-    types
-        .iter()
-        .filter_map(|type_| {
-            if let Type::Union(union) = type_ {
-                Some(union.clone())
-            } else {
-                None
-            }
-        })
-        .collect()
-}
 
 pub fn collect_types(module: &Module) -> HashSet<Type> {
     flat_types(
