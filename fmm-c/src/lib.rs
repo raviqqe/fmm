@@ -267,7 +267,7 @@ mod tests {
         }
 
         #[test]
-        fn compile_reference_to_declared_varaible() {
+        fn compile_reference_to_declared_variable() {
             compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
@@ -449,7 +449,7 @@ mod tests {
         }
 
         #[test]
-        fn compile_reference_to_defined_varaible() {
+        fn compile_reference_to_defined_variable() {
             compile_module(&Module::new(
                 vec![],
                 vec![],
