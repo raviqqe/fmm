@@ -100,13 +100,14 @@ impl ModuleBuilder {
     ) -> TypedExpression {
         let result_type = result_type.into();
         let name = name.into();
+        let body = body(BlockBuilder::new(self.clone()));
 
         self.function_definitions
             .borrow_mut()
             .push(FunctionDefinition::new(
                 &name,
                 arguments.clone(),
-                body(BlockBuilder::new(self.clone())),
+                body,
                 result_type.clone(),
                 global,
             ));
