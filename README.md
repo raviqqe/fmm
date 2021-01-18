@@ -1,5 +1,9 @@
 # F--
 
+[![GitHub Action](https://img.shields.io/github/workflow/status/raviqqe/fmm/test?style=flat-square)](https://github.com/raviqqe/fmm/actions?query=workflow%3Atest)
+[![Codecov](https://img.shields.io/codecov/c/github/raviqqe/fmm.svg?style=flat-square)](https://codecov.io/gh/raviqqe/fmm)
+[![License](https://img.shields.io/github/license/raviqqe/fmm.svg?style=flat-square)](LICENSE)
+
 The more functional variant of C programming language
 
 It's designed to be a target language for high-level functional programming languages.
