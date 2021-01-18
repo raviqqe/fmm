@@ -899,5 +899,44 @@ mod tests {
                 true,
             ));
         }
+
+        #[test]
+        fn compile_record_address() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
+                Block::new(
+                    vec![
+                        RecordAddress::new(record_type.clone(), Variable::new("x"), 0, "y").into(),
+                    ],
+                    Return::new(pointer_type.clone(), Variable::new("y")),
+                ),
+                pointer_type,
+                true,
+            ));
+        }
+
+        #[test]
+        fn compile_union_address() {
+            let union_type = types::Union::new(vec![
+                types::Primitive::PointerInteger.into(),
+                types::Primitive::Float64.into(),
+            ]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
+                Block::new(
+                    vec![UnionAddress::new(union_type.clone(), Variable::new("x"), 0, "y").into()],
+                    Return::new(pointer_type.clone(), Variable::new("y")),
+                ),
+                pointer_type,
+                true,
+            ));
+        }
     }
 }
