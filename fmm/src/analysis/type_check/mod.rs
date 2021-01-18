@@ -246,12 +246,15 @@ fn check_block(
 
                 variables.insert(
                     address.name().into(),
-                    address
-                        .type_()
-                        .elements()
-                        .get(address.element_index())
-                        .ok_or(TypeCheckError::IndexOutOfRange)?
-                        .clone(),
+                    types::Pointer::new(
+                        address
+                            .type_()
+                            .elements()
+                            .get(address.element_index())
+                            .ok_or(TypeCheckError::IndexOutOfRange)?
+                            .clone(),
+                    )
+                    .into(),
                 );
             }
             Instruction::Store(store) => {
@@ -269,12 +272,15 @@ fn check_block(
 
                 variables.insert(
                     address.name().into(),
-                    address
-                        .type_()
-                        .members()
-                        .get(address.member_index())
-                        .ok_or(TypeCheckError::IndexOutOfRange)?
-                        .clone(),
+                    types::Pointer::new(
+                        address
+                            .type_()
+                            .members()
+                            .get(address.member_index())
+                            .ok_or(TypeCheckError::IndexOutOfRange)?
+                            .clone(),
+                    )
+                    .into(),
                 );
             }
         }
@@ -655,6 +661,83 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_pointer_address() -> Result<(), TypeCheckError> {
+        let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", pointer_type.clone())],
+                Block::new(
+                    vec![PointerAddress::new(
+                        pointer_type.clone(),
+                        Variable::new("x"),
+                        Primitive::PointerInteger(42),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(pointer_type.clone(), Variable::new("y")),
+                ),
+                pointer_type.clone(),
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_record_address() -> Result<(), TypeCheckError> {
+        let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
+                Block::new(
+                    vec![
+                        RecordAddress::new(record_type.clone(), Variable::new("x"), 0, "y").into(),
+                    ],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::PointerInteger),
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_union_address() -> Result<(), TypeCheckError> {
+        let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
+
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
+                Block::new(
+                    vec![UnionAddress::new(union_type.clone(), Variable::new("x"), 0, "y").into()],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::PointerInteger),
                 true,
             )],
         ))
