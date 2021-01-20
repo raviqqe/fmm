@@ -99,10 +99,6 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
     match instruction {
         Instruction::AllocateHeap(allocate) => vec![allocate.type_().clone()].into_iter().collect(),
         Instruction::ArithmeticOperation(_) => Default::default(),
-        Instruction::Assignment(assignment) => vec![assignment.type_().clone()]
-            .into_iter()
-            .chain(collect_from_expression(assignment.expression()))
-            .collect(),
         Instruction::AtomicLoad(load) => vec![load.type_().clone()].into_iter().collect(),
         Instruction::AtomicStore(store) => vec![store.type_().clone()].into_iter().collect(),
         Instruction::Call(call) => vec![call.type_().clone().into()]
