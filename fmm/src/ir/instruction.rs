@@ -1,6 +1,5 @@
 use super::allocate_heap::AllocateHeap;
 use super::arithmetic_operation::ArithmeticOperation;
-use super::assignment::Assignment;
 use super::atomic_load::AtomicLoad;
 use super::atomic_store::AtomicStore;
 use super::call::Call;
@@ -19,7 +18,6 @@ use super::union_address::UnionAddress;
 pub enum Instruction {
     AllocateHeap(AllocateHeap),
     ArithmeticOperation(ArithmeticOperation),
-    Assignment(Assignment),
     AtomicLoad(AtomicLoad),
     AtomicStore(AtomicStore),
     Call(Call),
@@ -44,12 +42,6 @@ impl From<AllocateHeap> for Instruction {
 impl From<ArithmeticOperation> for Instruction {
     fn from(operation: ArithmeticOperation) -> Self {
         Self::ArithmeticOperation(operation)
-    }
-}
-
-impl From<Assignment> for Instruction {
-    fn from(assignment: Assignment) -> Self {
-        Self::Assignment(assignment)
     }
 }
 

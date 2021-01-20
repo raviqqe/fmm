@@ -107,14 +107,6 @@ fn check_block(
 
                 variables.insert(operation.name().into(), operation.type_().clone().into());
             }
-            Instruction::Assignment(assignment) => {
-                check_equality(
-                    &check_expression(assignment.expression(), &variables)?,
-                    &assignment.type_(),
-                )?;
-
-                variables.insert(assignment.name().into(), assignment.type_().clone());
-            }
             Instruction::AtomicLoad(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,

@@ -37,11 +37,6 @@ fn compile_instruction(instruction: &Instruction) -> String {
             compile_arithmetic_operator(operation.operator()),
             compile_expression(operation.rhs()),
         ),
-        Instruction::Assignment(assignment) => format!(
-            "{}={};",
-            compile_typed_name(&assignment.type_(), assignment.name()),
-            compile_expression(assignment.expression())
-        ),
         Instruction::AtomicLoad(load) => format!(
             "{}=({})atomic_load(({}){});",
             compile_typed_name(&load.type_(), load.name()),
