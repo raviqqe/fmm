@@ -50,7 +50,7 @@ pub fn compile_atomic_pointer_type_id(type_: &Type) -> String {
 
 pub fn compile_primitive_type_id(primitive: types::Primitive) -> String {
     match primitive {
-        types::Primitive::Bool => "bool",
+        types::Primitive::Boolean => "bool",
         types::Primitive::Float32 => "float",
         types::Primitive::Float64 => "double",
         types::Primitive::Integer8 => "uint8_t",

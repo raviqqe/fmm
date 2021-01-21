@@ -29,7 +29,7 @@ impl From<Primitive> for TypedExpression {
         Self::new(
             primitive,
             match primitive {
-                Primitive::Bool(_) => types::Primitive::Bool,
+                Primitive::Boolean(_) => types::Primitive::Boolean,
                 Primitive::Float32(_) => types::Primitive::Float32,
                 Primitive::Float64(_) => types::Primitive::Float64,
                 Primitive::Integer8(_) => types::Primitive::Integer8,
