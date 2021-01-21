@@ -632,9 +632,9 @@ mod tests {
                             "x",
                         )
                         .into()],
-                        Return::new(types::Primitive::Bool, Variable::new("x")),
+                        Return::new(types::Primitive::Boolean, Variable::new("x")),
                     ),
-                    types::Primitive::Bool,
+                    types::Primitive::Boolean,
                     true,
                 ));
             }
@@ -747,7 +747,7 @@ mod tests {
                 Block::new(
                     vec![If::new(
                         types::Primitive::PointerInteger,
-                        Primitive::Bool(true),
+                        Primitive::Boolean(true),
                         Block::new(
                             vec![],
                             Branch::new(
@@ -780,7 +780,7 @@ mod tests {
                 Block::new(
                     vec![If::new(
                         types::Primitive::PointerInteger,
-                        Primitive::Bool(true),
+                        Primitive::Boolean(true),
                         Block::new(
                             vec![],
                             Return::new(
@@ -813,7 +813,7 @@ mod tests {
                 Block::new(
                     vec![If::new(
                         types::Primitive::PointerInteger,
-                        Primitive::Bool(true),
+                        Primitive::Boolean(true),
                         Block::new(vec![], TerminalInstruction::Unreachable),
                         Block::new(
                             vec![],
@@ -893,9 +893,9 @@ mod tests {
                         "y",
                     )
                     .into()],
-                    Return::new(types::Primitive::Bool, Variable::new("y")),
+                    Return::new(types::Primitive::Boolean, Variable::new("y")),
                 ),
-                types::Primitive::Bool,
+                types::Primitive::Boolean,
                 true,
             ));
         }

@@ -129,7 +129,7 @@ impl BlockBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), types::Primitive::Bool)
+        TypedExpression::new(Variable::new(name), types::Primitive::Boolean)
     }
 
     pub fn comparison_operation(
@@ -150,7 +150,7 @@ impl BlockBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), types::Primitive::Bool)
+        TypedExpression::new(Variable::new(name), types::Primitive::Boolean)
     }
 
     pub fn deconstruct_record(

@@ -43,7 +43,7 @@ fn compile_undefined(undefined: &Undefined) -> String {
 
 fn compile_primitive(primitive: Primitive) -> String {
     match primitive {
-        Primitive::Bool(bool) => format!("{}", bool),
+        Primitive::Boolean(boolean) => format!("{}", boolean),
         Primitive::Float32(number) => format!("{}", number),
         Primitive::Float64(number) => format!("{}", number),
         Primitive::Integer8(number) => format!("{}", number),
@@ -55,7 +55,7 @@ fn compile_primitive(primitive: Primitive) -> String {
 
 fn compile_undefined_primitive(primitive: types::Primitive) -> &'static str {
     match primitive {
-        types::Primitive::Bool => "false",
+        types::Primitive::Boolean => "false",
         types::Primitive::Float32 | types::Primitive::Float64 => "0.0",
         types::Primitive::Integer8
         | types::Primitive::Integer32

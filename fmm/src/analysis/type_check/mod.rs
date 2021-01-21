@@ -152,7 +152,7 @@ fn check_block(
                     &cas.type_().clone(),
                 )?;
 
-                variables.insert(cas.name().into(), types::Primitive::Bool.into());
+                variables.insert(cas.name().into(), types::Primitive::Boolean.into());
             }
             Instruction::ComparisonOperation(operation) => {
                 check_equality(
@@ -164,7 +164,7 @@ fn check_block(
                     &operation.type_().into(),
                 )?;
 
-                variables.insert(operation.name().into(), types::Primitive::Bool.into());
+                variables.insert(operation.name().into(), types::Primitive::Boolean.into());
             }
             Instruction::DeconstructRecord(deconstruct) => {
                 check_equality(
@@ -201,7 +201,7 @@ fn check_block(
             Instruction::If(if_) => {
                 check_equality(
                     &check_expression(if_.condition(), &variables)?,
-                    &types::Primitive::Bool.into(),
+                    &types::Primitive::Boolean.into(),
                 )?;
 
                 check_block(if_.then(), &variables, return_type, Some(if_.type_()))?;
@@ -341,7 +341,7 @@ fn check_expression(
 
 fn check_primitive(primitive: Primitive) -> types::Primitive {
     match primitive {
-        Primitive::Bool(_) => types::Primitive::Bool,
+        Primitive::Boolean(_) => types::Primitive::Boolean,
         Primitive::Float32(_) => types::Primitive::Float32,
         Primitive::Float64(_) => types::Primitive::Float64,
         Primitive::Integer8(_) => types::Primitive::Integer8,
@@ -527,7 +527,7 @@ mod tests {
                 Block::new(
                     vec![If::new(
                         types::Primitive::Float64,
-                        Primitive::Bool(true),
+                        Primitive::Boolean(true),
                         Block::new(
                             vec![],
                             Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
