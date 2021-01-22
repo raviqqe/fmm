@@ -727,7 +727,7 @@ mod tests {
                     .into()],
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
-                pointer_type.clone(),
+                pointer_type,
                 true,
             )],
         ))
@@ -745,9 +745,7 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
                 Block::new(
-                    vec![
-                        RecordAddress::new(record_type.clone(), Variable::new("x"), 0, "y").into(),
-                    ],
+                    vec![RecordAddress::new(record_type, Variable::new("x"), 0, "y").into()],
                     Return::new(
                         types::Pointer::new(types::Primitive::PointerInteger),
                         Variable::new("y"),
@@ -771,7 +769,7 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
                 Block::new(
-                    vec![UnionAddress::new(union_type.clone(), Variable::new("x"), 0, "y").into()],
+                    vec![UnionAddress::new(union_type, Variable::new("x"), 0, "y").into()],
                     Return::new(
                         types::Pointer::new(types::Primitive::PointerInteger),
                         Variable::new("y"),
