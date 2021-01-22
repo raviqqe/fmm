@@ -561,6 +561,23 @@ mod tests {
         }
 
         #[test]
+        fn compile_allocate_stack() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![AllocateStack::new(types::Primitive::PointerInteger, "y").into()],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::PointerInteger),
+                true,
+            ));
+        }
+
+        #[test]
         fn compile_allocate_heap_with_function_pointer() {
             let function_type = types::Function::new(
                 vec![types::Primitive::PointerInteger.into()],

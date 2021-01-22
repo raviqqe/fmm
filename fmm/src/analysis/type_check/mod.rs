@@ -95,6 +95,12 @@ fn check_block(
                     types::Pointer::new(allocate.type_().clone()).into(),
                 );
             }
+            Instruction::AllocateStack(allocate) => {
+                variables.insert(
+                    allocate.name().into(),
+                    types::Pointer::new(allocate.type_().clone()).into(),
+                );
+            }
             Instruction::ArithmeticOperation(operation) => {
                 check_equality(
                     &check_expression(operation.lhs(), &variables)?,
@@ -482,6 +488,48 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_allocate_heap() -> Result<(), TypeCheckError> {
+        let pointer_type = types::Pointer::new(types::Primitive::Float64);
+
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Primitive::PointerInteger)],
+                Block::new(
+                    vec![AllocateHeap::new(types::Primitive::Float64, "x").into()],
+                    Return::new(pointer_type.clone(), Variable::new("x")),
+                ),
+                pointer_type,
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_allocate_stack() -> Result<(), TypeCheckError> {
+        let pointer_type = types::Pointer::new(types::Primitive::Float64);
+
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Primitive::PointerInteger)],
+                Block::new(
+                    vec![AllocateStack::new(types::Primitive::Float64, "x").into()],
+                    Return::new(pointer_type.clone(), Variable::new("x")),
+                ),
+                pointer_type,
                 true,
             )],
         ))

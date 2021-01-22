@@ -30,6 +30,19 @@ fn compile_instruction(instruction: &Instruction) -> String {
                 compile_type_id(allocate.type_())
             )
         }
+        Instruction::AllocateStack(allocate) => {
+            let entity_name = allocate.name().to_owned() + "_entity";
+
+            format!(
+                "{};\n  {}=&{};",
+                compile_typed_name(allocate.type_(), &entity_name),
+                compile_typed_name(
+                    &types::Pointer::new(allocate.type_().clone()).into(),
+                    allocate.name(),
+                ),
+                entity_name,
+            )
+        }
         Instruction::ArithmeticOperation(operation) => format!(
             "{}={}{}{};",
             compile_typed_name(&operation.type_().into(), operation.name()),
