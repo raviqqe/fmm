@@ -6,7 +6,9 @@ pub enum Primitive {
     Integer8(u8),
     Integer32(u32),
     Integer64(u64),
-    PointerInteger(u64),
+    // Pointer integers are signed as it's expected to be architecture-agnostic
+    // relative values.
+    PointerInteger(i64),
 }
 
 impl From<bool> for Primitive {
@@ -27,8 +29,8 @@ impl From<f64> for Primitive {
     }
 }
 
-impl From<u64> for Primitive {
-    fn from(number: u64) -> Self {
+impl From<i64> for Primitive {
+    fn from(number: i64) -> Self {
         Self::PointerInteger(number)
     }
 }
