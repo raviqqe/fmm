@@ -17,15 +17,13 @@ const INCLUDES: &[&str] = &[
     "#include <stdlib.h>",
 ];
 
-pub fn compile(module: &Module, custom_malloc_function_name: Option<impl Into<String>>) -> String {
+pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> String {
     check_types(module).unwrap();
 
     let strings = INCLUDES
         .iter()
         .map(|&string| string.into())
         .chain(if let Some(name) = custom_malloc_function_name {
-            let name = name.into();
-
             vec![
                 format!("#define malloc(size) {}(size)", name),
                 format!("void* {}(size_t);", name),
@@ -207,7 +205,7 @@ mod tests {
     fn compile_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
-        let source = compile(module, Some("my_malloc"));
+        let source = compile(module, Some("my_malloc".into()));
 
         println!("{}", source);
 
