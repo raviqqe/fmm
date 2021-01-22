@@ -35,6 +35,15 @@ impl BlockBuilder {
         TypedExpression::new(Variable::new(name), types::Pointer::new(type_))
     }
 
+    pub fn allocate_stack(&self, type_: impl Into<Type>) -> TypedExpression {
+        let name = self.generate_name();
+        let type_ = type_.into();
+
+        self.add_instruction(AllocateStack::new(type_.clone(), &name));
+
+        TypedExpression::new(Variable::new(name), types::Pointer::new(type_))
+    }
+
     pub fn arithmetic_operation(
         &self,
         operator: ArithmeticOperator,

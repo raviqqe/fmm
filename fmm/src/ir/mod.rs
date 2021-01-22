@@ -1,4 +1,5 @@
 mod allocate_heap;
+mod allocate_stack;
 mod argument;
 mod arithmetic_operation;
 mod atomic_load;
@@ -32,6 +33,7 @@ mod variable_declaration;
 mod variable_definition;
 
 pub use allocate_heap::*;
+pub use allocate_stack::*;
 pub use argument::*;
 pub use arithmetic_operation::*;
 pub use atomic_load::*;

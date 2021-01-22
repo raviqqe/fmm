@@ -561,6 +561,23 @@ mod tests {
         }
 
         #[test]
+        fn compile_allocate_stack() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![AllocateStack::new(types::Primitive::PointerInteger, "y").into()],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::PointerInteger),
+                true,
+            ));
+        }
+
+        #[test]
         fn compile_allocate_heap_with_function_pointer() {
             let function_type = types::Function::new(
                 vec![types::Primitive::PointerInteger.into()],
@@ -909,9 +926,7 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
                 Block::new(
-                    vec![
-                        RecordAddress::new(record_type.clone(), Variable::new("x"), 0, "y").into(),
-                    ],
+                    vec![RecordAddress::new(record_type, Variable::new("x"), 0, "y").into()],
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
@@ -931,7 +946,7 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
                 Block::new(
-                    vec![UnionAddress::new(union_type.clone(), Variable::new("x"), 0, "y").into()],
+                    vec![UnionAddress::new(union_type, Variable::new("x"), 0, "y").into()],
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
