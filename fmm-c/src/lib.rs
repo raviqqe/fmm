@@ -1,10 +1,8 @@
-mod configuration;
 mod expressions;
 mod instructions;
 mod names;
 mod types;
 
-pub use configuration::*;
 use expressions::*;
 use fmm::analysis::*;
 use fmm::ir::*;
@@ -19,22 +17,21 @@ const INCLUDES: &[&str] = &[
     "#include <stdlib.h>",
 ];
 
-pub fn compile(module: &Module, configuration: &CompileConfiguration) -> String {
+pub fn compile(module: &Module, custom_malloc_function_name: Option<impl Into<String>>) -> String {
     check_types(module).unwrap();
 
     let strings = INCLUDES
         .iter()
         .map(|&string| string.into())
-        .chain(if configuration.malloc_function_name == "malloc" {
-            vec![]
-        } else {
+        .chain(if let Some(name) = custom_malloc_function_name {
+            let name = name.into();
+
             vec![
-                format!(
-                    "#define malloc(size) {}(size)",
-                    configuration.malloc_function_name
-                ),
-                format!("void* {}(size_t);", configuration.malloc_function_name),
+                format!("#define malloc(size) {}(size)", name),
+                format!("void* {}(size_t);", name),
             ]
+        } else {
+            vec![]
         })
         .chain(
             collect_types(module)
@@ -210,12 +207,7 @@ mod tests {
     fn compile_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
-        let source = compile(
-            module,
-            &CompileConfiguration {
-                malloc_function_name: "my_malloc".into(),
-            },
-        );
+        let source = compile(module, Some("my_malloc"));
 
         println!("{}", source);
 
