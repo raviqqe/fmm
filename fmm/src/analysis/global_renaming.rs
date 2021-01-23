@@ -95,7 +95,7 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
 
     match instruction {
         Instruction::ArithmeticOperation(operation) => ArithmeticOperation::new(
-            operation.type_().clone(),
+            operation.type_(),
             operation.operator(),
             rename_expression(operation.lhs()),
             rename_expression(operation.rhs()),
@@ -133,7 +133,7 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
         )
         .into(),
         Instruction::ComparisonOperation(operation) => ComparisonOperation::new(
-            operation.type_().clone(),
+            operation.type_(),
             operation.operator(),
             rename_expression(operation.lhs()),
             rename_expression(operation.rhs()),
@@ -330,7 +330,7 @@ mod tests {
                         vec![],
                         Return::new(function_type.clone(), Variable::new("y"))
                     ),
-                    function_type.clone(),
+                    function_type,
                     false,
                 )],
             )
@@ -465,10 +465,7 @@ mod tests {
                     "g",
                     vec![],
                     Block::new(
-                        vec![
-                            Call::new(function_type.clone(), Variable::new("g"), vec![], "f")
-                                .into()
-                        ],
+                        vec![Call::new(function_type, Variable::new("g"), vec![], "f").into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("f"))
                     ),
                     types::Primitive::PointerInteger,
