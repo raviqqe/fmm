@@ -35,6 +35,28 @@ pub enum Instruction {
     UnionAddress(UnionAddress),
 }
 
+impl Instruction {
+    pub fn name(&self) -> Option<&str> {
+        match self {
+            Self::AllocateHeap(allocate) => Some(allocate.name()),
+            Self::AllocateStack(allocate) => Some(allocate.name()),
+            Self::ArithmeticOperation(operation) => Some(operation.name()),
+            Self::AtomicLoad(load) => Some(load.name()),
+            Self::Call(call) => Some(call.name()),
+            Self::CompareAndSwap(cas) => Some(cas.name()),
+            Self::ComparisonOperation(operation) => Some(operation.name()),
+            Self::DeconstructRecord(deconstruct) => Some(deconstruct.name()),
+            Self::DeconstructUnion(deconstruct) => Some(deconstruct.name()),
+            Self::If(if_) => Some(if_.name()),
+            Self::Load(load) => Some(load.name()),
+            Self::PointerAddress(address) => Some(address.name()),
+            Self::RecordAddress(address) => Some(address.name()),
+            Self::UnionAddress(address) => Some(address.name()),
+            Self::AtomicStore(_) | Self::Store(_) => None,
+        }
+    }
+}
+
 impl From<AllocateHeap> for Instruction {
     fn from(allocate: AllocateHeap) -> Self {
         Self::AllocateHeap(allocate)
