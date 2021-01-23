@@ -1,13 +1,15 @@
 mod expressions;
 mod instructions;
 mod names;
+mod renaming;
 mod types;
 
 use expressions::*;
-use fmm::analysis::*;
+use fmm::analysis::{check_types, collect_types};
 use fmm::ir::*;
 use instructions::*;
 use names::*;
+use renaming::rename_names;
 use types::*;
 
 const INCLUDES: &[&str] = &[
@@ -19,6 +21,8 @@ const INCLUDES: &[&str] = &[
 
 pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> String {
     check_types(module).unwrap();
+
+    let module = rename_names(module);
 
     let strings = INCLUDES
         .iter()
@@ -32,7 +36,7 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
             vec![]
         })
         .chain(
-            collect_types(module)
+            collect_types(&module)
                 .iter()
                 .filter_map(|type_| match type_ {
                     fmm::types::Type::Record(record) => {
@@ -228,6 +232,19 @@ mod tests {
     #[test]
     fn compile_empty_module() {
         compile_module(&Module::new(vec![], vec![], vec![], vec![]));
+    }
+
+    #[test]
+    fn rename_names_first() {
+        compile_module(&Module::new(
+            vec![VariableDeclaration::new(
+                "😀",
+                types::Primitive::PointerInteger,
+            )],
+            vec![],
+            vec![],
+            vec![],
+        ));
     }
 
     mod variable_declarations {

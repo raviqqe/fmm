@@ -1,6 +1,6 @@
 use crate::ir::*;
 
-pub fn rename_globals(module: &Module, rename: impl Fn(&str) -> String) -> Module {
+pub fn rename_names(module: &Module, rename: impl Fn(&str) -> String) -> Module {
     Module::new(
         module
             .variable_declarations()
@@ -236,7 +236,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_globals(
+            rename_names(
                 &Module::new(
                     vec![VariableDeclaration::new(
                         "x",
@@ -283,7 +283,7 @@ mod tests {
         let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_globals(
+            rename_names(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("x", function_type.clone())],
@@ -324,7 +324,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_globals(
+            rename_names(
                 &Module::new(
                     vec![],
                     vec![],
@@ -377,7 +377,7 @@ mod tests {
         let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_globals(
+            rename_names(
                 &Module::new(
                     vec![],
                     vec![],
@@ -418,7 +418,7 @@ mod tests {
         let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_globals(
+            rename_names(
                 &Module::new(
                     vec![],
                     vec![],
