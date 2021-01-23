@@ -1,58 +1,51 @@
 use crate::ir::*;
-use std::collections::HashMap;
 
-pub fn rename_globals(module: &Module, names: &HashMap<String, String>) -> Module {
+pub fn rename_globals(module: &Module, rename: impl Fn(&str) -> String) -> Module {
     Module::new(
         module
             .variable_declarations()
             .iter()
-            .map(|declaration| rename_variable_declaration(declaration, names))
+            .map(|declaration| rename_variable_declaration(declaration, &rename))
             .collect(),
         module
             .function_declarations()
             .iter()
-            .map(|declaration| rename_function_declaration(declaration, names))
+            .map(|declaration| rename_function_declaration(declaration, &rename))
             .collect(),
         module
             .variable_definitions()
             .iter()
-            .map(|definition| rename_variable_definition(definition, names))
+            .map(|definition| rename_variable_definition(definition, &rename))
             .collect(),
         module
             .function_definitions()
             .iter()
-            .map(|definition| rename_function_definition(definition, names))
+            .map(|definition| rename_function_definition(definition, &rename))
             .collect(),
     )
 }
 
 fn rename_variable_declaration(
     declaration: &VariableDeclaration,
-    names: &HashMap<String, String>,
+    rename: &impl Fn(&str) -> String,
 ) -> VariableDeclaration {
-    VariableDeclaration::new(
-        rename_name(declaration.name(), names),
-        declaration.type_().clone(),
-    )
+    VariableDeclaration::new(rename(declaration.name()), declaration.type_().clone())
 }
 
 fn rename_function_declaration(
     declaration: &FunctionDeclaration,
-    names: &HashMap<String, String>,
+    rename: &impl Fn(&str) -> String,
 ) -> FunctionDeclaration {
-    FunctionDeclaration::new(
-        rename_name(declaration.name(), names),
-        declaration.type_().clone(),
-    )
+    FunctionDeclaration::new(rename(declaration.name()), declaration.type_().clone())
 }
 
 fn rename_variable_definition(
     definition: &VariableDefinition,
-    names: &HashMap<String, String>,
+    rename: &impl Fn(&str) -> String,
 ) -> VariableDefinition {
     VariableDefinition::new(
-        rename_name(definition.name(), names),
-        rename_expression(definition.body(), names),
+        rename(definition.name()),
+        rename_expression(definition.body(), rename),
         definition.type_().clone(),
         definition.is_mutable(),
         definition.is_global(),
@@ -61,37 +54,30 @@ fn rename_variable_definition(
 
 fn rename_function_definition(
     definition: &FunctionDefinition,
-    names: &HashMap<String, String>,
+    rename: &impl Fn(&str) -> String,
 ) -> FunctionDefinition {
     FunctionDefinition::new(
-        rename_name(definition.name(), names),
+        rename(definition.name()),
         definition.arguments().to_vec(),
-        rename_block(definition.body(), names),
+        rename_block(definition.body(), rename),
         definition.result_type().clone(),
         definition.is_global(),
     )
 }
 
-fn rename_block(block: &Block, names: &HashMap<String, String>) -> Block {
-    let mut names = names.clone();
-    let mut instructions = vec![];
-
-    for instruction in block.instructions() {
-        instructions.push(rename_instruction(instruction, &names));
-
-        if let Some(name) = instruction.name() {
-            names.remove(name);
-        }
-    }
-
+fn rename_block(block: &Block, rename: &impl Fn(&str) -> String) -> Block {
     Block::new(
-        instructions,
-        rename_terminal_instruction(block.terminal_instruction(), &names),
+        block
+            .instructions()
+            .iter()
+            .map(|instruction| rename_instruction(instruction, rename))
+            .collect(),
+        rename_terminal_instruction(block.terminal_instruction(), rename),
     )
 }
 
-fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>) -> Instruction {
-    let rename_expression = |expression| rename_expression(expression, names);
+fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> String) -> Instruction {
+    let rename_expression = |expression| rename_expression(expression, rename);
 
     match instruction {
         Instruction::ArithmeticOperation(operation) => ArithmeticOperation::new(
@@ -99,13 +85,13 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
             operation.operator(),
             rename_expression(operation.lhs()),
             rename_expression(operation.rhs()),
-            operation.name(),
+            rename(operation.name()),
         )
         .into(),
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             load.type_().clone(),
             rename_expression(load.pointer()),
-            load.name(),
+            rename(load.name()),
         )
         .into(),
         Instruction::AtomicStore(store) => AtomicStore::new(
@@ -121,7 +107,7 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
                 .iter()
                 .map(|argument| rename_expression(argument))
                 .collect(),
-            call.name(),
+            rename(call.name()),
         )
         .into(),
         Instruction::CompareAndSwap(cas) => CompareAndSwap::new(
@@ -129,7 +115,7 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
             rename_expression(cas.pointer()),
             rename_expression(cas.old_value()),
             rename_expression(cas.new_value()),
-            cas.name(),
+            rename(cas.name()),
         )
         .into(),
         Instruction::ComparisonOperation(operation) => ComparisonOperation::new(
@@ -137,49 +123,49 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
             operation.operator(),
             rename_expression(operation.lhs()),
             rename_expression(operation.rhs()),
-            operation.name(),
+            rename(operation.name()),
         )
         .into(),
         Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
             deconstruct.type_().clone(),
             rename_expression(deconstruct.record()),
             deconstruct.element_index(),
-            deconstruct.name(),
+            rename(deconstruct.name()),
         )
         .into(),
         Instruction::DeconstructUnion(deconstruct) => DeconstructUnion::new(
             deconstruct.type_().clone(),
             rename_expression(deconstruct.union()),
             deconstruct.member_index(),
-            deconstruct.name(),
+            rename(deconstruct.name()),
         )
         .into(),
         Instruction::If(if_) => If::new(
             if_.type_().clone(),
             rename_expression(if_.condition()),
-            rename_block(if_.then(), names),
-            rename_block(if_.else_(), names),
-            if_.name(),
+            rename_block(if_.then(), rename),
+            rename_block(if_.else_(), rename),
+            rename(if_.name()),
         )
         .into(),
         Instruction::Load(load) => Load::new(
             load.type_().clone(),
             rename_expression(load.pointer()),
-            load.name(),
+            rename(load.name()),
         )
         .into(),
         Instruction::PointerAddress(address) => PointerAddress::new(
             address.type_().clone(),
             rename_expression(address.pointer()),
             rename_expression(address.offset()),
-            address.name(),
+            rename(address.name()),
         )
         .into(),
         Instruction::RecordAddress(address) => RecordAddress::new(
             address.type_().clone(),
             rename_expression(address.pointer()),
             address.element_index(),
-            address.name(),
+            rename(address.name()),
         )
         .into(),
         Instruction::Store(store) => Store::new(
@@ -192,7 +178,7 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
             address.type_().clone(),
             rename_expression(address.pointer()),
             address.member_index(),
-            address.name(),
+            rename(address.name()),
         )
         .into(),
         Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => instruction.clone(),
@@ -201,47 +187,43 @@ fn rename_instruction(instruction: &Instruction, names: &HashMap<String, String>
 
 fn rename_terminal_instruction(
     instruction: &TerminalInstruction,
-    names: &HashMap<String, String>,
+    rename: &impl Fn(&str) -> String,
 ) -> TerminalInstruction {
     match instruction {
         TerminalInstruction::Branch(branch) => Branch::new(
             branch.type_().clone(),
-            rename_expression(branch.expression(), names),
+            rename_expression(branch.expression(), rename),
         )
         .into(),
         TerminalInstruction::Return(return_) => Return::new(
             return_.type_().clone(),
-            rename_expression(return_.expression(), names),
+            rename_expression(return_.expression(), rename),
         )
         .into(),
         TerminalInstruction::Unreachable => TerminalInstruction::Unreachable,
     }
 }
 
-fn rename_expression(expression: &Expression, names: &HashMap<String, String>) -> Expression {
+fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) -> Expression {
     match expression {
         Expression::Record(record) => Record::new(
             record.type_().clone(),
             record
                 .elements()
                 .iter()
-                .map(|element| rename_expression(element, names))
+                .map(|element| rename_expression(element, rename))
                 .collect(),
         )
         .into(),
         Expression::Union(union) => Union::new(
             union.type_().clone(),
             union.member_index(),
-            rename_expression(union.member(), names),
+            rename_expression(union.member(), rename),
         )
         .into(),
-        Expression::Variable(variable) => Variable::new(rename_name(variable.name(), names)).into(),
+        Expression::Variable(variable) => Variable::new(rename(variable.name())).into(),
         Expression::Primitive(_) | Expression::Undefined(_) => expression.clone(),
     }
-}
-
-fn rename_name(name: &str, names: &HashMap<String, String>) -> String {
-    names.get(name).cloned().unwrap_or_else(|| name.into())
 }
 
 #[cfg(test)]
@@ -273,7 +255,7 @@ mod tests {
                         false,
                     )],
                 ),
-                &vec![("x".into(), "y".into())].into_iter().collect(),
+                |name| if name == "x" { "y".into() } else { name.into() },
             ),
             Module::new(
                 vec![VariableDeclaration::new(
@@ -317,7 +299,7 @@ mod tests {
                         false,
                     )],
                 ),
-                &vec![("x".into(), "y".into())].into_iter().collect(),
+                |name| if name == "x" { "y".into() } else { name.into() },
             ),
             Module::new(
                 vec![],
@@ -364,7 +346,7 @@ mod tests {
                         false,
                     )]
                 ),
-                &vec![("x".into(), "y".into())].into_iter().collect(),
+                |name| if name == "x" { "y".into() } else { name.into() },
             ),
             Module::new(
                 vec![],
@@ -411,7 +393,7 @@ mod tests {
                         false,
                     )]
                 ),
-                &vec![("f".into(), "g".into())].into_iter().collect(),
+                |name| if name == "f" { "g".into() } else { name.into() },
             ),
             Module::new(
                 vec![],
@@ -432,7 +414,7 @@ mod tests {
     }
 
     #[test]
-    fn do_not_rename_local_variable() {
+    fn rename_local_variable() {
         let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
@@ -455,7 +437,7 @@ mod tests {
                         false,
                     )]
                 ),
-                &vec![("f".into(), "g".into())].into_iter().collect(),
+                |name| if name == "f" { "g".into() } else { name.into() },
             ),
             Module::new(
                 vec![],
@@ -465,8 +447,8 @@ mod tests {
                     "g",
                     vec![],
                     Block::new(
-                        vec![Call::new(function_type, Variable::new("g"), vec![], "f").into()],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("f"))
+                        vec![Call::new(function_type, Variable::new("g"), vec![], "g").into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("g"))
                     ),
                     types::Primitive::PointerInteger,
                     false,
