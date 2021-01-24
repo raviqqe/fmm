@@ -2,30 +2,37 @@ use super::types::*;
 use crate::names::*;
 use fmm::ir::*;
 use fmm::types;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-pub fn compile_expression(expression: &Expression, global_variables: &HashSet<String>) -> String {
+pub fn compile_expression(
+    expression: &Expression,
+    global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
+    let compile_expression =
+        |expression| compile_expression(expression, global_variables, type_ids);
+
     match expression {
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
                 "({}){{{}}}",
-                compile_record_type_id(record.type_()),
+                compile_record_type_id(record.type_(), type_ids),
                 record
                     .elements()
                     .iter()
-                    .map(|expression| compile_expression(expression, global_variables))
+                    .map(|expression| compile_expression(expression,))
                     .collect::<Vec<_>>()
                     .join(",")
             )
         }
-        Expression::Undefined(undefined) => compile_undefined(undefined),
+        Expression::Undefined(undefined) => compile_undefined(undefined, type_ids),
         Expression::Union(union) => {
             format!(
                 "({}){{.{}={}}}",
-                compile_union_type_id(union.type_()),
+                compile_union_type_id(union.type_(), type_ids),
                 generate_union_member_name(union.member_index()),
-                compile_expression(union.member(), global_variables)
+                compile_expression(union.member())
             )
         }
         Expression::Variable(variable) => {
@@ -40,13 +47,18 @@ pub fn compile_expression(expression: &Expression, global_variables: &HashSet<St
     }
 }
 
-fn compile_undefined(undefined: &Undefined) -> String {
+fn compile_undefined(
+    undefined: &Undefined,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
     match undefined.type_() {
         types::Type::Function(_) => "NULL".into(),
         types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
         types::Type::Pointer(_) => "NULL".into(),
-        types::Type::Record(record) => format!("({}){{}}", compile_record_type_id(record)),
-        types::Type::Union(union) => format!("({}){{}}", compile_union_type_id(union)),
+        types::Type::Record(record) => {
+            format!("({}){{}}", compile_record_type_id(record, type_ids))
+        }
+        types::Type::Union(union) => format!("({}){{}}", compile_union_type_id(union, type_ids)),
     }
 }
 

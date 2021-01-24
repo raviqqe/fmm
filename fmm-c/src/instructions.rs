@@ -3,29 +3,38 @@ use crate::names::*;
 use crate::types::*;
 use fmm::ir::*;
 use fmm::types;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub fn compile_block(
     block: &Block,
     branch_variable_name: Option<&str>,
     global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     block
         .instructions()
         .iter()
-        .map(|instruction| compile_instruction(instruction, global_variables))
+        .map(|instruction| compile_instruction(instruction, global_variables, type_ids))
         .chain(vec![compile_terminal_instruction(
             block.terminal_instruction(),
             branch_variable_name,
             global_variables,
+            type_ids,
         )])
         .map(|string| "  ".to_owned() + &string)
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<String>) -> String {
-    let compile_expression = |expression| compile_expression(expression, global_variables);
+fn compile_instruction(
+    instruction: &Instruction,
+    global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
+    let compile_expression =
+        |expression| compile_expression(expression, global_variables, type_ids);
+    let compile_typed_name = |type_, name| compile_typed_name(type_, name, type_ids);
+    let compile_type_id = |type_| compile_type_id(type_, type_ids);
 
     match instruction {
         Instruction::AllocateHeap(allocate) => {
@@ -62,12 +71,12 @@ fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<Str
             "{}=({})atomic_load(({}){});",
             compile_typed_name(&load.type_(), load.name()),
             compile_type_id(load.type_()),
-            compile_atomic_pointer_type_id(load.type_()),
+            compile_atomic_pointer_type_id(load.type_(), type_ids),
             compile_expression(load.pointer()),
         ),
         Instruction::AtomicStore(store) => format!(
             "atomic_store(({}){},{});",
-            compile_atomic_pointer_type_id(store.type_()),
+            compile_atomic_pointer_type_id(store.type_(), type_ids),
             compile_expression(store.pointer()),
             compile_expression(store.value()),
         ),
@@ -89,7 +98,7 @@ fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<Str
                 compile_typed_name(cas.type_(), &name),
                 compile_expression(cas.old_value()),
                 cas.name(),
-                compile_atomic_pointer_type_id(cas.type_()),
+                compile_atomic_pointer_type_id(cas.type_(), type_ids),
                 compile_expression(cas.pointer()),
                 name,
                 compile_expression(cas.new_value()),
@@ -120,13 +129,18 @@ fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<Str
             compile_expression(deconstruct.union()),
             generate_union_member_name(deconstruct.member_index()),
         ),
-        Instruction::If(if_) => format!(
-            "{};if({}){{\n{}\n  }}else{{\n{}\n  }}",
-            compile_typed_name(&if_.type_().clone(), if_.name()),
-            compile_expression(if_.condition()),
-            compile_block(if_.then(), Some(if_.name()), global_variables),
-            compile_block(if_.else_(), Some(if_.name()), global_variables)
-        ),
+        Instruction::If(if_) => {
+            let compile_block =
+                |block| compile_block(block, Some(if_.name()), global_variables, type_ids);
+
+            format!(
+                "{};if({}){{\n{}\n  }}else{{\n{}\n  }}",
+                compile_typed_name(&if_.type_().clone(), if_.name()),
+                compile_expression(if_.condition()),
+                compile_block(if_.then()),
+                compile_block(if_.else_())
+            )
+        }
         Instruction::Load(load) => format!(
             "{}=*{};",
             compile_typed_name(load.type_(), load.name()),
@@ -172,8 +186,10 @@ fn compile_terminal_instruction(
     instruction: &TerminalInstruction,
     block_variable_name: Option<&str>,
     global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
-    let compile_expression = |expression| compile_expression(expression, global_variables);
+    let compile_expression =
+        |expression| compile_expression(expression, global_variables, type_ids);
 
     match instruction {
         TerminalInstruction::Branch(branch) => block_variable_name

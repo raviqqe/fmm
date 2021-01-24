@@ -10,7 +10,7 @@ use fmm::ir::*;
 use instructions::*;
 use names::*;
 use renaming::rename_names;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use types::*;
 
 const INCLUDES: &[&str] = &[
@@ -35,6 +35,8 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
                 .map(|declaration| declaration.name().into()),
         )
         .collect();
+    let types = collect_types(&module);
+    let type_ids = compile_type_ids(&types);
 
     INCLUDES
         .iter()
@@ -52,9 +54,11 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
                 .iter()
                 .filter_map(|type_| match type_ {
                     fmm::types::Type::Record(record) => {
-                        Some(compile_record_type_definition(record))
+                        Some(compile_record_type_definition(record, &type_ids))
                     }
-                    fmm::types::Type::Union(union) => Some(compile_union_type_definition(union)),
+                    fmm::types::Type::Union(union) => {
+                        Some(compile_union_type_definition(union, &type_ids))
+                    }
                     _ => None,
                 }),
         )
@@ -62,38 +66,32 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
             module
                 .variable_declarations()
                 .iter()
-                .map(compile_variable_declaration),
+                .map(|declaration| compile_variable_declaration(declaration, &type_ids)),
         )
         .chain(
             module
                 .variable_definitions()
                 .iter()
-                .map(compile_variable_forward_declaration),
+                .map(|definition| compile_variable_forward_declaration(definition, &type_ids)),
         )
         .chain(
             module
                 .function_declarations()
                 .iter()
-                .map(compile_function_declaration),
+                .map(|declaration| compile_function_declaration(declaration, &type_ids)),
         )
         .chain(
             module
                 .function_definitions()
                 .iter()
-                .map(compile_function_forward_declaration),
+                .map(|definition| compile_function_forward_declaration(definition, &type_ids)),
         )
-        .chain(
-            module
-                .variable_definitions()
-                .iter()
-                .map(|definition| compile_variable_definition(definition, &global_variables)),
-        )
-        .chain(
-            module
-                .function_definitions()
-                .iter()
-                .map(|definition| compile_function_definition(definition, &global_variables)),
-        )
+        .chain(module.variable_definitions().iter().map(|definition| {
+            compile_variable_definition(definition, &global_variables, &type_ids)
+        }))
+        .chain(module.function_definitions().iter().map(|definition| {
+            compile_function_definition(definition, &global_variables, &type_ids)
+        }))
         .collect::<Vec<_>>()
         .iter()
         .map(|string| string.as_str())
@@ -101,56 +99,82 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
         .join("\n")
 }
 
-fn compile_record_type_definition(record: &fmm::types::Record) -> String {
+fn compile_record_type_definition(
+    record: &fmm::types::Record,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
     format!(
         "struct {} {{{}}};",
-        generate_record_type_name(record),
-        compile_record_elements(record)
+        type_ids[&record.clone().into()],
+        compile_record_elements(record, type_ids)
     )
 }
 
-fn compile_union_type_definition(union: &fmm::types::Union) -> String {
+fn compile_union_type_definition(
+    union: &fmm::types::Union,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
     format!(
         "union {} {{{}}};",
-        generate_union_type_name(union),
-        compile_union_members(union)
+        type_ids[&union.clone().into()],
+        compile_union_members(union, type_ids)
     )
 }
 
-fn compile_variable_declaration(declaration: &VariableDeclaration) -> String {
-    "extern ".to_owned() + &compile_typed_name(declaration.type_(), declaration.name()) + ";"
+fn compile_variable_declaration(
+    declaration: &VariableDeclaration,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
+    "extern ".to_owned()
+        + &compile_typed_name(declaration.type_(), declaration.name(), type_ids)
+        + ";"
 }
 
-fn compile_variable_forward_declaration(definition: &VariableDefinition) -> String {
-    compile_variable_definition_lhs(definition) + ";"
+fn compile_variable_forward_declaration(
+    definition: &VariableDefinition,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
+    compile_variable_definition_lhs(definition, type_ids) + ";"
 }
 
-fn compile_function_declaration(declaration: &FunctionDeclaration) -> String {
-    "extern ".to_owned() + &compile_function_name(declaration.type_(), declaration.name()) + ";"
+fn compile_function_declaration(
+    declaration: &FunctionDeclaration,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
+    "extern ".to_owned()
+        + &compile_function_name(declaration.type_(), declaration.name(), type_ids)
+        + ";"
 }
 
-fn compile_function_forward_declaration(definition: &FunctionDefinition) -> String {
+fn compile_function_forward_declaration(
+    definition: &FunctionDefinition,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
     if definition.is_global() {
         ""
     } else {
         "static "
     }
     .to_owned()
-        + &compile_function_name(definition.type_(), definition.name())
+        + &compile_function_name(definition.type_(), definition.name(), type_ids)
         + ";"
 }
 
 fn compile_variable_definition(
     definition: &VariableDefinition,
     global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
-    compile_variable_definition_lhs(definition)
+    compile_variable_definition_lhs(definition, type_ids)
         + " = "
-        + &compile_expression(definition.body(), global_variables)
+        + &compile_expression(definition.body(), global_variables, type_ids)
         + ";"
 }
 
-fn compile_variable_definition_lhs(definition: &VariableDefinition) -> String {
+fn compile_variable_definition_lhs(
+    definition: &VariableDefinition,
+    type_ids: &HashMap<fmm::types::Type, String>,
+) -> String {
     if definition.is_global() {
         ""
     } else {
@@ -166,12 +190,14 @@ fn compile_variable_definition_lhs(definition: &VariableDefinition) -> String {
             }
             .to_owned()
                 + definition.name()),
+            type_ids,
         )
 }
 
 fn compile_function_definition(
     definition: &FunctionDefinition,
     global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     if definition.is_global() {
         ""
@@ -187,14 +213,47 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(argument.type_(), argument.name()))
+                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
+            type_ids,
         )
         + "{\n"
-        + &compile_block(definition.body(), None, global_variables)
+        + &compile_block(definition.body(), None, global_variables, type_ids)
         + "\n}"
+}
+
+fn compile_type_ids(types: &[fmm::types::Type]) -> HashMap<fmm::types::Type, String> {
+    types
+        .iter()
+        .filter_map(|type_| {
+            if let fmm::types::Type::Record(record) = type_ {
+                Some(record)
+            } else {
+                None
+            }
+        })
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .enumerate()
+        .map(|(index, record)| (record.clone().into(), generate_record_type_name(index)))
+        .chain(
+            types
+                .iter()
+                .filter_map(|type_| {
+                    if let fmm::types::Type::Union(union) = type_ {
+                        Some(union)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .enumerate()
+                .map(|(index, union)| (union.clone().into(), generate_union_type_name(index))),
+        )
+        .collect()
 }
 
 #[cfg(test)]
