@@ -166,7 +166,7 @@ fn collect_from_type(type_: &Type) -> HashSet<Type> {
 
 fn collect_child_types(type_: &Type) -> HashSet<Type> {
     match type_ {
-        Type::Function(function) => vec![function.result().clone()]
+        Type::Function(function) => collect_from_type(function.result())
             .into_iter()
             .chain(function.arguments().iter().flat_map(collect_from_type))
             .collect(),
@@ -201,6 +201,33 @@ mod tests {
             vec![
                 types::Record::new(vec![]).into(),
                 types::Record::new(vec![types::Record::new(vec![]).into()]).into()
+            ]
+        );
+    }
+
+    #[test]
+    fn collect_from_nested_function_types() {
+        assert_eq!(
+            collect_types(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "x",
+                    types::Function::new(
+                        vec![],
+                        types::Function::new(vec![], types::Primitive::PointerInteger)
+                    )
+                )],
+                vec![],
+                vec![]
+            )),
+            vec![
+                types::Primitive::PointerInteger.into(),
+                types::Function::new(vec![], types::Primitive::PointerInteger).into(),
+                types::Function::new(
+                    vec![],
+                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                )
+                .into(),
             ]
         );
     }
