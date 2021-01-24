@@ -3,22 +3,30 @@ use crate::names::*;
 use crate::types::*;
 use fmm::ir::*;
 use fmm::types;
+use std::collections::HashSet;
 
-pub fn compile_block(block: &Block, branch_variable_name: Option<&str>) -> String {
+pub fn compile_block(
+    block: &Block,
+    branch_variable_name: Option<&str>,
+    global_variables: &HashSet<String>,
+) -> String {
     block
         .instructions()
         .iter()
-        .map(compile_instruction)
+        .map(|instruction| compile_instruction(instruction, global_variables))
         .chain(vec![compile_terminal_instruction(
             block.terminal_instruction(),
             branch_variable_name,
+            global_variables,
         )])
         .map(|string| "  ".to_owned() + &string)
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-fn compile_instruction(instruction: &Instruction) -> String {
+fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<String>) -> String {
+    let compile_expression = |expression| compile_expression(expression, global_variables);
+
     match instruction {
         Instruction::AllocateHeap(allocate) => {
             format!(
@@ -116,8 +124,8 @@ fn compile_instruction(instruction: &Instruction) -> String {
             "{};if({}){{\n{}\n  }}else{{\n{}\n  }}",
             compile_typed_name(&if_.type_().clone(), if_.name()),
             compile_expression(if_.condition()),
-            compile_block(if_.then(), Some(if_.name())),
-            compile_block(if_.else_(), Some(if_.name()))
+            compile_block(if_.then(), Some(if_.name()), global_variables),
+            compile_block(if_.else_(), Some(if_.name()), global_variables)
         ),
         Instruction::Load(load) => format!(
             "{}=*{};",
@@ -163,13 +171,16 @@ fn compile_instruction(instruction: &Instruction) -> String {
 fn compile_terminal_instruction(
     instruction: &TerminalInstruction,
     block_variable_name: Option<&str>,
+    global_variables: &HashSet<String>,
 ) -> String {
+    let compile_expression = |expression| compile_expression(expression, global_variables);
+
     match instruction {
         TerminalInstruction::Branch(branch) => block_variable_name
-            .map(|name| format!("{}={};", name, compile_expression(branch.expression())))
+            .map(|name| format!("{}={};", name, compile_expression(branch.expression(),)))
             .unwrap_or_default(),
         TerminalInstruction::Return(return_) => {
-            format!("return {};", compile_expression(return_.expression()))
+            format!("return {};", compile_expression(return_.expression(),))
         }
         TerminalInstruction::Unreachable => "abort();".into(),
     }

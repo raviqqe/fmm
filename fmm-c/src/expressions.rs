@@ -2,8 +2,9 @@ use super::types::*;
 use crate::names::*;
 use fmm::ir::*;
 use fmm::types;
+use std::collections::HashSet;
 
-pub fn compile_expression(expression: &Expression) -> String {
+pub fn compile_expression(expression: &Expression, global_variables: &HashSet<String>) -> String {
     match expression {
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
@@ -13,7 +14,7 @@ pub fn compile_expression(expression: &Expression) -> String {
                 record
                     .elements()
                     .iter()
-                    .map(compile_expression)
+                    .map(|expression| compile_expression(expression, global_variables))
                     .collect::<Vec<_>>()
                     .join(",")
             )
@@ -24,10 +25,18 @@ pub fn compile_expression(expression: &Expression) -> String {
                 "({}){{.{}={}}}",
                 compile_union_type_id(union.type_()),
                 generate_union_member_name(union.member_index()),
-                compile_expression(union.member())
+                compile_expression(union.member(), global_variables)
             )
         }
-        Expression::Variable(variable) => variable.name().into(),
+        Expression::Variable(variable) => {
+            if global_variables.contains(variable.name()) {
+                "&"
+            } else {
+                ""
+            }
+            .to_owned()
+                + variable.name().into()
+        }
     }
 }
 
