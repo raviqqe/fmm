@@ -1,17 +1,26 @@
-use super::names::*;
+use crate::names::*;
 use fmm::types::{self, Type};
+use std::collections::HashMap;
 
-pub fn compile_typed_name(type_: &Type, name: &str) -> String {
+pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &HashMap<Type, String>) -> String {
     match type_ {
-        Type::Function(function) => compile_function_name(function, &format!("(*{})", name)),
+        Type::Function(function) => {
+            compile_function_name(function, &format!("(*{})", name), type_ids)
+        }
         Type::Primitive(primitive) => compile_primitive_type_id(*primitive) + " " + name,
-        Type::Record(record) => compile_record_type_id(record) + " " + name,
-        Type::Pointer(pointer) => compile_typed_name(pointer.element(), &format!("*{}", name)),
-        Type::Union(union) => compile_union_type_id(union) + " " + name,
+        Type::Record(record) => compile_record_type_id(record, type_ids) + " " + name,
+        Type::Pointer(pointer) => {
+            compile_typed_name(pointer.element(), &format!("*{}", name), type_ids)
+        }
+        Type::Union(union) => compile_union_type_id(union, type_ids) + " " + name,
     }
 }
 
-pub fn compile_function_name(function: &types::Function, name: &str) -> String {
+pub fn compile_function_name(
+    function: &types::Function,
+    name: &str,
+    type_ids: &HashMap<Type, String>,
+) -> String {
     compile_typed_name(
         function.result(),
         &format!(
@@ -21,29 +30,34 @@ pub fn compile_function_name(function: &types::Function, name: &str) -> String {
                 .arguments()
                 .iter()
                 .enumerate()
-                .map(|(index, type_)| compile_typed_name(type_, &generate_argument_name(index)))
+                .map(|(index, type_)| compile_typed_name(
+                    type_,
+                    &generate_argument_name(index),
+                    type_ids
+                ))
                 .collect::<Vec<_>>()
                 .join(",")
         ),
+        type_ids,
     )
 }
 
-pub fn compile_type_id(type_: &Type) -> String {
+pub fn compile_type_id(type_: &Type, type_ids: &HashMap<Type, String>) -> String {
     match type_ {
-        Type::Function(function) => compile_function_name(function, "(*)"),
+        Type::Function(function) => compile_function_name(function, "(*)", type_ids),
         Type::Primitive(primitive) => compile_primitive_type_id(*primitive),
-        Type::Record(record) => compile_record_type_id(record),
-        Type::Pointer(pointer) => compile_typed_name(pointer.element(), "*"),
-        Type::Union(union) => compile_union_type_id(union),
+        Type::Record(record) => compile_record_type_id(record, type_ids),
+        Type::Pointer(pointer) => compile_typed_name(pointer.element(), "*", type_ids),
+        Type::Union(union) => compile_union_type_id(union, type_ids),
     }
 }
 
-pub fn compile_atomic_pointer_type_id(type_: &Type) -> String {
+pub fn compile_atomic_pointer_type_id(type_: &Type, type_ids: &HashMap<Type, String>) -> String {
     match type_ {
-        Type::Function(function) => compile_function_name(function, "(*_Atomic *)"),
-        Type::Pointer(pointer) => compile_typed_name(pointer.element(), "_Atomic *"),
+        Type::Function(function) => compile_function_name(function, "(*_Atomic *)", type_ids),
+        Type::Pointer(pointer) => compile_typed_name(pointer.element(), "_Atomic *", type_ids),
         Type::Primitive(_) | Type::Record(_) | Type::Union(_) => {
-            "_Atomic ".to_owned() + &compile_type_id(type_) + " *"
+            "_Atomic ".to_owned() + &compile_type_id(type_, type_ids) + " *"
         }
     }
 }
@@ -61,30 +75,34 @@ pub fn compile_primitive_type_id(primitive: types::Primitive) -> String {
     .into()
 }
 
-pub fn compile_record_type_id(record: &types::Record) -> String {
-    "struct ".to_owned() + &generate_record_type_name(record)
+pub fn compile_record_type_id(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
+    "struct ".to_owned() + &type_ids[&record.clone().into()]
 }
 
-pub fn compile_union_type_id(union: &types::Union) -> String {
-    "union ".to_owned() + &generate_union_type_name(union)
+pub fn compile_union_type_id(union: &types::Union, type_ids: &HashMap<Type, String>) -> String {
+    "union ".to_owned() + &type_ids[&union.clone().into()]
 }
 
-pub fn compile_record_elements(record: &types::Record) -> String {
+pub fn compile_record_elements(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
     record
         .elements()
         .iter()
         .enumerate()
-        .map(|(index, type_)| compile_typed_name(type_, &generate_record_element_name(index)) + ";")
+        .map(|(index, type_)| {
+            compile_typed_name(type_, &generate_record_element_name(index), type_ids) + ";"
+        })
         .collect::<Vec<_>>()
         .join("")
 }
 
-pub fn compile_union_members(union: &types::Union) -> String {
+pub fn compile_union_members(union: &types::Union, type_ids: &HashMap<Type, String>) -> String {
     union
         .members()
         .iter()
         .enumerate()
-        .map(|(index, type_)| compile_typed_name(type_, &generate_union_member_name(index)) + ";")
+        .map(|(index, type_)| {
+            compile_typed_name(type_, &generate_union_member_name(index), type_ids) + ";"
+        })
         .collect::<Vec<_>>()
         .join("")
 }
