@@ -139,7 +139,7 @@ fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<Str
             compile_expression(address.offset()),
         ),
         Instruction::RecordAddress(address) => format!(
-            "{}=&{}->{};",
+            "{}=&({})->{};",
             compile_typed_name(
                 &types::Pointer::new(address.type_().elements()[address.element_index()].clone())
                     .into(),
@@ -155,7 +155,7 @@ fn compile_instruction(instruction: &Instruction, global_variables: &HashSet<Str
         ),
         Instruction::UnionAddress(address) => {
             format!(
-                "{}=&{}->{};",
+                "{}=&({})->{};",
                 compile_typed_name(
                     &types::Pointer::new(address.type_().members()[address.member_index()].clone())
                         .into(),

@@ -954,6 +954,28 @@ mod tests {
         }
 
         #[test]
+        fn compile_record_address_with_global_variable() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new("x", record_type.clone())],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![RecordAddress::new(record_type, Variable::new("x"), 0, "y").into()],
+                        Return::new(pointer_type.clone(), Variable::new("y")),
+                    ),
+                    pointer_type,
+                    true,
+                )],
+            ));
+        }
+
+        #[test]
         fn compile_union_address() {
             let union_type = types::Union::new(vec![
                 types::Primitive::PointerInteger.into(),
@@ -970,6 +992,31 @@ mod tests {
                 ),
                 pointer_type,
                 true,
+            ));
+        }
+
+        #[test]
+        fn compile_union_address_with_global_variable() {
+            let union_type = types::Union::new(vec![
+                types::Primitive::PointerInteger.into(),
+                types::Primitive::Float64.into(),
+            ]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new("x", union_type.clone())],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![UnionAddress::new(union_type, Variable::new("x"), 0, "y").into()],
+                        Return::new(pointer_type.clone(), Variable::new("y")),
+                    ),
+                    pointer_type,
+                    true,
+                )],
             ));
         }
     }
