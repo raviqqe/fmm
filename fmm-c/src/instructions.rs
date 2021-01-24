@@ -21,7 +21,7 @@ pub fn compile_block(
             global_variables,
             type_ids,
         )])
-        .map(|string| "  ".to_owned() + &string)
+        .map(|string| "".to_owned() + &string)
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -51,7 +51,7 @@ fn compile_instruction(
             let entity_name = allocate.name().to_owned() + "_entity";
 
             format!(
-                "{};\n  {}=&{};",
+                "{};{}=&{};",
                 compile_typed_name(allocate.type_(), &entity_name),
                 compile_typed_name(
                     &types::Pointer::new(allocate.type_().clone()).into(),
@@ -94,7 +94,7 @@ fn compile_instruction(
             let name = "_cas_".to_owned() + cas.name();
 
             format!(
-                "{}={};\n  bool {}=atomic_compare_exchange_strong(({}){},&{},{});",
+                "{}={};bool {}=atomic_compare_exchange_strong(({}){},&{},{});",
                 compile_typed_name(cas.type_(), &name),
                 compile_expression(cas.old_value()),
                 cas.name(),
@@ -134,7 +134,7 @@ fn compile_instruction(
                 |block| compile_block(block, Some(if_.name()), global_variables, type_ids);
 
             format!(
-                "{};if({}){{\n{}\n  }}else{{\n{}\n  }}",
+                "{};if({}){{\n{}\n}}else{{\n{}\n}}",
                 compile_typed_name(&if_.type_().clone(), if_.name()),
                 compile_expression(if_.condition()),
                 compile_block(if_.then()),
