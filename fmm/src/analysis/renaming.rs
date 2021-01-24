@@ -58,7 +58,11 @@ fn rename_function_definition(
 ) -> FunctionDefinition {
     FunctionDefinition::new(
         rename(definition.name()),
-        definition.arguments().to_vec(),
+        definition
+            .arguments()
+            .iter()
+            .map(|argument| Argument::new(rename(argument.name()), argument.type_().clone()))
+            .collect(),
         rename_block(definition.body(), rename),
         definition.result_type().clone(),
         definition.is_global(),
@@ -449,6 +453,45 @@ mod tests {
                     Block::new(
                         vec![Call::new(function_type, Variable::new("g"), vec![], "g").into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("g"))
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                )]
+            )
+        );
+    }
+
+    #[test]
+    fn rename_arguments_in_function_definition() {
+        assert_eq!(
+            rename_names(
+                &Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![Argument::new("x", types::Primitive::PointerInteger)],
+                        Block::new(
+                            vec![],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("x"))
+                        ),
+                        types::Primitive::PointerInteger,
+                        false,
+                    )]
+                ),
+                |name| if name == "x" { "y".into() } else { name.into() },
+            ),
+            Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("y", types::Primitive::PointerInteger)],
+                    Block::new(
+                        vec![],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y"))
                     ),
                     types::Primitive::PointerInteger,
                     false,
