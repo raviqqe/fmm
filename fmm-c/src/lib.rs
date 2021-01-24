@@ -10,6 +10,7 @@ use fmm::ir::*;
 use instructions::*;
 use names::*;
 use renaming::rename_names;
+use std::collections::HashSet;
 use types::*;
 
 const INCLUDES: &[&str] = &[
@@ -23,8 +24,19 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
     check_types(module).unwrap();
 
     let module = rename_names(module);
+    let global_variables = module
+        .variable_declarations()
+        .iter()
+        .map(|declaration| declaration.name().into())
+        .chain(
+            module
+                .variable_definitions()
+                .iter()
+                .map(|declaration| declaration.name().into()),
+        )
+        .collect();
 
-    let strings = INCLUDES
+    INCLUDES
         .iter()
         .map(|&string| string.into())
         .chain(if let Some(name) = custom_malloc_function_name {
@@ -74,17 +86,15 @@ pub fn compile(module: &Module, custom_malloc_function_name: Option<String>) -> 
             module
                 .variable_definitions()
                 .iter()
-                .map(compile_variable_definition),
+                .map(|definition| compile_variable_definition(definition, &global_variables)),
         )
         .chain(
             module
                 .function_definitions()
                 .iter()
-                .map(compile_function_definition),
+                .map(|definition| compile_function_definition(definition, &global_variables)),
         )
-        .collect::<Vec<_>>();
-
-    strings
+        .collect::<Vec<_>>()
         .iter()
         .map(|string| string.as_str())
         .collect::<Vec<_>>()
@@ -108,12 +118,7 @@ fn compile_union_type_definition(union: &fmm::types::Union) -> String {
 }
 
 fn compile_variable_declaration(declaration: &VariableDeclaration) -> String {
-    "extern ".to_owned()
-        + &compile_typed_name(
-            declaration.type_(),
-            &("*const ".to_owned() + declaration.name()),
-        )
-        + ";"
+    "extern ".to_owned() + &compile_typed_name(declaration.type_(), declaration.name()) + ";"
 }
 
 fn compile_variable_forward_declaration(definition: &VariableDefinition) -> String {
@@ -135,25 +140,14 @@ fn compile_function_forward_declaration(definition: &FunctionDefinition) -> Stri
         + ";"
 }
 
-fn compile_variable_definition(definition: &VariableDefinition) -> String {
-    let entity_name = format!("{}_entity", definition.name());
-
-    "static ".to_owned()
-        + &compile_typed_name(
-            definition.type_(),
-            &(if definition.is_mutable() {
-                ""
-            } else {
-                "const "
-            }
-            .to_owned()
-                + &entity_name),
-        )
+fn compile_variable_definition(
+    definition: &VariableDefinition,
+    global_variables: &HashSet<String>,
+) -> String {
+    compile_variable_definition_lhs(definition)
         + " = "
-        + &compile_expression(definition.body())
-        + ";\n"
-        + &compile_variable_definition_lhs(definition)
-        + &format!(" = &{};", entity_name)
+        + &compile_expression(definition.body(), global_variables)
+        + ";"
 }
 
 fn compile_variable_definition_lhs(definition: &VariableDefinition) -> String {
@@ -171,12 +165,14 @@ fn compile_variable_definition_lhs(definition: &VariableDefinition) -> String {
                 "const "
             }
             .to_owned()
-                + "*const "
                 + definition.name()),
         )
 }
 
-fn compile_function_definition(definition: &FunctionDefinition) -> String {
+fn compile_function_definition(
+    definition: &FunctionDefinition,
+    global_variables: &HashSet<String>,
+) -> String {
     if definition.is_global() {
         ""
     } else {
@@ -197,7 +193,7 @@ fn compile_function_definition(definition: &FunctionDefinition) -> String {
             ),
         )
         + "{\n"
-        + &compile_block(definition.body(), None)
+        + &compile_block(definition.body(), None, global_variables)
         + "\n}"
 }
 
