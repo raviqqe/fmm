@@ -2,7 +2,7 @@ use fmm::ir::*;
 
 pub fn rename_names(module: &Module) -> Module {
     fmm::analysis::rename_names(module, |name| {
-        if name == "" {
+        if name.is_empty() {
             "_".into()
         } else {
             name.chars()
