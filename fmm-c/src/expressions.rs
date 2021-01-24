@@ -35,7 +35,7 @@ pub fn compile_expression(expression: &Expression, global_variables: &HashSet<St
                 ""
             }
             .to_owned()
-                + variable.name().into()
+                + variable.name()
         }
     }
 }
