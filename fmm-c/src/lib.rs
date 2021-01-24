@@ -166,7 +166,7 @@ fn compile_variable_definition(
     type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     compile_variable_definition_lhs(definition, type_ids)
-        + " = "
+        + "="
         + &compile_expression(definition.body(), global_variables, type_ids)
         + ";"
 }
