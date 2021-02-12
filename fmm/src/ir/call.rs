@@ -1,6 +1,5 @@
-use super::calling_convention::CallingConvention;
 use super::expression::Expression;
-use crate::types;
+use crate::types::{self, CallingConvention};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]

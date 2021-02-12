@@ -1,7 +1,7 @@
 use super::module_builder::ModuleBuilder;
 use super::typed_expression::*;
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types::{self, CallingConvention, Type};
 use std::cell::RefCell;
 
 #[derive(Clone, Debug, Default)]

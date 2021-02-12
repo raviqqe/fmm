@@ -97,7 +97,9 @@ fn collect_from_instructions(instructions: &[Instruction]) -> HashSet<Type> {
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
     match instruction {
-        Instruction::AllocateHeap(allocate) => vec![allocate.type_().clone()].into_iter().collect(),
+        Instruction::AllocateHeap(allocate) => {
+            vec![allocate.type_().clone()].into_iter().collect()
+        }
         Instruction::AllocateStack(allocate) => {
             vec![allocate.type_().clone()].into_iter().collect()
         }
@@ -152,7 +154,9 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
 fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashSet<Type> {
     match instruction {
         TerminalInstruction::Branch(branch) => vec![branch.type_().clone()].into_iter().collect(),
-        TerminalInstruction::Return(return_) => vec![return_.type_().clone()].into_iter().collect(),
+        TerminalInstruction::Return(return_) => {
+            vec![return_.type_().clone()].into_iter().collect()
+        }
         TerminalInstruction::Unreachable => Default::default(),
     }
 }
@@ -184,7 +188,7 @@ fn collect_child_types(type_: &Type) -> HashSet<Type> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types;
+    use crate::types::{self, CallingConvention};
 
     #[test]
     fn sort_types() {
@@ -214,7 +218,12 @@ mod tests {
                     "x",
                     types::Function::new(
                         vec![],
-                        types::Function::new(vec![], types::Primitive::PointerInteger)
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::PointerInteger,
+                            CallingConvention::Direct
+                        ),
+                        CallingConvention::Direct
                     )
                 )],
                 vec![],
@@ -222,10 +231,20 @@ mod tests {
             )),
             vec![
                 types::Primitive::PointerInteger.into(),
-                types::Function::new(vec![], types::Primitive::PointerInteger).into(),
                 types::Function::new(
                     vec![],
-                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                    types::Primitive::PointerInteger,
+                    CallingConvention::Direct
+                )
+                .into(),
+                types::Function::new(
+                    vec![],
+                    types::Function::new(
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        CallingConvention::Direct,
+                    ),
+                    CallingConvention::Direct
                 )
                 .into(),
             ]

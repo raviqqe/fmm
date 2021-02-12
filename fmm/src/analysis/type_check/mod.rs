@@ -368,6 +368,7 @@ fn check_equality(one: &Type, other: &Type) -> Result<(), TypeCheckError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::CallingConvention;
 
     #[test]
     fn check_empty_module() -> Result<(), TypeCheckError> {
@@ -400,6 +401,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -434,6 +436,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -448,6 +451,7 @@ mod tests {
                 types::Function::new(
                     vec![types::Primitive::PointerInteger.into()],
                     types::Primitive::Float64,
+                    CallingConvention::Direct,
                 ),
             )],
             vec![],
@@ -459,6 +463,7 @@ mod tests {
                         types::Function::new(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
+                            CallingConvention::Direct,
                         ),
                         Variable::new("f"),
                         vec![Primitive::PointerInteger(42).into()],
@@ -469,6 +474,7 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -491,6 +497,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -512,6 +519,7 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -533,6 +541,7 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -552,6 +561,7 @@ mod tests {
                         types::Function::new(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
+                            CallingConvention::Direct,
                         ),
                         Variable::new("f"),
                         vec![Primitive::PointerInteger(42).into()],
@@ -562,6 +572,7 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -594,6 +605,7 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -619,6 +631,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -649,6 +662,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -676,6 +690,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -706,6 +721,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -733,6 +749,7 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -757,6 +774,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
+                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -781,6 +799,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
+                CallingConvention::Direct,
                 true,
             )],
         ))

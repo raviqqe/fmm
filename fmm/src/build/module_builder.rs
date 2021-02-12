@@ -1,7 +1,7 @@
 use super::block_builder::BlockBuilder;
 use super::typed_expression::*;
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types::{self, CallingConvention, Type};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -96,6 +96,7 @@ impl ModuleBuilder {
         arguments: Vec<Argument>,
         body: impl Fn(BlockBuilder) -> Block,
         result_type: impl Into<Type>,
+        calling_convention: CallingConvention,
         global: bool,
     ) -> TypedExpression {
         let result_type = result_type.into();
@@ -109,6 +110,7 @@ impl ModuleBuilder {
                 arguments.clone(),
                 body,
                 result_type.clone(),
+                calling_convention,
                 global,
             ));
 
@@ -120,6 +122,7 @@ impl ModuleBuilder {
                     .map(|argument| argument.type_().clone())
                     .collect(),
                 result_type,
+                calling_convention,
             ),
         )
     }
@@ -129,8 +132,16 @@ impl ModuleBuilder {
         arguments: Vec<Argument>,
         body: impl Fn(BlockBuilder) -> Block,
         result_type: impl Into<Type>,
+        calling_convention: CallingConvention,
     ) -> TypedExpression {
-        self.define_function(self.generate_name(), arguments, body, result_type, false)
+        self.define_function(
+            self.generate_name(),
+            arguments,
+            body,
+            result_type,
+            calling_convention,
+            false,
+        )
     }
 
     pub fn generate_name(&self) -> String {

@@ -1,3 +1,4 @@
+use super::calling_convention::CallingConvention;
 use super::type_::Type;
 use std::sync::Arc;
 
@@ -5,13 +6,19 @@ use std::sync::Arc;
 pub struct Function {
     arguments: Vec<Type>,
     result: Arc<Type>,
+    calling_convention: CallingConvention,
 }
 
 impl Function {
-    pub fn new(arguments: Vec<Type>, result: impl Into<Type>) -> Self {
+    pub fn new(
+        arguments: Vec<Type>,
+        result: impl Into<Type>,
+        calling_convention: CallingConvention,
+    ) -> Self {
         Self {
             arguments,
             result: result.into().into(),
+            calling_convention,
         }
     }
 
@@ -21,5 +28,9 @@ impl Function {
 
     pub fn result(&self) -> &Type {
         &self.result
+    }
+
+    pub fn calling_convention(&self) -> CallingConvention {
+        self.calling_convention
     }
 }

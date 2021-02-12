@@ -213,7 +213,11 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
+                    .map(|argument| compile_typed_name(
+                        argument.type_(),
+                        argument.name(),
+                        type_ids
+                    ))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
@@ -259,7 +263,7 @@ fn compile_type_ids(types: &[fmm::types::Type]) -> HashMap<fmm::types::Type, Str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fmm::types;
+    use fmm::types::{self, CallingConvention, Type};
 
     fn compile_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
@@ -282,6 +286,27 @@ mod tests {
         assert_eq!(String::from_utf8_lossy(&output.stdout), "");
         assert_eq!(String::from_utf8_lossy(&output.stderr), "");
         assert!(output.status.success());
+    }
+
+    fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
+        types::Function::new(arguments, result, CallingConvention::Direct)
+    }
+
+    fn create_function_definition(
+        name: impl Into<String>,
+        arguments: Vec<Argument>,
+        body: Block,
+        result_type: impl Into<Type>,
+        global: bool,
+    ) -> FunctionDefinition {
+        FunctionDefinition::new(
+            name,
+            arguments,
+            body,
+            result_type,
+            CallingConvention::Direct,
+            global,
+        )
     }
 
     #[test]
@@ -336,7 +361,7 @@ mod tests {
             compile_module(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Function::new(vec![], types::Primitive::PointerInteger),
+                    create_function_type(vec![], types::Primitive::PointerInteger),
                 )],
                 vec![],
                 vec![],
@@ -353,7 +378,7 @@ mod tests {
                 )],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -379,7 +404,7 @@ mod tests {
                 vec![],
                 vec![FunctionDeclaration::new(
                     "x",
-                    types::Function::new(vec![], types::Primitive::PointerInteger),
+                    create_function_type(vec![], types::Primitive::PointerInteger),
                 )],
                 vec![],
                 vec![],
@@ -538,7 +563,7 @@ mod tests {
                     false,
                     false,
                 )],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -564,7 +589,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "x",
                     vec![],
                     fmm::ir::Block::new(
@@ -586,7 +611,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "x",
                     vec![],
                     fmm::ir::Block::new(
@@ -612,7 +637,7 @@ mod tests {
 
         #[test]
         fn compile_unreachable() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(vec![], TerminalInstruction::Unreachable),
@@ -623,7 +648,7 @@ mod tests {
 
         #[test]
         fn compile_allocate_heap() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -640,7 +665,7 @@ mod tests {
 
         #[test]
         fn compile_allocate_stack() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -657,12 +682,12 @@ mod tests {
 
         #[test]
         fn compile_allocate_heap_with_function_pointer() {
-            let function_type = types::Function::new(
+            let function_type = create_function_type(
                 vec![types::Primitive::PointerInteger.into()],
                 types::Primitive::PointerInteger,
             );
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -685,7 +710,7 @@ mod tests {
                 ArithmeticOperator::Multiply,
                 ArithmeticOperator::Divide,
             ] {
-                compile_function_definition(FunctionDefinition::new(
+                compile_function_definition(create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -715,7 +740,7 @@ mod tests {
                 ComparisonOperator::LessThanOrEqual,
                 ComparisonOperator::GreaterThanOrEqual,
             ] {
-                compile_function_definition(FunctionDefinition::new(
+                compile_function_definition(create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -737,7 +762,7 @@ mod tests {
 
         #[test]
         fn compile_atomic_load() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -759,12 +784,12 @@ mod tests {
 
         #[test]
         fn compile_atomic_load_with_function_pointer() {
-            let function_type = types::Function::new(
+            let function_type = create_function_type(
                 vec![types::Primitive::PointerInteger.into()],
                 types::Primitive::PointerInteger,
             );
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -781,7 +806,7 @@ mod tests {
 
         #[test]
         fn compile_atomic_store() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -806,12 +831,12 @@ mod tests {
 
         #[test]
         fn compile_atomic_store_with_function_pointer() {
-            let function_type = types::Function::new(
+            let function_type = create_function_type(
                 vec![types::Primitive::PointerInteger.into()],
                 types::Primitive::PointerInteger,
             );
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -836,7 +861,7 @@ mod tests {
 
         #[test]
         fn compile_if() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -869,7 +894,7 @@ mod tests {
 
         #[test]
         fn compile_if_with_return() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -902,7 +927,7 @@ mod tests {
 
         #[test]
         fn compile_if_with_unreachable() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -931,7 +956,7 @@ mod tests {
         fn compile_deconstruct_record() {
             let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -953,7 +978,7 @@ mod tests {
         fn compile_deconstruct_union() {
             let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -973,7 +998,7 @@ mod tests {
 
         #[test]
         fn compile_compare_and_swap() {
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -1000,7 +1025,7 @@ mod tests {
             let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
             let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
                 Block::new(
@@ -1021,7 +1046,7 @@ mod tests {
                 vec![VariableDeclaration::new("x", record_type.clone())],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -1042,7 +1067,7 @@ mod tests {
             ]);
             let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
-            compile_function_definition(FunctionDefinition::new(
+            compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
                 Block::new(
@@ -1066,7 +1091,7 @@ mod tests {
                 vec![VariableDeclaration::new("x", union_type.clone())],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
