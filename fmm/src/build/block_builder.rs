@@ -99,6 +99,7 @@ impl BlockBuilder {
         &self,
         function: impl Into<TypedExpression>,
         arguments: Vec<TypedExpression>,
+        calling_convention: CallingConvention,
     ) -> TypedExpression {
         let function = function.into();
         let arguments = arguments.into_iter().collect::<Vec<_>>();
@@ -113,6 +114,7 @@ impl BlockBuilder {
                 .map(|typed_expression| typed_expression.expression())
                 .cloned()
                 .collect(),
+            calling_convention,
             &name,
         ));
 
