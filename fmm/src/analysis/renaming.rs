@@ -436,6 +436,7 @@ mod tests {
                                 function_type.clone(),
                                 Variable::new("f"),
                                 vec![],
+                                CallingConvention::Direct,
                                 "f"
                             )
                             .into()],
@@ -455,7 +456,14 @@ mod tests {
                     "g",
                     vec![],
                     Block::new(
-                        vec![Call::new(function_type, Variable::new("g"), vec![], "g").into()],
+                        vec![Call::new(
+                            function_type,
+                            Variable::new("g"),
+                            vec![],
+                            CallingConvention::Direct,
+                            "g"
+                        )
+                        .into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("g"))
                     ),
                     types::Primitive::PointerInteger,

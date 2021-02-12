@@ -391,7 +391,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -424,7 +425,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -460,6 +462,7 @@ mod tests {
                         ),
                         Variable::new("f"),
                         vec![Primitive::PointerInteger(42).into()],
+                        CallingConvention::Direct,
                         "x",
                     )
                     .into()],
@@ -552,6 +555,7 @@ mod tests {
                         ),
                         Variable::new("f"),
                         vec![Primitive::PointerInteger(42).into()],
+                        CallingConvention::Direct,
                         "x",
                     )
                     .into()],
@@ -609,7 +613,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
