@@ -370,6 +370,27 @@ mod tests {
     use super::*;
     use crate::types::CallingConvention;
 
+    fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
+        types::Function::new(arguments, result, CallingConvention::Direct)
+    }
+
+    fn create_function_definition(
+        name: impl Into<String>,
+        arguments: Vec<Argument>,
+        body: Block,
+        result_type: impl Into<Type>,
+        global: bool,
+    ) -> FunctionDefinition {
+        FunctionDefinition::new(
+            name,
+            arguments,
+            body,
+            result_type,
+            CallingConvention::Direct,
+            global,
+        )
+    }
+
     #[test]
     fn check_empty_module() -> Result<(), TypeCheckError> {
         check_types(&Module::new(vec![], vec![], vec![], vec![]))
@@ -384,7 +405,7 @@ mod tests {
             )],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -400,7 +421,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -418,7 +438,7 @@ mod tests {
                 false,
                 true,
             )],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -434,7 +454,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -446,22 +465,20 @@ mod tests {
             vec![],
             vec![FunctionDeclaration::new(
                 "f",
-                types::Function::new(
+                create_function_type(
                     vec![types::Primitive::PointerInteger.into()],
                     types::Primitive::Float64,
-                    CallingConvention::Direct,
                 ),
             )],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "g",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
                     vec![Call::new(
-                        types::Function::new(
+                        create_function_type(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
-                            CallingConvention::Direct,
                         ),
                         Variable::new("f"),
                         vec![Primitive::PointerInteger(42).into()],
@@ -471,7 +488,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -483,7 +499,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -494,7 +510,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -508,7 +523,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
@@ -516,7 +531,6 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -530,7 +544,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
@@ -538,7 +552,6 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -550,15 +563,14 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
                     vec![Call::new(
-                        types::Function::new(
+                        create_function_type(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
-                            CallingConvention::Direct,
                         ),
                         Variable::new("f"),
                         vec![Primitive::PointerInteger(42).into()],
@@ -568,7 +580,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -580,7 +591,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![],
                 Block::new(
@@ -601,7 +612,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -613,7 +623,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -626,7 +636,6 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -638,7 +647,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -657,7 +666,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -669,7 +677,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -685,7 +693,6 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -697,7 +704,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new(
                     "x",
@@ -716,7 +723,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -730,7 +736,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", pointer_type.clone())],
                 Block::new(
@@ -744,7 +750,6 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -758,7 +763,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
                 Block::new(
@@ -769,7 +774,6 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                CallingConvention::Direct,
                 true,
             )],
         ))
@@ -783,7 +787,7 @@ mod tests {
             vec![],
             vec![],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
                 Block::new(
@@ -794,7 +798,6 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                CallingConvention::Direct,
                 true,
             )],
         ))
