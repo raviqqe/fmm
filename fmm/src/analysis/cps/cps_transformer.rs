@@ -85,7 +85,6 @@ impl CpsTransformer {
                         ),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
                         vec![return_.expression().clone()],
-                        CallingConvention::Direct,
                         RESULT_NAME,
                     )
                     .into()],

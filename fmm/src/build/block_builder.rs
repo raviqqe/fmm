@@ -1,7 +1,7 @@
 use super::module_builder::ModuleBuilder;
 use super::typed_expression::*;
 use crate::ir::*;
-use crate::types::{self, CallingConvention, Type};
+use crate::types::{self, Type};
 use std::cell::RefCell;
 
 #[derive(Clone, Debug, Default)]
@@ -99,7 +99,6 @@ impl BlockBuilder {
         &self,
         function: impl Into<TypedExpression>,
         arguments: Vec<TypedExpression>,
-        calling_convention: CallingConvention,
     ) -> TypedExpression {
         let function = function.into();
         let arguments = arguments.into_iter().collect::<Vec<_>>();
@@ -114,7 +113,6 @@ impl BlockBuilder {
                 .map(|typed_expression| typed_expression.expression())
                 .cloned()
                 .collect(),
-            calling_convention,
             &name,
         ));
 
