@@ -24,7 +24,7 @@ mod tests {
             arguments,
             body,
             result_type,
-            CallingConvention::Direct,
+            CallingConvention::Tail,
             false,
         )
     }
@@ -50,12 +50,9 @@ mod tests {
                 vec![],
                 Block::new(
                     vec![],
-                    Return::new(
-                        types::Primitive::PointerInteger,
-                        Primitive::PointerInteger(42),
-                    ),
+                    Return::new(types::Primitive::Float64, Primitive::Float64(42.0)),
                 ),
-                types::Primitive::PointerInteger,
+                types::Primitive::Float64,
             )],
         )))
     }
