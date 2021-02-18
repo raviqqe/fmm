@@ -97,7 +97,25 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Tail {
-                        todo!()
+                        let continuation = self.create_continuation();
+
+                        return (
+                            vec![Call::new(
+                                types::Function::new(
+                                    vec![call.type_().result().clone()],
+                                    RESULT_TYPE,
+                                    CallingConvention::Direct,
+                                ),
+                                call.function().clone(),
+                                vec![continuation]
+                                    .into_iter()
+                                    .chain(call.arguments().iter().cloned())
+                                    .collect(),
+                                RESULT_NAME,
+                            )
+                            .into()],
+                            Return::new(RESULT_TYPE, Variable::new(RESULT_NAME)).into(),
+                        );
                     }
                 }
 
@@ -110,5 +128,9 @@ impl CpsTransformer {
                 )
             }
         }
+    }
+
+    fn create_continuation(&self) -> Expression {
+        todo!()
     }
 }

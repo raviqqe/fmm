@@ -10,8 +10,12 @@ pub fn transform_to_cps(module: &Module) -> Module {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analysis::{check_types, TypeCheckError};
+    use crate::analysis::check_types;
     use crate::types::{self, CallingConvention, Type};
+
+    fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
+        types::Function::new(arguments, result, CallingConvention::Tail)
+    }
 
     fn create_function_definition(
         name: impl Into<String>,
@@ -29,19 +33,18 @@ mod tests {
         )
     }
 
-    #[test]
-    fn transform_empty_module() -> Result<(), TypeCheckError> {
-        check_types(&transform_to_cps(&Module::new(
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-        )))
+    fn test_transformation(module: &Module) {
+        check_types(&transform_to_cps(module)).unwrap();
     }
 
     #[test]
-    fn transform_function_definition() -> Result<(), TypeCheckError> {
-        check_types(&transform_to_cps(&Module::new(
+    fn transform_empty_module() {
+        test_transformation(&Module::new(vec![], vec![], vec![], vec![]));
+    }
+
+    #[test]
+    fn transform_function_definition() {
+        test_transformation(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -54,6 +57,35 @@ mod tests {
                 ),
                 types::Primitive::Float64,
             )],
-        )))
+        ));
+    }
+
+    #[test]
+    fn transform_call() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![Call::new(
+                        function_type.clone(),
+                        Variable::new("f"),
+                        vec![Primitive::Float64(42.0).into()],
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
+                types::Primitive::Float64,
+            )],
+        ));
     }
 }
