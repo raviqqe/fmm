@@ -418,7 +418,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -451,7 +452,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -597,18 +599,18 @@ mod tests {
             vec![],
             vec![FunctionDeclaration::new(
                 "g",
-                types::Function::new(
+                create_function_type(
                     vec![types::Primitive::Float64.into()],
                     types::Primitive::Float64,
                 ),
             )],
             vec![],
-            vec![FunctionDefinition::new(
+            vec![create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
                     vec![Call::new(
-                        types::Function::new(
+                        create_function_type(
                             vec![types::Primitive::PointerInteger.into()],
                             types::Primitive::Float64,
                         ),
@@ -672,7 +674,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
