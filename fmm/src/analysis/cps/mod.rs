@@ -72,7 +72,7 @@ mod tests {
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
             vec![create_function_definition(
-                "f",
+                "g",
                 vec![],
                 Block::new(
                     vec![Call::new(
