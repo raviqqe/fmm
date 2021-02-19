@@ -1,17 +1,19 @@
 use crate::ir::*;
-use crate::types::{self, CallingConvention};
+use crate::types::{self, CallingConvention, Type};
 
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
 
 pub struct CpsTransformer {
+    continuation_index: usize,
     function_definitions: Vec<FunctionDefinition>,
 }
 
 impl CpsTransformer {
     pub fn new() -> Self {
         Self {
+            continuation_index: 0,
             function_definitions: vec![],
         }
     }
@@ -19,7 +21,11 @@ impl CpsTransformer {
     pub fn transform(&mut self, module: &Module) -> Module {
         Module::new(
             module.variable_declarations().to_vec(),
-            module.function_declarations().to_vec(),
+            module
+                .function_declarations()
+                .iter()
+                .map(|declaration| self.transform_function_declaration(declaration))
+                .collect(),
             module.variable_definitions().to_vec(),
             module
                 .function_definitions()
@@ -30,6 +36,20 @@ impl CpsTransformer {
                 .chain(self.function_definitions.drain(..))
                 .collect(),
         )
+    }
+
+    fn transform_function_declaration(
+        &self,
+        declaration: &FunctionDeclaration,
+    ) -> FunctionDeclaration {
+        if declaration.type_().calling_convention() == CallingConvention::Tail {
+            FunctionDeclaration::new(
+                declaration.name(),
+                self.transform_function_type(declaration.type_()),
+            )
+        } else {
+            declaration.clone()
+        }
     }
 
     fn transform_function_definition(
@@ -78,11 +98,7 @@ impl CpsTransformer {
 
                 (
                     vec![Call::new(
-                        types::Function::new(
-                            vec![return_.type_().clone()],
-                            RESULT_TYPE,
-                            CallingConvention::Direct,
-                        ),
+                        self.create_continuation_type(return_.type_()),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
                         vec![return_.expression().clone()],
                         RESULT_NAME,
@@ -92,20 +108,17 @@ impl CpsTransformer {
                 )
             }
             [instruction, ..] => {
-                let (instructions, terminal_instruction) =
-                    self.transform_instructions(&instructions[1..], terminal_instruction);
-
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Tail {
-                        let continuation = self.create_continuation();
+                        let continuation = self.create_continuation(
+                            call,
+                            &instructions[1..],
+                            terminal_instruction,
+                        );
 
                         return (
                             vec![Call::new(
-                                types::Function::new(
-                                    vec![call.type_().result().clone()],
-                                    RESULT_TYPE,
-                                    CallingConvention::Direct,
-                                ),
+                                self.transform_function_type(call.type_()),
                                 call.function().clone(),
                                 vec![continuation]
                                     .into_iter()
@@ -119,6 +132,9 @@ impl CpsTransformer {
                     }
                 }
 
+                let (instructions, terminal_instruction) =
+                    self.transform_instructions(&instructions[1..], terminal_instruction);
+
                 (
                     vec![instruction.clone()]
                         .into_iter()
@@ -130,7 +146,54 @@ impl CpsTransformer {
         }
     }
 
-    fn create_continuation(&self) -> Expression {
-        todo!()
+    fn create_continuation(
+        &mut self,
+        call: &Call,
+        instructions: &[Instruction],
+        terminal_instruction: &TerminalInstruction,
+    ) -> Expression {
+        let name = self.generate_continuation_name();
+        let block = self.transform_block(&Block::new(
+            instructions.to_vec(),
+            terminal_instruction.clone(),
+        ));
+
+        self.function_definitions.push(FunctionDefinition::new(
+            &name,
+            vec![Argument::new(call.name(), call.type_().result().clone())],
+            block,
+            RESULT_TYPE,
+            CallingConvention::Direct,
+            false,
+        ));
+
+        Variable::new(name).into()
+    }
+
+    fn transform_function_type(&self, type_: &types::Function) -> types::Function {
+        types::Function::new(
+            vec![self.create_continuation_type(type_.result()).into()]
+                .into_iter()
+                .chain(type_.arguments().iter().cloned())
+                .collect(),
+            RESULT_TYPE,
+            CallingConvention::Direct,
+        )
+    }
+
+    fn create_continuation_type(&self, result_type: &Type) -> types::Function {
+        types::Function::new(
+            vec![result_type.clone()],
+            RESULT_TYPE,
+            CallingConvention::Direct,
+        )
+    }
+
+    fn generate_continuation_name(&mut self) -> String {
+        let name = format!("_k{}", self.continuation_index);
+
+        self.continuation_index += 1;
+
+        name
     }
 }
