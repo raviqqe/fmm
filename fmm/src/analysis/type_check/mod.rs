@@ -136,6 +136,11 @@ fn check_block(
                     return Err(TypeCheckError::FunctionArguments(call.clone()));
                 }
 
+                check_equality(
+                    &call.type_().clone().into(),
+                    &check_expression(call.function(), &variables)?,
+                )?;
+
                 for (argument, type_) in call.arguments().iter().zip(call.type_().arguments()) {
                     check_equality(&check_expression(argument, &variables)?, type_)?;
                 }
@@ -561,6 +566,42 @@ mod tests {
                 true,
             )],
         ))
+    }
+
+    #[test]
+    #[should_panic]
+    fn fail_to_check_call_with_wrong_function_type() {
+        check_types(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new(
+                "g",
+                types::Function::new(
+                    vec![types::Primitive::Float64.into()],
+                    types::Primitive::Float64,
+                ),
+            )],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Primitive::PointerInteger)],
+                Block::new(
+                    vec![Call::new(
+                        types::Function::new(
+                            vec![types::Primitive::PointerInteger.into()],
+                            types::Primitive::Float64,
+                        ),
+                        Variable::new("g"),
+                        vec![Primitive::PointerInteger(42).into()],
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
+                types::Primitive::Float64,
+                true,
+            )],
+        ))
+        .unwrap()
     }
 
     #[test]
