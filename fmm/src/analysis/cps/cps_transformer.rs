@@ -1,6 +1,7 @@
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
 
+const STACK_POINTER_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
@@ -59,14 +60,13 @@ impl CpsTransformer {
         if definition.calling_convention() == CallingConvention::Tail {
             FunctionDefinition::new(
                 definition.name(),
-                vec![Argument::new(
-                    CONTINUATION_ARGUMENT_NAME,
-                    types::Function::new(
-                        vec![definition.result_type().clone()],
-                        RESULT_TYPE,
-                        CallingConvention::Direct,
+                vec![
+                    Argument::new(STACK_POINTER_ARGUMENT_NAME, self.get_stack_pointer_type()),
+                    Argument::new(
+                        CONTINUATION_ARGUMENT_NAME,
+                        self.create_continuation_type(definition.result_type()),
                     ),
-                )]
+                ]
                 .into_iter()
                 .chain(definition.arguments().iter().cloned())
                 .collect(),
@@ -100,7 +100,10 @@ impl CpsTransformer {
                     vec![Call::new(
                         self.create_continuation_type(return_.type_()),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
-                        vec![return_.expression().clone()],
+                        vec![
+                            Variable::new(STACK_POINTER_ARGUMENT_NAME).into(),
+                            return_.expression().clone(),
+                        ],
                         RESULT_NAME,
                     )
                     .into()],
@@ -120,10 +123,13 @@ impl CpsTransformer {
                             vec![Call::new(
                                 self.transform_function_type(call.type_()),
                                 call.function().clone(),
-                                vec![continuation]
-                                    .into_iter()
-                                    .chain(call.arguments().iter().cloned())
-                                    .collect(),
+                                vec![
+                                    Variable::new(STACK_POINTER_ARGUMENT_NAME).into(),
+                                    continuation,
+                                ]
+                                .into_iter()
+                                .chain(call.arguments().iter().cloned())
+                                .collect(),
                                 RESULT_NAME,
                             )
                             .into()],
@@ -160,7 +166,10 @@ impl CpsTransformer {
 
         self.function_definitions.push(FunctionDefinition::new(
             &name,
-            vec![Argument::new(call.name(), call.type_().result().clone())],
+            vec![
+                Argument::new(STACK_POINTER_ARGUMENT_NAME, self.get_stack_pointer_type()),
+                Argument::new(call.name(), call.type_().result().clone()),
+            ],
             block,
             RESULT_TYPE,
             CallingConvention::Direct,
@@ -172,10 +181,13 @@ impl CpsTransformer {
 
     fn transform_function_type(&self, type_: &types::Function) -> types::Function {
         types::Function::new(
-            vec![self.create_continuation_type(type_.result()).into()]
-                .into_iter()
-                .chain(type_.arguments().iter().cloned())
-                .collect(),
+            vec![
+                self.get_stack_pointer_type(),
+                self.create_continuation_type(type_.result()).into(),
+            ]
+            .into_iter()
+            .chain(type_.arguments().iter().cloned())
+            .collect(),
             RESULT_TYPE,
             CallingConvention::Direct,
         )
@@ -183,7 +195,7 @@ impl CpsTransformer {
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
         types::Function::new(
-            vec![result_type.clone()],
+            vec![self.get_stack_pointer_type(), result_type.clone()],
             RESULT_TYPE,
             CallingConvention::Direct,
         )
@@ -195,5 +207,9 @@ impl CpsTransformer {
         self.continuation_index += 1;
 
         name
+    }
+
+    fn get_stack_pointer_type(&self) -> Type {
+        types::Pointer::new(types::Primitive::Integer8).into()
     }
 }

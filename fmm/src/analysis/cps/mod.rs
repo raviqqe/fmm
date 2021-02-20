@@ -1,4 +1,5 @@
 mod cps_transformer;
+mod free_variables;
 
 use crate::ir::*;
 use cps_transformer::*;
