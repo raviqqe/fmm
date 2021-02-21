@@ -1,12 +1,22 @@
 use super::free_variables::collect_free_variables;
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
+use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 const STACK_POINTER_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
+
+lazy_static! {
+    static ref STACK_TYPE: Type = types::Record::new(vec![
+        types::Pointer::new(types::Primitive::Integer8).into(), // base pointer
+        types::Primitive::PointerInteger.into(), // size
+        types::Primitive::PointerInteger.into(), // capacity
+    ])
+    .into();
+}
 
 pub struct CpsTransformer {
     continuation_index: usize,
@@ -63,7 +73,7 @@ impl CpsTransformer {
             FunctionDefinition::new(
                 definition.name(),
                 vec![
-                    Argument::new(STACK_POINTER_ARGUMENT_NAME, self.get_stack_pointer_type()),
+                    Argument::new(STACK_POINTER_ARGUMENT_NAME, STACK_TYPE.clone()),
                     Argument::new(
                         CONTINUATION_ARGUMENT_NAME,
                         self.create_continuation_type(definition.result_type()),
@@ -199,7 +209,7 @@ impl CpsTransformer {
         self.function_definitions.push(FunctionDefinition::new(
             &name,
             vec![
-                Argument::new(STACK_POINTER_ARGUMENT_NAME, self.get_stack_pointer_type()),
+                Argument::new(STACK_POINTER_ARGUMENT_NAME, STACK_TYPE.clone()),
                 Argument::new(call.name(), call.type_().result().clone()),
             ],
             block,
@@ -230,7 +240,7 @@ impl CpsTransformer {
     fn transform_function_type(&self, type_: &types::Function) -> types::Function {
         types::Function::new(
             vec![
-                self.get_stack_pointer_type(),
+                STACK_TYPE.clone(),
                 self.create_continuation_type(type_.result()).into(),
             ]
             .into_iter()
@@ -243,7 +253,7 @@ impl CpsTransformer {
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
         types::Function::new(
-            vec![self.get_stack_pointer_type(), result_type.clone()],
+            vec![STACK_TYPE.clone(), result_type.clone()],
             RESULT_TYPE,
             CallingConvention::Direct,
         )
@@ -255,9 +265,5 @@ impl CpsTransformer {
         self.continuation_index += 1;
 
         name
-    }
-
-    fn get_stack_pointer_type(&self) -> Type {
-        types::Pointer::new(types::Primitive::Integer8).into()
     }
 }
