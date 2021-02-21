@@ -1,25 +1,29 @@
 use super::module_builder::ModuleBuilder;
+use super::name_generator::NameGenerator;
 use super::typed_expression::*;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, Default)]
 pub struct BlockBuilder {
     module_builder: ModuleBuilder,
+    name_generator: Rc<RefCell<NameGenerator>>,
     instructions: RefCell<Vec<Instruction>>,
 }
 
 impl BlockBuilder {
-    pub(crate) fn new(module_builder: ModuleBuilder) -> Self {
+    pub fn new(module_builder: ModuleBuilder, name_generator: Rc<RefCell<NameGenerator>>) -> Self {
         Self {
             module_builder,
+            name_generator,
             instructions: vec![].into(),
         }
     }
 
     fn clone_empty(&self) -> Self {
-        Self::new(self.module_builder.clone())
+        Self::new(self.module_builder.clone(), self.name_generator.clone())
     }
 
     pub fn module_builder(&self) -> &ModuleBuilder {
@@ -369,6 +373,6 @@ impl BlockBuilder {
     }
 
     fn generate_name(&self) -> String {
-        self.module_builder.generate_name()
+        self.name_generator.borrow_mut().generate()
     }
 }
