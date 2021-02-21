@@ -1,5 +1,7 @@
+use super::free_variables::collect_free_variables;
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
+use std::collections::HashMap;
 
 const STACK_POINTER_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
@@ -70,7 +72,14 @@ impl CpsTransformer {
                 .into_iter()
                 .chain(definition.arguments().iter().cloned())
                 .collect(),
-                self.transform_block(definition.body()),
+                self.transform_block(
+                    definition.body(),
+                    &definition
+                        .arguments()
+                        .iter()
+                        .map(|argument| (argument.name().into(), argument.type_().clone()))
+                        .collect(),
+                ),
                 RESULT_TYPE,
                 CallingConvention::Direct,
                 definition.is_global(),
@@ -80,9 +89,16 @@ impl CpsTransformer {
         }
     }
 
-    fn transform_block(&mut self, block: &Block) -> Block {
-        let (instructions, terminal_instruction) =
-            self.transform_instructions(block.instructions(), block.terminal_instruction());
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Block {
+        let (instructions, terminal_instruction) = self.transform_instructions(
+            block.instructions(),
+            block.terminal_instruction(),
+            local_variables,
+        );
 
         Block::new(instructions, terminal_instruction)
     }
@@ -91,6 +107,7 @@ impl CpsTransformer {
         &mut self,
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
+        local_variables: &HashMap<String, Type>,
     ) -> (Vec<Instruction>, TerminalInstruction) {
         match instructions {
             [] => {
@@ -111,13 +128,17 @@ impl CpsTransformer {
                 )
             }
             [instruction, ..] => {
+                let instructions = &instructions[1..];
+
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Tail {
-                        let continuation = self.create_continuation(
-                            call,
-                            &instructions[1..],
+                        let environment = self.get_continuation_environment(
+                            instructions,
                             terminal_instruction,
+                            local_variables,
                         );
+                        let continuation =
+                            self.create_continuation(call, instructions, terminal_instruction);
 
                         return (
                             vec![Call::new(
@@ -138,8 +159,17 @@ impl CpsTransformer {
                     }
                 }
 
-                let (instructions, terminal_instruction) =
-                    self.transform_instructions(&instructions[1..], terminal_instruction);
+                let (instructions, terminal_instruction) = self.transform_instructions(
+                    instructions,
+                    terminal_instruction,
+                    &local_variables
+                        .clone()
+                        .into_iter()
+                        .chain(instruction.name().and_then(|name| {
+                            instruction.result_type().map(|type_| (name.into(), type_))
+                        }))
+                        .collect(),
+                );
 
                 (
                     vec![instruction.clone()]
@@ -159,10 +189,12 @@ impl CpsTransformer {
         terminal_instruction: &TerminalInstruction,
     ) -> Expression {
         let name = self.generate_continuation_name();
-        let block = self.transform_block(&Block::new(
-            instructions.to_vec(),
-            terminal_instruction.clone(),
-        ));
+        let block = self.transform_block(
+            &Block::new(instructions.to_vec(), terminal_instruction.clone()),
+            &vec![(call.name().into(), call.type_().result().clone())]
+                .into_iter()
+                .collect(),
+        );
 
         self.function_definitions.push(FunctionDefinition::new(
             &name,
@@ -177,6 +209,18 @@ impl CpsTransformer {
         ));
 
         Variable::new(name).into()
+    }
+
+    fn get_continuation_environment(
+        &self,
+        instructions: &[Instruction],
+        terminal_instruction: &TerminalInstruction,
+        local_variables: &HashMap<String, Type>,
+    ) -> Vec<(String, Type)> {
+        collect_free_variables(instructions, terminal_instruction)
+            .iter()
+            .map(|name| (name.clone(), local_variables[name].clone()))
+            .collect()
     }
 
     fn transform_function_type(&self, type_: &types::Function) -> types::Function {

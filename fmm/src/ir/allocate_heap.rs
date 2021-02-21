@@ -1,4 +1,4 @@
-use crate::types::Type;
+use crate::types::{self, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AllocateHeap {
