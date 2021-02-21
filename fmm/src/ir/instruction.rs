@@ -68,8 +68,8 @@ impl Instruction {
             Self::ArithmeticOperation(operation) => Some(operation.type_().clone().into()),
             Self::AtomicLoad(load) => Some(load.type_().clone()),
             Self::Call(call) => Some(call.type_().result().clone()),
-            Self::CompareAndSwap(cas) => Some(types::Primitive::Boolean.into()),
-            Self::ComparisonOperation(operation) => Some(types::Primitive::Boolean.into()),
+            Self::CompareAndSwap(_) => Some(types::Primitive::Boolean.into()),
+            Self::ComparisonOperation(_) => Some(types::Primitive::Boolean.into()),
             Self::DeconstructRecord(deconstruct) => {
                 Some(deconstruct.type_().elements()[deconstruct.element_index()].clone())
             }
