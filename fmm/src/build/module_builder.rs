@@ -101,10 +101,7 @@ impl ModuleBuilder {
     ) -> TypedExpression {
         let result_type = result_type.into();
         let name = name.into();
-        let body = body(InstructionBuilder::new(
-            self.clone(),
-            self.name_generator.clone(),
-        ));
+        let body = body(InstructionBuilder::new(self.name_generator.clone()));
 
         self.function_definitions
             .borrow_mut()
