@@ -1,4 +1,3 @@
-use super::module_builder::ModuleBuilder;
 use super::name_generator::NameGenerator;
 use super::typed_expression::*;
 use crate::ir::*;
@@ -8,26 +7,20 @@ use std::rc::Rc;
 
 #[derive(Clone, Debug, Default)]
 pub struct InstructionBuilder {
-    module_builder: ModuleBuilder,
     name_generator: Rc<RefCell<NameGenerator>>,
     instructions: RefCell<Vec<Instruction>>,
 }
 
 impl InstructionBuilder {
-    pub fn new(module_builder: ModuleBuilder, name_generator: Rc<RefCell<NameGenerator>>) -> Self {
+    pub fn new(name_generator: Rc<RefCell<NameGenerator>>) -> Self {
         Self {
-            module_builder,
             name_generator,
             instructions: vec![].into(),
         }
     }
 
     fn clone_empty(&self) -> Self {
-        Self::new(self.module_builder.clone(), self.name_generator.clone())
-    }
-
-    pub fn module_builder(&self) -> &ModuleBuilder {
-        &self.module_builder
+        Self::new(self.name_generator.clone())
     }
 
     pub fn allocate_heap(&self, type_: impl Into<Type>) -> TypedExpression {
