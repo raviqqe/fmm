@@ -368,6 +368,10 @@ impl InstructionBuilder {
         )
     }
 
+    pub fn into_instructions(self) -> Vec<Instruction> {
+        self.instructions.into_inner()
+    }
+
     fn add_instruction(&self, instruction: impl Into<Instruction>) {
         self.instructions.borrow_mut().push(instruction.into());
     }
