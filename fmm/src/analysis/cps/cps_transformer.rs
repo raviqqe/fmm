@@ -219,7 +219,11 @@ impl CpsTransformer {
     ) -> Vec<(String, Type)> {
         collect_free_variables(instructions, terminal_instruction)
             .iter()
-            .map(|name| (name.clone(), local_variables[name].clone()))
+            .flat_map(|name| {
+                local_variables
+                    .get(name)
+                    .map(|type_| (name.clone(), type_.clone()))
+            })
             .collect()
     }
 
