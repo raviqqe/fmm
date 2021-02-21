@@ -1,4 +1,4 @@
-use super::block_builder::BlockBuilder;
+use super::instruction_builder::InstructionBuilder;
 use super::name_generator::NameGenerator;
 use super::typed_expression::*;
 use crate::ir::*;
@@ -94,13 +94,16 @@ impl ModuleBuilder {
         &self,
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: impl Fn(BlockBuilder) -> Block,
+        body: impl Fn(InstructionBuilder) -> Block,
         result_type: impl Into<Type>,
         global: bool,
     ) -> TypedExpression {
         let result_type = result_type.into();
         let name = name.into();
-        let body = body(BlockBuilder::new(self.clone(), self.name_generator.clone()));
+        let body = body(InstructionBuilder::new(
+            self.clone(),
+            self.name_generator.clone(),
+        ));
 
         self.function_definitions
             .borrow_mut()
@@ -127,7 +130,7 @@ impl ModuleBuilder {
     pub fn define_anonymous_function(
         &self,
         arguments: Vec<Argument>,
-        body: impl Fn(BlockBuilder) -> Block,
+        body: impl Fn(InstructionBuilder) -> Block,
         result_type: impl Into<Type>,
     ) -> TypedExpression {
         self.define_function(self.generate_name(), arguments, body, result_type, false)

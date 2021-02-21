@@ -7,13 +7,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Default)]
-pub struct BlockBuilder {
+pub struct InstructionBuilder {
     module_builder: ModuleBuilder,
     name_generator: Rc<RefCell<NameGenerator>>,
     instructions: RefCell<Vec<Instruction>>,
 }
 
-impl BlockBuilder {
+impl InstructionBuilder {
     pub fn new(module_builder: ModuleBuilder, name_generator: Rc<RefCell<NameGenerator>>) -> Self {
         Self {
             module_builder,
@@ -366,6 +366,10 @@ impl BlockBuilder {
             self.instructions.borrow().clone(),
             TerminalInstruction::Unreachable,
         )
+    }
+
+    pub fn into_instructions(self) -> Vec<Instruction> {
+        self.instructions.into_inner()
     }
 
     fn add_instruction(&self, instruction: impl Into<Instruction>) {
