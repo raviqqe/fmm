@@ -7,5 +7,7 @@ authors = ["Yota Toyama <raviqqe@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+combine = { version = "4", features = ["regex"] }
 lazy_static = "1"
 petgraph = "0.5"
+regex = "1"
