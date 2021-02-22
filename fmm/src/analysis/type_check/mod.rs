@@ -822,4 +822,36 @@ mod tests {
             )],
         ))
     }
+
+    #[test]
+    fn check_align_of() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                AlignOf::new(types::Primitive::Float64),
+                types::Primitive::PointerInteger,
+                false,
+                true,
+            )],
+            vec![],
+        ))
+    }
+
+    #[test]
+    fn check_size_of() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                SizeOf::new(types::Primitive::Float64),
+                types::Primitive::PointerInteger,
+                false,
+                true,
+            )],
+            vec![],
+        ))
+    }
 }
