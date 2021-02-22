@@ -13,6 +13,9 @@ pub fn compile_expression(
         |expression| compile_expression(expression, global_variables, type_ids);
 
     match expression {
+        Expression::AlignOf(align_of) => {
+            format!("alignof({})", compile_type_id(align_of.type_(), type_ids))
+        }
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
@@ -21,10 +24,13 @@ pub fn compile_expression(
                 record
                     .elements()
                     .iter()
-                    .map(|expression| compile_expression(expression,))
+                    .map(|expression| compile_expression(expression))
                     .collect::<Vec<_>>()
                     .join(",")
             )
+        }
+        Expression::SizeOf(size_of) => {
+            format!("sizeof({})", compile_type_id(size_of.type_(), type_ids))
         }
         Expression::Undefined(undefined) => compile_undefined(undefined, type_ids),
         Expression::Union(union) => {

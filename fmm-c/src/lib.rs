@@ -14,6 +14,7 @@ use std::collections::{HashMap, HashSet};
 use types::*;
 
 const INCLUDES: &[&str] = &[
+    "#include <stdalign.h>",
     "#include <stdatomic.h>",
     "#include <stdbool.h>",
     "#include <stdint.h>",
@@ -620,6 +621,42 @@ mod tests {
                     types::Primitive::PointerInteger,
                     false,
                 )],
+            ));
+        }
+    }
+
+    mod expressions {
+        use super::*;
+
+        #[test]
+        fn compile_size_of() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::SizeOf::new(types::Primitive::Float64),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_align_of() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::AlignOf::new(types::Primitive::Float64),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![],
             ));
         }
     }
