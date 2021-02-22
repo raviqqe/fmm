@@ -214,11 +214,7 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(
-                        argument.type_(),
-                        argument.name(),
-                        type_ids
-                    ))
+                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
