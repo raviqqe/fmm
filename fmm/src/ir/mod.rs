@@ -1,3 +1,4 @@
+mod align_of;
 mod allocate_heap;
 mod allocate_stack;
 mod argument;
@@ -23,6 +24,7 @@ mod primitive;
 mod record;
 mod record_address;
 mod return_;
+mod size_of;
 mod store;
 mod terminal_instruction;
 mod undefined;
@@ -32,6 +34,7 @@ mod variable;
 mod variable_declaration;
 mod variable_definition;
 
+pub use align_of::*;
 pub use allocate_heap::*;
 pub use allocate_stack::*;
 pub use argument::*;
@@ -57,6 +60,7 @@ pub use primitive::*;
 pub use record::*;
 pub use record_address::*;
 pub use return_::*;
+pub use size_of::*;
 pub use store::*;
 pub use terminal_instruction::*;
 pub use undefined::*;

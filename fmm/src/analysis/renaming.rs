@@ -226,7 +226,10 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
         )
         .into(),
         Expression::Variable(variable) => Variable::new(rename(variable.name())).into(),
-        Expression::Primitive(_) | Expression::Undefined(_) => expression.clone(),
+        Expression::AlignOf(_)
+        | Expression::Primitive(_)
+        | Expression::SizeOf(_)
+        | Expression::Undefined(_) => expression.clone(),
     }
 }
 
@@ -431,10 +434,13 @@ mod tests {
                         "f",
                         vec![],
                         Block::new(
-                            vec![
-                                Call::new(function_type.clone(), Variable::new("f"), vec![], "f")
-                                    .into()
-                            ],
+                            vec![Call::new(
+                                function_type.clone(),
+                                Variable::new("f"),
+                                vec![],
+                                "f"
+                            )
+                            .into()],
                             Return::new(types::Primitive::PointerInteger, Variable::new("f"))
                         ),
                         types::Primitive::PointerInteger,

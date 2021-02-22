@@ -347,6 +347,7 @@ fn check_expression(
             .cloned()
             .ok_or_else(|| TypeCheckError::VariableNotFound(variable.clone()))?,
         Expression::Undefined(undefined) => undefined.type_().clone(),
+        Expression::AlignOf(_) | Expression::SizeOf(_) => types::Primitive::PointerInteger.into(),
     })
 }
 
@@ -396,7 +397,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -429,7 +431,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -650,7 +653,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
