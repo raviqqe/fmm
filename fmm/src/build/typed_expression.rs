@@ -24,6 +24,12 @@ impl TypedExpression {
     }
 }
 
+impl From<AlignOf> for TypedExpression {
+    fn from(align_of: AlignOf) -> Self {
+        Self::new(align_of.clone(), align_of.type_().clone())
+    }
+}
+
 impl From<Primitive> for TypedExpression {
     fn from(primitive: Primitive) -> Self {
         Self::new(
@@ -44,6 +50,12 @@ impl From<Primitive> for TypedExpression {
 impl From<Record> for TypedExpression {
     fn from(record: Record) -> Self {
         Self::new(record.clone(), record.type_().clone())
+    }
+}
+
+impl From<SizeOf> for TypedExpression {
+    fn from(size_of: SizeOf) -> Self {
+        Self::new(size_of.clone(), size_of.type_().clone())
     }
 }
 

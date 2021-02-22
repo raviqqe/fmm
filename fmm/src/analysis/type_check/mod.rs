@@ -347,6 +347,7 @@ fn check_expression(
             .cloned()
             .ok_or_else(|| TypeCheckError::VariableNotFound(variable.clone()))?,
         Expression::Undefined(undefined) => undefined.type_().clone(),
+        Expression::AlignOf(_) | Expression::SizeOf(_) => types::Primitive::PointerInteger.into(),
     })
 }
 
@@ -819,6 +820,38 @@ mod tests {
                 types::Pointer::new(types::Primitive::PointerInteger),
                 true,
             )],
+        ))
+    }
+
+    #[test]
+    fn check_align_of() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                AlignOf::new(types::Primitive::Float64),
+                types::Primitive::PointerInteger,
+                false,
+                true,
+            )],
+            vec![],
+        ))
+    }
+
+    #[test]
+    fn check_size_of() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                SizeOf::new(types::Primitive::Float64),
+                types::Primitive::PointerInteger,
+                false,
+                true,
+            )],
+            vec![],
         ))
     }
 }
