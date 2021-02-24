@@ -55,7 +55,7 @@ impl CpsTransformer {
         &self,
         declaration: &FunctionDeclaration,
     ) -> FunctionDeclaration {
-        if declaration.type_().calling_convention() == CallingConvention::Tail {
+        if declaration.type_().calling_convention() == CallingConvention::Source {
             FunctionDeclaration::new(
                 declaration.name(),
                 self.transform_function_type(declaration.type_()),
@@ -69,7 +69,7 @@ impl CpsTransformer {
         &mut self,
         definition: &FunctionDefinition,
     ) -> FunctionDefinition {
-        if definition.calling_convention() == CallingConvention::Tail {
+        if definition.calling_convention() == CallingConvention::Source {
             FunctionDefinition::new(
                 definition.name(),
                 vec![
@@ -91,7 +91,7 @@ impl CpsTransformer {
                         .collect(),
                 ),
                 RESULT_TYPE,
-                CallingConvention::Direct,
+                CallingConvention::Target,
                 definition.is_global(),
             )
         } else {
@@ -137,7 +137,7 @@ impl CpsTransformer {
                 let instructions = &instructions[1..];
 
                 if let Instruction::Call(call) = instruction {
-                    if call.type_().calling_convention() == CallingConvention::Tail {
+                    if call.type_().calling_convention() == CallingConvention::Source {
                         let environment = self.get_continuation_environment(
                             instructions,
                             terminal_instruction,
@@ -210,7 +210,7 @@ impl CpsTransformer {
             ],
             block,
             RESULT_TYPE,
-            CallingConvention::Direct,
+            CallingConvention::Target,
             false,
         ));
 
@@ -243,7 +243,7 @@ impl CpsTransformer {
             .chain(type_.arguments().iter().cloned())
             .collect(),
             RESULT_TYPE,
-            CallingConvention::Direct,
+            CallingConvention::Target,
         )
     }
 
@@ -251,7 +251,7 @@ impl CpsTransformer {
         types::Function::new(
             vec![STACK_TYPE.clone(), result_type.clone()],
             RESULT_TYPE,
-            CallingConvention::Direct,
+            CallingConvention::Target,
         )
     }
 

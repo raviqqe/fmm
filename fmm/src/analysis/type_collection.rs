@@ -219,9 +219,9 @@ mod tests {
                         types::Function::new(
                             vec![],
                             types::Primitive::PointerInteger,
-                            CallingConvention::Direct
+                            CallingConvention::Target
                         ),
-                        CallingConvention::Direct
+                        CallingConvention::Target
                     )
                 )],
                 vec![],
@@ -232,7 +232,7 @@ mod tests {
                 types::Function::new(
                     vec![],
                     types::Primitive::PointerInteger,
-                    CallingConvention::Direct
+                    CallingConvention::Target
                 )
                 .into(),
                 types::Function::new(
@@ -240,9 +240,9 @@ mod tests {
                     types::Function::new(
                         vec![],
                         types::Primitive::PointerInteger,
-                        CallingConvention::Direct,
+                        CallingConvention::Target,
                     ),
-                    CallingConvention::Direct
+                    CallingConvention::Target
                 )
                 .into(),
             ]

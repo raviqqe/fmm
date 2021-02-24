@@ -15,7 +15,7 @@ mod tests {
     use crate::types::{self, CallingConvention, Type};
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
-        types::Function::new(arguments, result, CallingConvention::Tail)
+        types::Function::new(arguments, result, CallingConvention::Source)
     }
 
     fn create_function_definition(
@@ -29,7 +29,7 @@ mod tests {
             arguments,
             body,
             result_type,
-            CallingConvention::Tail,
+            CallingConvention::Source,
             false,
         )
     }
