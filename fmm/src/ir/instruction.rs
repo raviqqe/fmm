@@ -14,6 +14,7 @@ use super::pointer_address::PointerAddress;
 use super::record_address::RecordAddress;
 use super::store::Store;
 use super::union_address::UnionAddress;
+use crate::types::{self, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
@@ -52,6 +53,40 @@ impl Instruction {
             Self::PointerAddress(address) => Some(address.name()),
             Self::RecordAddress(address) => Some(address.name()),
             Self::UnionAddress(address) => Some(address.name()),
+            Self::AtomicStore(_) | Self::Store(_) => None,
+        }
+    }
+
+    pub fn result_type(&self) -> Option<Type> {
+        match self {
+            Self::AllocateHeap(allocate) => {
+                Some(types::Pointer::new(allocate.type_().clone()).into())
+            }
+            Self::AllocateStack(allocate) => {
+                Some(types::Pointer::new(allocate.type_().clone()).into())
+            }
+            Self::ArithmeticOperation(operation) => Some(operation.type_().clone().into()),
+            Self::AtomicLoad(load) => Some(load.type_().clone()),
+            Self::Call(call) => Some(call.type_().result().clone()),
+            Self::CompareAndSwap(_) => Some(types::Primitive::Boolean.into()),
+            Self::ComparisonOperation(_) => Some(types::Primitive::Boolean.into()),
+            Self::DeconstructRecord(deconstruct) => {
+                Some(deconstruct.type_().elements()[deconstruct.element_index()].clone())
+            }
+            Self::DeconstructUnion(deconstruct) => {
+                Some(deconstruct.type_().members()[deconstruct.member_index()].clone())
+            }
+            Self::If(if_) => Some(if_.type_().clone()),
+            Self::Load(load) => Some(load.type_().clone()),
+            Self::PointerAddress(address) => Some(address.type_().clone().into()),
+            Self::RecordAddress(address) => Some(
+                types::Pointer::new(address.type_().elements()[address.element_index()].clone())
+                    .into(),
+            ),
+            Self::UnionAddress(address) => Some(
+                types::Pointer::new(address.type_().members()[address.member_index()].clone())
+                    .into(),
+            ),
             Self::AtomicStore(_) | Self::Store(_) => None,
         }
     }

@@ -1,6 +1,6 @@
 use super::argument::Argument;
 use super::block::Block;
-use crate::types::{self, Type};
+use crate::types::{self, CallingConvention, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
@@ -18,6 +18,7 @@ impl FunctionDefinition {
         arguments: Vec<Argument>,
         body: Block,
         result_type: impl Into<Type>,
+        calling_convention: CallingConvention,
         global: bool,
     ) -> Self {
         let result_type = result_type.into();
@@ -29,6 +30,7 @@ impl FunctionDefinition {
                     .map(|argument| argument.type_().clone())
                     .collect(),
                 result_type.clone(),
+                calling_convention,
             ),
             name: name.into(),
             arguments,
@@ -56,6 +58,10 @@ impl FunctionDefinition {
 
     pub fn type_(&self) -> &types::Function {
         &self.type_
+    }
+
+    pub fn calling_convention(&self) -> CallingConvention {
+        self.type_.calling_convention()
     }
 
     pub fn is_global(&self) -> bool {
