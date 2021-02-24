@@ -99,7 +99,9 @@ fn collect_from_instructions(instructions: &[Instruction]) -> HashSet<Type> {
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
     match instruction {
-        Instruction::AllocateHeap(allocate) => vec![allocate.type_().clone()].into_iter().collect(),
+        Instruction::AllocateHeap(allocate) => {
+            vec![allocate.type_().clone()].into_iter().collect()
+        }
         Instruction::AllocateStack(allocate) => {
             vec![allocate.type_().clone()].into_iter().collect()
         }
@@ -135,6 +137,10 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
+        Instruction::ReallocateHeap(reallocate) => vec![reallocate.pointer(), reallocate.size()]
+            .into_iter()
+            .flat_map(collect_from_expression)
+            .collect(),
         Instruction::RecordAddress(address) => vec![address.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
@@ -154,7 +160,9 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
 fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashSet<Type> {
     match instruction {
         TerminalInstruction::Branch(branch) => vec![branch.type_().clone()].into_iter().collect(),
-        TerminalInstruction::Return(return_) => vec![return_.type_().clone()].into_iter().collect(),
+        TerminalInstruction::Return(return_) => {
+            vec![return_.type_().clone()].into_iter().collect()
+        }
         TerminalInstruction::Unreachable => Default::default(),
     }
 }

@@ -241,6 +241,21 @@ fn check_block(
 
                 variables.insert(address.name().into(), address.type_().clone().into());
             }
+            Instruction::ReallocateHeap(reallocate) => {
+                let generic_pointer_type = types::Pointer::new(types::Primitive::Integer8).into();
+
+                check_equality(
+                    &check_expression(reallocate.pointer(), &variables)?,
+                    &generic_pointer_type,
+                )?;
+
+                check_equality(
+                    &check_expression(reallocate.size(), &variables)?,
+                    &types::Primitive::PointerInteger.into(),
+                )?;
+
+                variables.insert(reallocate.name().into(), generic_pointer_type);
+            }
             Instruction::RecordAddress(address) => {
                 check_equality(
                     &check_expression(address.pointer(), &variables)?,
@@ -419,7 +434,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -452,7 +468,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -673,7 +690,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),

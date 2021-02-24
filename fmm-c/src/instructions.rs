@@ -152,6 +152,17 @@ fn compile_instruction(
             compile_expression(address.pointer()),
             compile_expression(address.offset()),
         ),
+        Instruction::ReallocateHeap(reallocate) => {
+            format!(
+                "{}=realloc({},{});",
+                compile_typed_name(
+                    &types::Pointer::new(types::Primitive::Integer8).into(),
+                    reallocate.name()
+                ),
+                compile_expression(reallocate.pointer()),
+                compile_expression(reallocate.pointer()),
+            )
+        }
         Instruction::RecordAddress(address) => format!(
             "{}=&({})->{};",
             compile_typed_name(
@@ -171,8 +182,10 @@ fn compile_instruction(
             format!(
                 "{}=&({})->{};",
                 compile_typed_name(
-                    &types::Pointer::new(address.type_().members()[address.member_index()].clone())
-                        .into(),
+                    &types::Pointer::new(
+                        address.type_().members()[address.member_index()].clone()
+                    )
+                    .into(),
                     address.name(),
                 ),
                 compile_expression(address.pointer()),
