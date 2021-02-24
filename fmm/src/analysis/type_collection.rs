@@ -186,7 +186,7 @@ fn collect_child_types(type_: &Type) -> HashSet<Type> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types;
+    use crate::types::{self, CallingConvention};
 
     #[test]
     fn sort_types() {
@@ -216,7 +216,12 @@ mod tests {
                     "x",
                     types::Function::new(
                         vec![],
-                        types::Function::new(vec![], types::Primitive::PointerInteger)
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::PointerInteger,
+                            CallingConvention::Direct
+                        ),
+                        CallingConvention::Direct
                     )
                 )],
                 vec![],
@@ -224,10 +229,20 @@ mod tests {
             )),
             vec![
                 types::Primitive::PointerInteger.into(),
-                types::Function::new(vec![], types::Primitive::PointerInteger).into(),
                 types::Function::new(
                     vec![],
-                    types::Function::new(vec![], types::Primitive::PointerInteger)
+                    types::Primitive::PointerInteger,
+                    CallingConvention::Direct
+                )
+                .into(),
+                types::Function::new(
+                    vec![],
+                    types::Function::new(
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        CallingConvention::Direct,
+                    ),
+                    CallingConvention::Direct
                 )
                 .into(),
             ]

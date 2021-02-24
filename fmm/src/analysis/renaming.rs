@@ -65,6 +65,7 @@ fn rename_function_definition(
             .collect(),
         rename_block(definition.body(), rename),
         definition.result_type().clone(),
+        definition.calling_convention(),
         definition.is_global(),
     )
 }
@@ -236,7 +237,27 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types;
+    use crate::types::{self, CallingConvention, Type};
+
+    fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
+        types::Function::new(arguments, result, CallingConvention::Direct)
+    }
+
+    fn create_function_definition(
+        name: impl Into<String>,
+        arguments: Vec<Argument>,
+        body: Block,
+        result_type: impl Into<Type>,
+    ) -> FunctionDefinition {
+        FunctionDefinition::new(
+            name,
+            arguments,
+            body,
+            result_type,
+            CallingConvention::Direct,
+            false,
+        )
+    }
 
     #[test]
     fn rename_variable_declaration() {
@@ -251,7 +272,7 @@ mod tests {
                     )],
                     vec![],
                     vec![],
-                    vec![FunctionDefinition::new(
+                    vec![create_function_definition(
                         "f",
                         vec![],
                         Block::new(
@@ -259,7 +280,6 @@ mod tests {
                             Return::new(pointer_type.clone(), Variable::new("x"))
                         ),
                         pointer_type.clone(),
-                        false,
                     )],
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -271,7 +291,7 @@ mod tests {
                 )],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -279,7 +299,6 @@ mod tests {
                         Return::new(pointer_type.clone(), Variable::new("y"))
                     ),
                     pointer_type,
-                    false,
                 )]
             )
         );
@@ -287,7 +306,7 @@ mod tests {
 
     #[test]
     fn rename_function_declaration() {
-        let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
+        let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
             rename_names(
@@ -295,7 +314,7 @@ mod tests {
                     vec![],
                     vec![FunctionDeclaration::new("x", function_type.clone())],
                     vec![],
-                    vec![FunctionDefinition::new(
+                    vec![create_function_definition(
                         "f",
                         vec![],
                         Block::new(
@@ -303,7 +322,6 @@ mod tests {
                             Return::new(function_type.clone(), Variable::new("x"))
                         ),
                         function_type.clone(),
-                        false,
                     )],
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -312,7 +330,7 @@ mod tests {
                 vec![],
                 vec![FunctionDeclaration::new("y", function_type.clone(),)],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -320,7 +338,6 @@ mod tests {
                         Return::new(function_type.clone(), Variable::new("y"))
                     ),
                     function_type,
-                    false,
                 )],
             )
         );
@@ -342,7 +359,7 @@ mod tests {
                         false,
                         false
                     )],
-                    vec![FunctionDefinition::new(
+                    vec![create_function_definition(
                         "f",
                         vec![],
                         Block::new(
@@ -350,7 +367,6 @@ mod tests {
                             Return::new(pointer_type.clone(), Variable::new("x"))
                         ),
                         pointer_type.clone(),
-                        false,
                     )]
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -365,7 +381,7 @@ mod tests {
                     false,
                     false
                 )],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![],
                     Block::new(
@@ -373,7 +389,6 @@ mod tests {
                         Return::new(pointer_type.clone(), Variable::new("y"))
                     ),
                     pointer_type,
-                    false,
                 )]
             )
         );
@@ -381,7 +396,7 @@ mod tests {
 
     #[test]
     fn rename_function_definition() {
-        let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
+        let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
             rename_names(
@@ -389,7 +404,7 @@ mod tests {
                     vec![],
                     vec![],
                     vec![],
-                    vec![FunctionDefinition::new(
+                    vec![create_function_definition(
                         "f",
                         vec![],
                         Block::new(
@@ -397,7 +412,6 @@ mod tests {
                             Return::new(function_type.clone(), Variable::new("f"))
                         ),
                         function_type.clone(),
-                        false,
                     )]
                 ),
                 |name| if name == "f" { "g".into() } else { name.into() },
@@ -406,7 +420,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "g",
                     vec![],
                     Block::new(
@@ -414,7 +428,6 @@ mod tests {
                         Return::new(function_type.clone(), Variable::new("g"))
                     ),
                     function_type,
-                    false,
                 )]
             )
         );
@@ -422,7 +435,7 @@ mod tests {
 
     #[test]
     fn rename_local_variable() {
-        let function_type = types::Function::new(vec![], types::Primitive::PointerInteger);
+        let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
             rename_names(
@@ -430,7 +443,7 @@ mod tests {
                     vec![],
                     vec![],
                     vec![],
-                    vec![FunctionDefinition::new(
+                    vec![create_function_definition(
                         "f",
                         vec![],
                         Block::new(
@@ -441,7 +454,6 @@ mod tests {
                             Return::new(types::Primitive::PointerInteger, Variable::new("f"))
                         ),
                         types::Primitive::PointerInteger,
-                        false,
                     )]
                 ),
                 |name| if name == "f" { "g".into() } else { name.into() },
@@ -450,7 +462,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "g",
                     vec![],
                     Block::new(
@@ -458,7 +470,6 @@ mod tests {
                         Return::new(types::Primitive::PointerInteger, Variable::new("g"))
                     ),
                     types::Primitive::PointerInteger,
-                    false,
                 )]
             )
         );
@@ -472,7 +483,7 @@ mod tests {
                     vec![],
                     vec![],
                     vec![],
-                    vec![FunctionDefinition::new(
+                    vec![create_function_definition(
                         "f",
                         vec![Argument::new("x", types::Primitive::PointerInteger)],
                         Block::new(
@@ -480,7 +491,6 @@ mod tests {
                             Return::new(types::Primitive::PointerInteger, Variable::new("x"))
                         ),
                         types::Primitive::PointerInteger,
-                        false,
                     )]
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -489,7 +499,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![FunctionDefinition::new(
+                vec![create_function_definition(
                     "f",
                     vec![Argument::new("y", types::Primitive::PointerInteger)],
                     Block::new(
@@ -497,7 +507,6 @@ mod tests {
                         Return::new(types::Primitive::PointerInteger, Variable::new("y"))
                     ),
                     types::Primitive::PointerInteger,
-                    false,
                 )]
             )
         );
