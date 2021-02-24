@@ -92,6 +92,9 @@ fn collect_from_expression(expression: &Expression) -> HashSet<String> {
             .collect(),
         Expression::Union(union) => collect_from_expression(union.member()),
         Expression::Variable(variable) => vec![variable.name().into()].into_iter().collect(),
-        Expression::Primitive(_) | Expression::Undefined(_) => Default::default(),
+        Expression::AlignOf(_)
+        | Expression::Primitive(_)
+        | Expression::SizeOf(_)
+        | Expression::Undefined(_) => Default::default(),
     }
 }
