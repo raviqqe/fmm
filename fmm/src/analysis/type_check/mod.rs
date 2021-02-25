@@ -3,7 +3,11 @@ mod error;
 use crate::ir::*;
 use crate::types::{self, Type};
 pub use error::*;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
+
+static GENERIC_POINTER_TYPE: Lazy<Type> =
+    Lazy::new(|| types::Pointer::new(types::Primitive::Integer8).into());
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
     let variables = module
@@ -240,6 +244,19 @@ fn check_block(
                 )?;
 
                 variables.insert(address.name().into(), address.type_().clone().into());
+            }
+            Instruction::ReallocateHeap(reallocate) => {
+                check_equality(
+                    &check_expression(reallocate.pointer(), &variables)?,
+                    &GENERIC_POINTER_TYPE,
+                )?;
+
+                check_equality(
+                    &check_expression(reallocate.size(), &variables)?,
+                    &types::Primitive::PointerInteger.into(),
+                )?;
+
+                variables.insert(reallocate.name().into(), GENERIC_POINTER_TYPE.clone());
             }
             Instruction::RecordAddress(address) => {
                 check_equality(
@@ -537,6 +554,30 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_reallocate_heap() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![Argument::new("x", GENERIC_POINTER_TYPE.clone())],
+                Block::new(
+                    vec![ReallocateHeap::new(
+                        Variable::new("x"),
+                        Primitive::PointerInteger(42),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
+                ),
+                GENERIC_POINTER_TYPE.clone(),
                 true,
             )],
         ))

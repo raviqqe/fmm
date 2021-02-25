@@ -135,6 +135,10 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
+        Instruction::ReallocateHeap(reallocate) => vec![reallocate.pointer(), reallocate.size()]
+            .into_iter()
+            .flat_map(collect_from_expression)
+            .collect(),
         Instruction::RecordAddress(address) => vec![address.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(address.pointer()))

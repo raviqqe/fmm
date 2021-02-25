@@ -6,6 +6,7 @@
     "indoc",
     "malloc",
     "petgraph",
+    "realloc",
     "stdalign",
     "stdatomic",
     "stdbool",

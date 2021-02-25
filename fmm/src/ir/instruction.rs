@@ -11,6 +11,7 @@ use super::deconstruct_union::DeconstructUnion;
 use super::if_::If;
 use super::load::Load;
 use super::pointer_address::PointerAddress;
+use super::reallocate_heap::ReallocateHeap;
 use super::record_address::RecordAddress;
 use super::store::Store;
 use super::union_address::UnionAddress;
@@ -31,6 +32,7 @@ pub enum Instruction {
     If(If),
     Load(Load),
     PointerAddress(PointerAddress),
+    ReallocateHeap(ReallocateHeap),
     RecordAddress(RecordAddress),
     Store(Store),
     UnionAddress(UnionAddress),
@@ -51,12 +53,14 @@ impl Instruction {
             Self::If(if_) => Some(if_.name()),
             Self::Load(load) => Some(load.name()),
             Self::PointerAddress(address) => Some(address.name()),
+            Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
             Self::RecordAddress(address) => Some(address.name()),
             Self::UnionAddress(address) => Some(address.name()),
             Self::AtomicStore(_) | Self::Store(_) => None,
         }
     }
 
+    // TODO Move logic to each instruction.
     pub fn result_type(&self) -> Option<Type> {
         match self {
             Self::AllocateHeap(allocate) => {
@@ -79,6 +83,7 @@ impl Instruction {
             Self::If(if_) => Some(if_.type_().clone()),
             Self::Load(load) => Some(load.type_().clone()),
             Self::PointerAddress(address) => Some(address.type_().clone().into()),
+            Self::ReallocateHeap(_) => Some(types::Pointer::new(types::Primitive::Integer8).into()),
             Self::RecordAddress(address) => Some(
                 types::Pointer::new(address.type_().elements()[address.element_index()].clone())
                     .into(),
@@ -167,6 +172,12 @@ impl From<Load> for Instruction {
 impl From<PointerAddress> for Instruction {
     fn from(calculation: PointerAddress) -> Self {
         Self::PointerAddress(calculation)
+    }
+}
+
+impl From<ReallocateHeap> for Instruction {
+    fn from(reallocate: ReallocateHeap) -> Self {
+        Self::ReallocateHeap(reallocate)
     }
 }
 
