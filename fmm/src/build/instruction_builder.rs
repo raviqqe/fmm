@@ -32,6 +32,25 @@ impl InstructionBuilder {
         TypedExpression::new(Variable::new(name), types::Pointer::new(type_))
     }
 
+    pub fn reallocate_heap(
+        &self,
+        pointer: impl Into<TypedExpression>,
+        size: impl Into<TypedExpression>,
+    ) -> TypedExpression {
+        let name = self.generate_name();
+
+        self.add_instruction(ReallocateHeap::new(
+            pointer.into().expression().clone(),
+            size.into().expression().clone(),
+            &name,
+        ));
+
+        TypedExpression::new(
+            Variable::new(name),
+            types::Pointer::new(types::Primitive::Integer8),
+        )
+    }
+
     pub fn allocate_stack(&self, type_: impl Into<Type>) -> TypedExpression {
         let name = self.generate_name();
         let type_ = type_.into();
