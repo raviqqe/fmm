@@ -3,7 +3,11 @@ mod error;
 use crate::ir::*;
 use crate::types::{self, Type};
 pub use error::*;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
+
+static GENERIC_POINTER_TYPE: Lazy<Type> =
+    Lazy::new(|| types::Pointer::new(types::Primitive::Integer8).into());
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
     let variables = module
@@ -242,11 +246,9 @@ fn check_block(
                 variables.insert(address.name().into(), address.type_().clone().into());
             }
             Instruction::ReallocateHeap(reallocate) => {
-                let generic_pointer_type = types::Pointer::new(types::Primitive::Integer8).into();
-
                 check_equality(
                     &check_expression(reallocate.pointer(), &variables)?,
-                    &generic_pointer_type,
+                    &GENERIC_POINTER_TYPE,
                 )?;
 
                 check_equality(
@@ -254,7 +256,7 @@ fn check_block(
                     &types::Primitive::PointerInteger.into(),
                 )?;
 
-                variables.insert(reallocate.name().into(), generic_pointer_type);
+                variables.insert(reallocate.name().into(), GENERIC_POINTER_TYPE.clone());
             }
             Instruction::RecordAddress(address) => {
                 check_equality(
