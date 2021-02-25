@@ -1,7 +1,7 @@
 use super::free_variables::collect_free_variables;
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 const STACK_POINTER_ARGUMENT_NAME: &str = "_s";
@@ -9,14 +9,14 @@ const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
 
-lazy_static! {
-    static ref STACK_TYPE: Type = types::Record::new(vec![
+static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
+    types::Record::new(vec![
         types::Pointer::new(types::Primitive::Integer8).into(), // base pointer
-        types::Primitive::PointerInteger.into(), // size
-        types::Primitive::PointerInteger.into(), // capacity
+        types::Primitive::PointerInteger.into(),                // size
+        types::Primitive::PointerInteger.into(),                // capacity
     ])
-    .into();
-}
+    .into()
+});
 
 pub struct CpsTransformer {
     continuation_index: usize,
@@ -99,7 +99,11 @@ impl CpsTransformer {
         }
     }
 
-    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
