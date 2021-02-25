@@ -64,6 +64,10 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
             .iter()
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
+        Instruction::ReallocateHeap(reallocate) => [reallocate.pointer(), reallocate.size()]
+            .iter()
+            .flat_map(|expression| collect_from_expression(*expression))
+            .collect(),
         Instruction::RecordAddress(address) => collect_from_expression(address.pointer()),
         Instruction::Store(store) => [store.value(), store.pointer()]
             .iter()
