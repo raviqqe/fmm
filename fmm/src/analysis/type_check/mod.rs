@@ -560,6 +560,30 @@ mod tests {
     }
 
     #[test]
+    fn check_reallocate_heap() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![Argument::new("x", GENERIC_POINTER_TYPE.clone())],
+                Block::new(
+                    vec![ReallocateHeap::new(
+                        Variable::new("x"),
+                        Primitive::PointerInteger(42),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
+                ),
+                GENERIC_POINTER_TYPE.clone(),
+                true,
+            )],
+        ))
+    }
+
+    #[test]
     fn check_allocate_stack() -> Result<(), TypeCheckError> {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
 
