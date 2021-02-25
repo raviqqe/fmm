@@ -214,7 +214,11 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
+                    .map(|argument| compile_typed_name(
+                        argument.type_(),
+                        argument.name(),
+                        type_ids
+                    ))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
@@ -692,6 +696,31 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
+                true,
+            ));
+        }
+
+        #[test]
+        fn compile_reallocate_heap() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![
+                        AllocateHeap::new(types::Primitive::Integer8, "x").into(),
+                        ReallocateHeap::new(
+                            Variable::new("x"),
+                            Primitive::PointerInteger(42),
+                            "y",
+                        )
+                        .into(),
+                    ],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::Integer8),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::Integer8),
                 true,
             ));
         }
