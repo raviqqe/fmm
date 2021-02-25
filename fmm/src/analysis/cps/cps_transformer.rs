@@ -10,11 +10,11 @@ const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
 
 static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
-    types::Record::new(vec![
+    types::Pointer::new(types::Record::new(vec![
         types::Pointer::new(types::Primitive::Integer8).into(), // base pointer
         types::Primitive::PointerInteger.into(),                // size
         types::Primitive::PointerInteger.into(),                // capacity
-    ])
+    ]))
     .into()
 });
 
