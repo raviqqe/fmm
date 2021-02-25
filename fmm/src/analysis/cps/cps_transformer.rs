@@ -4,7 +4,7 @@ use crate::types::{self, CallingConvention, Type};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
-const STACK_POINTER_ARGUMENT_NAME: &str = "_s";
+const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
@@ -73,7 +73,7 @@ impl CpsTransformer {
             FunctionDefinition::new(
                 definition.name(),
                 vec![
-                    Argument::new(STACK_POINTER_ARGUMENT_NAME, STACK_TYPE.clone()),
+                    Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                     Argument::new(
                         CONTINUATION_ARGUMENT_NAME,
                         self.create_continuation_type(definition.result_type()),
@@ -99,11 +99,7 @@ impl CpsTransformer {
         }
     }
 
-    fn transform_block(
-        &mut self,
-        block: &Block,
-        local_variables: &HashMap<String, Type>,
-    ) -> Block {
+    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
@@ -128,7 +124,7 @@ impl CpsTransformer {
                         self.create_continuation_type(return_.type_()),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
                         vec![
-                            Variable::new(STACK_POINTER_ARGUMENT_NAME).into(),
+                            Variable::new(STACK_ARGUMENT_NAME).into(),
                             return_.expression().clone(),
                         ],
                         RESULT_NAME,
@@ -154,13 +150,10 @@ impl CpsTransformer {
                             vec![Call::new(
                                 self.transform_function_type(call.type_()),
                                 call.function().clone(),
-                                vec![
-                                    Variable::new(STACK_POINTER_ARGUMENT_NAME).into(),
-                                    continuation,
-                                ]
-                                .into_iter()
-                                .chain(call.arguments().iter().cloned())
-                                .collect(),
+                                vec![Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
+                                    .into_iter()
+                                    .chain(call.arguments().iter().cloned())
+                                    .collect(),
                                 RESULT_NAME,
                             )
                             .into()],
@@ -209,7 +202,7 @@ impl CpsTransformer {
         self.function_definitions.push(FunctionDefinition::new(
             &name,
             vec![
-                Argument::new(STACK_POINTER_ARGUMENT_NAME, STACK_TYPE.clone()),
+                Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                 Argument::new(call.name(), call.type_().result().clone()),
             ],
             block,
