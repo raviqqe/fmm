@@ -697,6 +697,27 @@ mod tests {
         }
 
         #[test]
+        fn compile_reallocate_heap() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![
+                        AllocateHeap::new(types::Primitive::Integer8, "x").into(),
+                        ReallocateHeap::new(Variable::new("x"), Primitive::PointerInteger(42), "y")
+                            .into(),
+                    ],
+                    Return::new(
+                        types::Pointer::new(types::Primitive::Integer8),
+                        Variable::new("y"),
+                    ),
+                ),
+                types::Pointer::new(types::Primitive::Integer8),
+                true,
+            ));
+        }
+
+        #[test]
         fn compile_allocate_stack() {
             compile_function_definition(create_function_definition(
                 "f",

@@ -166,6 +166,12 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(address.name()),
         )
         .into(),
+        Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
+            rename_expression(reallocate.pointer()),
+            rename_expression(reallocate.size()),
+            rename(reallocate.name()),
+        )
+        .into(),
         Instruction::RecordAddress(address) => RecordAddress::new(
             address.type_().clone(),
             rename_expression(address.pointer()),

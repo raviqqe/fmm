@@ -152,6 +152,17 @@ fn compile_instruction(
             compile_expression(address.pointer()),
             compile_expression(address.offset()),
         ),
+        Instruction::ReallocateHeap(reallocate) => {
+            format!(
+                "{}=realloc({},{});",
+                compile_typed_name(
+                    &types::Pointer::new(types::Primitive::Integer8).into(),
+                    reallocate.name()
+                ),
+                compile_expression(reallocate.pointer()),
+                compile_expression(reallocate.size()),
+            )
+        }
         Instruction::RecordAddress(address) => format!(
             "{}=&({})->{};",
             compile_typed_name(
