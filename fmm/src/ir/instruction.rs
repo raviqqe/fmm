@@ -83,9 +83,7 @@ impl Instruction {
             Self::If(if_) => Some(if_.type_().clone()),
             Self::Load(load) => Some(load.type_().clone()),
             Self::PointerAddress(address) => Some(address.type_().clone().into()),
-            Self::ReallocateHeap(_) => {
-                Some(types::Pointer::new(types::Primitive::Integer8).into())
-            }
+            Self::ReallocateHeap(_) => Some(types::Pointer::new(types::Primitive::Integer8).into()),
             Self::RecordAddress(address) => Some(
                 types::Pointer::new(address.type_().elements()[address.element_index()].clone())
                     .into(),

@@ -182,10 +182,8 @@ fn compile_instruction(
             format!(
                 "{}=&({})->{};",
                 compile_typed_name(
-                    &types::Pointer::new(
-                        address.type_().members()[address.member_index()].clone()
-                    )
-                    .into(),
+                    &types::Pointer::new(address.type_().members()[address.member_index()].clone())
+                        .into(),
                     address.name(),
                 ),
                 compile_expression(address.pointer()),

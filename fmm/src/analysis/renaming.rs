@@ -453,13 +453,10 @@ mod tests {
                         "f",
                         vec![],
                         Block::new(
-                            vec![Call::new(
-                                function_type.clone(),
-                                Variable::new("f"),
-                                vec![],
-                                "f"
-                            )
-                            .into()],
+                            vec![
+                                Call::new(function_type.clone(), Variable::new("f"), vec![], "f")
+                                    .into()
+                            ],
                             Return::new(types::Primitive::PointerInteger, Variable::new("f"))
                         ),
                         types::Primitive::PointerInteger,
