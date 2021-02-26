@@ -1,4 +1,5 @@
 use super::align_of::AlignOf;
+use super::bit_cast::BitCast;
 use super::primitive::Primitive;
 use super::record::Record;
 use super::size_of::SizeOf;
@@ -9,6 +10,7 @@ use super::variable::Variable;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     AlignOf(AlignOf),
+    BitCast(BitCast),
     Primitive(Primitive),
     Record(Record),
     SizeOf(SizeOf),
@@ -20,6 +22,12 @@ pub enum Expression {
 impl From<AlignOf> for Expression {
     fn from(align_of: AlignOf) -> Self {
         Self::AlignOf(align_of)
+    }
+}
+
+impl From<BitCast> for Expression {
+    fn from(bit_cast: BitCast) -> Self {
+        Self::BitCast(bit_cast)
     }
 }
 

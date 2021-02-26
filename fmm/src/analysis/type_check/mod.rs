@@ -335,6 +335,14 @@ fn check_expression(
     variables: &HashMap<String, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
+        Expression::BitCast(bit_cast) => {
+            check_equality(
+                &check_expression(bit_cast.expression(), variables)?,
+                bit_cast.from(),
+            )?;
+
+            bit_cast.to().clone()
+        }
         Expression::Primitive(primitive) => check_primitive(*primitive).into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
@@ -911,6 +919,26 @@ mod tests {
                 "x",
                 SizeOf::new(types::Primitive::Float64),
                 types::Primitive::PointerInteger,
+                false,
+                true,
+            )],
+            vec![],
+        ))
+    }
+
+    #[test]
+    fn check_bit_cast() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                BitCast::new(
+                    types::Primitive::Integer64,
+                    types::Primitive::Float64,
+                    Primitive::Integer64(42),
+                ),
+                types::Primitive::Float64,
                 false,
                 true,
             )],

@@ -64,6 +64,10 @@ fn flat_types(types: &HashSet<Type>) -> HashSet<Type> {
 fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
     match expression {
         Expression::AlignOf(align_of) => vec![align_of.type_().clone()].into_iter().collect(),
+        Expression::BitCast(bit_cast) => vec![bit_cast.from().clone(), bit_cast.to().clone()]
+            .into_iter()
+            .chain(collect_from_expression(bit_cast.expression()))
+            .collect(),
         Expression::Record(record) => vec![record.type_().clone().into()]
             .into_iter()
             .chain(record.elements().iter().flat_map(collect_from_expression))
