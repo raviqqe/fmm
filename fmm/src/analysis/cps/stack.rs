@@ -45,7 +45,7 @@ pub fn push_to_stack(
             );
             builder.store(
                 builder.reallocate_heap(builder.load(pointer.clone()), new_capacity.clone()),
-                pointer.clone(),
+                pointer,
             );
             builder.store(new_capacity, builder.record_address(stack.clone(), 2));
 
@@ -61,7 +61,7 @@ pub fn push_to_stack(
             builder.pointer_address(builder.load(builder.record_address(stack.clone(), 0)), size),
         ),
     );
-    builder.store(new_size, builder.record_address(stack.clone(), 1));
+    builder.store(new_size, builder.record_address(stack, 1));
 }
 
 pub fn pop_from_stack(
@@ -81,7 +81,7 @@ pub fn pop_from_stack(
         types::Pointer::new(type_.clone()),
         builder.load(builder.record_address(stack.clone(), 0)),
     ));
-    builder.store(new_size, builder.record_address(stack.clone(), 1));
+    builder.store(new_size, builder.record_address(stack, 1));
 
     element
 }
