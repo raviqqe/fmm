@@ -3,10 +3,11 @@ mod free_variables;
 mod stack;
 
 use crate::ir::*;
+use crate::types::Type;
 use cps_transformer::*;
 
-pub fn transform_to_cps(module: &Module) -> Module {
-    CpsTransformer::new().transform(module)
+pub fn transform_to_cps(module: &Module, result_type: impl Into<Type>) -> Module {
+    CpsTransformer::new(result_type).transform(module)
 }
 
 #[cfg(test)]
@@ -36,7 +37,7 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
-        check_types(&transform_to_cps(module)).unwrap();
+        check_types(&transform_to_cps(module, types::Record::new(vec![]))).unwrap();
     }
 
     #[test]

@@ -9,21 +9,22 @@ use std::rc::Rc;
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
-const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
 
 pub struct CpsTransformer {
     name_generator: Rc<RefCell<NameGenerator>>,
     continuation_index: usize,
     function_definitions: Vec<FunctionDefinition>,
+    result_type: Type,
 }
 
 impl CpsTransformer {
-    pub fn new() -> Self {
+    pub fn new(result_type: impl Into<Type>) -> Self {
         Self {
             name_generator: Rc::new(NameGenerator::new("_cps_").into()),
             continuation_index: 0,
             function_definitions: vec![],
+            result_type: result_type.into(),
         }
     }
 
@@ -89,7 +90,7 @@ impl CpsTransformer {
                         )])
                         .collect(),
                 ),
-                RESULT_TYPE,
+                self.result_type.clone(),
                 CallingConvention::Target,
                 definition.is_global(),
             )
@@ -133,7 +134,7 @@ impl CpsTransformer {
                         RESULT_NAME,
                     )
                     .into()],
-                    Return::new(RESULT_TYPE, Variable::new(RESULT_NAME)).into(),
+                    Return::new(self.result_type.clone(), Variable::new(RESULT_NAME)).into(),
                 )
             }
             [instruction, ..] => {
@@ -176,7 +177,8 @@ impl CpsTransformer {
                                 )
                                 .into()])
                                 .collect(),
-                            Return::new(RESULT_TYPE, Variable::new(RESULT_NAME)).into(),
+                            Return::new(self.result_type.clone(), Variable::new(RESULT_NAME))
+                                .into(),
                         );
                     }
                 }
@@ -263,7 +265,7 @@ impl CpsTransformer {
                 },
                 block.terminal_instruction().clone(),
             ),
-            RESULT_TYPE,
+            self.result_type.clone(),
             CallingConvention::Target,
             false,
         ));
@@ -303,7 +305,7 @@ impl CpsTransformer {
             .into_iter()
             .chain(type_.arguments().iter().cloned())
             .collect(),
-            RESULT_TYPE,
+            self.result_type.clone(),
             CallingConvention::Target,
         )
     }
@@ -311,7 +313,7 @@ impl CpsTransformer {
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
         types::Function::new(
             vec![STACK_TYPE.clone(), result_type.clone()],
-            RESULT_TYPE,
+            self.result_type.clone(),
             CallingConvention::Target,
         )
     }
