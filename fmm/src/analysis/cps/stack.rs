@@ -3,6 +3,8 @@ use crate::ir::*;
 use crate::types::{self, Type};
 use once_cell::sync::Lazy;
 
+static VOID_TYPE: Lazy<Type> = Lazy::new(|| types::Record::new(vec![]).into());
+
 pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
     types::Pointer::new(types::Record::new(vec![
         types::Pointer::new(types::Primitive::Integer8).into(), // base pointer
@@ -49,9 +51,9 @@ pub fn push_to_stack(
             );
             builder.store(new_capacity, builder.record_address(stack.clone(), 2));
 
-            builder.branch(Undefined::new(types::Primitive::Boolean))
+            builder.branch(Undefined::new(VOID_TYPE.clone()))
         },
-        |builder| builder.branch(Undefined::new(types::Primitive::Boolean)),
+        |builder| builder.branch(Undefined::new(VOID_TYPE.clone())),
     );
 
     builder.store(
