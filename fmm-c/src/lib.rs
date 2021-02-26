@@ -659,6 +659,26 @@ mod tests {
                 vec![],
             ));
         }
+
+        #[test]
+        fn compile_bit_cast() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    Bitcast::new(
+                        types::Primitive::Integer64,
+                        types::Primitive::Float64,
+                        Primitive::Integer64(42),
+                    ),
+                    types::Primitive::Float64,
+                    false,
+                    true,
+                )],
+                vec![],
+            ));
+        }
     }
 
     mod instructions {
