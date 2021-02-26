@@ -1,5 +1,6 @@
 mod cps_transformer;
 mod free_variables;
+mod stack;
 
 use crate::ir::*;
 use cps_transformer::*;

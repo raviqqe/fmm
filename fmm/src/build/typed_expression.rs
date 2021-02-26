@@ -30,6 +30,12 @@ impl From<AlignOf> for TypedExpression {
     }
 }
 
+impl From<BitCast> for TypedExpression {
+    fn from(bit_cast: BitCast) -> Self {
+        Self::new(bit_cast.clone(), bit_cast.to().clone())
+    }
+}
+
 impl From<Primitive> for TypedExpression {
     fn from(primitive: Primitive) -> Self {
         Self::new(
