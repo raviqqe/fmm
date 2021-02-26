@@ -6,6 +6,16 @@ pub fn align_of(type_: impl Into<Type>) -> TypedExpression {
     AlignOf::new(type_.into()).into()
 }
 
+pub fn bitcast(to: impl Into<Type>, expression: impl Into<TypedExpression>) -> Bitcast {
+    let expression = expression.into();
+
+    Bitcast::new(
+        expression.type_().clone(),
+        to,
+        expression.expression().clone(),
+    )
+}
+
 pub fn record(elements: Vec<TypedExpression>) -> Record {
     Record::new(
         types::Record::new(

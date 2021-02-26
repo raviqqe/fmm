@@ -335,6 +335,14 @@ fn check_expression(
     variables: &HashMap<String, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
+        Expression::Bitcast(bitcast) => {
+            check_equality(
+                &check_expression(bitcast.expression(), variables)?,
+                bitcast.from(),
+            )?;
+
+            bitcast.to().clone()
+        }
         Expression::Primitive(primitive) => check_primitive(*primitive).into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
@@ -436,7 +444,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -469,7 +478,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -714,7 +724,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
@@ -911,6 +922,26 @@ mod tests {
                 "x",
                 SizeOf::new(types::Primitive::Float64),
                 types::Primitive::PointerInteger,
+                false,
+                true,
+            )],
+            vec![],
+        ))
+    }
+
+    #[test]
+    fn check_bitcast() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![VariableDefinition::new(
+                "x",
+                Bitcast::new(
+                    types::Primitive::Integer64,
+                    types::Primitive::Float64,
+                    Primitive::Integer64(42),
+                ),
+                types::Primitive::Float64,
                 false,
                 true,
             )],

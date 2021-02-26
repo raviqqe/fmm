@@ -217,6 +217,12 @@ fn rename_terminal_instruction(
 
 fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) -> Expression {
     match expression {
+        Expression::Bitcast(bitcast) => Bitcast::new(
+            bitcast.from().clone(),
+            bitcast.to().clone(),
+            rename_expression(bitcast.expression(), rename),
+        )
+        .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
             record
