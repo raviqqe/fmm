@@ -89,6 +89,7 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashS
 
 fn collect_from_expression(expression: &Expression) -> HashSet<String> {
     match expression {
+        Expression::BitCast(bit_cast) => collect_from_expression(bit_cast.expression()),
         Expression::Record(record) => record
             .elements()
             .iter()
