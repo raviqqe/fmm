@@ -1,9 +1,7 @@
 {
   "words": [
     "algo",
-    "bit_cast",
     "hasher",
-    "indoc",
     "malloc",
     "petgraph",
     "realloc",
