@@ -335,13 +335,13 @@ fn check_expression(
     variables: &HashMap<String, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
-        Expression::Bitcast(bitcast) => {
+        Expression::BitCast(bit_cast) => {
             check_equality(
-                &check_expression(bitcast.expression(), variables)?,
-                bitcast.from(),
+                &check_expression(bit_cast.expression(), variables)?,
+                bit_cast.from(),
             )?;
 
-            bitcast.to().clone()
+            bit_cast.to().clone()
         }
         Expression::Primitive(primitive) => check_primitive(*primitive).into(),
         Expression::Record(record) => {
@@ -927,13 +927,13 @@ mod tests {
     }
 
     #[test]
-    fn check_bitcast() -> Result<(), TypeCheckError> {
+    fn check_bit_cast() -> Result<(), TypeCheckError> {
         check_types(&Module::new(
             vec![],
             vec![],
             vec![VariableDefinition::new(
                 "x",
-                Bitcast::new(
+                BitCast::new(
                     types::Primitive::Integer64,
                     types::Primitive::Float64,
                     Primitive::Integer64(42),

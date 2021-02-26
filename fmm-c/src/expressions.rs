@@ -16,12 +16,12 @@ pub fn compile_expression(
         Expression::AlignOf(align_of) => {
             format!("alignof({})", compile_type_id(align_of.type_(), type_ids))
         }
-        Expression::Bitcast(bitcast) => {
+        Expression::BitCast(bit_cast) => {
             format!(
                 "__builtin_bit_cast({},({})({}))",
-                compile_type_id(bitcast.to(), type_ids),
-                compile_type_id(bitcast.from(), type_ids),
-                compile_expression(bitcast.expression()),
+                compile_type_id(bit_cast.to(), type_ids),
+                compile_type_id(bit_cast.from(), type_ids),
+                compile_expression(bit_cast.expression()),
             )
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive),

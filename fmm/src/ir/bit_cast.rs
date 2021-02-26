@@ -3,13 +3,13 @@ use crate::types::Type;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Bitcast {
+pub struct BitCast {
     from: Type,
     to: Type,
     expression: Arc<Expression>,
 }
 
-impl Bitcast {
+impl BitCast {
     pub fn new(
         from: impl Into<Type>,
         to: impl Into<Type>,

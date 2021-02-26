@@ -667,7 +667,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    Bitcast::new(
+                    BitCast::new(
                         types::Primitive::Integer64,
                         types::Primitive::Float64,
                         Primitive::Integer64(42),

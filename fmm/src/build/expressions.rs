@@ -6,10 +6,10 @@ pub fn align_of(type_: impl Into<Type>) -> TypedExpression {
     AlignOf::new(type_.into()).into()
 }
 
-pub fn bitcast(to: impl Into<Type>, expression: impl Into<TypedExpression>) -> Bitcast {
+pub fn bit_cast(to: impl Into<Type>, expression: impl Into<TypedExpression>) -> BitCast {
     let expression = expression.into();
 
-    Bitcast::new(
+    BitCast::new(
         expression.type_().clone(),
         to,
         expression.expression().clone(),
