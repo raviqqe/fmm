@@ -20,10 +20,11 @@ pub fn push_to_stack(
     let stack = stack.into();
     let element = element.into();
 
+    let size = builder.load(builder.record_address(stack.clone(), 1));
     // TODO Align stack sizes.
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Add,
-        builder.load(builder.record_address(stack.clone(), 1)),
+        size.clone(),
         build::size_of(element.type_().clone()),
     );
     let capacity = builder.load(builder.record_address(stack.clone(), 2));
@@ -37,17 +38,16 @@ pub fn push_to_stack(
         |builder| {
             let pointer = builder.record_address(stack.clone(), 0);
 
+            let new_capacity = builder.arithmetic_operation(
+                ArithmeticOperator::Multiply,
+                capacity.clone(),
+                Primitive::PointerInteger(2),
+            );
             builder.store(
-                builder.reallocate_heap(
-                    builder.load(pointer.clone()),
-                    builder.arithmetic_operation(
-                        ArithmeticOperator::Multiply,
-                        capacity.clone(),
-                        Primitive::PointerInteger(2),
-                    ),
-                ),
+                builder.reallocate_heap(builder.load(pointer.clone()), new_capacity.clone()),
                 pointer.clone(),
             );
+            builder.store(new_capacity, builder.record_address(stack.clone(), 2));
 
             builder.branch(Undefined::new(types::Primitive::Boolean))
         },
@@ -58,7 +58,8 @@ pub fn push_to_stack(
         element.clone(),
         build::bit_cast(
             types::Pointer::new(element.type_().clone()),
-            builder.load(builder.record_address(stack.clone(), 0)),
+            builder.pointer_address(builder.load(builder.record_address(stack.clone(), 0)), size),
         ),
     );
+    builder.store(new_size, builder.record_address(stack.clone(), 1));
 }
