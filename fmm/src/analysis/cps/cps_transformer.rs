@@ -1,5 +1,5 @@
 use super::free_variables::collect_free_variables;
-use super::stack::{push_to_stack, STACK_TYPE};
+use super::stack::{pop_from_stack, push_to_stack, STACK_TYPE};
 use crate::build::{self, InstructionBuilder, NameGenerator};
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
@@ -66,14 +66,13 @@ impl CpsTransformer {
         definition: &FunctionDefinition,
     ) -> FunctionDefinition {
         if definition.calling_convention() == CallingConvention::Source {
+            let continuation_type = self.create_continuation_type(definition.result_type());
+
             FunctionDefinition::new(
                 definition.name(),
                 vec![
                     Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
-                    Argument::new(
-                        CONTINUATION_ARGUMENT_NAME,
-                        self.create_continuation_type(definition.result_type()),
-                    ),
+                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
                 ]
                 .into_iter()
                 .chain(definition.arguments().iter().cloned())
@@ -84,6 +83,10 @@ impl CpsTransformer {
                         .arguments()
                         .iter()
                         .map(|argument| (argument.name().into(), argument.type_().clone()))
+                        .chain(vec![(
+                            CONTINUATION_ARGUMENT_NAME.into(),
+                            continuation_type.into(),
+                        )])
                         .collect(),
                 ),
                 RESULT_TYPE,
@@ -231,7 +234,35 @@ impl CpsTransformer {
                 Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                 Argument::new(call.name(), call.type_().result().clone()),
             ],
-            block,
+            Block::new(
+                {
+                    let builder = InstructionBuilder::new(self.name_generator.clone());
+
+                    let environment_record_type =
+                        self.get_environment_record(&environment).type_().clone();
+                    let environment_record = pop_from_stack(
+                        &builder,
+                        build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                        &environment_record_type.clone().into(),
+                    );
+
+                    builder
+                        .into_instructions()
+                        .into_iter()
+                        .chain(environment.iter().enumerate().map(|(index, (name, _))| {
+                            DeconstructRecord::new(
+                                environment_record_type.clone(),
+                                environment_record.expression().clone(),
+                                index,
+                                name,
+                            )
+                            .into()
+                        }))
+                        .chain(block.instructions().iter().cloned())
+                        .collect()
+                },
+                block.terminal_instruction().clone(),
+            ),
             RESULT_TYPE,
             CallingConvention::Target,
             false,
@@ -246,14 +277,21 @@ impl CpsTransformer {
         terminal_instruction: &TerminalInstruction,
         local_variables: &HashMap<String, Type>,
     ) -> Vec<(String, Type)> {
-        collect_free_variables(instructions, terminal_instruction)
-            .iter()
-            .flat_map(|name| {
-                local_variables
-                    .get(name)
-                    .map(|type_| (name.clone(), type_.clone()))
-            })
-            .collect()
+        vec![(
+            CONTINUATION_ARGUMENT_NAME.into(),
+            local_variables[CONTINUATION_ARGUMENT_NAME].clone(),
+        )]
+        .into_iter()
+        .chain(
+            collect_free_variables(instructions, terminal_instruction)
+                .iter()
+                .flat_map(|name| {
+                    local_variables
+                        .get(name)
+                        .map(|type_| (name.clone(), type_.clone()))
+                }),
+        )
+        .collect()
     }
 
     fn transform_function_type(&self, type_: &types::Function) -> types::Function {

@@ -63,3 +63,25 @@ pub fn push_to_stack(
     );
     builder.store(new_size, builder.record_address(stack.clone(), 1));
 }
+
+pub fn pop_from_stack(
+    builder: &InstructionBuilder,
+    stack: impl Into<TypedExpression>,
+    type_: &Type,
+) -> TypedExpression {
+    let stack = stack.into();
+
+    let new_size = builder.arithmetic_operation(
+        ArithmeticOperator::Subtract,
+        builder.load(builder.record_address(stack.clone(), 1)),
+        build::size_of(type_.clone()),
+    );
+
+    let element = builder.load(build::bit_cast(
+        types::Pointer::new(type_.clone()),
+        builder.load(builder.record_address(stack.clone(), 0)),
+    ));
+    builder.store(new_size, builder.record_address(stack.clone(), 1));
+
+    element
+}
