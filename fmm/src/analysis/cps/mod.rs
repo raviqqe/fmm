@@ -90,4 +90,43 @@ mod tests {
             )],
         ));
     }
+
+    #[test]
+    fn transform_instruction_after_call() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![Argument::new("x", types::Primitive::Float64)],
+                Block::new(
+                    vec![
+                        Call::new(
+                            function_type.clone(),
+                            Variable::new("f"),
+                            vec![Primitive::Float64(42.0).into()],
+                            "y",
+                        )
+                        .into(),
+                        ArithmeticOperation::new(
+                            types::Primitive::Float64,
+                            ArithmeticOperator::Add,
+                            Variable::new("x"),
+                            Variable::new("y"),
+                            "z",
+                        )
+                        .into(),
+                    ],
+                    Return::new(types::Primitive::Float64, Variable::new("z")),
+                ),
+                types::Primitive::Float64,
+            )],
+        ));
+    }
 }
