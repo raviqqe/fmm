@@ -15,6 +15,9 @@ mod tests {
     use super::*;
     use crate::analysis::check_types;
     use crate::types::{self, CallingConvention, Type};
+    use once_cell::sync::Lazy;
+
+    static VOID_TYPE: Lazy<Type> = Lazy::new(|| types::Record::new(vec![]).into());
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(arguments, result, CallingConvention::Source)
@@ -37,7 +40,7 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
-        check_types(&transform_to_cps(module, types::Record::new(vec![]))).unwrap();
+        check_types(&transform_to_cps(module, VOID_TYPE.clone())).unwrap();
     }
 
     #[test]
@@ -125,6 +128,45 @@ mod tests {
                         .into(),
                     ],
                     Return::new(types::Primitive::Float64, Variable::new("z")),
+                ),
+                types::Primitive::Float64,
+            )],
+        ));
+    }
+
+    #[test]
+    fn transform_if_with_return() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        VOID_TYPE.clone(),
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
+                            )
+                            .into()],
+                            Return::new(types::Primitive::Float64, Variable::new("x")),
+                        ),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "_",
+                    )
+                    .into()],
+                    TerminalInstruction::Unreachable,
                 ),
                 types::Primitive::Float64,
             )],

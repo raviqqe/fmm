@@ -116,10 +116,9 @@ impl CpsTransformer {
         local_variables: &HashMap<String, Type>,
     ) -> (Vec<Instruction>, TerminalInstruction) {
         match instructions {
-            [] => {
-                let return_ = terminal_instruction.to_return().unwrap();
-
-                (
+            [] => match terminal_instruction {
+                TerminalInstruction::Branch(_) => unreachable!(),
+                TerminalInstruction::Return(return_) => (
                     vec![Call::new(
                         self.create_continuation_type(return_.type_()),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
@@ -131,8 +130,9 @@ impl CpsTransformer {
                     )
                     .into()],
                     Return::new(self.result_type.clone(), Variable::new(RESULT_NAME)).into(),
-                )
-            }
+                ),
+                TerminalInstruction::Unreachable => (vec![], TerminalInstruction::Unreachable),
+            },
             [instruction, ..] => {
                 let instructions = &instructions[1..];
 
@@ -177,6 +177,22 @@ impl CpsTransformer {
                                 .into(),
                         );
                     }
+                } else if let Instruction::If(if_) = instruction {
+                    // TODO Transform branch instructions.
+                    let then = self.transform_block(if_.then(), local_variables);
+                    let else_ = self.transform_block(if_.else_(), local_variables);
+
+                    return (
+                        vec![If::new(
+                            if_.type_().clone(),
+                            if_.condition().clone(),
+                            then,
+                            else_,
+                            self.name_generator.borrow_mut().generate(),
+                        )
+                        .into()],
+                        terminal_instruction.clone(),
+                    );
                 }
 
                 let (instructions, terminal_instruction) = self.transform_instructions(
