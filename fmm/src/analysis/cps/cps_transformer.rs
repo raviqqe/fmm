@@ -1,24 +1,19 @@
 use super::free_variables::collect_free_variables;
+use super::stack::{push_to_stack, STACK_TYPE};
+use crate::build::{self, InstructionBuilder, NameGenerator};
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
-use once_cell::sync::Lazy;
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 const RESULT_NAME: &str = "_result";
 
-static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
-    types::Pointer::new(types::Record::new(vec![
-        types::Pointer::new(types::Primitive::Integer8).into(), // base pointer
-        types::Primitive::PointerInteger.into(),                // size
-        types::Primitive::PointerInteger.into(),                // capacity
-    ]))
-    .into()
-});
-
 pub struct CpsTransformer {
+    name_generator: Rc<RefCell<NameGenerator>>,
     continuation_index: usize,
     function_definitions: Vec<FunctionDefinition>,
 }
@@ -26,6 +21,7 @@ pub struct CpsTransformer {
 impl CpsTransformer {
     pub fn new() -> Self {
         Self {
+            name_generator: Rc::new(NameGenerator::new("_cps_").into()),
             continuation_index: 0,
             function_definitions: vec![],
         }
@@ -99,7 +95,11 @@ impl CpsTransformer {
         }
     }
 
-    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
@@ -143,20 +143,36 @@ impl CpsTransformer {
                             terminal_instruction,
                             local_variables,
                         );
-                        let continuation =
-                            self.create_continuation(call, instructions, terminal_instruction);
+                        let continuation = self.create_continuation(
+                            call,
+                            instructions,
+                            terminal_instruction,
+                            &environment,
+                        );
+
+                        let builder = InstructionBuilder::new(self.name_generator.clone());
+
+                        push_to_stack(
+                            &builder,
+                            build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                            self.get_environment_record(&environment),
+                        );
 
                         return (
-                            vec![Call::new(
-                                self.transform_function_type(call.type_()),
-                                call.function().clone(),
-                                vec![Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
-                                    .into_iter()
-                                    .chain(call.arguments().iter().cloned())
-                                    .collect(),
-                                RESULT_NAME,
-                            )
-                            .into()],
+                            builder
+                                .into_instructions()
+                                .into_iter()
+                                .chain(vec![Call::new(
+                                    self.transform_function_type(call.type_()),
+                                    call.function().clone(),
+                                    vec![Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
+                                        .into_iter()
+                                        .chain(call.arguments().iter().cloned())
+                                        .collect(),
+                                    RESULT_NAME,
+                                )
+                                .into()])
+                                .collect(),
                             Return::new(RESULT_TYPE, Variable::new(RESULT_NAME)).into(),
                         );
                     }
@@ -185,11 +201,21 @@ impl CpsTransformer {
         }
     }
 
+    fn get_environment_record(&self, environment: &[(String, Type)]) -> Record {
+        build::record(
+            environment
+                .iter()
+                .map(|(name, type_)| build::variable(name.clone(), type_.clone()))
+                .collect(),
+        )
+    }
+
     fn create_continuation(
         &mut self,
         call: &Call,
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
+        environment: &[(String, Type)],
     ) -> Expression {
         let name = self.generate_continuation_name();
         let block = self.transform_block(

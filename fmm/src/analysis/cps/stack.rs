@@ -14,9 +14,12 @@ pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
 
 pub fn push_to_stack(
     builder: &InstructionBuilder,
-    stack: TypedExpression,
-    element: TypedExpression,
+    stack: impl Into<TypedExpression>,
+    element: impl Into<TypedExpression>,
 ) {
+    let stack = stack.into();
+    let element = element.into();
+
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Add,
         builder.load(builder.record_address(stack.clone(), 1)),
@@ -34,15 +37,15 @@ pub fn push_to_stack(
             let pointer = builder.record_address(stack.clone(), 0);
 
             builder.store(
-                pointer.clone(),
                 builder.reallocate_heap(
-                    builder.load(pointer),
+                    builder.load(pointer.clone()),
                     builder.arithmetic_operation(
                         ArithmeticOperator::Multiply,
                         capacity.clone(),
                         Primitive::PointerInteger(2),
                     ),
                 ),
+                pointer.clone(),
             );
 
             builder.branch(Undefined::new(types::Primitive::Boolean))
