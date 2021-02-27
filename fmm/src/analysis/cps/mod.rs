@@ -205,7 +205,7 @@ mod tests {
                         "y",
                     )
                     .into()],
-                    TerminalInstruction::Unreachable,
+                    Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
                 types::Primitive::Float64,
             )],

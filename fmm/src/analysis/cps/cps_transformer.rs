@@ -202,7 +202,7 @@ impl CpsTransformer {
                             self.name_generator.borrow_mut().generate(),
                         )
                         .into()],
-                        terminal_instruction.clone(),
+                        TerminalInstruction::Unreachable,
                     );
                 }
 
