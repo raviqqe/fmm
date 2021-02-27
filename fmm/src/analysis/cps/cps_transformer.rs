@@ -178,9 +178,20 @@ impl CpsTransformer {
                         );
                     }
                 } else if let Instruction::If(if_) = instruction {
-                    // TODO Transform branch instructions.
-                    let then = self.transform_block(if_.then(), local_variables);
-                    let else_ = self.transform_block(if_.else_(), local_variables);
+                    let then = self.transform_if_block(
+                        if_.name(),
+                        if_.then(),
+                        local_variables,
+                        instructions,
+                        terminal_instruction,
+                    );
+                    let else_ = self.transform_if_block(
+                        if_.name(),
+                        if_.else_(),
+                        local_variables,
+                        instructions,
+                        terminal_instruction,
+                    );
 
                     return (
                         vec![If::new(
@@ -215,6 +226,38 @@ impl CpsTransformer {
                     terminal_instruction,
                 )
             }
+        }
+    }
+
+    fn transform_if_block(
+        &mut self,
+        name: &str,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+        instructions: &[Instruction],
+        terminal_instruction: &TerminalInstruction,
+    ) -> Block {
+        if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
+            self.transform_block(
+                &Block::new(
+                    block
+                        .instructions()
+                        .iter()
+                        .cloned()
+                        .chain(vec![PassThrough::new(
+                            branch.type_().clone(),
+                            branch.expression().clone(),
+                            name,
+                        )
+                        .into()])
+                        .chain(instructions.iter().cloned())
+                        .collect(),
+                    terminal_instruction.clone(),
+                ),
+                local_variables,
+            )
+        } else {
+            self.transform_block(block, local_variables)
         }
     }
 
