@@ -260,6 +260,19 @@ impl InstructionBuilder {
         TypedExpression::new(Variable::new(name), type_)
     }
 
+    pub fn pass_through(&self, value: impl Into<TypedExpression>) -> TypedExpression {
+        let value = value.into();
+        let name = self.generate_name();
+
+        self.add_instruction(PassThrough::new(
+            value.type_().clone(),
+            value.expression().clone(),
+            &name,
+        ));
+
+        TypedExpression::new(Variable::new(name), value.type_().clone())
+    }
+
     pub fn pointer_address(
         &self,
         pointer: impl Into<TypedExpression>,
