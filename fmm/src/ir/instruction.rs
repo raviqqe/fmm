@@ -10,6 +10,7 @@ use super::deconstruct_record::DeconstructRecord;
 use super::deconstruct_union::DeconstructUnion;
 use super::if_::If;
 use super::load::Load;
+use super::pass_through::PassThrough;
 use super::pointer_address::PointerAddress;
 use super::reallocate_heap::ReallocateHeap;
 use super::record_address::RecordAddress;
@@ -31,6 +32,7 @@ pub enum Instruction {
     DeconstructUnion(DeconstructUnion),
     If(If),
     Load(Load),
+    PassThrough(PassThrough),
     PointerAddress(PointerAddress),
     ReallocateHeap(ReallocateHeap),
     RecordAddress(RecordAddress),
@@ -52,6 +54,7 @@ impl Instruction {
             Self::DeconstructUnion(deconstruct) => Some(deconstruct.name()),
             Self::If(if_) => Some(if_.name()),
             Self::Load(load) => Some(load.name()),
+            Self::PassThrough(pass) => Some(pass.name()),
             Self::PointerAddress(address) => Some(address.name()),
             Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
             Self::RecordAddress(address) => Some(address.name()),
@@ -82,8 +85,11 @@ impl Instruction {
             }
             Self::If(if_) => Some(if_.type_().clone()),
             Self::Load(load) => Some(load.type_().clone()),
+            Self::PassThrough(pass) => Some(pass.type_().clone()),
             Self::PointerAddress(address) => Some(address.type_().clone().into()),
-            Self::ReallocateHeap(_) => Some(types::Pointer::new(types::Primitive::Integer8).into()),
+            Self::ReallocateHeap(_) => {
+                Some(types::Pointer::new(types::Primitive::Integer8).into())
+            }
             Self::RecordAddress(address) => Some(
                 types::Pointer::new(address.type_().elements()[address.element_index()].clone())
                     .into(),
@@ -166,6 +172,12 @@ impl From<If> for Instruction {
 impl From<Load> for Instruction {
     fn from(load: Load) -> Self {
         Self::Load(load)
+    }
+}
+
+impl From<PassThrough> for Instruction {
+    fn from(pass: PassThrough) -> Self {
+        Self::PassThrough(pass)
     }
 }
 

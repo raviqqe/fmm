@@ -214,7 +214,11 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
+                    .map(|argument| compile_typed_name(
+                        argument.type_(),
+                        argument.name(),
+                        type_ids
+                    ))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
@@ -724,8 +728,12 @@ mod tests {
                 Block::new(
                     vec![
                         AllocateHeap::new(types::Primitive::Integer8, "x").into(),
-                        ReallocateHeap::new(Variable::new("x"), Primitive::PointerInteger(42), "y")
-                            .into(),
+                        ReallocateHeap::new(
+                            Variable::new("x"),
+                            Primitive::PointerInteger(42),
+                            "y",
+                        )
+                        .into(),
                     ],
                     Return::new(
                         types::Pointer::new(types::Primitive::Integer8),
@@ -1175,6 +1183,25 @@ mod tests {
                     pointer_type,
                     true,
                 )],
+            ));
+        }
+
+        #[test]
+        fn compile_pass_through() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![PassThrough::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
             ));
         }
     }

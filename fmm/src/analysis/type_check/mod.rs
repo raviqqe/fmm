@@ -232,6 +232,14 @@ fn check_block(
 
                 variables.insert(load.name().into(), load.type_().clone());
             }
+            Instruction::PassThrough(pass) => {
+                check_equality(
+                    &check_expression(pass.expression(), &variables)?,
+                    pass.type_(),
+                )?;
+
+                variables.insert(pass.name().into(), pass.type_().clone());
+            }
             Instruction::PointerAddress(address) => {
                 check_equality(
                     &check_expression(address.pointer(), &variables)?,
@@ -444,7 +452,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -477,7 +486,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -722,7 +732,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
@@ -943,6 +954,30 @@ mod tests {
                 true,
             )],
             vec![],
+        ))
+    }
+
+    #[test]
+    fn check_pass_through() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![PassThrough::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            )],
         ))
     }
 }

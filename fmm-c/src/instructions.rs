@@ -146,6 +146,11 @@ fn compile_instruction(
             compile_typed_name(load.type_(), load.name()),
             compile_expression(load.pointer()),
         ),
+        Instruction::PassThrough(pass) => format!(
+            "{}={};",
+            compile_typed_name(pass.type_(), pass.name()),
+            compile_expression(pass.expression()),
+        ),
         Instruction::PointerAddress(address) => format!(
             "{}={}+{};",
             compile_typed_name(&address.type_().clone().into(), address.name()),
@@ -182,8 +187,10 @@ fn compile_instruction(
             format!(
                 "{}=&({})->{};",
                 compile_typed_name(
-                    &types::Pointer::new(address.type_().members()[address.member_index()].clone())
-                        .into(),
+                    &types::Pointer::new(
+                        address.type_().members()[address.member_index()].clone()
+                    )
+                    .into(),
                     address.name(),
                 ),
                 compile_expression(address.pointer()),

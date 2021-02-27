@@ -159,6 +159,12 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(load.name()),
         )
         .into(),
+        Instruction::PassThrough(pass) => PassThrough::new(
+            pass.type_().clone(),
+            rename_expression(pass.expression()),
+            rename(pass.name()),
+        )
+        .into(),
         Instruction::PointerAddress(address) => PointerAddress::new(
             address.type_().clone(),
             rename_expression(address.pointer()),
@@ -459,10 +465,13 @@ mod tests {
                         "f",
                         vec![],
                         Block::new(
-                            vec![
-                                Call::new(function_type.clone(), Variable::new("f"), vec![], "f")
-                                    .into()
-                            ],
+                            vec![Call::new(
+                                function_type.clone(),
+                                Variable::new("f"),
+                                vec![],
+                                "f"
+                            )
+                            .into()],
                             Return::new(types::Primitive::PointerInteger, Variable::new("f"))
                         ),
                         types::Primitive::PointerInteger,
