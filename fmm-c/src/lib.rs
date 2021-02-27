@@ -1177,5 +1177,24 @@ mod tests {
                 )],
             ));
         }
+
+        #[test]
+        fn compile_pass_through() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![PassThrough::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(42),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            ));
+        }
     }
 }

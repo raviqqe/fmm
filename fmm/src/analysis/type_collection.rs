@@ -135,6 +135,10 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(load.pointer()))
             .collect(),
+        Instruction::PassThrough(pass) => vec![pass.type_().clone()]
+            .into_iter()
+            .chain(collect_from_expression(pass.expression()))
+            .collect(),
         Instruction::PointerAddress(address) => vec![address.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
