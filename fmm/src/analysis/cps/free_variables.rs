@@ -60,6 +60,7 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
         .flatten()
         .collect(),
         Instruction::Load(load) => collect_from_expression(load.pointer()),
+        Instruction::PassThrough(pass) => collect_from_expression(pass.expression()),
         Instruction::PointerAddress(address) => [address.pointer(), address.offset()]
             .iter()
             .flat_map(|expression| collect_from_expression(*expression))
