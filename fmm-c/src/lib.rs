@@ -214,11 +214,7 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(
-                        argument.type_(),
-                        argument.name(),
-                        type_ids
-                    ))
+                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
@@ -728,12 +724,8 @@ mod tests {
                 Block::new(
                     vec![
                         AllocateHeap::new(types::Primitive::Integer8, "x").into(),
-                        ReallocateHeap::new(
-                            Variable::new("x"),
-                            Primitive::PointerInteger(42),
-                            "y",
-                        )
-                        .into(),
+                        ReallocateHeap::new(Variable::new("x"), Primitive::PointerInteger(42), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Pointer::new(types::Primitive::Integer8),
