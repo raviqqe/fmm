@@ -1,5 +1,10 @@
-use super::free_variables::collect_free_variables;
-use super::stack::{pop_from_stack, push_to_stack, STACK_TYPE};
+use super::{
+    error::CpsTransformationError,
+    stack::{pop_from_stack, push_to_stack, STACK_TYPE},
+};
+use super::{
+    free_variables::collect_free_variables, target_functions::validate_target_function_definition,
+};
 use crate::build::{self, InstructionBuilder, NameGenerator};
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
@@ -28,8 +33,8 @@ impl CpsTransformer {
         }
     }
 
-    pub fn transform(&mut self, module: &Module) -> Module {
-        Module::new(
+    pub fn transform(&mut self, module: &Module) -> Result<Module, CpsTransformationError> {
+        Ok(Module::new(
             module.variable_declarations().to_vec(),
             module
                 .function_declarations()
@@ -43,9 +48,9 @@ impl CpsTransformer {
                 .map(|definition| self.transform_function_definition(definition))
                 .collect::<Vec<_>>()
                 .into_iter()
-                .chain(self.function_definitions.drain(..))
-                .collect(),
-        )
+                .chain(self.function_definitions.drain(..).map(Ok))
+                .collect::<Result<Vec<_>, _>>()?,
+        ))
     }
 
     fn transform_function_declaration(
@@ -65,41 +70,50 @@ impl CpsTransformer {
     fn transform_function_definition(
         &mut self,
         definition: &FunctionDefinition,
-    ) -> FunctionDefinition {
-        if definition.calling_convention() == CallingConvention::Source {
-            let continuation_type = self.create_continuation_type(definition.result_type());
+    ) -> Result<FunctionDefinition, CpsTransformationError> {
+        Ok(match definition.calling_convention() {
+            CallingConvention::Source => {
+                let continuation_type = self.create_continuation_type(definition.result_type());
 
-            FunctionDefinition::new(
-                definition.name(),
-                vec![
-                    Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
-                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
-                ]
-                .into_iter()
-                .chain(definition.arguments().iter().cloned())
-                .collect(),
-                self.transform_block(
-                    definition.body(),
-                    &definition
-                        .arguments()
-                        .iter()
-                        .map(|argument| (argument.name().into(), argument.type_().clone()))
-                        .chain(vec![(
-                            CONTINUATION_ARGUMENT_NAME.into(),
-                            continuation_type.into(),
-                        )])
-                        .collect(),
-                ),
-                self.result_type.clone(),
-                CallingConvention::Target,
-                definition.is_global(),
-            )
-        } else {
-            definition.clone()
-        }
+                FunctionDefinition::new(
+                    definition.name(),
+                    vec![
+                        Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                        Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
+                    ]
+                    .into_iter()
+                    .chain(definition.arguments().iter().cloned())
+                    .collect(),
+                    self.transform_block(
+                        definition.body(),
+                        &definition
+                            .arguments()
+                            .iter()
+                            .map(|argument| (argument.name().into(), argument.type_().clone()))
+                            .chain(vec![(
+                                CONTINUATION_ARGUMENT_NAME.into(),
+                                continuation_type.into(),
+                            )])
+                            .collect(),
+                    ),
+                    self.result_type.clone(),
+                    CallingConvention::Target,
+                    definition.is_global(),
+                )
+            }
+            CallingConvention::Target => {
+                validate_target_function_definition(definition)?;
+
+                definition.clone()
+            }
+        })
     }
 
-    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),

@@ -1,12 +1,18 @@
 mod cps_transformer;
+mod error;
 mod free_variables;
 mod stack;
+mod target_functions;
 
 use crate::ir::*;
 use crate::types::Type;
 use cps_transformer::*;
+use error::CpsTransformationError;
 
-pub fn transform_to_cps(module: &Module, result_type: impl Into<Type>) -> Module {
+pub fn transform_to_cps(
+    module: &Module,
+    result_type: impl Into<Type>,
+) -> Result<Module, CpsTransformationError> {
     CpsTransformer::new(result_type).transform(module)
 }
 
@@ -40,7 +46,7 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
-        check_types(&transform_to_cps(module, VOID_TYPE.clone())).unwrap();
+        check_types(&transform_to_cps(module, VOID_TYPE.clone()).unwrap()).unwrap();
     }
 
     #[test]
@@ -91,6 +97,38 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
+            )],
+        ));
+    }
+
+    #[test]
+    #[should_panic]
+    fn transform_call_in_function_of_target_calling_convention() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![FunctionDefinition::new(
+                "g",
+                vec![],
+                Block::new(
+                    vec![Call::new(
+                        function_type,
+                        Variable::new("f"),
+                        vec![Primitive::Float64(42.0).into()],
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
+                types::Primitive::Float64,
+                CallingConvention::Target,
+                false,
             )],
         ));
     }
