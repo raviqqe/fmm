@@ -5,9 +5,12 @@ use super::{
 use super::{
     free_variables::collect_free_variables, target_functions::validate_target_function_definition,
 };
-use crate::build::{self, InstructionBuilder, NameGenerator};
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
+use crate::{
+    analysis::convert_types,
+    build::{self, InstructionBuilder, NameGenerator},
+};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -34,37 +37,25 @@ impl CpsTransformer {
     }
 
     pub fn transform(&mut self, module: &Module) -> Result<Module, CpsTransformationError> {
-        Ok(Module::new(
-            module.variable_declarations().to_vec(),
-            module
-                .function_declarations()
-                .iter()
-                .map(|declaration| self.transform_function_declaration(declaration))
-                .collect(),
-            module.variable_definitions().to_vec(),
-            module
-                .function_definitions()
-                .iter()
-                .map(|definition| self.transform_function_definition(definition))
-                .collect::<Vec<_>>()
-                .into_iter()
-                .chain(self.function_definitions.drain(..).map(Ok))
-                .collect::<Result<Vec<_>, _>>()?,
+        Ok(convert_types(
+            &Module::new(
+                module.variable_declarations().to_vec(),
+                module.function_declarations().to_vec(),
+                module.variable_definitions().to_vec(),
+                module
+                    .function_definitions()
+                    .iter()
+                    .map(|definition| self.transform_function_definition(definition))
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .chain(self.function_definitions.drain(..).map(Ok))
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+            &|type_| match type_ {
+                Type::Function(function) => self.transform_function_type(function).into(),
+                _ => type_.clone(),
+            },
         ))
-    }
-
-    fn transform_function_declaration(
-        &self,
-        declaration: &FunctionDeclaration,
-    ) -> FunctionDeclaration {
-        if declaration.type_().calling_convention() == CallingConvention::Source {
-            FunctionDeclaration::new(
-                declaration.name(),
-                self.transform_function_type(declaration.type_()),
-            )
-        } else {
-            declaration.clone()
-        }
     }
 
     fn transform_function_definition(
@@ -177,7 +168,7 @@ impl CpsTransformer {
                                 .into_instructions()
                                 .into_iter()
                                 .chain(vec![Call::new(
-                                    self.transform_function_type(call.type_()),
+                                    call.type_().clone(),
                                     call.function().clone(),
                                     vec![Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
                                         .into_iter()
@@ -366,17 +357,21 @@ impl CpsTransformer {
     }
 
     fn transform_function_type(&self, type_: &types::Function) -> types::Function {
-        types::Function::new(
-            vec![
-                STACK_TYPE.clone(),
-                self.create_continuation_type(type_.result()).into(),
-            ]
-            .into_iter()
-            .chain(type_.arguments().iter().cloned())
-            .collect(),
-            self.result_type.clone(),
-            CallingConvention::Target,
-        )
+        if type_.calling_convention() == CallingConvention::Source {
+            types::Function::new(
+                vec![
+                    STACK_TYPE.clone(),
+                    self.create_continuation_type(type_.result()).into(),
+                ]
+                .into_iter()
+                .chain(type_.arguments().iter().cloned())
+                .collect(),
+                self.result_type.clone(),
+                CallingConvention::Target,
+            )
+        } else {
+            type_.clone()
+        }
     }
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
