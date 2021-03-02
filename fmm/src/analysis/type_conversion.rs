@@ -90,10 +90,7 @@ fn convert_block(block: &Block, convert: &impl Fn(&Type) -> Type) -> Block {
     )
 }
 
-fn convert_instruction(
-    instruction: &Instruction,
-    convert: &impl Fn(&Type) -> Type,
-) -> Instruction {
+fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Type) -> Instruction {
     let convert_expression = |expression| convert_expression(expression, convert);
 
     match instruction {

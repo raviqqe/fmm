@@ -100,11 +100,7 @@ impl CpsTransformer {
         })
     }
 
-    fn transform_block(
-        &mut self,
-        block: &Block,
-        local_variables: &HashMap<String, Type>,
-    ) -> Block {
+    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
