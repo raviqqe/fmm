@@ -287,24 +287,28 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
 }
 
 fn convert_type(type_: &Type, convert: &impl Fn(&Type) -> Type) -> Type {
-    convert(&match type_ {
-        Type::Function(function) => types::Function::new(
-            function
-                .arguments()
-                .iter()
-                .map(|argument| convert(argument))
-                .collect(),
-            convert(function.result()),
-            function.calling_convention(),
-        )
-        .into(),
-        Type::Primitive(_) => type_.clone(),
-        Type::Record(record) => {
-            types::Record::new(record.elements().iter().map(convert).collect()).into()
-        }
-        Type::Pointer(pointer) => types::Pointer::new(convert(pointer.element())).into(),
-        Type::Union(union) => {
-            types::Union::new(union.members().iter().map(convert).collect()).into()
+    convert(&{
+        let convert = |type_| convert_type(type_, convert);
+
+        match type_ {
+            Type::Function(function) => types::Function::new(
+                function
+                    .arguments()
+                    .iter()
+                    .map(|argument| convert(argument))
+                    .collect(),
+                convert(function.result()),
+                function.calling_convention(),
+            )
+            .into(),
+            Type::Primitive(_) => type_.clone(),
+            Type::Record(record) => {
+                types::Record::new(record.elements().iter().map(convert).collect()).into()
+            }
+            Type::Pointer(pointer) => types::Pointer::new(convert(pointer.element())).into(),
+            Type::Union(union) => {
+                types::Union::new(union.members().iter().map(convert).collect()).into()
+            }
         }
     })
 }
