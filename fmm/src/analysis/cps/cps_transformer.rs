@@ -139,6 +139,8 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
+                        // The local variables should not include call results because they are
+                        // passed as continuation arguments.
                         let environment = self.get_continuation_environment(
                             instructions,
                             terminal_instruction,
@@ -281,8 +283,10 @@ impl CpsTransformer {
         let name = self.generate_continuation_name();
         let block = self.transform_block(
             &Block::new(instructions.to_vec(), terminal_instruction.clone()),
-            &vec![(call.name().into(), call.type_().result().clone())]
-                .into_iter()
+            &environment
+                .iter()
+                .cloned()
+                .chain(vec![(call.name().into(), call.type_().result().clone())])
                 .collect(),
         );
 
