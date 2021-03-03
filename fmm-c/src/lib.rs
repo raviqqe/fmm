@@ -262,7 +262,7 @@ mod tests {
     use super::*;
     use fmm::types::{self, CallingConvention, Type};
 
-    fn compile_module(module: &Module) {
+    fn compile_final_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
         let source = compile(module, Some("my_malloc".into()));
@@ -285,8 +285,15 @@ mod tests {
         assert!(output.status.success());
     }
 
+    fn compile_module(module: &Module) {
+        compile_final_module(module);
+        compile_final_module(
+            &fmm::analysis::transform_to_cps(module, types::Record::new(vec![])).unwrap(),
+        );
+    }
+
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
-        types::Function::new(arguments, result, CallingConvention::Target)
+        types::Function::new(arguments, result, CallingConvention::Source)
     }
 
     fn create_function_definition(
@@ -301,7 +308,7 @@ mod tests {
             arguments,
             body,
             result_type,
-            CallingConvention::Target,
+            CallingConvention::Source,
             global,
         )
     }
