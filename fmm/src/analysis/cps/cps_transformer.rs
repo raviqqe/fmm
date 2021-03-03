@@ -329,6 +329,7 @@ impl CpsTransformer {
         Variable::new(name).into()
     }
 
+    // TODO Sort elements to omit extra stack operations.
     fn get_continuation_environment(
         &self,
         instructions: &[Instruction],
