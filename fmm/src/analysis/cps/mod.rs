@@ -251,6 +251,44 @@ mod tests {
     }
 
     #[test]
+    fn transform_two_calls() {
+        let function_type = create_function_type(
+            vec![types::Primitive::PointerInteger.into()],
+            types::Primitive::PointerInteger,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                Block::new(
+                    vec![
+                        Call::new(
+                            function_type.clone(),
+                            Variable::new("f"),
+                            vec![Primitive::PointerInteger(42).into()],
+                            "x",
+                        )
+                        .into(),
+                        Call::new(
+                            function_type.clone(),
+                            Variable::new("f"),
+                            vec![Variable::new("x").into()],
+                            "y",
+                        )
+                        .into(),
+                    ],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+                types::Primitive::PointerInteger,
+            )],
+        ));
+    }
+
+    #[test]
     fn transform_two_calls_with_if() {
         let function_type = create_function_type(
             vec![types::Primitive::PointerInteger.into()],
