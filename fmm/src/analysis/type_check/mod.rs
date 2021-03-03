@@ -93,18 +93,7 @@ fn check_block(
 
     for instruction in block.instructions() {
         match instruction {
-            Instruction::AllocateHeap(allocate) => {
-                variables.insert(
-                    allocate.name().into(),
-                    types::Pointer::new(allocate.type_().clone()).into(),
-                );
-            }
-            Instruction::AllocateStack(allocate) => {
-                variables.insert(
-                    allocate.name().into(),
-                    types::Pointer::new(allocate.type_().clone()).into(),
-                );
-            }
+            Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => {}
             Instruction::ArithmeticOperation(operation) => {
                 check_equality(
                     &check_expression(operation.lhs(), &variables)?,
@@ -114,16 +103,12 @@ fn check_block(
                     &check_expression(operation.rhs(), &variables)?,
                     &operation.type_().into(),
                 )?;
-
-                variables.insert(operation.name().into(), operation.type_().clone().into());
             }
             Instruction::AtomicLoad(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
                     &types::Pointer::new(load.type_().clone()).clone().into(),
                 )?;
-
-                variables.insert(load.name().into(), load.type_().clone());
             }
             Instruction::AtomicStore(store) => {
                 check_equality(
@@ -148,8 +133,6 @@ fn check_block(
                 for (argument, type_) in call.arguments().iter().zip(call.type_().arguments()) {
                     check_equality(&check_expression(argument, &variables)?, type_)?;
                 }
-
-                variables.insert(call.name().into(), call.type_().result().clone());
             }
             Instruction::CompareAndSwap(cas) => {
                 check_equality(
@@ -166,8 +149,6 @@ fn check_block(
                     &check_expression(cas.new_value(), &variables)?,
                     &cas.type_().clone(),
                 )?;
-
-                variables.insert(cas.name().into(), types::Primitive::Boolean.into());
             }
             Instruction::ComparisonOperation(operation) => {
                 check_equality(
@@ -178,8 +159,6 @@ fn check_block(
                     &check_expression(operation.rhs(), &variables)?,
                     &operation.type_().into(),
                 )?;
-
-                variables.insert(operation.name().into(), types::Primitive::Boolean.into());
             }
             Instruction::DeconstructRecord(deconstruct) => {
                 check_equality(
@@ -187,15 +166,9 @@ fn check_block(
                     &deconstruct.type_().clone().into(),
                 )?;
 
-                variables.insert(
-                    deconstruct.name().into(),
-                    deconstruct
-                        .type_()
-                        .elements()
-                        .get(deconstruct.element_index())
-                        .ok_or(TypeCheckError::IndexOutOfRange)?
-                        .clone(),
-                );
+                if deconstruct.element_index() >= deconstruct.type_().elements().len() {
+                    return Err(TypeCheckError::IndexOutOfRange);
+                }
             }
             Instruction::DeconstructUnion(deconstruct) => {
                 check_equality(
@@ -203,15 +176,9 @@ fn check_block(
                     &deconstruct.type_().clone().into(),
                 )?;
 
-                variables.insert(
-                    deconstruct.name().into(),
-                    deconstruct
-                        .type_()
-                        .members()
-                        .get(deconstruct.member_index())
-                        .ok_or(TypeCheckError::IndexOutOfRange)?
-                        .clone(),
-                );
+                if deconstruct.member_index() >= deconstruct.type_().members().len() {
+                    return Err(TypeCheckError::IndexOutOfRange);
+                }
             }
             Instruction::If(if_) => {
                 check_equality(
@@ -221,24 +188,18 @@ fn check_block(
 
                 check_block(if_.then(), &variables, return_type, Some(if_.type_()))?;
                 check_block(if_.else_(), &variables, return_type, Some(if_.type_()))?;
-
-                variables.insert(if_.name().into(), if_.type_().clone());
             }
             Instruction::Load(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
                     &types::Pointer::new(load.type_().clone()).into(),
                 )?;
-
-                variables.insert(load.name().into(), load.type_().clone());
             }
             Instruction::PassThrough(pass) => {
                 check_equality(
                     &check_expression(pass.expression(), &variables)?,
                     pass.type_(),
                 )?;
-
-                variables.insert(pass.name().into(), pass.type_().clone());
             }
             Instruction::PointerAddress(address) => {
                 check_equality(
@@ -250,8 +211,6 @@ fn check_block(
                     &check_expression(address.offset(), &variables)?,
                     &types::Primitive::PointerInteger.into(),
                 )?;
-
-                variables.insert(address.name().into(), address.type_().clone().into());
             }
             Instruction::ReallocateHeap(reallocate) => {
                 check_equality(
@@ -263,8 +222,6 @@ fn check_block(
                     &check_expression(reallocate.size(), &variables)?,
                     &types::Primitive::PointerInteger.into(),
                 )?;
-
-                variables.insert(reallocate.name().into(), GENERIC_POINTER_TYPE.clone());
             }
             Instruction::RecordAddress(address) => {
                 check_equality(
@@ -272,18 +229,9 @@ fn check_block(
                     &types::Pointer::new(address.type_().clone()).into(),
                 )?;
 
-                variables.insert(
-                    address.name().into(),
-                    types::Pointer::new(
-                        address
-                            .type_()
-                            .elements()
-                            .get(address.element_index())
-                            .ok_or(TypeCheckError::IndexOutOfRange)?
-                            .clone(),
-                    )
-                    .into(),
-                );
+                if address.element_index() >= address.type_().elements().len() {
+                    return Err(TypeCheckError::IndexOutOfRange);
+                }
             }
             Instruction::Store(store) => {
                 check_equality(&check_expression(store.value(), &variables)?, store.type_())?;
@@ -298,18 +246,15 @@ fn check_block(
                     &types::Pointer::new(address.type_().clone()).into(),
                 )?;
 
-                variables.insert(
-                    address.name().into(),
-                    types::Pointer::new(
-                        address
-                            .type_()
-                            .members()
-                            .get(address.member_index())
-                            .ok_or(TypeCheckError::IndexOutOfRange)?
-                            .clone(),
-                    )
-                    .into(),
-                );
+                if address.member_index() >= address.type_().members().len() {
+                    return Err(TypeCheckError::IndexOutOfRange);
+                }
+            }
+        }
+
+        if let Some(name) = instruction.name() {
+            if let Some(type_) = instruction.result_type() {
+                variables.insert(name.into(), type_.clone());
             }
         }
     }
@@ -343,6 +288,7 @@ fn check_expression(
     variables: &HashMap<String, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
+        Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
         Expression::BitCast(bit_cast) => {
             check_equality(
                 &check_expression(bit_cast.expression(), variables)?,
@@ -352,6 +298,7 @@ fn check_expression(
             bit_cast.to().clone()
         }
         Expression::Primitive(primitive) => primitive.type_().into(),
+        Expression::SizeOf(_) => SizeOf::RESULT_TYPE.into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
                 return Err(TypeCheckError::RecordElements(record.clone()));
@@ -363,6 +310,7 @@ fn check_expression(
 
             record.type_().clone().into()
         }
+        Expression::Undefined(undefined) => undefined.type_().clone(),
         Expression::Union(union) => {
             check_equality(
                 &check_expression(union.member(), variables)?,
@@ -379,17 +327,15 @@ fn check_expression(
             .get(variable.name())
             .cloned()
             .ok_or_else(|| TypeCheckError::VariableNotFound(variable.clone()))?,
-        Expression::Undefined(undefined) => undefined.type_().clone(),
-        Expression::AlignOf(_) | Expression::SizeOf(_) => types::Primitive::PointerInteger.into(),
     })
 }
 
 fn check_equality(one: &Type, other: &Type) -> Result<(), TypeCheckError> {
-    if one != other {
-        return Err(TypeCheckError::TypesNotMatched(one.clone(), other.clone()));
+    if one == other {
+        Ok(())
+    } else {
+        Err(TypeCheckError::TypesNotMatched(one.clone(), other.clone()))
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -440,7 +386,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -473,7 +420,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -718,7 +666,8 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                            .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
