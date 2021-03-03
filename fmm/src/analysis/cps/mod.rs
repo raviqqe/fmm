@@ -251,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn transform_call_with_argument_of_if_result() {
+    fn transform_two_calls_with_if() {
         let function_type = create_function_type(
             vec![types::Primitive::PointerInteger.into()],
             types::Primitive::PointerInteger,
