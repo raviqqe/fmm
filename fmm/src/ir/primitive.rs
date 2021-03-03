@@ -1,3 +1,5 @@
+use crate::types;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Primitive {
     Boolean(bool),
@@ -9,6 +11,20 @@ pub enum Primitive {
     // Pointer integers are signed as it's expected to be architecture-agnostic
     // relative values.
     PointerInteger(i64),
+}
+
+impl Primitive {
+    pub fn type_(&self) -> types::Primitive {
+        match self {
+            Primitive::Boolean(_) => types::Primitive::Boolean,
+            Primitive::Float32(_) => types::Primitive::Float32,
+            Primitive::Float64(_) => types::Primitive::Float64,
+            Primitive::Integer8(_) => types::Primitive::Integer8,
+            Primitive::Integer32(_) => types::Primitive::Integer32,
+            Primitive::Integer64(_) => types::Primitive::Integer64,
+            Primitive::PointerInteger(_) => types::Primitive::PointerInteger,
+        }
+    }
 }
 
 impl From<bool> for Primitive {

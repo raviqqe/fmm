@@ -63,7 +63,6 @@ impl Instruction {
         }
     }
 
-    // TODO Move logic to each instruction.
     pub fn result_type(&self) -> Option<Type> {
         match self {
             Self::AllocateHeap(allocate) => {

@@ -1,5 +1,5 @@
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypedExpression {
@@ -26,7 +26,7 @@ impl TypedExpression {
 
 impl From<AlignOf> for TypedExpression {
     fn from(align_of: AlignOf) -> Self {
-        Self::new(align_of, types::Primitive::PointerInteger)
+        Self::new(align_of, AlignOf::RESULT_TYPE)
     }
 }
 
@@ -38,18 +38,7 @@ impl From<BitCast> for TypedExpression {
 
 impl From<Primitive> for TypedExpression {
     fn from(primitive: Primitive) -> Self {
-        Self::new(
-            primitive,
-            match primitive {
-                Primitive::Boolean(_) => types::Primitive::Boolean,
-                Primitive::Float32(_) => types::Primitive::Float32,
-                Primitive::Float64(_) => types::Primitive::Float64,
-                Primitive::Integer8(_) => types::Primitive::Integer8,
-                Primitive::Integer32(_) => types::Primitive::Integer32,
-                Primitive::Integer64(_) => types::Primitive::Integer64,
-                Primitive::PointerInteger(_) => types::Primitive::PointerInteger,
-            },
-        )
+        Self::new(primitive, primitive.type_())
     }
 }
 
@@ -61,7 +50,7 @@ impl From<Record> for TypedExpression {
 
 impl From<SizeOf> for TypedExpression {
     fn from(size_of: SizeOf) -> Self {
-        Self::new(size_of, types::Primitive::PointerInteger)
+        Self::new(size_of, SizeOf::RESULT_TYPE)
     }
 }
 

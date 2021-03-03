@@ -351,7 +351,7 @@ fn check_expression(
 
             bit_cast.to().clone()
         }
-        Expression::Primitive(primitive) => check_primitive(*primitive).into(),
+        Expression::Primitive(primitive) => primitive.type_().into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
                 return Err(TypeCheckError::RecordElements(record.clone()));
@@ -382,18 +382,6 @@ fn check_expression(
         Expression::Undefined(undefined) => undefined.type_().clone(),
         Expression::AlignOf(_) | Expression::SizeOf(_) => types::Primitive::PointerInteger.into(),
     })
-}
-
-fn check_primitive(primitive: Primitive) -> types::Primitive {
-    match primitive {
-        Primitive::Boolean(_) => types::Primitive::Boolean,
-        Primitive::Float32(_) => types::Primitive::Float32,
-        Primitive::Float64(_) => types::Primitive::Float64,
-        Primitive::Integer8(_) => types::Primitive::Integer8,
-        Primitive::Integer32(_) => types::Primitive::Integer32,
-        Primitive::Integer64(_) => types::Primitive::Integer64,
-        Primitive::PointerInteger(_) => types::Primitive::PointerInteger,
-    }
 }
 
 fn check_equality(one: &Type, other: &Type) -> Result<(), TypeCheckError> {
