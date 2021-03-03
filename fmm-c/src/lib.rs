@@ -9,7 +9,7 @@ use expressions::*;
 use fmm::analysis::{check_types, collect_types};
 use fmm::ir::*;
 use instructions::*;
-use malloc_configuration::MallocConfiguration;
+pub use malloc_configuration::MallocConfiguration;
 use names::*;
 use renaming::rename_names;
 use std::collections::{HashMap, HashSet};
