@@ -23,7 +23,6 @@ pub fn push_to_stack(
     let element = element.into();
 
     let size = builder.load(builder.record_address(stack.clone(), 1));
-    // TODO Align stack sizes.
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Add,
         size.clone(),
