@@ -19,11 +19,6 @@ pub fn collect_types(module: &Module) -> Vec<Type> {
                     .into_iter()
                     .chain(collect_from_expression(definition.body()))
             }))
-            .chain(module.variable_definitions().iter().flat_map(|definition| {
-                Some(definition.type_().clone())
-                    .into_iter()
-                    .chain(collect_from_expression(definition.body()))
-            }))
             .chain(module.function_definitions().iter().flat_map(|definition| {
                 Some(definition.type_().clone().into())
                     .into_iter()
