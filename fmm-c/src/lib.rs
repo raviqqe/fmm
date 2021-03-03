@@ -1,5 +1,6 @@
 mod expressions;
 mod instructions;
+mod malloc_configuration;
 mod names;
 mod renaming;
 mod types;
@@ -8,6 +9,7 @@ use expressions::*;
 use fmm::analysis::{check_types, collect_types};
 use fmm::ir::*;
 use instructions::*;
+use malloc_configuration::MallocConfiguration;
 use names::*;
 use renaming::rename_names;
 use std::collections::{HashMap, HashSet};
@@ -21,11 +23,7 @@ const INCLUDES: &[&str] = &[
     "#include <stdlib.h>",
 ];
 
-pub fn compile(
-    module: &Module,
-    custom_malloc_function_name: Option<String>,
-    custom_realloc_function_name: Option<String>,
-) -> String {
+pub fn compile(module: &Module, malloc_configuration: Option<MallocConfiguration>) -> String {
     check_types(module).unwrap();
 
     let module = rename_names(module);
@@ -46,16 +44,21 @@ pub fn compile(
     INCLUDES
         .iter()
         .map(|&string| string.into())
-        .chain(custom_malloc_function_name.iter().flat_map(|name| {
+        .chain(malloc_configuration.iter().flat_map(|configuration| {
             vec![
-                format!("#define malloc(size) {}(size)", name),
-                format!("void* {}(size_t);", name),
-            ]
-        }))
-        .chain(custom_realloc_function_name.iter().flat_map(|name| {
-            vec![
-                format!("#define realloc(pointer,size) {}(pointer,size)", name),
-                format!("void* {}(void*,size_t);", name),
+                format!(
+                    "#define malloc(size) {}(size)",
+                    &configuration.malloc_function_name
+                ),
+                format!("void* {}(size_t);", &configuration.malloc_function_name),
+                format!(
+                    "#define realloc(pointer,size) {}(pointer,size)",
+                    &configuration.realloc_function_name
+                ),
+                format!(
+                    "void* {}(void*,size_t);",
+                    &configuration.realloc_function_name
+                ),
             ]
         }))
         .chain(
@@ -273,7 +276,13 @@ mod tests {
     fn compile_final_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
-        let source = compile(module, Some("my_malloc".into()), Some("my_realloc".into()));
+        let source = compile(
+            module,
+            Some(MallocConfiguration {
+                malloc_function_name: "my_malloc".into(),
+                realloc_function_name: "my_realloc".into(),
+            }),
+        );
 
         println!("{}", source);
 
