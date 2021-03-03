@@ -166,9 +166,7 @@ fn check_block(
                     &deconstruct.type_().clone().into(),
                 )?;
 
-                if deconstruct.element_index() >= deconstruct.type_().elements().len() {
-                    return Err(TypeCheckError::IndexOutOfRange);
-                }
+                check_record_index(deconstruct.element_index(), deconstruct.type_())?;
             }
             Instruction::DeconstructUnion(deconstruct) => {
                 check_equality(
@@ -176,9 +174,7 @@ fn check_block(
                     &deconstruct.type_().clone().into(),
                 )?;
 
-                if deconstruct.member_index() >= deconstruct.type_().members().len() {
-                    return Err(TypeCheckError::IndexOutOfRange);
-                }
+                check_union_index(deconstruct.member_index(), deconstruct.type_())?;
             }
             Instruction::If(if_) => {
                 check_equality(
@@ -229,9 +225,7 @@ fn check_block(
                     &types::Pointer::new(address.type_().clone()).into(),
                 )?;
 
-                if address.element_index() >= address.type_().elements().len() {
-                    return Err(TypeCheckError::IndexOutOfRange);
-                }
+                check_record_index(address.element_index(), address.type_())?;
             }
             Instruction::Store(store) => {
                 check_equality(&check_expression(store.value(), &variables)?, store.type_())?;
@@ -246,9 +240,7 @@ fn check_block(
                     &types::Pointer::new(address.type_().clone()).into(),
                 )?;
 
-                if address.member_index() >= address.type_().members().len() {
-                    return Err(TypeCheckError::IndexOutOfRange);
-                }
+                check_union_index(address.member_index(), address.type_())?;
             }
         }
 
@@ -330,6 +322,22 @@ fn check_expression(
     })
 }
 
+fn check_record_index(index: usize, type_: &types::Record) -> Result<(), TypeCheckError> {
+    if index < type_.elements().len() {
+        Ok(())
+    } else {
+        Err(TypeCheckError::IndexOutOfRange)
+    }
+}
+
+fn check_union_index(index: usize, type_: &types::Union) -> Result<(), TypeCheckError> {
+    if index < type_.members().len() {
+        Ok(())
+    } else {
+        Err(TypeCheckError::IndexOutOfRange)
+    }
+}
+
 fn check_equality(one: &Type, other: &Type) -> Result<(), TypeCheckError> {
     if one == other {
         Ok(())
@@ -386,8 +394,7 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
-                            .into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -420,8 +427,7 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
-                            .into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
                     ],
                     Return::new(
                         types::Primitive::PointerInteger,
@@ -666,8 +672,7 @@ mod tests {
                 )],
                 Block::new(
                     vec![
-                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
-                            .into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
