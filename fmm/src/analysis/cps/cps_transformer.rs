@@ -139,8 +139,6 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
-                        // The local variables should not include call results because they are
-                        // passed as continuation arguments.
                         let environment = self.get_continuation_environment(
                             instructions,
                             terminal_instruction,
@@ -333,6 +331,9 @@ impl CpsTransformer {
         Variable::new(name).into()
     }
 
+    // The local variables should not include call results because they are
+    // passed as continuation arguments.
+    //
     // TODO Sort elements to omit extra stack operations.
     fn get_continuation_environment(
         &self,
