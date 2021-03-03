@@ -26,7 +26,7 @@ impl TypedExpression {
 
 impl From<AlignOf> for TypedExpression {
     fn from(align_of: AlignOf) -> Self {
-        Self::new(align_of.clone(), align_of.type_().clone())
+        Self::new(align_of.clone(), types::Primitive::PointerInteger)
     }
 }
 
@@ -61,7 +61,7 @@ impl From<Record> for TypedExpression {
 
 impl From<SizeOf> for TypedExpression {
     fn from(size_of: SizeOf) -> Self {
-        Self::new(size_of.clone(), size_of.type_().clone())
+        Self::new(size_of.clone(), types::Primitive::PointerInteger)
     }
 }
 

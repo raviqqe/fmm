@@ -27,7 +27,7 @@ pub fn push_to_stack(
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Add,
         size.clone(),
-        build::size_of(element.type_().clone()),
+        get_element_size(builder, element.type_()),
     );
     let capacity = builder.load(builder.record_address(stack.clone(), 2));
 
@@ -76,7 +76,7 @@ pub fn pop_from_stack(
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Subtract,
         builder.load(builder.record_address(stack.clone(), 1)),
-        build::size_of(type_.clone()),
+        get_element_size(builder, type_),
     );
 
     let element = builder.load(build::bit_cast(
@@ -86,4 +86,42 @@ pub fn pop_from_stack(
     builder.store(new_size, builder.record_address(stack, 1));
 
     element
+}
+
+fn get_element_size(builder: &InstructionBuilder, type_: &Type) -> TypedExpression {
+    align_size(builder, build::size_of(type_.clone()))
+}
+
+// TODO Support 16-byte data.
+fn align_size(builder: &InstructionBuilder, size: impl Into<TypedExpression>) -> TypedExpression {
+    let size = size.into();
+    let alignment = build::align_of(types::Primitive::PointerInteger);
+
+    builder.if_(
+        builder.comparison_operation(
+            ComparisonOperator::Equal,
+            size.clone(),
+            Primitive::PointerInteger(0),
+        ),
+        |builder| builder.branch(Primitive::PointerInteger(0)),
+        |builder| {
+            builder.branch(builder.arithmetic_operation(
+                ArithmeticOperator::Multiply,
+                builder.arithmetic_operation(
+                    ArithmeticOperator::Add,
+                    builder.arithmetic_operation(
+                        ArithmeticOperator::Divide,
+                        builder.arithmetic_operation(
+                            ArithmeticOperator::Subtract,
+                            size.clone(),
+                            Primitive::PointerInteger(1),
+                        ),
+                        alignment.clone(),
+                    ),
+                    Primitive::PointerInteger(1),
+                ),
+                alignment.clone(),
+            ))
+        },
+    )
 }
