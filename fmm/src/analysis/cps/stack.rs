@@ -25,7 +25,7 @@ pub fn push_to_stack(
     let size = builder.load(builder.record_address(stack.clone(), 1));
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Add,
-        size.clone(),
+        size,
         get_element_size(builder, element.type_()),
     );
     let capacity = builder.load(builder.record_address(stack.clone(), 2));
