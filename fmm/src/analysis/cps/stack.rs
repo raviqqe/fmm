@@ -57,7 +57,7 @@ pub fn push_to_stack(
 
     builder.store(
         element.clone(),
-        builder.load(get_element_pointer(builder, &stack, element.type_())),
+        get_element_pointer(builder, &stack, element.type_()),
     );
     builder.store(new_size, builder.record_address(stack, 1));
 }
