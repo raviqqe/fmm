@@ -25,7 +25,7 @@ pub fn push_to_stack(
     let size = builder.load(builder.record_address(stack.clone(), 1));
     let new_size = builder.arithmetic_operation(
         ArithmeticOperator::Add,
-        size.clone(),
+        size,
         get_element_size(builder, element.type_()),
     );
     let capacity = builder.load(builder.record_address(stack.clone(), 2));
@@ -57,10 +57,7 @@ pub fn push_to_stack(
 
     builder.store(
         element.clone(),
-        build::bit_cast(
-            types::Pointer::new(element.type_().clone()),
-            builder.pointer_address(builder.load(builder.record_address(stack.clone(), 0)), size),
-        ),
+        get_element_pointer(builder, &stack, element.type_()),
     );
     builder.store(new_size, builder.record_address(stack, 1));
 }
@@ -72,19 +69,31 @@ pub fn pop_from_stack(
 ) -> TypedExpression {
     let stack = stack.into();
 
-    let new_size = builder.arithmetic_operation(
-        ArithmeticOperator::Subtract,
-        builder.load(builder.record_address(stack.clone(), 1)),
-        get_element_size(builder, type_),
+    builder.store(
+        builder.arithmetic_operation(
+            ArithmeticOperator::Subtract,
+            builder.load(builder.record_address(stack.clone(), 1)),
+            get_element_size(builder, type_),
+        ),
+        builder.record_address(stack.clone(), 1),
     );
 
-    let element = builder.load(build::bit_cast(
-        types::Pointer::new(type_.clone()),
-        builder.load(builder.record_address(stack.clone(), 0)),
-    ));
-    builder.store(new_size, builder.record_address(stack, 1));
+    builder.load(get_element_pointer(builder, &stack, type_))
+}
 
-    element
+fn get_element_pointer(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    type_: &Type,
+) -> TypedExpression {
+    build::bit_cast(
+        types::Pointer::new(type_.clone()),
+        builder.pointer_address(
+            builder.load(builder.record_address(stack.clone(), 0)),
+            builder.load(builder.record_address(stack.clone(), 1)),
+        ),
+    )
+    .into()
 }
 
 fn get_element_size(builder: &InstructionBuilder, type_: &Type) -> TypedExpression {
