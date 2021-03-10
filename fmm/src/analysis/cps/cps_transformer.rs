@@ -1,3 +1,4 @@
+use super::tail_call::is_tail_call;
 use super::{
     error::CpsTransformationError,
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
@@ -139,25 +140,33 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
+                        let is_tail = is_tail_call(instructions);
+
                         let environment = self.get_continuation_environment(
                             instructions,
                             terminal_instruction,
                             local_variables,
                         );
-                        let continuation = self.create_continuation(
-                            call,
-                            instructions,
-                            terminal_instruction,
-                            &environment,
-                        );
+                        let continuation = if is_tail {
+                            Variable::new(CONTINUATION_ARGUMENT_NAME).into()
+                        } else {
+                            self.create_continuation(
+                                call,
+                                instructions,
+                                terminal_instruction,
+                                &environment,
+                            )
+                        };
 
                         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-                        push_to_stack(
-                            &builder,
-                            build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
-                            self.get_environment_record(&environment),
-                        );
+                        if !is_tail_call(instructions) {
+                            push_to_stack(
+                                &builder,
+                                build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                                self.get_environment_record(&environment),
+                            );
+                        }
 
                         return (
                             builder
