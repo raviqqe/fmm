@@ -160,7 +160,7 @@ impl CpsTransformer {
 
                         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-                        if !is_tail_call(instructions) {
+                        if !is_tail {
                             push_to_stack(
                                 &builder,
                                 build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
