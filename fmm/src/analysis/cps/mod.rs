@@ -463,7 +463,7 @@ mod tests {
                     ],
                     Return::new(record_type.clone(), Variable::new("y")),
                 ),
-                record_type.clone(),
+                record_type,
             )],
         ));
     }
