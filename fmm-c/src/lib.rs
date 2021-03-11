@@ -6,7 +6,7 @@ mod renaming;
 mod types;
 
 use expressions::*;
-use fmm::analysis::{check_types, collect_types};
+use fmm::analysis::collect_types;
 use fmm::ir::*;
 use instructions::*;
 pub use malloc_configuration::MallocConfiguration;
@@ -24,8 +24,6 @@ const INCLUDES: &[&str] = &[
 ];
 
 pub fn compile(module: &Module, malloc_configuration: Option<MallocConfiguration>) -> String {
-    check_types(module).unwrap();
-
     let module = rename_names(module);
     let global_variables = module
         .variable_declarations()
