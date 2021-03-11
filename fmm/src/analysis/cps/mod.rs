@@ -2,7 +2,6 @@ mod cps_transformer;
 mod error;
 mod free_variables;
 mod stack;
-mod tail_call;
 mod target_functions;
 
 use crate::ir::*;
@@ -422,6 +421,138 @@ mod tests {
                         )
                         .into()],
                         Return::new(VOID_TYPE.clone(), Variable::new("_result")),
+                    ),
+                    VOID_TYPE.clone(),
+                    CallingConvention::Target,
+                    false,
+                )],
+            ))
+        );
+    }
+
+    #[test]
+    fn transform_tail_call_with_pass_through() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+        let record_type = types::Record::new(vec![types::Primitive::Float64.into()]);
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                Block::new(
+                    vec![
+                        Call::new(
+                            function_type,
+                            Variable::new("f"),
+                            vec![Primitive::Float64(42.0).into()],
+                            "x",
+                        )
+                        .into(),
+                        PassThrough::new(
+                            record_type.clone(),
+                            Record::new(record_type.clone(), vec![Variable::new("x").into()]),
+                            "y",
+                        )
+                        .into(),
+                    ],
+                    Return::new(record_type.clone(), Variable::new("y")),
+                ),
+                record_type.clone(),
+            )],
+        ));
+    }
+
+    #[test]
+    fn transform_tail_call_in_if() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+        let cps_function_type = create_cps_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        pretty_assertions::assert_eq!(
+            transform_to_cps(
+                &Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new("f", function_type.clone())],
+                    vec![],
+                    vec![create_function_definition(
+                        "g",
+                        vec![],
+                        Block::new(
+                            vec![If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![Call::new(
+                                        function_type,
+                                        Variable::new("f"),
+                                        vec![Primitive::Float64(42.0).into()],
+                                        "x",
+                                    )
+                                    .into()],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into()],
+                            Return::new(types::Primitive::Float64, Variable::new("y")),
+                        ),
+                        types::Primitive::Float64,
+                    )],
+                ),
+                VOID_TYPE.clone()
+            ),
+            Ok(Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", cps_function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "g",
+                    vec![
+                        Argument::new("_s", STACK_TYPE.clone()),
+                        Argument::new(
+                            "_k",
+                            types::Function::new(
+                                vec![STACK_TYPE.clone(), types::Primitive::Float64.into()],
+                                VOID_TYPE.clone(),
+                                CallingConvention::Target,
+                            )
+                        ),
+                    ],
+                    Block::new(
+                        vec![If::new(
+                            types::Primitive::Float64,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    cps_function_type,
+                                    Variable::new("f"),
+                                    vec![
+                                        Variable::new("_s").into(),
+                                        Variable::new("_k").into(),
+                                        Primitive::Float64(42.0).into()
+                                    ],
+                                    "_result",
+                                )
+                                .into()],
+                                Return::new(VOID_TYPE.clone(), Variable::new("_result")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "_cps_0",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
                     ),
                     VOID_TYPE.clone(),
                     CallingConvention::Target,

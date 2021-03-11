@@ -1,10 +1,12 @@
-use super::tail_call::is_tail_call;
 use super::{
     error::CpsTransformationError,
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
 };
 use super::{
     free_variables::collect_free_variables, target_functions::validate_target_function_definition,
+};
+use crate::analysis::expression_conversion::{
+    convert_expressions_in_instruction, convert_expressions_in_terminal_instruction,
 };
 use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
@@ -140,14 +142,14 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
-                        let is_tail = is_tail_call(instructions);
+                        let is_tail_call = instructions.is_empty();
 
                         let environment = self.get_continuation_environment(
                             instructions,
                             terminal_instruction,
                             local_variables,
                         );
-                        let continuation = if is_tail {
+                        let continuation = if is_tail_call {
                             Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                         } else {
                             self.create_continuation(
@@ -160,7 +162,7 @@ impl CpsTransformer {
 
                         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-                        if !is_tail_call(instructions) {
+                        if !is_tail_call {
                             push_to_stack(
                                 &builder,
                                 build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
@@ -248,21 +250,31 @@ impl CpsTransformer {
         terminal_instruction: &TerminalInstruction,
     ) -> Block {
         if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
+            let replace_variable = |expression: &Expression| match expression {
+                Expression::Variable(variable) => {
+                    if variable.name() == name {
+                        branch.expression().clone()
+                    } else {
+                        expression.clone()
+                    }
+                }
+                _ => expression.clone(),
+            };
+
             self.transform_block(
                 &Block::new(
                     block
                         .instructions()
                         .iter()
                         .cloned()
-                        .chain(vec![PassThrough::new(
-                            branch.type_().clone(),
-                            branch.expression().clone(),
-                            name,
-                        )
-                        .into()])
-                        .chain(instructions.iter().cloned())
+                        .chain(instructions.iter().map(|instruction| {
+                            convert_expressions_in_instruction(instruction, &replace_variable)
+                        }))
                         .collect(),
-                    terminal_instruction.clone(),
+                    convert_expressions_in_terminal_instruction(
+                        terminal_instruction,
+                        &replace_variable,
+                    ),
                 ),
                 local_variables,
             )
