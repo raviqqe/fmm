@@ -23,6 +23,24 @@ pub fn convert_expressions(
     )
 }
 
+pub fn convert_expressions_in_instruction(
+    instruction: &Instruction,
+    convert: &impl Fn(&Expression) -> Expression,
+) -> Instruction {
+    convert_instruction(instruction, &|expression| {
+        convert_expression(expression, convert)
+    })
+}
+
+pub fn convert_expressions_in_terminal_instruction(
+    instruction: &TerminalInstruction,
+    convert: &impl Fn(&Expression) -> Expression,
+) -> TerminalInstruction {
+    convert_terminal_instruction(instruction, &|expression| {
+        convert_expression(expression, convert)
+    })
+}
+
 fn convert_variable_definition(
     definition: &VariableDefinition,
     convert: &impl Fn(&Expression) -> Expression,
@@ -55,13 +73,13 @@ fn convert_block(block: &Block, convert: &impl Fn(&Expression) -> Expression) ->
         block
             .instructions()
             .iter()
-            .map(|instruction| convert_expressions_in_instruction(instruction, convert))
+            .map(|instruction| convert_instruction(instruction, convert))
             .collect(),
-        convert_expressions_in_terminal_instruction(block.terminal_instruction(), convert),
+        convert_terminal_instruction(block.terminal_instruction(), convert),
     )
 }
 
-pub fn convert_expressions_in_instruction(
+fn convert_instruction(
     instruction: &Instruction,
     convert: &impl Fn(&Expression) -> Expression,
 ) -> Instruction {
@@ -179,7 +197,7 @@ pub fn convert_expressions_in_instruction(
     }
 }
 
-pub fn convert_expressions_in_terminal_instruction(
+fn convert_terminal_instruction(
     instruction: &TerminalInstruction,
     convert: &impl Fn(&Expression) -> Expression,
 ) -> TerminalInstruction {
@@ -226,4 +244,46 @@ fn convert_expression(
             | Expression::Variable(_) => expression.clone(),
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types;
+
+    #[test]
+    fn convert_deconstruct_union() {
+        let union_type = types::Union::new(vec![
+            types::Primitive::Float64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        pretty_assertions::assert_eq!(
+            convert_expressions_in_instruction(
+                &DeconstructUnion::new(
+                    union_type.clone(),
+                    Union::new(union_type.clone(), 0, Variable::new("foo")),
+                    1,
+                    "x"
+                )
+                .into(),
+                &|expression| match expression {
+                    Expression::Variable(variable) =>
+                        if variable.name() == "foo" {
+                            Variable::new("bar").into()
+                        } else {
+                            expression.clone()
+                        },
+                    _ => expression.clone(),
+                }
+            ),
+            DeconstructUnion::new(
+                union_type.clone(),
+                Union::new(union_type, 0, Variable::new("bar")),
+                1,
+                "x"
+            )
+            .into()
+        );
+    }
 }
