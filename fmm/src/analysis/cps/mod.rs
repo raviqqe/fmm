@@ -2,7 +2,6 @@ mod cps_transformer;
 mod error;
 mod free_variables;
 mod stack;
-mod tail_call;
 mod target_functions;
 
 use crate::ir::*;

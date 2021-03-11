@@ -1,4 +1,3 @@
-use super::tail_call::is_tail_call;
 use super::{
     error::CpsTransformationError,
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
@@ -101,7 +100,11 @@ impl CpsTransformer {
         })
     }
 
-    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
@@ -140,14 +143,14 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
-                        let is_tail = is_tail_call(instructions);
+                        let is_tail_call = instructions.is_empty();
 
                         let environment = self.get_continuation_environment(
                             instructions,
                             terminal_instruction,
                             local_variables,
                         );
-                        let continuation = if is_tail {
+                        let continuation = if is_tail_call {
                             Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                         } else {
                             self.create_continuation(
@@ -160,7 +163,7 @@ impl CpsTransformer {
 
                         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-                        if !is_tail {
+                        if !is_tail_call {
                             push_to_stack(
                                 &builder,
                                 build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
