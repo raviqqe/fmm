@@ -103,7 +103,11 @@ impl CpsTransformer {
         })
     }
 
-    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Block {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
@@ -142,7 +146,13 @@ impl CpsTransformer {
 
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
-                        let is_tail_call = instructions.is_empty();
+                        let is_tail_call = instructions.is_empty()
+                            && match terminal_instruction {
+                                TerminalInstruction::Return(return_) => {
+                                    return_.expression() == &Variable::new(call.name()).into()
+                                }
+                                _ => false,
+                            };
 
                         let environment = self.get_continuation_environment(
                             instructions,
