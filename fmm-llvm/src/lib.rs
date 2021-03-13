@@ -197,21 +197,37 @@ fn compile_function_definition<'c>(
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
 ) {
+    let function = module.get_function(definition.name()).unwrap();
     let builder = context.create_builder();
 
-    builder.position_at_end(
-        context.append_basic_block(module.get_function(definition.name()).unwrap(), "entry"),
-    );
+    builder.position_at_end(context.append_basic_block(function, "entry"));
 
     compile_block(
         &builder,
         definition.body(),
         None,
-        variables,
+        &variables
+            .clone()
+            .into_iter()
+            .chain(
+                definition
+                    .arguments()
+                    .iter()
+                    .enumerate()
+                    .map(|(index, argument)| {
+                        (
+                            argument.name().into(),
+                            function.get_nth_param(index as u32).unwrap(),
+                        )
+                    }),
+            )
+            .collect(),
         context,
         target_data,
         heap_function_set,
     );
+
+    function.verify(true);
 }
 
 fn compile_linkage(is_global: bool) -> inkwell::module::Linkage {
@@ -275,73 +291,73 @@ mod tests {
         compile_module(&Module::new(vec![], vec![], vec![], vec![]));
     }
 
-    // mod variable_declarations {
-    //     use super::*;
+    mod variable_declarations {
+        use super::*;
 
-    //     #[test]
-    //     fn compile_pointer_integer() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Primitive::PointerInteger,
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_pointer_integer() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_pointer_integer_pointer() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Pointer::new(types::Primitive::PointerInteger),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_pointer_integer_pointer() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_function_pointer() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 create_function_type(vec![], types::Primitive::PointerInteger),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_function_pointer() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    create_function_type(vec![], types::Primitive::PointerInteger),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_reference_to_declared_variable() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Primitive::PointerInteger,
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![create_function_definition(
-    //                 "f",
-    //                 vec![],
-    //                 Block::new(
-    //                     vec![],
-    //                     Return::new(
-    //                         types::Pointer::new(types::Primitive::PointerInteger),
-    //                         Variable::new("x"),
-    //                     ),
-    //                 ),
-    //                 types::Pointer::new(types::Primitive::PointerInteger),
-    //                 false,
-    //             )],
-    //         ));
-    //     }
-    // }
+        #[test]
+        fn compile_reference_to_declared_variable() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            types::Pointer::new(types::Primitive::PointerInteger),
+                            Variable::new("x"),
+                        ),
+                    ),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                )],
+            ));
+        }
+    }
 
     // mod function_declarations {
     //     use super::*;
