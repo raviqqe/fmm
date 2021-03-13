@@ -99,9 +99,7 @@ fn compile_primitive<'c>(
         Primitive::Integer8(number) => context.i8_type().const_int(number as u64, false).into(),
         Primitive::Integer32(number) => context.i32_type().const_int(number as u64, false).into(),
         Primitive::Integer64(number) => context.i64_type().const_int(number, false).into(),
-        Primitive::PointerInteger(number) => {
-            compile_pointer_integer(number as u64, context).into()
-        }
+        Primitive::PointerInteger(number) => compile_pointer_integer(number as u64, context).into(),
     }
 }
 
