@@ -1,20 +1,20 @@
 mod error;
 mod expressions;
+mod heap;
 mod instructions;
-mod malloc_configuration;
 mod types;
 
 use error::CompileError;
 use expressions::*;
 use fmm::ir::*;
+pub use heap::HeapConfiguration;
 use instructions::*;
-pub use malloc_configuration::MallocConfiguration;
 use types::*;
 
 pub fn compile(
     module: &Module,
     target_triple: &str,
-    malloc_configuration: Option<MallocConfiguration>,
+    heap_configuration: HeapConfiguration,
 ) -> Result<Vec<u8>, CompileError> {
     let context = inkwell::context::Context::create();
 
@@ -120,8 +120,8 @@ fn compile_linkage(is_global: bool) -> inkwell::module::Linkage {
 //         let file_path = directory.path().join("foo.c");
 //         let source = compile(
 //             module,
-//             Some(MallocConfiguration {
-//                 malloc_function_name: "my_malloc".into(),
+//             Some(HeapConfiguration {
+//                 heap_function_name: "my_heap".into(),
 //                 realloc_function_name: "my_realloc".into(),
 //             }),
 //         );

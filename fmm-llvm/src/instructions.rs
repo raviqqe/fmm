@@ -1,237 +1,417 @@
 use crate::expressions::*;
+use crate::heap::HeapFunctionSet;
 use crate::types::*;
 use fmm::ir::*;
-use fmm::types;
+use inkwell::values::BasicValue;
+use std::collections::HashMap;
 
-// pub fn compile_block(
-//     block: &Block,
-//     branch_variable_name: Option<&str>,
-//     global_variables: &HashSet<String>,
-//     type_ids: &HashMap<fmm::types::Type, String>,
-// ) -> String {
-//     block
-//         .instructions()
-//         .iter()
-//         .map(|instruction| compile_instruction(instruction, global_variables, type_ids))
-//         .chain(vec![compile_terminal_instruction(
-//             block.terminal_instruction(),
-//             branch_variable_name,
-//             global_variables,
-//             type_ids,
-//         )])
-//         .map(|string| "".to_owned() + &string)
-//         .collect::<Vec<_>>()
-//         .join("\n")
-// }
+pub fn compile_block<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    block: &Block,
+    destination: Option<inkwell::basic_block::BasicBlock<'c>>,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+    heap_function_set: &HeapFunctionSet<'c>,
+) -> Option<inkwell::values::BasicValueEnum<'c>> {
+    let mut variables = variables.clone();
 
-// fn compile_instruction(
-//     instruction: &Instruction,
-//     global_variables: &HashSet<String>,
-//     type_ids: &HashMap<fmm::types::Type, String>,
-// ) -> String {
-//     let compile_expression =
-//         |expression| compile_expression(expression, global_variables, type_ids);
-//     let compile_typed_name = |type_, name| compile_typed_name(type_, name, type_ids);
-//     let compile_type_id = |type_| compile_type_id(type_, type_ids);
+    for instruction in block.instructions() {
+        let value = compile_instruction(
+            builder,
+            instruction,
+            &variables,
+            context,
+            target_data,
+            heap_function_set,
+        );
 
-//     match instruction {
-//         Instruction::AllocateHeap(allocate) => {
-//             format!(
-//                 "{}=malloc(sizeof({}));",
-//                 compile_typed_name(
-//                     &types::Pointer::new(allocate.type_().clone()).into(),
-//                     allocate.name()
-//                 ),
-//                 compile_type_id(allocate.type_())
-//             )
-//         }
-//         Instruction::AllocateStack(allocate) => {
-//             let entity_name = allocate.name().to_owned() + "_entity";
+        if let Some(value) = value {
+            if let Some(name) = instruction.name() {
+                variables.insert(name.into(), value);
+            }
+        }
+    }
 
-//             format!(
-//                 "{};{}=&{};",
-//                 compile_typed_name(allocate.type_(), &entity_name),
-//                 compile_typed_name(
-//                     &types::Pointer::new(allocate.type_().clone()).into(),
-//                     allocate.name(),
-//                 ),
-//                 entity_name,
-//             )
-//         }
-//         Instruction::ArithmeticOperation(operation) => format!(
-//             "{}={}{}{};",
-//             compile_typed_name(&operation.type_().into(), operation.name()),
-//             compile_expression(operation.lhs()),
-//             compile_arithmetic_operator(operation.operator()),
-//             compile_expression(operation.rhs()),
-//         ),
-//         Instruction::AtomicLoad(load) => format!(
-//             "{}=({})atomic_load(({}){});",
-//             compile_typed_name(&load.type_(), load.name()),
-//             compile_type_id(load.type_()),
-//             compile_atomic_pointer_type_id(load.type_(), type_ids),
-//             compile_expression(load.pointer()),
-//         ),
-//         Instruction::AtomicStore(store) => format!(
-//             "atomic_store(({}){},{});",
-//             compile_atomic_pointer_type_id(store.type_(), type_ids),
-//             compile_expression(store.pointer()),
-//             compile_expression(store.value()),
-//         ),
-//         Instruction::Call(call) => format!(
-//             "{}={}({});",
-//             compile_typed_name(call.type_().result(), call.name()),
-//             compile_expression(call.function()),
-//             call.arguments()
-//                 .iter()
-//                 .map(|argument| compile_expression(argument))
-//                 .collect::<Vec<_>>()
-//                 .join(",")
-//         ),
-//         Instruction::CompareAndSwap(cas) => {
-//             let name = "_cas_".to_owned() + cas.name();
+    compile_terminal_instruction(
+        builder,
+        block.terminal_instruction(),
+        destination,
+        &variables,
+        context,
+        target_data,
+    )
+}
 
-//             format!(
-//                 "{}={};bool {}=atomic_compare_exchange_strong(({}){},&{},{});",
-//                 compile_typed_name(cas.type_(), &name),
-//                 compile_expression(cas.old_value()),
-//                 cas.name(),
-//                 compile_atomic_pointer_type_id(cas.type_(), type_ids),
-//                 compile_expression(cas.pointer()),
-//                 name,
-//                 compile_expression(cas.new_value()),
-//             )
-//         }
-//         Instruction::ComparisonOperation(operation) => format!(
-//             "bool {}={}{}{};",
-//             operation.name(),
-//             compile_expression(operation.lhs()),
-//             compile_comparison_operator(operation.operator()),
-//             compile_expression(operation.rhs()),
-//         ),
-//         Instruction::DeconstructRecord(deconstruct) => format!(
-//             "{}={}.{};",
-//             compile_typed_name(
-//                 &deconstruct.type_().elements()[deconstruct.element_index()],
-//                 deconstruct.name(),
-//             ),
-//             compile_expression(deconstruct.record()),
-//             generate_record_element_name(deconstruct.element_index()),
-//         ),
-//         Instruction::DeconstructUnion(deconstruct) => format!(
-//             "{}={}.{};",
-//             compile_typed_name(
-//                 &deconstruct.type_().members()[deconstruct.member_index()],
-//                 deconstruct.name(),
-//             ),
-//             compile_expression(deconstruct.union()),
-//             generate_union_member_name(deconstruct.member_index()),
-//         ),
-//         Instruction::If(if_) => {
-//             let compile_block =
-//                 |block| compile_block(block, Some(if_.name()), global_variables, type_ids);
+fn compile_instruction<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    instruction: &Instruction,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+    heap_function_set: &HeapFunctionSet<'c>,
+) -> Option<inkwell::values::BasicValueEnum<'c>> {
+    let compile_expression =
+        |expression| compile_expression(expression, variables, context, target_data);
+    let compile_type = |type_| compile_type(type_, context, target_data);
 
-//             format!(
-//                 "{};if({}){{\n{}\n}}else{{\n{}\n}}",
-//                 compile_typed_name(&if_.type_().clone(), if_.name()),
-//                 compile_expression(if_.condition()),
-//                 compile_block(if_.then()),
-//                 compile_block(if_.else_())
-//             )
-//         }
-//         Instruction::Load(load) => format!(
-//             "{}=*{};",
-//             compile_typed_name(load.type_(), load.name()),
-//             compile_expression(load.pointer()),
-//         ),
-//         Instruction::PassThrough(pass) => format!(
-//             "{}={};",
-//             compile_typed_name(pass.type_(), pass.name()),
-//             compile_expression(pass.expression()),
-//         ),
-//         Instruction::PointerAddress(address) => format!(
-//             "{}={}+{};",
-//             compile_typed_name(&address.type_().clone().into(), address.name()),
-//             compile_expression(address.pointer()),
-//             compile_expression(address.offset()),
-//         ),
-//         Instruction::ReallocateHeap(reallocate) => {
-//             format!(
-//                 "{}=realloc({},{});",
-//                 compile_typed_name(
-//                     &types::Pointer::new(types::Primitive::Integer8).into(),
-//                     reallocate.name()
-//                 ),
-//                 compile_expression(reallocate.pointer()),
-//                 compile_expression(reallocate.size()),
-//             )
-//         }
-//         Instruction::RecordAddress(address) => format!(
-//             "{}=&({})->{};",
-//             compile_typed_name(
-//                 &types::Pointer::new(address.type_().elements()[address.element_index()].clone())
-//                     .into(),
-//                 address.name(),
-//             ),
-//             compile_expression(address.pointer()),
-//             generate_record_element_name(address.element_index()),
-//         ),
-//         Instruction::Store(store) => format!(
-//             "*{}={};",
-//             compile_expression(store.pointer()),
-//             compile_expression(store.value()),
-//         ),
-//         Instruction::UnionAddress(address) => {
-//             format!(
-//                 "{}=&({})->{};",
-//                 compile_typed_name(
-//                     &types::Pointer::new(address.type_().members()[address.member_index()].clone())
-//                         .into(),
-//                     address.name(),
-//                 ),
-//                 compile_expression(address.pointer()),
-//                 generate_union_member_name(address.member_index()),
-//             )
-//         }
-//     }
-// }
+    match instruction {
+        Instruction::AllocateHeap(allocate) => builder
+            .build_call(
+                heap_function_set.allocate_function,
+                &[compile_pointer_integer(
+                    target_data.get_store_size(&compile_type(allocate.type_())) as u64,
+                    context,
+                )
+                .into()],
+                allocate.name(),
+            )
+            .try_as_basic_value()
+            .left(),
+        Instruction::AllocateStack(allocate) => Some(
+            builder
+                .build_alloca(compile_type(allocate.type_()), allocate.name())
+                .into(),
+        ),
+        Instruction::ArithmeticOperation(operation) => {
+            let lhs = compile_expression(operation.lhs());
+            let rhs = compile_expression(operation.rhs());
 
-// fn compile_terminal_instruction(
-//     instruction: &TerminalInstruction,
-//     block_variable_name: Option<&str>,
-//     global_variables: &HashSet<String>,
-//     type_ids: &HashMap<fmm::types::Type, String>,
-// ) -> String {
-//     let compile_expression =
-//         |expression| compile_expression(expression, global_variables, type_ids);
+            Some(match operation.type_() {
+                fmm::types::Primitive::Boolean
+                | fmm::types::Primitive::Integer8
+                | fmm::types::Primitive::Integer32
+                | fmm::types::Primitive::Integer64
+                | fmm::types::Primitive::PointerInteger => {
+                    let lhs = lhs.into_int_value();
+                    let rhs = rhs.into_int_value();
 
-//     match instruction {
-//         TerminalInstruction::Branch(branch) => block_variable_name
-//             .map(|name| format!("{}={};", name, compile_expression(branch.expression(),)))
-//             .unwrap_or_default(),
-//         TerminalInstruction::Return(return_) => {
-//             format!("return {};", compile_expression(return_.expression(),))
-//         }
-//         TerminalInstruction::Unreachable => "abort();".into(),
-//     }
-// }
+                    match operation.operator() {
+                        fmm::ir::ArithmeticOperator::Add => {
+                            builder.build_int_add(lhs, rhs, operation.name())
+                        }
+                        fmm::ir::ArithmeticOperator::Subtract => {
+                            builder.build_int_sub(lhs, rhs, operation.name())
+                        }
+                        fmm::ir::ArithmeticOperator::Multiply => {
+                            builder.build_int_mul(lhs, rhs, operation.name())
+                        }
+                        fmm::ir::ArithmeticOperator::Divide => {
+                            builder.build_int_unsigned_div(lhs, rhs, operation.name())
+                        }
+                    }
+                    .into()
+                }
+                fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => {
+                    let lhs = lhs.into_float_value();
+                    let rhs = rhs.into_float_value();
 
-// fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
-//     match operator {
-//         ArithmeticOperator::Add => "+",
-//         ArithmeticOperator::Subtract => "-",
-//         ArithmeticOperator::Multiply => "*",
-//         ArithmeticOperator::Divide => "/",
-//     }
-// }
+                    match operation.operator() {
+                        fmm::ir::ArithmeticOperator::Add => {
+                            builder.build_float_add(lhs, rhs, operation.name())
+                        }
+                        fmm::ir::ArithmeticOperator::Subtract => {
+                            builder.build_float_sub(lhs, rhs, operation.name())
+                        }
+                        fmm::ir::ArithmeticOperator::Multiply => {
+                            builder.build_float_mul(lhs, rhs, operation.name())
+                        }
+                        fmm::ir::ArithmeticOperator::Divide => {
+                            builder.build_float_div(lhs, rhs, operation.name())
+                        }
+                    }
+                    .into()
+                }
+            })
+        }
+        Instruction::AtomicLoad(load) => {
+            let value = builder.build_load(
+                compile_expression(load.pointer()).into_pointer_value(),
+                load.name(),
+            );
 
-// fn compile_comparison_operator(operator: ComparisonOperator) -> &'static str {
-//     match operator {
-//         ComparisonOperator::Equal => "==",
-//         ComparisonOperator::NotEqual => "!=",
-//         ComparisonOperator::LessThan => "<",
-//         ComparisonOperator::LessThanOrEqual => "<=",
-//         ComparisonOperator::GreaterThan => ">",
-//         ComparisonOperator::GreaterThanOrEqual => ">=",
-//     }
-// }
+            // TODO Optimize this.
+            value
+                .as_instruction_value()
+                .unwrap()
+                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)
+                .unwrap();
+
+            Some(value)
+        }
+        Instruction::AtomicStore(store) => {
+            let value = builder.build_store(
+                compile_expression(store.pointer()).into_pointer_value(),
+                compile_expression(store.value()),
+            );
+
+            // TODO Optimize this.
+            value
+                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)
+                .unwrap();
+
+            None
+        }
+        Instruction::Call(call) => Some(
+            builder
+                .build_call(
+                    compile_expression(call.function()).into_pointer_value(),
+                    &call
+                        .arguments()
+                        .iter()
+                        .map(|argument| compile_expression(argument))
+                        .collect::<Vec<_>>(),
+                    call.name(),
+                )
+                .try_as_basic_value()
+                .left()
+                .unwrap(),
+        ),
+        // TODO Optimize this.
+        Instruction::CompareAndSwap(cas) => Some(
+            builder
+                .build_extract_value(
+                    builder
+                        .build_cmpxchg(
+                            compile_expression(cas.pointer()).into_pointer_value(),
+                            compile_expression(cas.old_value()),
+                            compile_expression(cas.new_value()),
+                            inkwell::AtomicOrdering::SequentiallyConsistent,
+                            inkwell::AtomicOrdering::SequentiallyConsistent,
+                        )
+                        .unwrap(),
+                    1,
+                    cas.name(),
+                )
+                .unwrap(),
+        ),
+        Instruction::ComparisonOperation(operation) => Some(
+            match operation.type_() {
+                fmm::types::Primitive::Boolean
+                | fmm::types::Primitive::Integer8
+                | fmm::types::Primitive::Integer32
+                | fmm::types::Primitive::Integer64
+                | fmm::types::Primitive::PointerInteger => builder.build_int_compare(
+                    compile_integer_comparison_operator(operation.operator()),
+                    compile_expression(operation.lhs()).into_int_value(),
+                    compile_expression(operation.rhs()).into_int_value(),
+                    operation.name(),
+                ),
+                fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => builder
+                    .build_float_compare(
+                        compile_float_comparison_operator(operation.operator()),
+                        compile_expression(operation.lhs()).into_float_value(),
+                        compile_expression(operation.rhs()).into_float_value(),
+                        operation.name(),
+                    ),
+            }
+            .into(),
+        ),
+        Instruction::DeconstructRecord(deconstruct) => builder.build_extract_value(
+            compile_expression(deconstruct.record()).into_struct_value(),
+            deconstruct.element_index() as u32,
+            deconstruct.name(),
+        ),
+        Instruction::DeconstructUnion(deconstruct) => {
+            let value = compile_expression(deconstruct.union());
+            let pointer = builder.build_alloca(value.get_type(), "");
+
+            builder.build_store(pointer, value);
+            let value = builder.build_load(
+                builder
+                    .build_bitcast(
+                        pointer,
+                        compile_union_member_type(
+                            deconstruct.type_(),
+                            deconstruct.member_index(),
+                            context,
+                            target_data,
+                        )
+                        .ptr_type(DEFAULT_ADDRESS_SPACE),
+                        "",
+                    )
+                    .into_pointer_value(),
+                "",
+            );
+
+            builder.build_extract_value(value.into_struct_value(), 0, deconstruct.name())
+        }
+        Instruction::If(if_) => {
+            let current = builder.get_insert_block().unwrap();
+            let function = current.get_parent().unwrap();
+
+            let then = context.append_basic_block(function, "then");
+            let else_ = context.append_basic_block(function, "else");
+            let phi = context.append_basic_block(function, "phi");
+
+            let mut cases = vec![];
+
+            builder.build_conditional_branch(
+                compile_expression(if_.condition()).into_int_value(),
+                then,
+                else_,
+            );
+
+            for (llvm_block, block) in &[(then, if_.then()), (else_, if_.else_())] {
+                builder.position_at_end(*llvm_block);
+
+                let value = compile_block(
+                    builder,
+                    block,
+                    Some(phi),
+                    variables,
+                    context,
+                    target_data,
+                    heap_function_set,
+                );
+
+                if let Some(value) = value {
+                    cases.push((value, *llvm_block));
+                }
+            }
+
+            builder.position_at_end(phi);
+            let phi = builder.build_phi(compile_type(if_.type_()), if_.name());
+
+            phi.add_incoming(
+                &cases
+                    .iter()
+                    .map(|(value, block)| (value as &dyn inkwell::values::BasicValue, *block))
+                    .collect::<Vec<_>>(),
+            );
+
+            Some(phi.as_basic_value())
+        }
+        Instruction::Load(load) => Some(builder.build_load(
+            compile_expression(load.pointer()).into_pointer_value(),
+            load.name(),
+        )),
+        Instruction::PassThrough(pass) => Some(builder.build_select(
+            context.bool_type().const_int(1, false),
+            compile_expression(pass.expression()),
+            compile_expression(pass.expression()),
+            pass.name(),
+        )),
+        Instruction::PointerAddress(address) => Some(unsafe {
+            builder
+                .build_gep(
+                    compile_expression(address.pointer()).into_pointer_value(),
+                    &[compile_expression(address.offset()).into_int_value()],
+                    address.name(),
+                )
+                .into()
+        }),
+        Instruction::ReallocateHeap(reallocate) => builder
+            .build_call(
+                heap_function_set.reallocate_function,
+                &[compile_expression(reallocate.size())],
+                reallocate.name(),
+            )
+            .try_as_basic_value()
+            .left(),
+        Instruction::RecordAddress(address) => Some(unsafe {
+            builder
+                .build_gep(
+                    compile_expression(address.pointer()).into_pointer_value(),
+                    &[
+                        context.i32_type().const_zero(),
+                        context
+                            .i32_type()
+                            .const_int(address.element_index() as u64, false),
+                    ],
+                    address.name(),
+                )
+                .into()
+        }),
+        Instruction::Store(store) => {
+            builder.build_store(
+                compile_expression(store.pointer()).into_pointer_value(),
+                compile_expression(store.value()),
+            );
+
+            None
+        }
+        Instruction::UnionAddress(address) => Some(unsafe {
+            builder
+                .build_gep(
+                    builder
+                        .build_bitcast(
+                            compile_expression(address.pointer()),
+                            compile_union_member_type(
+                                address.type_(),
+                                address.member_index(),
+                                context,
+                                target_data,
+                            ),
+                            "",
+                        )
+                        .into_pointer_value(),
+                    &[
+                        context.i32_type().const_zero(),
+                        context.i32_type().const_zero(),
+                    ],
+                    address.name(),
+                )
+                .into()
+        }),
+    }
+}
+
+fn compile_terminal_instruction<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    instruction: &TerminalInstruction,
+    destination: Option<inkwell::basic_block::BasicBlock<'c>>,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> Option<inkwell::values::BasicValueEnum<'c>> {
+    let compile_expression =
+        |expression| compile_expression(expression, variables, context, target_data);
+
+    match instruction {
+        TerminalInstruction::Branch(branch) => {
+            builder.build_unconditional_branch(destination.unwrap());
+
+            Some(compile_expression(branch.expression()))
+        }
+        TerminalInstruction::Return(return_) => {
+            builder.build_return(Some(&compile_expression(return_.expression())));
+            None
+        }
+        TerminalInstruction::Unreachable => {
+            builder.build_unreachable();
+            None
+        }
+    }
+}
+
+fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
+    match operator {
+        ArithmeticOperator::Add => "+",
+        ArithmeticOperator::Subtract => "-",
+        ArithmeticOperator::Multiply => "*",
+        ArithmeticOperator::Divide => "/",
+    }
+}
+
+fn compile_integer_comparison_operator(operator: ComparisonOperator) -> inkwell::IntPredicate {
+    match operator {
+        ComparisonOperator::Equal => inkwell::IntPredicate::EQ,
+        ComparisonOperator::NotEqual => inkwell::IntPredicate::NE,
+        ComparisonOperator::LessThan => inkwell::IntPredicate::ULT,
+        ComparisonOperator::LessThanOrEqual => inkwell::IntPredicate::ULE,
+        ComparisonOperator::GreaterThan => inkwell::IntPredicate::UGT,
+        ComparisonOperator::GreaterThanOrEqual => inkwell::IntPredicate::UGE,
+    }
+}
+
+fn compile_float_comparison_operator(operator: ComparisonOperator) -> inkwell::FloatPredicate {
+    match operator {
+        ComparisonOperator::Equal => inkwell::FloatPredicate::OEQ,
+        ComparisonOperator::NotEqual => inkwell::FloatPredicate::ONE,
+        ComparisonOperator::LessThan => inkwell::FloatPredicate::OLT,
+        ComparisonOperator::LessThanOrEqual => inkwell::FloatPredicate::OLE,
+        ComparisonOperator::GreaterThan => inkwell::FloatPredicate::OGT,
+        ComparisonOperator::GreaterThanOrEqual => inkwell::FloatPredicate::OGE,
+    }
+}

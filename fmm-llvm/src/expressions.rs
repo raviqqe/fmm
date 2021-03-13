@@ -93,10 +93,7 @@ fn compile_primitive<'c>(
     context: &'c inkwell::context::Context,
 ) -> inkwell::values::BasicValueEnum<'c> {
     match primitive {
-        Primitive::Boolean(boolean) => context
-            .custom_width_int_type(1)
-            .const_int(boolean as u64, false)
-            .into(),
+        Primitive::Boolean(boolean) => context.bool_type().const_int(boolean as u64, false).into(),
         Primitive::Float32(number) => context.f32_type().const_float(number as f64).into(),
         Primitive::Float64(number) => context.f64_type().const_float(number as f64).into(),
         Primitive::Integer8(number) => context.i8_type().const_int(number as u64, false).into(),
@@ -108,7 +105,7 @@ fn compile_primitive<'c>(
     }
 }
 
-fn compile_pointer_integer<'c>(
+pub fn compile_pointer_integer<'c>(
     number: u64,
     context: &'c inkwell::context::Context,
 ) -> inkwell::values::PointerValue<'c> {

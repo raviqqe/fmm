@@ -1,7 +1,7 @@
 use fmm::types::{self, Type};
 use inkwell::types::BasicType;
 
-const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
+pub const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
 
 pub fn compile_type<'c>(
     type_: &Type,
@@ -59,7 +59,7 @@ pub fn compile_primitive_type<'c>(
     context: &'c inkwell::context::Context,
 ) -> inkwell::types::BasicTypeEnum<'c> {
     match primitive {
-        types::Primitive::Boolean => context.custom_width_int_type(1).into(),
+        types::Primitive::Boolean => context.bool_type().into(),
         types::Primitive::Float32 => context.f32_type().into(),
         types::Primitive::Float64 => context.f64_type().into(),
         types::Primitive::Integer8 => context.i8_type().into(),
@@ -102,6 +102,21 @@ pub fn compile_union_type<'c>(
             .i8_type()
             .array_type(get_union_size(union, context, target_data) as u32)
             .into()],
+        false,
+    )
+}
+
+pub fn compile_union_member_type<'c>(
+    union: &types::Union,
+    member_index: usize,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::types::StructType<'c> {
+    context.struct_type(
+        &[
+            compile_type(&union.members()[member_index], context, target_data),
+            compile_union_member_padding_type(union, member_index, context, target_data).into(),
+        ],
         false,
     )
 }
