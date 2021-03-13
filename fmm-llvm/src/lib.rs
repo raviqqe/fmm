@@ -359,110 +359,110 @@ mod tests {
         }
     }
 
-    // mod function_declarations {
-    //     use super::*;
+    mod function_declarations {
+        use super::*;
 
-    //     #[test]
-    //     fn compile_function_pointer() {
-    //         compile_module(&Module::new(
-    //             vec![],
-    //             vec![FunctionDeclaration::new(
-    //                 "x",
-    //                 create_function_type(vec![], types::Primitive::PointerInteger),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
-    // }
+        #[test]
+        fn compile_function_pointer() {
+            compile_module(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "x",
+                    create_function_type(vec![], types::Primitive::PointerInteger),
+                )],
+                vec![],
+                vec![],
+            ));
+        }
+    }
 
-    // mod type_definitions {
-    //     use super::*;
+    mod type_definitions {
+        use super::*;
 
-    //     #[test]
-    //     fn compile_record_type_definition() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Record::new(vec![types::Primitive::PointerInteger.into()]),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_record_type_definition() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Record::new(vec![types::Primitive::PointerInteger.into()]),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_nested_record_type_definition() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Record::new(vec![types::Record::new(vec![]).into()]),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_nested_record_type_definition() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Record::new(vec![types::Record::new(vec![]).into()]),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_record_type_definition_with_nested_union_type() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Record::new(vec![types::Union::new(vec![
-    //                     types::Primitive::PointerInteger.into(),
-    //                 ])
-    //                 .into()]),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_record_type_definition_with_nested_union_type() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Record::new(vec![types::Union::new(vec![
+                        types::Primitive::PointerInteger.into(),
+                    ])
+                    .into()]),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_union_type_definition() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Union::new(vec![types::Primitive::PointerInteger.into()]),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_union_type_definition() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Union::new(vec![types::Primitive::PointerInteger.into()]),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_nested_union_type_definition() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Union::new(vec![types::Union::new(vec![
-    //                     types::Primitive::PointerInteger.into(),
-    //                 ])
-    //                 .into()]),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_nested_union_type_definition() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Union::new(vec![types::Union::new(vec![
+                        types::Primitive::PointerInteger.into(),
+                    ])
+                    .into()]),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_union_type_definition_with_nested_record_type() {
-    //         compile_module(&Module::new(
-    //             vec![VariableDeclaration::new(
-    //                 "x",
-    //                 types::Union::new(vec![types::Record::new(vec![]).into()]),
-    //             )],
-    //             vec![],
-    //             vec![],
-    //             vec![],
-    //         ));
-    //     }
-    // }
+        #[test]
+        fn compile_union_type_definition_with_nested_record_type() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Union::new(vec![types::Record::new(vec![]).into()]),
+                )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
+    }
 
     // mod variable_definitions {
     //     use super::*;
