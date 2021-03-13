@@ -1,0 +1,13 @@
+[package]
+name = "fmm-llvm"
+description = "LLVM backend for F--"
+version = "0.1.0"
+license = "MIT"
+authors = ["Yota Toyama <raviqqe@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+fmm = { path = "../fmm" }
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
+  "llvm11-0"
+] }
