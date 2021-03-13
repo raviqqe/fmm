@@ -4,17 +4,20 @@ mod heap;
 mod instructions;
 mod types;
 
+use std::collections::HashMap;
+
 use error::CompileError;
 use expressions::*;
 use fmm::ir::*;
 pub use heap::HeapConfiguration;
+use heap::HeapFunctionSet;
 use instructions::*;
 use types::*;
 
 pub fn compile(
     module: &Module,
     target_triple: &str,
-    heap_configuration: HeapConfiguration,
+    heap_configuration: &HeapConfiguration,
 ) -> Result<Vec<u8>, CompileError> {
     let context = inkwell::context::Context::create();
 
@@ -32,24 +35,81 @@ pub fn compile(
         .get_target_data();
 
     let llvm_module = context.create_module("");
+    let mut variables = HashMap::new();
+
+    let heap_function_set = compile_heap_functions(&llvm_module, heap_configuration, &context);
 
     for declaration in module.variable_declarations() {
-        compile_variable_declaration(&llvm_module, declaration, &context, &target_data);
+        let global =
+            compile_variable_declaration(&llvm_module, declaration, &context, &target_data);
+
+        variables.insert(declaration.name().into(), global.as_pointer_value().into());
     }
 
     for declaration in module.function_declarations() {
-        compile_function_declaration(&llvm_module, declaration, &context, &target_data);
+        let function =
+            compile_function_declaration(&llvm_module, declaration, &context, &target_data);
+
+        variables.insert(
+            declaration.name().into(),
+            function.as_global_value().as_pointer_value().into(),
+        );
     }
 
     for definition in module.variable_definitions() {
-        compile_variable_definition(&llvm_module, definition, &context, &target_data);
+        let global = declare_variable_definition(&llvm_module, definition, &context, &target_data);
+
+        variables.insert(definition.name().into(), global.as_pointer_value().into());
     }
 
     for definition in module.function_definitions() {
-        compile_function_definition(&llvm_module, definition, &context, &target_data);
+        let function =
+            declare_function_definition(&llvm_module, definition, &context, &target_data);
+
+        variables.insert(
+            definition.name().into(),
+            function.as_global_value().as_pointer_value().into(),
+        );
+    }
+
+    for definition in module.variable_definitions() {
+        compile_variable_definition(&llvm_module, definition, &variables, &context, &target_data);
+    }
+
+    for definition in module.function_definitions() {
+        compile_function_definition(
+            &llvm_module,
+            definition,
+            &variables,
+            &context,
+            &target_data,
+            &heap_function_set,
+        );
     }
 
     Ok(llvm_module.write_bitcode_to_memory().as_slice().to_vec())
+}
+
+fn compile_heap_functions<'c>(
+    module: &inkwell::module::Module<'c>,
+    heap_configuration: &HeapConfiguration,
+    context: &'c inkwell::context::Context,
+) -> HeapFunctionSet<'c> {
+    let pointer_type = context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE);
+    let poiner_integer_type = compile_pointer_integer_type(context);
+
+    HeapFunctionSet {
+        allocate_function: module.add_function(
+            &heap_configuration.allocate_function_name,
+            pointer_type.fn_type(&[poiner_integer_type.into()], false),
+            None,
+        ),
+        reallocate_function: module.add_function(
+            &heap_configuration.reallocate_function_name,
+            pointer_type.fn_type(&[pointer_type.into(), poiner_integer_type.into()], false),
+            None,
+        ),
+    }
 }
 
 fn compile_variable_declaration<'c>(
@@ -57,12 +117,12 @@ fn compile_variable_declaration<'c>(
     declaration: &VariableDeclaration,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-) {
+) -> inkwell::values::GlobalValue<'c> {
     module.add_global(
         compile_type(declaration.type_(), context, target_data),
         None,
         declaration.name(),
-    );
+    )
 }
 
 fn compile_function_declaration<'c>(
@@ -70,36 +130,85 @@ fn compile_function_declaration<'c>(
     declaration: &FunctionDeclaration,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-) {
+) -> inkwell::values::FunctionValue<'c> {
     module.add_function(
         declaration.name(),
         compile_function_type(declaration.type_(), context, target_data),
         None,
+    )
+}
+
+fn declare_variable_definition<'c>(
+    module: &inkwell::module::Module<'c>,
+    definition: &VariableDefinition,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::values::GlobalValue<'c> {
+    let global = module.add_global(
+        compile_type(definition.type_(), context, target_data),
+        None,
+        definition.name(),
     );
+
+    global.set_linkage(compile_linkage(definition.is_global()));
+
+    global
 }
 
 fn compile_variable_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) {
-    todo!()
+    module
+        .get_global(definition.name())
+        .unwrap()
+        .set_initializer(&compile_expression(
+            definition.body(),
+            variables,
+            context,
+            target_data,
+        ));
+}
+
+fn declare_function_definition<'c>(
+    module: &inkwell::module::Module<'c>,
+    definition: &FunctionDefinition,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::values::FunctionValue<'c> {
+    module.add_function(
+        definition.name(),
+        compile_function_type(definition.type_(), context, target_data),
+        Some(compile_linkage(definition.is_global())),
+    )
 }
 
 fn compile_function_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
+    heap_function_set: &HeapFunctionSet<'c>,
 ) {
-    module.add_function(
-        definition.name(),
-        compile_function_type(definition.type_(), context, target_data),
-        Some(compile_linkage(definition.is_global())),
+    let builder = context.create_builder();
+
+    builder.position_at_end(
+        context.append_basic_block(module.get_function(definition.name()).unwrap(), "entry"),
     );
 
-    todo!()
+    compile_block(
+        &builder,
+        definition.body(),
+        None,
+        variables,
+        context,
+        target_data,
+        heap_function_set,
+    );
 }
 
 fn compile_linkage(is_global: bool) -> inkwell::module::Linkage {

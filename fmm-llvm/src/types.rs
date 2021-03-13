@@ -8,8 +8,6 @@ pub fn compile_type<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::BasicTypeEnum<'c> {
-    let compile_type = |type_| compile_type(type_, context, target_data);
-
     match type_ {
         Type::Function(function) => {
             compile_function_pointer_type(function, context, target_data).into()

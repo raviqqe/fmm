@@ -385,15 +385,6 @@ fn compile_terminal_instruction<'c>(
     }
 }
 
-fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
-    match operator {
-        ArithmeticOperator::Add => "+",
-        ArithmeticOperator::Subtract => "-",
-        ArithmeticOperator::Multiply => "*",
-        ArithmeticOperator::Divide => "/",
-    }
-}
-
 fn compile_integer_comparison_operator(operator: ComparisonOperator) -> inkwell::IntPredicate {
     match operator {
         ComparisonOperator::Equal => inkwell::IntPredicate::EQ,
