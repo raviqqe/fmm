@@ -98,17 +98,17 @@ fn compile_heap_functions<'c>(
     context: &'c inkwell::context::Context,
 ) -> HeapFunctionSet<'c> {
     let pointer_type = context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE);
-    let poiner_integer_type = compile_pointer_integer_type(context);
+    let pointer_integer_type = compile_pointer_integer_type(context);
 
     HeapFunctionSet {
         allocate_function: module.add_function(
             &heap_configuration.allocate_function_name,
-            pointer_type.fn_type(&[poiner_integer_type.into()], false),
+            pointer_type.fn_type(&[pointer_integer_type.into()], false),
             None,
         ),
         reallocate_function: module.add_function(
             &heap_configuration.reallocate_function_name,
-            pointer_type.fn_type(&[pointer_type.into(), poiner_integer_type.into()], false),
+            pointer_type.fn_type(&[pointer_type.into(), pointer_integer_type.into()], false),
             None,
         ),
     }
