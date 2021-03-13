@@ -230,7 +230,10 @@ mod tests {
     fn compile_final_module(module: &Module) {
         compile(
             module,
-            &inkwell::targets::TargetMachine::get_default_triple().to_string(),
+            inkwell::targets::TargetMachine::get_default_triple()
+                .as_str()
+                .to_str()
+                .unwrap(),
             &HeapConfiguration {
                 allocate_function_name: "my_malloc".into(),
                 reallocate_function_name: "my_realloc".into(),
