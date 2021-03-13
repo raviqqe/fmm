@@ -12,7 +12,7 @@ pub fn compile_type<'c>(
         Type::Function(function) => {
             compile_function_pointer_type(function, context, target_data).into()
         }
-        Type::Primitive(primitive) => compile_primitive_type(*primitive, context).into(),
+        Type::Primitive(primitive) => compile_primitive_type(*primitive, context),
         Type::Record(record) => compile_record_type(record, context, target_data).into(),
         Type::Pointer(pointer) => compile_pointer_type(pointer, context, target_data).into(),
         Type::Union(union) => compile_union_type(union, context, target_data).into(),

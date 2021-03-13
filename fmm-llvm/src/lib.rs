@@ -31,8 +31,7 @@ pub fn compile(
             Default::default(),
             inkwell::targets::RelocMode::Default,
             inkwell::targets::CodeModel::Default,
-        )
-        .ok_or_else(|| CompileError::TargetMachineNotCreated)?
+        ).ok_or(CompileError::TargetMachineNotCreated)?
         .get_target_data();
 
     let llvm_module = context.create_module("");
