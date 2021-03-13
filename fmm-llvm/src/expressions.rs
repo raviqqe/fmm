@@ -1,61 +1,63 @@
 use super::types::*;
 use fmm::ir::*;
 use fmm::types;
+use std::collections::HashMap;
 
 pub fn compile_expression<'c>(
     expression: &Expression,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression = |expression| compile_expression(expression, context, target_data);
+    let compile_expression =
+        |expression| compile_expression(expression, variables, context, target_data);
     let compile_type = |type_| compile_type(type_, context, target_data);
 
     match expression {
-        Expression::AlignOf(align_of) => {
-            target_data.get_abi_alignment(&compile_type(align_of.type_()))
-        }
-        Expression::BitCast(bit_cast) => {
-            format!(
-                "__builtin_bit_cast({},({})({}))",
-                compile_type_id(bit_cast.to(), type_ids),
-                compile_type_id(bit_cast.from(), type_ids),
-                compile_expression(bit_cast.expression()),
-            )
-        }
-        Expression::Primitive(primitive) => compile_primitive(*primitive),
-        Expression::Record(record) => {
-            format!(
-                "({}){{{}}}",
-                compile_record_type_id(record.type_(), type_ids),
-                record
+        Expression::AlignOf(align_of) => compile_pointer_integer(
+            target_data.get_abi_alignment(&compile_type(align_of.type_())) as u64,
+            context,
+        )
+        .into(),
+        Expression::BitCast(bit_cast) => context.create_builder().build_bitcast(
+            compile_expression(bit_cast.expression()),
+            compile_type(bit_cast.to()),
+            "",
+        ),
+        Expression::Primitive(primitive) => compile_primitive(*primitive, context),
+        Expression::Record(record) => context
+            .const_struct(
+                &record
                     .elements()
                     .iter()
                     .map(|expression| compile_expression(expression))
-                    .collect::<Vec<_>>()
-                    .join(",")
+                    .collect::<Vec<_>>(),
+                false,
             )
-        }
-        Expression::SizeOf(size_of) => {
-            format!("sizeof({})", compile_type_id(size_of.type_(), type_ids))
-        }
-        Expression::Undefined(undefined) => compile_undefined(undefined, type_ids),
-        Expression::Union(union) => {
-            format!(
-                "({}){{.{}={}}}",
-                compile_union_type_id(union.type_(), type_ids),
-                generate_union_member_name(union.member_index()),
-                compile_expression(union.member())
+            .into(),
+        Expression::SizeOf(size_of) => compile_pointer_integer(
+            target_data.get_store_size(&compile_type(size_of.type_())) as u64,
+            context,
+        )
+        .into(),
+        Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
+        Expression::Union(union) => context
+            .const_struct(
+                &vec![
+                    compile_expression(union.member()),
+                    compile_union_member_padding_type(
+                        union.type_(),
+                        union.member_index(),
+                        context,
+                        target_data,
+                    )
+                    .const_zero()
+                    .into(),
+                ],
+                false,
             )
-        }
-        Expression::Variable(variable) => {
-            if global_variables.contains(variable.name()) {
-                "&"
-            } else {
-                ""
-            }
-            .to_owned()
-                + variable.name()
-        }
+            .into(),
+        Expression::Variable(variable) => variables[variable.name()],
     }
 }
 
@@ -101,9 +103,19 @@ fn compile_primitive<'c>(
         Primitive::Integer32(number) => context.i32_type().const_int(number as u64, false).into(),
         Primitive::Integer64(number) => context.i64_type().const_int(number, false).into(),
         Primitive::PointerInteger(number) => {
-            context.i64_type().const_int(number as u64, false).into()
+            compile_pointer_integer(number as u64, context).into()
         }
     }
+}
+
+fn compile_pointer_integer<'c>(
+    number: u64,
+    context: &'c inkwell::context::Context,
+) -> inkwell::values::PointerValue<'c> {
+    context
+        .i64_type()
+        .const_int(number, false)
+        .const_to_pointer(compile_pointer_integer_type(context))
 }
 
 // TODO Refactor this by matching with types::Primitive directly.

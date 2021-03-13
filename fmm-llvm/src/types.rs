@@ -65,10 +65,14 @@ pub fn compile_primitive_type<'c>(
         types::Primitive::Integer8 => context.i8_type().into(),
         types::Primitive::Integer32 => context.i32_type().into(),
         types::Primitive::Integer64 => context.i64_type().into(),
-        types::Primitive::PointerInteger => {
-            context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE).into()
-        }
+        types::Primitive::PointerInteger => compile_pointer_integer_type(context).into(),
     }
+}
+
+pub fn compile_pointer_integer_type<'c>(
+    context: &'c inkwell::context::Context,
+) -> inkwell::types::PointerType<'c> {
+    context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
 pub fn compile_record_type<'c>(
@@ -93,14 +97,38 @@ pub fn compile_union_type<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::StructType<'c> {
-    let compile_type = |type_| compile_type(type_, context, target_data);
+    context.struct_type(
+        &[context
+            .i8_type()
+            .array_type(get_union_size(union, context, target_data) as u32)
+            .into()],
+        false,
+    )
+}
 
-    let size = union
+pub fn compile_union_member_padding_type<'c>(
+    union: &types::Union,
+    member_index: usize,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::types::ArrayType<'c> {
+    let member_type = compile_type(&union.members()[member_index], context, target_data);
+
+    context.i8_type().array_type(
+        (get_union_size(union, context, target_data) - target_data.get_store_size(&member_type))
+            as u32,
+    )
+}
+
+fn get_union_size<'c>(
+    union: &types::Union,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> u64 {
+    union
         .members()
         .iter()
-        .map(|type_| target_data.get_store_size(&compile_type(type_)))
+        .map(|type_| target_data.get_store_size(&compile_type(type_, context, target_data)))
         .max()
-        .unwrap();
-
-    context.struct_type(&[context.i8_type().array_type(size as u32).into()], false)
+        .unwrap()
 }
