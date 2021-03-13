@@ -464,85 +464,85 @@ mod tests {
         }
     }
 
-    // mod variable_definitions {
-    //     use super::*;
+    mod variable_definitions {
+        use super::*;
 
-    //     #[test]
-    //     fn compile_constant_variable() {
-    //         compile_module(&Module::new(
-    //             vec![],
-    //             vec![],
-    //             vec![VariableDefinition::new(
-    //                 "x",
-    //                 fmm::ir::Primitive::PointerInteger(0),
-    //                 types::Primitive::PointerInteger,
-    //                 false,
-    //                 true,
-    //             )],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_constant_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    false,
+                    true,
+                )],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_mutable_variable() {
-    //         compile_module(&Module::new(
-    //             vec![],
-    //             vec![],
-    //             vec![VariableDefinition::new(
-    //                 "x",
-    //                 fmm::ir::Primitive::PointerInteger(0),
-    //                 types::Primitive::PointerInteger,
-    //                 true,
-    //                 true,
-    //             )],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_mutable_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    true,
+                    true,
+                )],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_local_variable() {
-    //         compile_module(&Module::new(
-    //             vec![],
-    //             vec![],
-    //             vec![VariableDefinition::new(
-    //                 "x",
-    //                 fmm::ir::Primitive::PointerInteger(0),
-    //                 types::Primitive::PointerInteger,
-    //                 true,
-    //                 false,
-    //             )],
-    //             vec![],
-    //         ));
-    //     }
+        #[test]
+        fn compile_local_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    true,
+                    false,
+                )],
+                vec![],
+            ));
+        }
 
-    //     #[test]
-    //     fn compile_reference_to_defined_variable() {
-    //         compile_module(&Module::new(
-    //             vec![],
-    //             vec![],
-    //             vec![VariableDefinition::new(
-    //                 "x",
-    //                 fmm::ir::Primitive::PointerInteger(0),
-    //                 types::Primitive::PointerInteger,
-    //                 false,
-    //                 false,
-    //             )],
-    //             vec![create_function_definition(
-    //                 "f",
-    //                 vec![],
-    //                 Block::new(
-    //                     vec![],
-    //                     Return::new(
-    //                         types::Pointer::new(types::Primitive::PointerInteger),
-    //                         Variable::new("x"),
-    //                     ),
-    //                 ),
-    //                 types::Pointer::new(types::Primitive::PointerInteger),
-    //                 false,
-    //             )],
-    //         ));
-    //     }
-    // }
+        #[test]
+        fn compile_reference_to_defined_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            types::Pointer::new(types::Primitive::PointerInteger),
+                            Variable::new("x"),
+                        ),
+                    ),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                )],
+            ));
+        }
+    }
 
     // mod function_definitions {
     //     use super::*;
