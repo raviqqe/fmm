@@ -5,7 +5,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+      - run: curl -fsSL https://apt.llvm.org/llvm.sh | bash -s 11
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
       - uses: actions-rs/cargo@v1
