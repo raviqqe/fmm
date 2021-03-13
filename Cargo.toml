@@ -1,5 +1,2 @@
 [workspace]
-members = [
-  "fmm",
-  "fmm-c",
-]
+members = ["fmm", "fmm-c", "fmm-llvm"]

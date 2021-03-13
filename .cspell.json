@@ -1,11 +1,16 @@
 {
   "words": [
     "algo",
+    "alloca",
+    "bitcast",
+    "bitcode",
     "canonicalizing",
+    "cmpxchg",
     "hasher",
     "malloc",
     "petgraph",
     "realloc",
+    "reloc",
     "stdalign",
     "stdatomic",
     "stdbool",
