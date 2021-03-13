@@ -43,7 +43,8 @@ pub fn compile_expression<'c>(
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
         Expression::Union(union) => context
             .const_struct(
-                &[compile_expression(union.member()),
+                &[
+                    compile_expression(union.member()),
                     compile_union_member_padding_type(
                         union.type_(),
                         union.member_index(),
@@ -51,7 +52,8 @@ pub fn compile_expression<'c>(
                         target_data,
                     )
                     .const_zero()
-                    .into()],
+                    .into(),
+                ],
                 false,
             )
             .into(),
@@ -70,9 +72,7 @@ fn compile_undefined<'c>(
                 .const_zero()
                 .into()
         }
-        types::Type::Primitive(primitive) => {
-            compile_undefined_primitive(*primitive, context)
-        }
+        types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive, context),
         types::Type::Pointer(pointer) => compile_pointer_type(pointer, context, target_data)
             .const_zero()
             .into(),
