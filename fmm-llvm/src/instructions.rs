@@ -2,6 +2,7 @@ use crate::expressions::*;
 use crate::heap::HeapFunctionSet;
 use crate::types::*;
 use fmm::ir::*;
+use inkwell::types::BasicType;
 use inkwell::values::BasicValue;
 use std::collections::HashMap;
 
@@ -56,18 +57,30 @@ fn compile_instruction<'c>(
     let compile_type = |type_| compile_type(type_, context, target_data);
 
     match instruction {
-        Instruction::AllocateHeap(allocate) => builder
-            .build_call(
-                heap_function_set.allocate_function,
-                &[compile_pointer_integer(
-                    target_data.get_store_size(&compile_type(allocate.type_())) as u64,
-                    context,
-                )
-                .into()],
-                allocate.name(),
+        Instruction::AllocateHeap(allocate) => {
+            let type_ = compile_type(allocate.type_());
+
+            Some(
+                builder.build_bitcast(
+                    builder
+                        .build_call(
+                            heap_function_set.allocate_function,
+                            &[compile_pointer_integer(
+                                target_data.get_store_size(&type_) as u64,
+                                context,
+                                target_data,
+                            )
+                            .into()],
+                            "",
+                        )
+                        .try_as_basic_value()
+                        .left()
+                        .unwrap(),
+                    type_.ptr_type(DEFAULT_ADDRESS_SPACE),
+                    allocate.name(),
+                ),
             )
-            .try_as_basic_value()
-            .left(),
+        }
         Instruction::AllocateStack(allocate) => Some(
             builder
                 .build_alloca(compile_type(allocate.type_()), allocate.name())
@@ -271,16 +284,21 @@ fn compile_instruction<'c>(
             }
 
             builder.position_at_end(phi);
-            let phi = builder.build_phi(compile_type(if_.type_()), if_.name());
 
-            phi.add_incoming(
-                &cases
-                    .iter()
-                    .map(|(value, block)| (value as &dyn inkwell::values::BasicValue, *block))
-                    .collect::<Vec<_>>(),
-            );
+            if cases.is_empty() {
+                None
+            } else {
+                let phi = builder.build_phi(compile_type(if_.type_()), if_.name());
 
-            Some(phi.as_basic_value())
+                phi.add_incoming(
+                    &cases
+                        .iter()
+                        .map(|(value, block)| (value as &dyn inkwell::values::BasicValue, *block))
+                        .collect::<Vec<_>>(),
+                );
+
+                Some(phi.as_basic_value())
+            }
         }
         Instruction::Load(load) => Some(builder.build_load(
             compile_expression(load.pointer()).into_pointer_value(),
@@ -304,7 +322,10 @@ fn compile_instruction<'c>(
         Instruction::ReallocateHeap(reallocate) => builder
             .build_call(
                 heap_function_set.reallocate_function,
-                &[compile_expression(reallocate.size())],
+                &[
+                    compile_expression(reallocate.pointer()),
+                    compile_expression(reallocate.size()),
+                ],
                 reallocate.name(),
             )
             .try_as_basic_value()
@@ -342,7 +363,8 @@ fn compile_instruction<'c>(
                                 address.member_index(),
                                 context,
                                 target_data,
-                            ),
+                            )
+                            .ptr_type(DEFAULT_ADDRESS_SPACE),
                             "",
                         )
                         .into_pointer_value(),

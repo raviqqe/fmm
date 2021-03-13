@@ -12,7 +12,7 @@ pub fn compile_type<'c>(
         Type::Function(function) => {
             compile_function_pointer_type(function, context, target_data).into()
         }
-        Type::Primitive(primitive) => compile_primitive_type(*primitive, context),
+        Type::Primitive(primitive) => compile_primitive_type(*primitive, context, target_data),
         Type::Record(record) => compile_record_type(record, context, target_data).into(),
         Type::Pointer(pointer) => compile_pointer_type(pointer, context, target_data).into(),
         Type::Union(union) => compile_union_type(union, context, target_data).into(),
@@ -55,6 +55,7 @@ pub fn compile_pointer_type<'c>(
 pub fn compile_primitive_type<'c>(
     primitive: types::Primitive,
     context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::BasicTypeEnum<'c> {
     match primitive {
         types::Primitive::Boolean => context.bool_type().into(),
@@ -63,14 +64,17 @@ pub fn compile_primitive_type<'c>(
         types::Primitive::Integer8 => context.i8_type().into(),
         types::Primitive::Integer32 => context.i32_type().into(),
         types::Primitive::Integer64 => context.i64_type().into(),
-        types::Primitive::PointerInteger => compile_pointer_integer_type(context).into(),
+        types::Primitive::PointerInteger => {
+            compile_pointer_integer_type(context, target_data).into()
+        }
     }
 }
 
 pub fn compile_pointer_integer_type<'c>(
     context: &'c inkwell::context::Context,
-) -> inkwell::types::PointerType<'c> {
-    context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE)
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::types::IntType<'c> {
+    context.ptr_sized_int_type(target_data, None)
 }
 
 pub fn compile_record_type<'c>(

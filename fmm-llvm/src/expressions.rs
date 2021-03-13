@@ -17,6 +17,7 @@ pub fn compile_expression<'c>(
         Expression::AlignOf(align_of) => compile_pointer_integer(
             target_data.get_abi_alignment(&compile_type(align_of.type_())) as u64,
             context,
+            target_data,
         )
         .into(),
         Expression::BitCast(bit_cast) => context.create_builder().build_bitcast(
@@ -24,7 +25,7 @@ pub fn compile_expression<'c>(
             compile_type(bit_cast.to()),
             "",
         ),
-        Expression::Primitive(primitive) => compile_primitive(*primitive, context),
+        Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => context
             .const_struct(
                 &record
@@ -38,6 +39,7 @@ pub fn compile_expression<'c>(
         Expression::SizeOf(size_of) => compile_pointer_integer(
             target_data.get_store_size(&compile_type(size_of.type_())) as u64,
             context,
+            target_data,
         )
         .into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
@@ -72,7 +74,9 @@ fn compile_undefined<'c>(
                 .const_zero()
                 .into()
         }
-        types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive, context),
+        types::Type::Primitive(primitive) => {
+            compile_undefined_primitive(*primitive, context, target_data)
+        }
         types::Type::Pointer(pointer) => compile_pointer_type(pointer, context, target_data)
             .const_zero()
             .into(),
@@ -89,6 +93,7 @@ fn compile_undefined<'c>(
 fn compile_primitive<'c>(
     primitive: Primitive,
     context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
     match primitive {
         Primitive::Boolean(boolean) => context.bool_type().const_int(boolean as u64, false).into(),
@@ -97,26 +102,27 @@ fn compile_primitive<'c>(
         Primitive::Integer8(number) => context.i8_type().const_int(number as u64, false).into(),
         Primitive::Integer32(number) => context.i32_type().const_int(number as u64, false).into(),
         Primitive::Integer64(number) => context.i64_type().const_int(number, false).into(),
-        Primitive::PointerInteger(number) => compile_pointer_integer(number as u64, context).into(),
+        Primitive::PointerInteger(number) => {
+            compile_pointer_integer(number as u64, context, target_data).into()
+        }
     }
 }
 
 pub fn compile_pointer_integer<'c>(
     number: u64,
     context: &'c inkwell::context::Context,
-) -> inkwell::values::PointerValue<'c> {
-    context
-        .i64_type()
-        .const_int(number, false)
-        .const_to_pointer(compile_pointer_integer_type(context))
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::values::IntValue<'c> {
+    compile_pointer_integer_type(context, target_data).const_int(number, false)
 }
 
 // TODO Refactor this by matching with types::Primitive directly.
 fn compile_undefined_primitive<'c>(
     type_: types::Primitive,
     context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    match compile_primitive_type(type_, context) {
+    match compile_primitive_type(type_, context, target_data) {
         inkwell::types::BasicTypeEnum::FloatType(float) => float.const_zero().into(),
         inkwell::types::BasicTypeEnum::IntType(integer) => integer.const_zero().into(),
         inkwell::types::BasicTypeEnum::PointerType(pointer) => pointer.const_zero().into(),
