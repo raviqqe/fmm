@@ -1,3 +1,4 @@
+mod calling_convention;
 mod error;
 mod expressions;
 mod heap;
@@ -5,14 +6,14 @@ mod instructions;
 mod types;
 mod union;
 
-use std::collections::HashMap;
-
+use calling_convention::*;
 use error::CompileError;
 use expressions::*;
 use fmm::ir::*;
 pub use heap::HeapConfiguration;
 use heap::HeapFunctionSet;
 use instructions::*;
+use std::collections::HashMap;
 use types::*;
 
 pub fn compile(
@@ -137,11 +138,17 @@ fn compile_function_declaration<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::FunctionValue<'c> {
-    module.add_function(
+    let function = module.add_function(
         declaration.name(),
         compile_function_type(declaration.type_(), context, target_data),
         None,
-    )
+    );
+
+    function.set_call_conventions(compile_calling_convention(
+        declaration.type_().calling_convention(),
+    ));
+
+    function
 }
 
 fn declare_variable_definition<'c>(
@@ -185,11 +192,17 @@ fn declare_function_definition<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::FunctionValue<'c> {
-    module.add_function(
+    let function = module.add_function(
         definition.name(),
         compile_function_type(definition.type_(), context, target_data),
         Some(compile_linkage(definition.is_global())),
-    )
+    );
+
+    function.set_call_conventions(compile_calling_convention(
+        definition.type_().calling_convention(),
+    ));
+
+    function
 }
 
 fn compile_function_definition<'c>(

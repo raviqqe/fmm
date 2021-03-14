@@ -91,10 +91,11 @@ impl CpsTransformer {
                             .collect(),
                     ),
                     self.result_type.clone(),
-                    CallingConvention::Target,
+                    CallingConvention::Tail,
                     definition.is_global(),
                 )
             }
+            CallingConvention::Tail => definition.clone(),
             CallingConvention::Target => {
                 validate_target_function_definition(definition)?;
 
@@ -351,7 +352,7 @@ impl CpsTransformer {
                 block.terminal_instruction().clone(),
             ),
             self.result_type.clone(),
-            CallingConvention::Target,
+            CallingConvention::Tail,
             false,
         ));
 
@@ -396,7 +397,7 @@ impl CpsTransformer {
                 .chain(type_.arguments().iter().cloned())
                 .collect(),
                 self.result_type.clone(),
-                CallingConvention::Target,
+                CallingConvention::Tail,
             )
         } else {
             type_.clone()
@@ -407,7 +408,7 @@ impl CpsTransformer {
         types::Function::new(
             vec![STACK_TYPE.clone(), result_type.clone()],
             self.result_type.clone(),
-            CallingConvention::Target,
+            CallingConvention::Tail,
         )
     }
 

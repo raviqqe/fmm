@@ -1,5 +1,5 @@
-use crate::heap::HeapFunctionSet;
 use crate::types::*;
+use crate::{calling_convention::compile_calling_convention, heap::HeapFunctionSet};
 use crate::{expressions::*, union::compile_union_cast};
 use fmm::ir::*;
 use inkwell::types::BasicType;
@@ -165,21 +165,23 @@ fn compile_instruction<'c>(
 
             None
         }
-        Instruction::Call(call) => Some(
-            builder
-                .build_call(
-                    compile_expression(call.function()).into_pointer_value(),
-                    &call
-                        .arguments()
-                        .iter()
-                        .map(|argument| compile_expression(argument))
-                        .collect::<Vec<_>>(),
-                    call.name(),
-                )
-                .try_as_basic_value()
-                .left()
-                .unwrap(),
-        ),
+        Instruction::Call(call) => {
+            let value = builder.build_call(
+                compile_expression(call.function()).into_pointer_value(),
+                &call
+                    .arguments()
+                    .iter()
+                    .map(|argument| compile_expression(argument))
+                    .collect::<Vec<_>>(),
+                call.name(),
+            );
+
+            value.set_call_convention(compile_calling_convention(
+                call.type_().calling_convention(),
+            ));
+
+            Some(value.try_as_basic_value().left().unwrap())
+        }
         // TODO Optimize this.
         Instruction::CompareAndSwap(cas) => Some(
             builder
