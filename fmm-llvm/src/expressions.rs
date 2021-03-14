@@ -1,3 +1,5 @@
+use crate::union::compile_union_cast;
+
 use super::types::*;
 use fmm::ir::*;
 use fmm::types;
@@ -51,7 +53,7 @@ pub fn compile_expression_with_builder<'c>(
         Expression::Union(union) => {
             let member = compile_expression(union.member());
 
-            let union = context.const_struct(
+            let value = context.const_struct(
                 &[
                     member.get_type().const_zero(),
                     compile_union_member_padding_type(
@@ -66,10 +68,14 @@ pub fn compile_expression_with_builder<'c>(
                 false,
             );
 
-            builder
-                .build_insert_value(union, member, 0, "")
-                .unwrap()
-                .as_basic_value_enum()
+            compile_union_cast(
+                builder,
+                builder
+                    .build_insert_value(value, member, 0, "")
+                    .unwrap()
+                    .as_basic_value_enum(),
+                compile_union_type(union.type_(), context, target_data).into(),
+            )
         }
         Expression::Variable(variable) => variables[variable.name()],
     }

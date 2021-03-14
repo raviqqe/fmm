@@ -1,6 +1,6 @@
-use crate::expressions::*;
 use crate::heap::HeapFunctionSet;
 use crate::types::*;
+use crate::{expressions::*, union::compile_union_cast};
 use fmm::ir::*;
 use inkwell::types::BasicType;
 use inkwell::values::BasicValue;
@@ -226,30 +226,22 @@ fn compile_instruction<'c>(
             deconstruct.element_index() as u32,
             deconstruct.name(),
         ),
-        Instruction::DeconstructUnion(deconstruct) => {
-            let value = compile_expression(deconstruct.union());
-            let pointer = builder.build_alloca(value.get_type(), "");
-
-            builder.build_store(pointer, value);
-            let value = builder.build_load(
-                builder
-                    .build_bitcast(
-                        pointer,
-                        compile_union_member_type(
-                            deconstruct.type_(),
-                            deconstruct.member_index(),
-                            context,
-                            target_data,
-                        )
-                        .ptr_type(DEFAULT_ADDRESS_SPACE),
-                        "",
-                    )
-                    .into_pointer_value(),
-                "",
-            );
-
-            builder.build_extract_value(value.into_struct_value(), 0, deconstruct.name())
-        }
+        Instruction::DeconstructUnion(deconstruct) => builder.build_extract_value(
+            compile_union_cast(
+                builder,
+                compile_expression(deconstruct.union()),
+                compile_union_member_type(
+                    deconstruct.type_(),
+                    deconstruct.member_index(),
+                    context,
+                    target_data,
+                )
+                .into(),
+            )
+            .into_struct_value(),
+            0,
+            deconstruct.name(),
+        ),
         Instruction::If(if_) => {
             let current = builder.get_insert_block().unwrap();
             let function = current.get_parent().unwrap();

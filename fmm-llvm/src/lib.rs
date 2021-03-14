@@ -3,6 +3,7 @@ mod expressions;
 mod heap;
 mod instructions;
 mod types;
+mod union;
 
 use std::collections::HashMap;
 
