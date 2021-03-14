@@ -272,7 +272,7 @@ fn compile_instruction<'c>(
                 );
 
                 if let Some(value) = value {
-                    cases.push((value, *llvm_block));
+                    cases.push((value, builder.get_insert_block().unwrap()));
                 }
             }
 
