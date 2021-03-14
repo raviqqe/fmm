@@ -13,18 +13,28 @@ use fmm::ir::*;
 pub use heap::HeapConfiguration;
 use heap::HeapFunctionSet;
 use instructions::*;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use types::*;
 
+static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
+    inkwell::targets::TargetMachine::get_default_triple()
+        .as_str()
+        .to_str()
+        .unwrap()
+        .into()
+});
+
 pub fn compile(
     module: &Module,
-    target_triple: &str,
     heap_configuration: &HeapConfiguration,
+    target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
     inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
     let context = inkwell::context::Context::create();
 
-    let target_triple = inkwell::targets::TargetTriple::create(target_triple);
+    let target_triple =
+        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
     let target_data = inkwell::targets::Target::from_triple(&target_triple)?
         .create_target_machine(
             &target_triple,
@@ -38,6 +48,8 @@ pub fn compile(
         .get_target_data();
 
     let llvm_module = context.create_module("");
+    llvm_module.set_triple(&target_triple);
+
     let mut variables = HashMap::new();
 
     let heap_function_set =
@@ -262,14 +274,11 @@ mod tests {
     fn compile_final_module(module: &Module) {
         compile(
             module,
-            inkwell::targets::TargetMachine::get_default_triple()
-                .as_str()
-                .to_str()
-                .unwrap(),
             &HeapConfiguration {
                 allocate_function_name: "my_malloc".into(),
                 reallocate_function_name: "my_realloc".into(),
             },
+            None,
         )
         .unwrap();
     }

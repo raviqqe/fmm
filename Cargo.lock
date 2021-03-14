@@ -94,6 +94,7 @@ dependencies = [
  "fmm",
  "inkwell",
  "llvm-sys",
+ "once_cell",
 ]
 
 [[package]]
