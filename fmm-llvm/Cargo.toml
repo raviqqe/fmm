@@ -11,3 +11,4 @@ fmm = { path = "../fmm" }
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
   "llvm11-0"
 ] }
+llvm-sys = "110"
