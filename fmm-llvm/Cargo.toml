@@ -12,3 +12,4 @@ inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", feat
   "llvm11-0"
 ] }
 llvm-sys = "110"
+once_cell = "1"
