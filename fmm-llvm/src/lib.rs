@@ -175,6 +175,7 @@ fn declare_variable_definition<'c>(
         definition.name(),
     );
 
+    global.set_constant(!definition.is_mutable());
     global.set_linkage(compile_linkage(definition.is_global()));
 
     global
