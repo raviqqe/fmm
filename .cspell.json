@@ -8,7 +8,7 @@
     "cmpxchg",
     "conv",
     "hasher",
-    "llvmmc",
+    "llvmc",
     "malloc",
     "petgraph",
     "realloc",
