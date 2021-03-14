@@ -90,7 +90,6 @@ pub fn compile(
         );
     }
 
-    llvm_module.print_to_stderr();
     llvm_module.verify()?;
 
     Ok(llvm_module.write_bitcode_to_memory().as_slice().to_vec())
@@ -695,12 +694,8 @@ mod tests {
                 Block::new(
                     vec![
                         AllocateHeap::new(types::Primitive::Integer8, "x").into(),
-                        ReallocateHeap::new(
-                            Variable::new("x"),
-                            Primitive::PointerInteger(42),
-                            "y",
-                        )
-                        .into(),
+                        ReallocateHeap::new(Variable::new("x"), Primitive::PointerInteger(42), "y")
+                            .into(),
                     ],
                     Return::new(
                         types::Pointer::new(types::Primitive::Integer8),
