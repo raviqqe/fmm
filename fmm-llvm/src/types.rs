@@ -99,10 +99,14 @@ pub fn compile_union_type<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::StructType<'c> {
+    let integer_type = context.ptr_sized_int_type(target_data, None);
+
     context.struct_type(
-        &[context
-            .i8_type()
-            .array_type(get_union_size(union, context, target_data) as u32)
+        &[integer_type
+            .array_type(get_pointer_integer_array_size(
+                get_union_size(union, context, target_data) as usize,
+                target_data.get_store_size(&integer_type) as usize,
+            ) as u32)
             .into()],
         false,
     )
@@ -148,4 +152,35 @@ fn get_union_size<'c>(
         .map(|type_| target_data.get_store_size(&compile_type(type_, context, target_data)))
         .max()
         .unwrap()
+}
+
+fn get_pointer_integer_array_size(size: usize, pointer_size: usize) -> usize {
+    if size == 0 {
+        0
+    } else {
+        ((size - 1) / pointer_size + 1) as usize
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_pointer_integer_array_size_for_32_bit_platform() {
+        assert_eq!(get_pointer_integer_array_size(0, 4), 0);
+        assert_eq!(get_pointer_integer_array_size(1, 4), 1);
+        assert_eq!(get_pointer_integer_array_size(3, 4), 1);
+        assert_eq!(get_pointer_integer_array_size(4, 4), 1);
+        assert_eq!(get_pointer_integer_array_size(5, 4), 2);
+    }
+
+    #[test]
+    fn get_pointer_integer_array_size_for_64_bit_platform() {
+        assert_eq!(get_pointer_integer_array_size(0, 8), 0);
+        assert_eq!(get_pointer_integer_array_size(1, 8), 1);
+        assert_eq!(get_pointer_integer_array_size(7, 8), 1);
+        assert_eq!(get_pointer_integer_array_size(8, 8), 1);
+        assert_eq!(get_pointer_integer_array_size(9, 8), 2);
+    }
 }
