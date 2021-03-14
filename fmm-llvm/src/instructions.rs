@@ -52,8 +52,9 @@ fn compile_instruction<'c>(
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
-    let compile_expression =
-        |expression| compile_expression(expression, variables, context, target_data);
+    let compile_expression = |expression| {
+        compile_expression_with_builder(builder, expression, variables, context, target_data)
+    };
     let compile_type = |type_| compile_type(type_, context, target_data);
 
     match instruction {
@@ -387,8 +388,9 @@ fn compile_terminal_instruction<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
-    let compile_expression =
-        |expression| compile_expression(expression, variables, context, target_data);
+    let compile_expression = |expression| {
+        compile_expression_with_builder(builder, expression, variables, context, target_data)
+    };
 
     match instruction {
         TerminalInstruction::Branch(branch) => {

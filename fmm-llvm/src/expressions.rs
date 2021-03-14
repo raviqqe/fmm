@@ -1,7 +1,79 @@
 use super::types::*;
 use fmm::ir::*;
 use fmm::types;
+use inkwell::values::BasicValue;
 use std::collections::HashMap;
+
+pub fn compile_expression_with_builder<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    expression: &Expression,
+    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::values::BasicValueEnum<'c> {
+    let compile_expression = |expression| {
+        compile_expression_with_builder(builder, expression, variables, context, target_data)
+    };
+    let compile_type = |type_| compile_type(type_, context, target_data);
+
+    match expression {
+        Expression::AlignOf(align_of) => compile_pointer_integer(
+            target_data.get_abi_alignment(&compile_type(align_of.type_())) as u64,
+            context,
+            target_data,
+        )
+        .into(),
+        Expression::BitCast(bit_cast) => builder.build_bitcast(
+            compile_expression(bit_cast.expression()),
+            compile_type(bit_cast.to()),
+            "",
+        ),
+        Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
+        Expression::Record(record) => {
+            let mut value = compile_record_type(record.type_(), context, target_data).const_zero();
+
+            for (index, element) in record.elements().iter().enumerate() {
+                value = builder
+                    .build_insert_value(value, compile_expression(element), index as u32, "")
+                    .unwrap()
+                    .into_struct_value();
+            }
+
+            value.into()
+        }
+        Expression::SizeOf(size_of) => compile_pointer_integer(
+            target_data.get_store_size(&compile_type(size_of.type_())) as u64,
+            context,
+            target_data,
+        )
+        .into(),
+        Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
+        Expression::Union(union) => {
+            let member = compile_expression(union.member());
+
+            let union = context.const_struct(
+                &[
+                    member.get_type().const_zero(),
+                    compile_union_member_padding_type(
+                        union.type_(),
+                        union.member_index(),
+                        context,
+                        target_data,
+                    )
+                    .const_zero()
+                    .into(),
+                ],
+                false,
+            );
+
+            builder
+                .build_insert_value(union, member, 0, "")
+                .unwrap()
+                .as_basic_value_enum()
+        }
+        Expression::Variable(variable) => variables[variable.name()],
+    }
+}
 
 pub fn compile_expression<'c>(
     expression: &Expression,
