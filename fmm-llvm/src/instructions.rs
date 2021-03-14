@@ -176,6 +176,7 @@ fn compile_instruction<'c>(
                 call.name(),
             );
 
+            value.set_tail_call(true);
             value.set_call_convention(compile_calling_convention(
                 call.type_().calling_convention(),
             ));
