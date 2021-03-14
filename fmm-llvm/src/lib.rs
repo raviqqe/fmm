@@ -171,7 +171,7 @@ fn compile_variable_definition<'c>(
     module
         .get_global(definition.name())
         .unwrap()
-        .set_initializer(&compile_expression(
+        .set_initializer(&compile_constant_expression(
             definition.body(),
             variables,
             context,

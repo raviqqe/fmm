@@ -6,16 +6,15 @@ use fmm::types;
 use inkwell::values::BasicValue;
 use std::collections::HashMap;
 
-pub fn compile_expression_with_builder<'c>(
+pub fn compile_expression<'c>(
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
     variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression = |expression| {
-        compile_expression_with_builder(builder, expression, variables, context, target_data)
-    };
+    let compile_expression =
+        |expression| compile_expression(builder, expression, variables, context, target_data);
     let compile_type = |type_| compile_type(type_, context, target_data);
 
     match expression {
@@ -81,14 +80,14 @@ pub fn compile_expression_with_builder<'c>(
     }
 }
 
-pub fn compile_expression<'c>(
+pub fn compile_constant_expression<'c>(
     expression: &Expression,
     variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
     let compile_expression =
-        |expression| compile_expression(expression, variables, context, target_data);
+        |expression| compile_constant_expression(expression, variables, context, target_data);
     let compile_type = |type_| compile_type(type_, context, target_data);
 
     match expression {
