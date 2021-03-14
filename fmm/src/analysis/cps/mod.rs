@@ -37,7 +37,7 @@ mod tests {
                 types::Function::new(
                     vec![STACK_TYPE.clone(), result.into()],
                     VOID_TYPE.clone(),
-                    CallingConvention::Target,
+                    CallingConvention::Tail,
                 )
                 .into(),
             ]
@@ -45,7 +45,7 @@ mod tests {
             .chain(arguments)
             .collect(),
             VOID_TYPE.clone(),
-            CallingConvention::Target,
+            CallingConvention::Tail,
         )
     }
 
@@ -404,7 +404,7 @@ mod tests {
                             types::Function::new(
                                 vec![STACK_TYPE.clone(), types::Primitive::Float64.into()],
                                 VOID_TYPE.clone(),
-                                CallingConvention::Target,
+                                CallingConvention::Tail,
                             )
                         ),
                     ],
@@ -423,7 +423,7 @@ mod tests {
                         Return::new(VOID_TYPE.clone(), Variable::new("_result")),
                     ),
                     VOID_TYPE.clone(),
-                    CallingConvention::Target,
+                    CallingConvention::Tail,
                     false,
                 )],
             ))
@@ -526,7 +526,7 @@ mod tests {
                             types::Function::new(
                                 vec![STACK_TYPE.clone(), types::Primitive::Float64.into()],
                                 VOID_TYPE.clone(),
-                                CallingConvention::Target,
+                                CallingConvention::Tail,
                             )
                         ),
                     ],
@@ -555,7 +555,7 @@ mod tests {
                         TerminalInstruction::Unreachable,
                     ),
                     VOID_TYPE.clone(),
-                    CallingConvention::Target,
+                    CallingConvention::Tail,
                     false,
                 )],
             ))
