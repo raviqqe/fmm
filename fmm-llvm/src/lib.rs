@@ -33,9 +33,8 @@ pub fn compile(
     inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
     let context = inkwell::context::Context::create();
 
-    let target_triple = inkwell::targets::TargetTriple::create(
-        target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE),
-    );
+    let target_triple =
+        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
     let target_data = inkwell::targets::Target::from_triple(&target_triple)?
         .create_target_machine(
             &target_triple,
