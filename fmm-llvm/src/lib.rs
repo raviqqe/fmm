@@ -48,6 +48,8 @@ pub fn compile(
         .get_target_data();
 
     let llvm_module = context.create_module("");
+    llvm_module.set_triple(&target_triple);
+
     let mut variables = HashMap::new();
 
     let heap_function_set =
