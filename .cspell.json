@@ -2,6 +2,7 @@
   "words": [
     "algo",
     "alloca",
+    "backends",
     "bitcast",
     "bitcode",
     "canonicalizing",
@@ -20,6 +21,7 @@
     "stdlib",
     "tempdir",
     "tempfile",
-    "toposort"
+    "toposort",
+    "uncurried"
   ]
 }
