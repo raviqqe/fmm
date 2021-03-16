@@ -25,30 +25,68 @@ static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
         .into()
 });
 
-pub fn compile(
+pub fn compile_to_bitcode(
     module: &Module,
     heap_configuration: &HeapConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
     inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
-    let context = inkwell::context::Context::create();
-
     let target_triple =
         inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
-    let target_data = inkwell::targets::Target::from_triple(&target_triple)?
+    let target_machine = create_target_machine(&target_triple)?;
+    let context = inkwell::context::Context::create();
+
+    let module = compile_module(&context, &target_machine, module, heap_configuration)?;
+
+    Ok(module.write_bitcode_to_memory().as_slice().to_vec())
+}
+
+pub fn compile_to_object(
+    module: &Module,
+    heap_configuration: &HeapConfiguration,
+    target_triple: Option<&str>,
+) -> Result<Vec<u8>, CompileError> {
+    inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
+    let target_triple =
+        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
+    let target_machine = create_target_machine(&target_triple)?;
+    let context = inkwell::context::Context::create();
+
+    let module = compile_module(&context, &target_machine, module, heap_configuration)?;
+
+    // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in C++?
+    // https://llvm.org/docs/LangRef.html#call-instruction
+    Ok(target_machine
+        .write_to_memory_buffer(&module, inkwell::targets::FileType::Object)?
+        .as_slice()
+        .to_vec())
+}
+
+fn create_target_machine(
+    target_triple: &inkwell::targets::TargetTriple,
+) -> Result<inkwell::targets::TargetMachine, CompileError> {
+    inkwell::targets::Target::from_triple(&target_triple)?
         .create_target_machine(
             &target_triple,
             "",
             "",
-            Default::default(),
+            inkwell::OptimizationLevel::Aggressive,
             inkwell::targets::RelocMode::Default,
-            inkwell::targets::CodeModel::Default,
+            inkwell::targets::CodeModel::Medium,
         )
-        .ok_or(CompileError::TargetMachineNotCreated)?
-        .get_target_data();
+        .ok_or(CompileError::TargetMachineNotCreated)
+}
+
+fn compile_module<'c>(
+    context: &'c inkwell::context::Context,
+    target_machine: &inkwell::targets::TargetMachine,
+    module: &Module,
+    heap_configuration: &HeapConfiguration,
+) -> Result<inkwell::module::Module<'c>, CompileError> {
+    let target_data = target_machine.get_target_data();
 
     let llvm_module = context.create_module("");
-    llvm_module.set_triple(&target_triple);
+    llvm_module.set_triple(&target_machine.get_triple());
 
     let mut variables = HashMap::new();
 
@@ -105,7 +143,7 @@ pub fn compile(
 
     llvm_module.verify()?;
 
-    Ok(llvm_module.write_bitcode_to_memory().as_slice().to_vec())
+    Ok(llvm_module)
 }
 
 fn compile_heap_functions<'c>(
