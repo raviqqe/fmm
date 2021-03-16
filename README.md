@@ -3,9 +3,9 @@
 [![GitHub Action](https://img.shields.io/github/workflow/status/raviqqe/fmm/test?style=flat-square)](https://github.com/raviqqe/fmm/actions?query=workflow%3Atest)
 [![License](https://img.shields.io/github/license/raviqqe/fmm.svg?style=flat-square)](LICENSE)
 
-The more functional variant of C programming language
+The uncurried minimal functional programming language
 
-It's designed to be a target language for high-level functional programming languages.
+It's designed to be a compiler target for high-level functional programming languages.
 
 ## Features
 
@@ -22,25 +22,20 @@ It's designed to be a target language for high-level functional programming lang
   - C-like union type
   - Boolean type
 - Structural typing
+- CPS transformation
 - IR builder library
 
 ### Backends
 
-- [C](fmm-c)
 - [LLVM](fmm-llvm)
+- [C](fmm-c)
+  - No guarantee for tail call optimization
 
 ## Limitations
 
 - Inductive types
 - Weakly typed
 - No type inference
-
-## Requirements for backend
-
-- Tail call
-- Heap allocation
-- Atomic memory instructions
-  - Or something equivalent if threading is not supported
 
 ## License
 
