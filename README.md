@@ -24,6 +24,11 @@ It's designed to be a target language for high-level functional programming lang
 - Structural typing
 - IR builder library
 
+### Backends
+
+- [C](fmm-c)
+- [LLVM](fmm-llvm)
+
 ## Limitations
 
 - Inductive types
