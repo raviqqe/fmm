@@ -30,10 +30,7 @@ pub fn compile_to_bitcode(
     heap_configuration: &HeapConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
-    inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
-    let target_triple =
-        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
-    let target_machine = create_target_machine(&target_triple)?;
+    let target_machine = create_target_machine(target_triple)?;
     let context = inkwell::context::Context::create();
 
     let module = compile_module(&context, &target_machine, module, heap_configuration)?;
@@ -46,10 +43,7 @@ pub fn compile_to_object(
     heap_configuration: &HeapConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
-    inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
-    let target_triple =
-        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
-    let target_machine = create_target_machine(&target_triple)?;
+    let target_machine = create_target_machine(target_triple)?;
     let context = inkwell::context::Context::create();
 
     let module = compile_module(&context, &target_machine, module, heap_configuration)?;
@@ -63,8 +57,12 @@ pub fn compile_to_object(
 }
 
 fn create_target_machine(
-    target_triple: &inkwell::targets::TargetTriple,
+    target_triple: Option<&str>,
 ) -> Result<inkwell::targets::TargetMachine, CompileError> {
+    inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
+    let target_triple =
+        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
+
     inkwell::targets::Target::from_triple(&target_triple)?
         .create_target_machine(
             &target_triple,
