@@ -311,7 +311,7 @@ mod tests {
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
-        compile(
+        compile_to_object(
             module,
             &HeapConfiguration {
                 allocate_function_name: "my_malloc".into(),
