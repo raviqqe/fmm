@@ -3,6 +3,7 @@ mod error;
 mod expressions;
 mod heap;
 mod instructions;
+mod tail_call;
 mod types;
 mod union;
 
@@ -15,6 +16,7 @@ use heap::HeapFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use tail_call::*;
 use types::*;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
@@ -102,6 +104,10 @@ pub fn compile(
             &heap_function_set,
         );
     }
+
+    llvm_module.verify()?;
+
+    let llvm_module = convert_tail_to_must_tail(&context, &llvm_module)?;
 
     llvm_module.verify()?;
 

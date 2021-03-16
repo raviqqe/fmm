@@ -176,7 +176,9 @@ fn compile_instruction<'c>(
                 call.name(),
             );
 
-            value.set_tail_call(true);
+            value.set_tail_call(
+                call.type_().calling_convention() == fmm::types::CallingConvention::Tail,
+            );
             value.set_call_convention(compile_calling_convention(
                 call.type_().calling_convention(),
             ));
