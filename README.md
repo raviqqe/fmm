@@ -39,4 +39,4 @@ It's designed to be a compiler target for high-level functional programming lang
 
 ## License
 
-[MIT](LICENSE)
+[Apache 2.0](LICENSE)
