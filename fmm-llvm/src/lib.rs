@@ -321,10 +321,13 @@ mod tests {
     }
 
     fn compile_module(module: &Module) {
+        fmm::analysis::check_types(module).unwrap();
         compile_final_module(module);
-        compile_final_module(
-            &fmm::analysis::transform_to_cps(module, types::Record::new(vec![])).unwrap(),
-        );
+
+        let module = fmm::analysis::transform_to_cps(module, types::Record::new(vec![])).unwrap();
+
+        fmm::analysis::check_types(&module).unwrap();
+        compile_final_module(&module);
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -1220,6 +1223,32 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            ));
+        }
+
+        #[test]
+        fn compile_atomic_add() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![AtomicOperation::new(
+                        types::Primitive::PointerInteger,
+                        AtomicOperator::Add,
+                        Variable::new("x"),
+                        Primitive::PointerInteger(42),
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(0),
+                    ),
                 ),
                 types::Primitive::PointerInteger,
                 true,
