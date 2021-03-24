@@ -101,6 +101,13 @@ fn convert_instruction(
         Instruction::AtomicLoad(load) => {
             AtomicLoad::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
         }
+        Instruction::AtomicOperation(operation) => AtomicOperation::new(
+            operation.type_().clone(),
+            operation.operator(),
+            convert(operation.pointer()),
+            convert(operation.value()),
+        )
+        .into(),
         Instruction::AtomicStore(store) => AtomicStore::new(
             store.type_().clone(),
             convert(store.value()),

@@ -114,6 +114,13 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             load.name(),
         )
         .into(),
+        Instruction::AtomicOperation(operation) => AtomicOperation::new(
+            convert(&operation.type_().into()).to_primitive().unwrap(),
+            operation.operator(),
+            convert_expression(operation.pointer()),
+            convert_expression(operation.value()),
+        )
+        .into(),
         Instruction::AtomicStore(store) => AtomicStore::new(
             convert(store.type_()),
             convert_expression(store.value()),

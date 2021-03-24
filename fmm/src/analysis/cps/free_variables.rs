@@ -31,9 +31,13 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
         Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
+        Instruction::AtomicOperation(operation) => [operation.pointer(), operation.value()]
+            .iter()
+            .flat_map(|expression| collect_from_expression(expression))
+            .collect(),
         Instruction::AtomicStore(store) => [store.value(), store.pointer()]
             .iter()
-            .flat_map(|expression| collect_from_expression(*expression))
+            .flat_map(|expression| collect_from_expression(expression))
             .collect(),
         Instruction::Call(call) => collect_from_expression(call.function())
             .into_iter()
