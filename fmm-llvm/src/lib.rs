@@ -309,6 +309,8 @@ mod tests {
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
+        fmm::analysis::check_types(module).unwrap();
+
         compile_to_object(
             module,
             &HeapConfiguration {
@@ -321,13 +323,10 @@ mod tests {
     }
 
     fn compile_module(module: &Module) {
-        fmm::analysis::check_types(module).unwrap();
         compile_final_module(module);
-
-        let module = fmm::analysis::transform_to_cps(module, types::Record::new(vec![])).unwrap();
-
-        fmm::analysis::check_types(&module).unwrap();
-        compile_final_module(&module);
+        compile_final_module(
+            &fmm::analysis::transform_to_cps(module, types::Record::new(vec![])).unwrap(),
+        );
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
