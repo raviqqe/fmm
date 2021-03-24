@@ -113,7 +113,7 @@ fn check_block(
             Instruction::AtomicOperation(operation) => {
                 check_equality(
                     &check_expression(operation.pointer(), &variables)?,
-                    &types::Pointer::new(operation.type_().clone()).into(),
+                    &types::Pointer::new(operation.type_()).into(),
                 )?;
                 check_equality(
                     &check_expression(operation.value(), &variables)?,

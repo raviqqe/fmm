@@ -100,7 +100,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
         )
         .into(),
         Instruction::AtomicOperation(operation) => AtomicOperation::new(
-            operation.type_().clone(),
+            operation.type_(),
             operation.operator(),
             rename_expression(operation.pointer()),
             rename_expression(operation.value()),

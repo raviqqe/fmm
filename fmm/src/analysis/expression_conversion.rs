@@ -102,7 +102,7 @@ fn convert_instruction(
             AtomicLoad::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
         }
         Instruction::AtomicOperation(operation) => AtomicOperation::new(
-            operation.type_().clone(),
+            operation.type_(),
             operation.operator(),
             convert(operation.pointer()),
             convert(operation.value()),
