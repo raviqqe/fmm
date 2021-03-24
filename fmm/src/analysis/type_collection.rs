@@ -104,6 +104,11 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
         }
         Instruction::ArithmeticOperation(_) => Default::default(),
         Instruction::AtomicLoad(load) => vec![load.type_().clone()].into_iter().collect(),
+        Instruction::AtomicOperation(operation) => vec![operation.type_().into()]
+            .into_iter()
+            .chain(collect_from_expression(operation.pointer()))
+            .chain(collect_from_expression(operation.value()))
+            .collect(),
         Instruction::AtomicStore(store) => vec![store.type_().clone()].into_iter().collect(),
         Instruction::Call(call) => vec![call.type_().clone().into()]
             .into_iter()

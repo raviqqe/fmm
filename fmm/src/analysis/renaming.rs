@@ -99,6 +99,13 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(load.name()),
         )
         .into(),
+        Instruction::AtomicOperation(operation) => AtomicOperation::new(
+            operation.type_(),
+            operation.operator(),
+            rename_expression(operation.pointer()),
+            rename_expression(operation.value()),
+        )
+        .into(),
         Instruction::AtomicStore(store) => AtomicStore::new(
             store.type_().clone(),
             rename_expression(store.value()),
