@@ -101,16 +101,21 @@ impl InstructionBuilder {
         operator: AtomicOperator,
         pointer: impl Into<TypedExpression>,
         value: impl Into<TypedExpression>,
-    ) {
+    ) -> TypedExpression {
         let pointer = pointer.into();
         let value = value.into();
+        let type_ = value.type_().to_primitive().unwrap();
+        let name = self.generate_name();
 
         self.add_instruction(AtomicOperation::new(
-            value.type_().to_primitive().unwrap(),
+            type_,
             operator,
             pointer.expression().clone(),
             value.expression().clone(),
+            &name,
         ));
+
+        TypedExpression::new(Variable::new(name), type_)
     }
 
     pub fn atomic_store(

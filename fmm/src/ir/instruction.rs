@@ -49,6 +49,7 @@ impl Instruction {
             Self::AllocateStack(allocate) => Some(allocate.name()),
             Self::ArithmeticOperation(operation) => Some(operation.name()),
             Self::AtomicLoad(load) => Some(load.name()),
+            Self::AtomicOperation(operation) => Some(operation.name()),
             Self::Call(call) => Some(call.name()),
             Self::CompareAndSwap(cas) => Some(cas.name()),
             Self::ComparisonOperation(operation) => Some(operation.name()),
@@ -61,7 +62,7 @@ impl Instruction {
             Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
             Self::RecordAddress(address) => Some(address.name()),
             Self::UnionAddress(address) => Some(address.name()),
-            Self::AtomicOperation(_) | Self::AtomicStore(_) | Self::Store(_) => None,
+            Self::AtomicStore(_) | Self::Store(_) => None,
         }
     }
 
@@ -75,6 +76,7 @@ impl Instruction {
             }
             Self::ArithmeticOperation(operation) => Some(operation.type_().clone().into()),
             Self::AtomicLoad(load) => Some(load.type_().clone()),
+            Self::AtomicOperation(operation) => Some(operation.type_().into()),
             Self::Call(call) => Some(call.type_().result().clone()),
             Self::CompareAndSwap(_) => Some(types::Primitive::Boolean.into()),
             Self::ComparisonOperation(_) => Some(types::Primitive::Boolean.into()),
@@ -97,7 +99,7 @@ impl Instruction {
                 types::Pointer::new(address.type_().members()[address.member_index()].clone())
                     .into(),
             ),
-            Self::AtomicOperation(_) | Self::AtomicStore(_) | Self::Store(_) => None,
+            Self::AtomicStore(_) | Self::Store(_) => None,
         }
     }
 }

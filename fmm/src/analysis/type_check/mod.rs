@@ -929,4 +929,33 @@ mod tests {
             )],
         ))
     }
+
+    #[test]
+    fn check_atomic_operation() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![AtomicOperation::new(
+                        types::Primitive::PointerInteger,
+                        AtomicOperator::Add,
+                        Variable::new("x"),
+                        Primitive::PointerInteger(42),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            )],
+        ))
+    }
 }
