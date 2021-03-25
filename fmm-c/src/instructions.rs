@@ -75,7 +75,8 @@ fn compile_instruction(
             compile_expression(load.pointer()),
         ),
         Instruction::AtomicOperation(operation) => format!(
-            "atomic_fetch_{}(({}){},{});",
+            "{}=atomic_fetch_{}(({}){},{});",
+            compile_typed_name(&operation.type_().into(), operation.name()),
             match operation.operator() {
                 AtomicOperator::Add => "add",
                 AtomicOperator::Subtract => "sub",
