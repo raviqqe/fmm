@@ -106,6 +106,7 @@ fn convert_instruction(
             operation.operator(),
             convert(operation.pointer()),
             convert(operation.value()),
+            operation.name(),
         )
         .into(),
         Instruction::AtomicStore(store) => AtomicStore::new(

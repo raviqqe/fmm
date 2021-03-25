@@ -14,6 +14,7 @@ pub struct AtomicOperation {
     operator: AtomicOperator,
     pointer: Arc<Expression>,
     value: Arc<Expression>,
+    name: String,
 }
 
 impl AtomicOperation {
@@ -22,12 +23,14 @@ impl AtomicOperation {
         operator: AtomicOperator,
         pointer: impl Into<Expression>,
         value: impl Into<Expression>,
+        name: impl Into<String>,
     ) -> Self {
         Self {
             type_,
             operator,
             pointer: pointer.into().into(),
             value: value.into().into(),
+            name: name.into(),
         }
     }
 
@@ -45,5 +48,9 @@ impl AtomicOperation {
 
     pub fn value(&self) -> &Expression {
         &self.value
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }

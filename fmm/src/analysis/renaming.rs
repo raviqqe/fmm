@@ -104,6 +104,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             operation.operator(),
             rename_expression(operation.pointer()),
             rename_expression(operation.value()),
+            rename(operation.name()),
         )
         .into(),
         Instruction::AtomicStore(store) => AtomicStore::new(
