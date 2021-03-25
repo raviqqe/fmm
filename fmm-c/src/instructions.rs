@@ -74,6 +74,16 @@ fn compile_instruction(
             compile_atomic_pointer_type_id(load.type_(), type_ids),
             compile_expression(load.pointer()),
         ),
+        Instruction::AtomicOperation(operation) => format!(
+            "atomic_fetch_{}(({}){},{});",
+            match operation.operator() {
+                AtomicOperator::Add => "add",
+                AtomicOperator::Subtract => "sub",
+            },
+            compile_atomic_pointer_type_id(&operation.type_().into(), type_ids),
+            compile_expression(operation.pointer()),
+            compile_expression(operation.value()),
+        ),
         Instruction::AtomicStore(store) => format!(
             "atomic_store(({}){},{});",
             compile_atomic_pointer_type_id(store.type_(), type_ids),

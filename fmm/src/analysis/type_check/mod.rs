@@ -110,6 +110,16 @@ fn check_block(
                     &types::Pointer::new(load.type_().clone()).clone().into(),
                 )?;
             }
+            Instruction::AtomicOperation(operation) => {
+                check_equality(
+                    &check_expression(operation.pointer(), &variables)?,
+                    &types::Pointer::new(operation.type_()).into(),
+                )?;
+                check_equality(
+                    &check_expression(operation.value(), &variables)?,
+                    &operation.type_().into(),
+                )?;
+            }
             Instruction::AtomicStore(store) => {
                 check_equality(
                     &check_expression(store.value(), &variables)?,

@@ -309,6 +309,8 @@ mod tests {
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
+        fmm::analysis::check_types(module).unwrap();
+
         compile_to_object(
             module,
             &HeapConfiguration {
@@ -1220,6 +1222,32 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            ));
+        }
+
+        #[test]
+        fn compile_atomic_add() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![AtomicOperation::new(
+                        types::Primitive::PointerInteger,
+                        AtomicOperator::Add,
+                        Variable::new("x"),
+                        Primitive::PointerInteger(42),
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(0),
+                    ),
                 ),
                 types::Primitive::PointerInteger,
                 true,

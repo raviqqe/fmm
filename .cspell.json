@@ -2,6 +2,7 @@
   "words": [
     "algo",
     "alloca",
+    "atomicrmw",
     "backends",
     "bitcast",
     "bitcode",

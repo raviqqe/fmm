@@ -2,6 +2,7 @@ use super::allocate_heap::AllocateHeap;
 use super::allocate_stack::AllocateStack;
 use super::arithmetic_operation::ArithmeticOperation;
 use super::atomic_load::AtomicLoad;
+use super::atomic_operation::AtomicOperation;
 use super::atomic_store::AtomicStore;
 use super::call::Call;
 use super::compare_and_swap::CompareAndSwap;
@@ -24,6 +25,7 @@ pub enum Instruction {
     AllocateStack(AllocateStack),
     ArithmeticOperation(ArithmeticOperation),
     AtomicLoad(AtomicLoad),
+    AtomicOperation(AtomicOperation),
     AtomicStore(AtomicStore),
     Call(Call),
     CompareAndSwap(CompareAndSwap),
@@ -59,7 +61,7 @@ impl Instruction {
             Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
             Self::RecordAddress(address) => Some(address.name()),
             Self::UnionAddress(address) => Some(address.name()),
-            Self::AtomicStore(_) | Self::Store(_) => None,
+            Self::AtomicOperation(_) | Self::AtomicStore(_) | Self::Store(_) => None,
         }
     }
 
@@ -95,7 +97,7 @@ impl Instruction {
                 types::Pointer::new(address.type_().members()[address.member_index()].clone())
                     .into(),
             ),
-            Self::AtomicStore(_) | Self::Store(_) => None,
+            Self::AtomicOperation(_) | Self::AtomicStore(_) | Self::Store(_) => None,
         }
     }
 }
@@ -121,6 +123,12 @@ impl From<ArithmeticOperation> for Instruction {
 impl From<AtomicLoad> for Instruction {
     fn from(load: AtomicLoad) -> Self {
         Self::AtomicLoad(load)
+    }
+}
+
+impl From<AtomicOperation> for Instruction {
+    fn from(operation: AtomicOperation) -> Self {
+        Self::AtomicOperation(operation)
     }
 }
 
