@@ -1,6 +1,6 @@
 use crate::build::{self, InstructionBuilder, NameGenerator};
 use crate::ir::*;
-use crate::types::{self, CallingConvention, Type};
+use crate::types::{self, Type};
 use once_cell::sync::Lazy;
 use std::rc::Rc;
 
@@ -17,25 +17,6 @@ pub fn increment_count(variable: &Variable, type_: &Type) -> Vec<Instruction> {
     } else {
         vec![]
     }
-}
-
-pub fn create_increment_function_definition() -> FunctionDefinition {
-    let builder = InstructionBuilder::new(Rc::new(NameGenerator::new(variable.name()).into()));
-
-    FunctionDefinition::new(
-        "_rc_increment_count",
-        vec![Argument::new(
-            "pointer",
-            types::Pointer::new(types::Primitive::PointerInteger),
-        )],
-        Block::new(
-            builder.into_instructions(),
-            Return::new(VOID_TYPE.clone(), VOID_VALUE.clone()),
-        ),
-        VOID_TYPE.clone(),
-        CallingConvention::Target,
-        false,
-    )
 }
 
 fn increment_pointer(builder: &InstructionBuilder, variable: &Variable, type_: &types::Pointer) {
