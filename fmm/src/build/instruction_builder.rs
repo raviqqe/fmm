@@ -102,8 +102,8 @@ impl InstructionBuilder {
         pointer: impl Into<TypedExpression>,
         value: impl Into<TypedExpression>,
     ) {
-        let value = value.into();
         let pointer = pointer.into();
+        let value = value.into();
 
         self.add_instruction(AtomicOperation::new(
             value.type_().to_primitive().unwrap(),
