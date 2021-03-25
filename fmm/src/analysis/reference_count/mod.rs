@@ -1,11 +1,9 @@
 mod expressions;
-mod header;
 mod reference_count;
 mod utilities;
 
 use crate::ir::*;
 use crate::types::Type;
-use header::*;
 use std::collections::{HashMap, HashSet};
 
 pub fn count_references(module: &Module) -> Module {
