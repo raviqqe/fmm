@@ -152,7 +152,7 @@ fn compile_instruction<'c>(
 
             Some(value)
         }
-        Instruction::AtomicOperation(operation) => {
+        Instruction::AtomicOperation(operation) => Some(
             builder
                 .build_atomicrmw(
                     match operation.operator() {
@@ -163,10 +163,9 @@ fn compile_instruction<'c>(
                     compile_expression(operation.value()).into_int_value(),
                     inkwell::AtomicOrdering::SequentiallyConsistent,
                 )
-                .unwrap();
-
-            None
-        }
+                .unwrap()
+                .into(),
+        ),
         Instruction::AtomicStore(store) => {
             let value = builder.build_store(
                 compile_expression(store.pointer()).into_pointer_value(),

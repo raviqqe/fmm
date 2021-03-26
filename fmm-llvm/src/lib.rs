@@ -1242,12 +1242,10 @@ mod tests {
                         AtomicOperator::Add,
                         Variable::new("x"),
                         Primitive::PointerInteger(42),
+                        "y",
                     )
                     .into()],
-                    Return::new(
-                        types::Primitive::PointerInteger,
-                        Primitive::PointerInteger(0),
-                    ),
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
                 true,
