@@ -152,6 +152,9 @@ fn convert_instruction(
             deconstruct.name(),
         )
         .into(),
+        Instruction::FreeHeap(free) => {
+            FreeHeap::new(free.type_().clone(), convert(free.pointer())).into()
+        }
         Instruction::If(if_) => If::new(
             if_.type_().clone(),
             convert(if_.condition()),

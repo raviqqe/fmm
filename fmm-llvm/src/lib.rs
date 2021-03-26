@@ -164,6 +164,11 @@ fn compile_heap_functions<'c>(
             pointer_type.fn_type(&[pointer_type.into(), pointer_integer_type.into()], false),
             None,
         ),
+        free_function: module.add_function(
+            &heap_configuration.free_function_name,
+            context.void_type().fn_type(&[pointer_type.into()], false),
+            None,
+        ),
     }
 }
 
@@ -316,6 +321,7 @@ mod tests {
             &HeapConfiguration {
                 allocate_function_name: "my_malloc".into(),
                 reallocate_function_name: "my_realloc".into(),
+                free_function_name: "my_free".into(),
             },
             None,
         )
@@ -1246,6 +1252,28 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            ));
+        }
+
+        #[test]
+        fn compile_free_heap() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![
+                        FreeHeap::new(types::Primitive::PointerInteger, Variable::new("x")).into(),
+                    ],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(0),
+                    ),
                 ),
                 types::Primitive::PointerInteger,
                 true,

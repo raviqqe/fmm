@@ -55,6 +55,7 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
             collect_from_expression(deconstruct.record())
         }
         Instruction::DeconstructUnion(deconstruct) => collect_from_expression(deconstruct.union()),
+        Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
         Instruction::If(if_) => vec![
             collect_from_expression(if_.condition()),
             collect_from_block(if_.then()),

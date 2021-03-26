@@ -9,6 +9,7 @@ use super::compare_and_swap::CompareAndSwap;
 use super::comparison_operation::ComparisonOperation;
 use super::deconstruct_record::DeconstructRecord;
 use super::deconstruct_union::DeconstructUnion;
+use super::free_heap::FreeHeap;
 use super::if_::If;
 use super::load::Load;
 use super::pass_through::PassThrough;
@@ -32,6 +33,7 @@ pub enum Instruction {
     ComparisonOperation(ComparisonOperation),
     DeconstructRecord(DeconstructRecord),
     DeconstructUnion(DeconstructUnion),
+    FreeHeap(FreeHeap),
     If(If),
     Load(Load),
     PassThrough(PassThrough),
@@ -62,7 +64,7 @@ impl Instruction {
             Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
             Self::RecordAddress(address) => Some(address.name()),
             Self::UnionAddress(address) => Some(address.name()),
-            Self::AtomicStore(_) | Self::Store(_) => None,
+            Self::AtomicStore(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
 
@@ -99,7 +101,7 @@ impl Instruction {
                 types::Pointer::new(address.type_().members()[address.member_index()].clone())
                     .into(),
             ),
-            Self::AtomicStore(_) | Self::Store(_) => None,
+            Self::AtomicStore(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
 }
@@ -167,6 +169,12 @@ impl From<DeconstructRecord> for Instruction {
 impl From<DeconstructUnion> for Instruction {
     fn from(deconstruct: DeconstructUnion) -> Self {
         Self::DeconstructUnion(deconstruct)
+    }
+}
+
+impl From<FreeHeap> for Instruction {
+    fn from(free: FreeHeap) -> Self {
+        Self::FreeHeap(free)
     }
 }
 
