@@ -266,8 +266,7 @@ fn compile_instruction<'c>(
                         compile_expression(free.pointer()),
                         context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE),
                         "",
-                    )
-                    .into()],
+                    )],
                 "",
             );
 
