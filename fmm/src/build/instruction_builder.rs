@@ -242,7 +242,7 @@ impl InstructionBuilder {
         let pointer = pointer.into();
 
         self.add_instruction(FreeHeap::new(
-            pointer.type_().to_pointer().unwrap().clone(),
+            pointer.type_().to_pointer().unwrap().element().clone(),
             pointer.expression().clone(),
         ));
     }
