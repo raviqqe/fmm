@@ -258,6 +258,19 @@ fn compile_instruction<'c>(
             0,
             deconstruct.name(),
         ),
+        Instruction::FreeHeap(free) => {
+            builder.build_call(
+                heap_function_set.free_function,
+                &[builder.build_bitcast(
+                    compile_expression(free.pointer()),
+                    context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE),
+                    "",
+                )],
+                "",
+            );
+
+            None
+        }
         Instruction::If(if_) => {
             let current = builder.get_insert_block().unwrap();
             let function = current.get_parent().unwrap();

@@ -186,6 +186,12 @@ fn check_block(
 
                 check_union_index(deconstruct.member_index(), deconstruct.type_())?;
             }
+            Instruction::FreeHeap(free) => {
+                check_equality(
+                    &check_expression(free.pointer(), &variables)?,
+                    &types::Pointer::new(free.type_().clone()).into(),
+                )?;
+            }
             Instruction::If(if_) => {
                 check_equality(
                     &check_expression(if_.condition(), &variables)?,
@@ -952,6 +958,33 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_free_heap() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![
+                        FreeHeap::new(types::Primitive::PointerInteger, Variable::new("x")).into(),
+                    ],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(0),
+                    ),
                 ),
                 types::Primitive::PointerInteger,
                 true,

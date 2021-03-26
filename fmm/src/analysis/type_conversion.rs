@@ -174,6 +174,9 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             deconstruct.name(),
         )
         .into(),
+        Instruction::FreeHeap(free) => {
+            FreeHeap::new(convert(&free.type_()), convert_expression(free.pointer())).into()
+        }
         Instruction::If(if_) => If::new(
             convert(if_.type_()),
             convert_expression(if_.condition()),

@@ -238,6 +238,15 @@ impl InstructionBuilder {
         TypedExpression::new(Variable::new(name), type_.members()[member_index].clone())
     }
 
+    pub fn free_heap(&self, pointer: impl Into<TypedExpression>) {
+        let pointer = pointer.into();
+
+        self.add_instruction(FreeHeap::new(
+            pointer.type_().to_pointer().unwrap().element().clone(),
+            pointer.expression().clone(),
+        ));
+    }
+
     pub fn if_(
         &self,
         condition: impl Into<TypedExpression>,

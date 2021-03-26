@@ -1244,5 +1244,27 @@ mod tests {
                 true,
             ));
         }
+
+        #[test]
+        fn compile_free_heap() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                Block::new(
+                    vec![
+                        FreeHeap::new(types::Primitive::PointerInteger, Variable::new("x")).into(),
+                    ],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(0),
+                    ),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            ));
+        }
     }
 }
