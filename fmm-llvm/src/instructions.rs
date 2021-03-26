@@ -261,12 +261,11 @@ fn compile_instruction<'c>(
         Instruction::FreeHeap(free) => {
             builder.build_call(
                 heap_function_set.free_function,
-                &[builder
-                    .build_bitcast(
-                        compile_expression(free.pointer()),
-                        context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE),
-                        "",
-                    )],
+                &[builder.build_bitcast(
+                    compile_expression(free.pointer()),
+                    context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE),
+                    "",
+                )],
                 "",
             );
 
