@@ -125,6 +125,10 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(deconstruct.union()))
             .collect(),
+        Instruction::FreeHeap(free) => vec![free.type_().clone()]
+            .into_iter()
+            .chain(collect_from_expression(free.pointer()))
+            .collect(),
         Instruction::If(if_) => vec![if_.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(if_.condition()))

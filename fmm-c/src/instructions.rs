@@ -140,6 +140,9 @@ fn compile_instruction(
             compile_expression(deconstruct.union()),
             generate_union_member_name(deconstruct.member_index()),
         ),
+        Instruction::FreeHeap(free) => {
+            format!("free((void *)({}));", compile_expression(free.pointer()))
+        }
         Instruction::If(if_) => {
             let compile_block =
                 |block| compile_block(block, Some(if_.name()), global_variables, type_ids);
