@@ -114,16 +114,16 @@ mod tests {
     fn convert_used_variable_in_record() {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
         let variable = Variable::new("x");
-        let record = Record::new(
-            types::Record::new(vec![
-                pointer_type.clone().into(),
-                pointer_type.clone().into(),
-            ]),
-            vec![variable.clone().into(), variable.clone().into()],
-        );
 
         let (instructions, used_variables) = initialize_expression_converter().convert(
-            &record.clone().into(),
+            &Record::new(
+                types::Record::new(vec![
+                    pointer_type.clone().into(),
+                    pointer_type.clone().into(),
+                ]),
+                vec![variable.clone().into(), variable.clone().into()],
+            )
+            .into(),
             &vec![("x".into(), pointer_type.into())]
                 .into_iter()
                 .collect(),
