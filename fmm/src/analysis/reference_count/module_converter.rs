@@ -53,18 +53,18 @@ impl ModuleConverter {
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
-            self.convert_block(definition.body(), variables),
+            self.convert_block(definition.body(), &HashSet::new()),
             definition.result_type().clone(),
             definition.calling_convention(),
             definition.is_global(),
         )
     }
 
-    fn convert_block(&self, block: &Block, variables: &HashMap<String, Type>) -> Block {
+    fn convert_block(&self, block: &Block, used_variables: &HashSet<String>) -> Block {
         let instructions = self.convert_instructions(
             block.instructions(),
             block.terminal_instruction(),
-            variables,
+            used_variables,
         );
 
         Block::new(instructions, block.terminal_instruction().clone())
@@ -74,10 +74,10 @@ impl ModuleConverter {
         &self,
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
-        variables: &HashMap<String, Type>,
+        used_variables: &HashSet<String>,
     ) -> Vec<Instruction> {
         let (more_instructions, used_variables) =
-            self.convert_terminal_instruction(terminal_instruction, variables);
+            self.convert_terminal_instruction(terminal_instruction, used_variables);
 
         // TODO Convert instructions.
 
@@ -91,23 +91,23 @@ impl ModuleConverter {
     fn convert_terminal_instruction(
         &self,
         instruction: &TerminalInstruction,
-        variables: &HashMap<String, Type>,
+        used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
             TerminalInstruction::Branch(branch) => {
-                let (instructions, used_variables) =
-                    self.expression_converter
-                        .convert(branch.expression(), variables, todo!());
+                let (instructions, used_variables) = self.expression_converter.convert(
+                    branch.expression(),
+                    branch.type_(),
+                    used_variables,
+                );
 
                 (instructions, used_variables)
             }
-            TerminalInstruction::Return(return_) => {
-                let (instructions, used_variables) =
-                    self.expression_converter
-                        .convert(return_.expression(), variables, todo!());
-
-                (instructions, used_variables)
-            }
+            TerminalInstruction::Return(return_) => self.expression_converter.convert(
+                return_.expression(),
+                return_.type_(),
+                used_variables,
+            ),
             TerminalInstruction::Unreachable => (Default::default(), Default::default()),
         }
     }

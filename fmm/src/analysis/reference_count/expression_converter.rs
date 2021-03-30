@@ -1,10 +1,7 @@
 use super::variable_lifetime_manager::VariableLifetimeManger;
 use crate::ir::*;
 use crate::types::Type;
-use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-};
+use std::{collections::HashSet, rc::Rc};
 
 pub struct ExpressionConverter {
     variable_lifetime_manager: Rc<VariableLifetimeManger>,
@@ -20,33 +17,32 @@ impl ExpressionConverter {
     pub fn convert(
         &self,
         expression: &Expression,
-        variable_types: &HashMap<String, Type>,
+        type_: &Type,
         used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         match expression {
             Expression::BitCast(bit_cast) => {
                 // TODO Do bit casts move the values?
-                let (instructions, used_variables) =
-                    self.convert(bit_cast.expression(), variable_types, &used_variables);
-
-                (instructions, used_variables)
+                self.convert(bit_cast.expression(), bit_cast.from(), &used_variables)
             }
             Expression::Record(record) => {
-                let (instructions, used_variables) = record.elements().iter().rev().fold(
-                    (vec![], HashSet::new()),
-                    |(all_instructions, all_used_variables), element| {
-                        let (instructions, used_variables) =
-                            self.convert(element, variable_types, &used_variables);
+                let (instructions, used_variables) = record
+                    .elements()
+                    .iter()
+                    .zip(record.type_().elements())
+                    .rev()
+                    .fold(
+                        (vec![], used_variables.clone()),
+                        |(all_instructions, used_variables), (element, type_)| {
+                            let (instructions, used_variables) =
+                                self.convert(element, type_, &used_variables);
 
-                        (
-                            all_instructions.into_iter().chain(instructions).collect(),
-                            all_used_variables
-                                .into_iter()
-                                .chain(used_variables)
-                                .collect(),
-                        )
-                    },
-                );
+                            (
+                                instructions.into_iter().chain(all_instructions).collect(),
+                                used_variables,
+                            )
+                        },
+                    );
 
                 (instructions, used_variables)
             }
@@ -54,7 +50,7 @@ impl ExpressionConverter {
             Expression::Variable(variable) => (
                 if used_variables.contains(variable.name()) {
                     self.variable_lifetime_manager
-                        .clone_variable(variable, &variable_types[variable.name()])
+                        .clone_variable(variable, type_)
                 } else {
                     vec![]
                 },
@@ -86,7 +82,7 @@ mod tests {
         pretty_assertions::assert_eq!(
             initialize_expression_converter().convert(
                 &AlignOf::new(types::Primitive::PointerInteger).into(),
-                &Default::default(),
+                &AlignOf::RESULT_TYPE.into(),
                 &Default::default()
             ),
             (vec![], Default::default())
@@ -97,12 +93,7 @@ mod tests {
     fn convert_used_variable() {
         let (instructions, used_variables) = initialize_expression_converter().convert(
             &Variable::new("x").into(),
-            &vec![(
-                "x".into(),
-                types::Pointer::new(types::Primitive::Float64).into(),
-            )]
-            .into_iter()
-            .collect(),
+            &types::Pointer::new(types::Primitive::Float64).into(),
             &vec!["x".into()].into_iter().collect(),
         );
 
@@ -124,9 +115,7 @@ mod tests {
                 vec![variable.clone().into(), variable.clone().into()],
             )
             .into(),
-            &vec![("x".into(), pointer_type.into())]
-                .into_iter()
-                .collect(),
+            &pointer_type.into(),
             &vec!["x".into()].into_iter().collect(),
         );
 
