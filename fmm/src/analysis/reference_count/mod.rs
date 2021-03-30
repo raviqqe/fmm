@@ -1,4 +1,5 @@
 mod expression_converter;
+mod global_variable_tagger;
 mod module_converter;
 mod variable_lifetime_manager;
 
