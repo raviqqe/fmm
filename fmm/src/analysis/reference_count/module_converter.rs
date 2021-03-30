@@ -1,7 +1,6 @@
 use super::expression_converter::ExpressionConverter;
 use crate::ir::*;
-use crate::types::Type;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::rc::Rc;
 
 pub struct ModuleConverter {
@@ -31,16 +30,16 @@ impl ModuleConverter {
         )
     }
 
-    fn collect_global_variables(&self, module: &Module) -> HashMap<String, Type> {
+    fn collect_global_variables(&self, module: &Module) -> HashSet<String> {
         module
             .variable_declarations()
             .iter()
-            .map(|declaration| (declaration.name().into(), declaration.type_().clone()))
+            .map(|declaration| declaration.name().into())
             .chain(
                 module
                     .variable_definitions()
                     .iter()
-                    .map(|definition| (definition.name().into(), definition.type_().clone())),
+                    .map(|definition| definition.name().into()),
             )
             .collect()
     }
@@ -48,7 +47,7 @@ impl ModuleConverter {
     fn convert_function_definition(
         &self,
         definition: &FunctionDefinition,
-        global_variables: &HashMap<String, Type>,
+        global_variables: &HashSet<String>,
     ) -> FunctionDefinition {
         // TODO Tag static variables.
         let instructions = self.convert_instructions(
