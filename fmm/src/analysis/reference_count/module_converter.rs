@@ -16,16 +16,17 @@ impl ModuleConverter {
     }
 
     pub fn convert(&self, module: &Module) -> Module {
-        let variables = self.collect_global_variables(module);
+        let global_variables = self.collect_global_variables(module);
 
         Module::new(
             module.variable_declarations().to_vec(),
             module.function_declarations().to_vec(),
+            // TODO Tag static variables in variable definitions.
             module.variable_definitions().to_vec(),
             module
                 .function_definitions()
                 .iter()
-                .map(|definition| self.convert_function_definition(definition, &variables))
+                .map(|definition| self.convert_function_definition(definition, &global_variables))
                 .collect(),
         )
     }
@@ -47,13 +48,22 @@ impl ModuleConverter {
     fn convert_function_definition(
         &self,
         definition: &FunctionDefinition,
-        variables: &HashMap<String, Type>,
+        global_variables: &HashMap<String, Type>,
     ) -> FunctionDefinition {
         // TODO Tag static variables.
+        let instructions = self.convert_instructions(
+            definition.body().instructions(),
+            definition.body().terminal_instruction(),
+            &HashSet::new(),
+        );
+
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
-            self.convert_block(definition.body(), &HashSet::new()),
+            Block::new(
+                instructions,
+                definition.body().terminal_instruction().clone(),
+            ),
             definition.result_type().clone(),
             definition.calling_convention(),
             definition.is_global(),
