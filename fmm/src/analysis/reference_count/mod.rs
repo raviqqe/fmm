@@ -1,128 +1,28 @@
-mod expressions;
-mod reference_count;
-mod utilities;
+mod expression_converter;
+mod module_converter;
+mod variable_lifetime_manager;
 
-use crate::ir::*;
-use crate::types::Type;
-use std::collections::{HashMap, HashSet};
+use crate::{build::NameGenerator, ir::*};
+use expression_converter::ExpressionConverter;
+use module_converter::ModuleConverter;
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use self::variable_lifetime_manager::VariableLifetimeManger;
 
 pub fn count_references(module: &Module) -> Module {
-    convert_module(module)
-}
+    let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
+    let variable_lifetime_manager = VariableLifetimeManger::new(name_generator).into();
+    let expression_converter = Rc::new(ExpressionConverter::new(variable_lifetime_manager)).into();
 
-pub fn convert_module(module: &Module) -> Module {
-    let variables = collect_global_variables(module);
-
-    Module::new(
-        module.variable_declarations().to_vec(),
-        module.function_declarations().to_vec(),
-        module.variable_definitions().to_vec(),
-        module
-            .function_definitions()
-            .iter()
-            .map(|definition| convert_function_definition(definition, &variables))
-            .collect(),
-    )
-}
-
-fn collect_global_variables(module: &Module) -> HashMap<String, Type> {
-    module
-        .variable_declarations()
-        .iter()
-        .map(|declaration| (declaration.name().into(), declaration.type_().clone()))
-        .chain(
-            module
-                .variable_definitions()
-                .iter()
-                .map(|definition| (definition.name().into(), definition.type_().clone())),
-        )
-        .collect()
-}
-
-fn convert_function_definition(
-    definition: &FunctionDefinition,
-    variables: &HashMap<String, Type>,
-) -> FunctionDefinition {
-    FunctionDefinition::new(
-        definition.name(),
-        definition
-            .arguments()
-            .iter()
-            .map(|argument| Argument::new(argument.name(), convert_argument_type(argument.type_())))
-            .collect(),
-        convert_block(definition.body(), variables),
-        definition.result_type().clone(),
-        definition.calling_convention(),
-        definition.is_global(),
-    )
-}
-
-fn convert_argument_type(type_: &Type) -> Type {
-    // Pointers do not have to be converted because their representation is the same.
-    match type_ {
-        Type::Union(union) => add_type_header(type_).into(),
-        _ => type_.clone(),
-    }
-}
-
-fn convert_block(block: &Block, variables: &HashMap<String, Type>) -> Block {
-    let (instructions, terminal_instruction) =
-        convert_instructions(block.instructions(), block.terminal_instruction());
-
-    Block::new(instructions, terminal_instruction)
-}
-
-fn convert_instructions(
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-    variables: &HashMap<String, Type>,
-) -> (Vec<Instruction>, TerminalInstruction) {
-    let (more_instructions, terminal_instruction, used_variables) =
-        convert_terminal_instruction(terminal_instruction, variables);
-
-    // TODO Convert instructions.
-
-    (instructions.to_vec(), terminal_instruction)
-}
-
-fn convert_terminal_instruction(
-    instruction: &TerminalInstruction,
-    variables: &HashMap<String, Type>,
-) -> (Vec<Instruction>, TerminalInstruction, HashSet<String>) {
-    match instruction {
-        TerminalInstruction::Branch(branch) => {
-            let (instructions, expression, used_variables) =
-                convert_expression(branch.expression(), variables);
-
-            (
-                instructions,
-                Branch::new(branch.type_().clone(), expression).into(),
-                used_variables,
-            )
-        }
-        TerminalInstruction::Return(return_) => {
-            let (instructions, expression, used_variables) =
-                convert_expression(return_.expression(), variables);
-
-            (
-                instructions,
-                Return::new(return_.type_().clone(), expression).into(),
-                used_variables,
-            )
-        }
-        TerminalInstruction::Unreachable => (
-            Default::default(),
-            TerminalInstruction::Unreachable,
-            Default::default(),
-        ),
-    }
+    ModuleConverter::new(expression_converter).convert(module)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::analysis::check_types;
-    use crate::types::{self, CallingConvention};
+    use crate::types::{self, CallingConvention, Type};
 
     fn test_transformation(module: &Module) {
         check_types(&count_references(module)).unwrap();
@@ -166,7 +66,7 @@ mod tests {
             Block::new(
                 vec![],
                 Return::new(
-                    record_type,
+                    record_type.clone(),
                     Record::new(
                         record_type.clone(),
                         vec![Variable::new("x").into(), Variable::new("x").into()],
