@@ -104,7 +104,7 @@ impl ModuleConverter {
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
             TerminalInstruction::Branch(branch) => {
-                let (instructions, used_variables) = self.expression_reference_counter.convert(
+                let (instructions, used_variables) = self.expression_reference_counter.count(
                     branch.expression(),
                     branch.type_(),
                     used_variables,
@@ -112,7 +112,7 @@ impl ModuleConverter {
 
                 (instructions, used_variables)
             }
-            TerminalInstruction::Return(return_) => self.expression_reference_counter.convert(
+            TerminalInstruction::Return(return_) => self.expression_reference_counter.count(
                 return_.expression(),
                 return_.type_(),
                 used_variables,
