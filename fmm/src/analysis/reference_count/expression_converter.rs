@@ -25,6 +25,20 @@ impl ExpressionConverter {
                 // TODO Do bit casts move the values?
                 self.convert(bit_cast.expression(), bit_cast.from(), &used_variables)
             }
+            Expression::BitwiseOperation(operation) => {
+                let (rhs_instructions, used_variables) =
+                    self.convert(operation.rhs(), &operation.type_().into(), &used_variables);
+                let (lhs_instructions, used_variables) =
+                    self.convert(operation.lhs(), &operation.type_().into(), &used_variables);
+
+                (
+                    lhs_instructions
+                        .into_iter()
+                        .chain(rhs_instructions)
+                        .collect(),
+                    used_variables,
+                )
+            }
             Expression::Record(record) => {
                 let (instructions, used_variables) = record
                     .elements()
