@@ -240,6 +240,13 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
             rename_expression(bit_cast.expression(), rename),
         )
         .into(),
+        Expression::BitwiseOperation(operation) => BitwiseOperation::new(
+            operation.type_().clone(),
+            operation.operator(),
+            rename_expression(operation.lhs(), rename),
+            rename_expression(operation.rhs(), rename),
+        )
+        .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
             record

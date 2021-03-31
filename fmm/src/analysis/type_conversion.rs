@@ -274,6 +274,13 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
             convert_expression(bit_cast.expression()),
         )
         .into(),
+        Expression::BitwiseOperation(operation) => BitwiseOperation::new(
+            convert(&operation.type_().into()).to_primitive().unwrap(),
+            operation.operator(),
+            convert_expression(operation.lhs()),
+            convert_expression(operation.rhs()),
+        )
+        .into(),
         Expression::Record(record) => Record::new(
             convert(&record.type_().clone().into())
                 .to_record()
