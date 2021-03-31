@@ -703,6 +703,48 @@ mod tests {
                 vec![],
             ));
         }
+
+        #[test]
+        fn compile_bitwise_and() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperator::And,
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_bitwise_or() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperator::Or,
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![],
+            ));
+        }
     }
 
     mod instructions {
