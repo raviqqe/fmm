@@ -1,3 +1,4 @@
+use super::utilities;
 use crate::build::{self, InstructionBuilder, NameGenerator, TypedExpression};
 use crate::ir::*;
 use crate::types::{self, Type};
@@ -35,7 +36,19 @@ impl VariableLifetimeManger {
                     Primitive::PointerInteger(1),
                 );
             }
-            Type::Record(_) => todo!(),
+            Type::Record(record_type) => {
+                builder.call(
+                    build::variable(
+                        utilities::get_record_clone_function_name(record_type),
+                        types::Function::new(
+                            vec![record_type.clone().into()],
+                            VOID_TYPE.clone(),
+                            types::CallingConvention::Target,
+                        ),
+                    ),
+                    vec![expression.clone()],
+                );
+            }
             Type::Union(_) => todo!(),
             Type::Function(_) | Type::Primitive(_) => {}
         }
@@ -75,7 +88,19 @@ impl VariableLifetimeManger {
                     |builder| builder.branch(VOID_VALUE.clone()),
                 );
             }
-            Type::Record(_) => todo!(),
+            Type::Record(record_type) => {
+                builder.call(
+                    build::variable(
+                        utilities::get_record_drop_function_name(record_type),
+                        types::Function::new(
+                            vec![record_type.clone().into()],
+                            VOID_TYPE.clone(),
+                            types::CallingConvention::Target,
+                        ),
+                    ),
+                    vec![expression.clone()],
+                );
+            }
             Type::Union(_) => todo!(),
             Type::Function(_) | Type::Primitive(_) => {}
         }
