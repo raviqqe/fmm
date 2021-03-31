@@ -1,6 +1,7 @@
 mod expression_reference_counter;
 mod global_variable_tagger;
 mod module_converter;
+mod utilities;
 mod variable_lifetime_manager;
 
 use crate::{build::NameGenerator, ir::*};
@@ -14,7 +15,8 @@ use self::variable_lifetime_manager::VariableLifetimeManger;
 pub fn count_references(module: &Module) -> Module {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
     let variable_lifetime_manager = VariableLifetimeManger::new(name_generator).into();
-    let expression_reference_counter = Rc::new(ExpressionReferenceCounter::new(variable_lifetime_manager)).into();
+    let expression_reference_counter =
+        Rc::new(ExpressionReferenceCounter::new(variable_lifetime_manager)).into();
 
     ModuleConverter::new(expression_reference_counter).convert(module)
 }
