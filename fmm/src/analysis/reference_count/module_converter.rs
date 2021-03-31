@@ -1,16 +1,16 @@
-use super::expression_converter::ExpressionConverter;
+use super::expression_reference_counter::ExpressionReferenceCounter;
 use crate::ir::*;
 use std::collections::HashSet;
 use std::rc::Rc;
 
 pub struct ModuleConverter {
-    expression_converter: Rc<ExpressionConverter>,
+    expression_reference_counter: Rc<ExpressionReferenceCounter>,
 }
 
 impl ModuleConverter {
-    pub fn new(expression_converter: Rc<ExpressionConverter>) -> Self {
+    pub fn new(expression_reference_counter: Rc<ExpressionReferenceCounter>) -> Self {
         Self {
-            expression_converter,
+            expression_reference_counter,
         }
     }
 
@@ -104,7 +104,7 @@ impl ModuleConverter {
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
             TerminalInstruction::Branch(branch) => {
-                let (instructions, used_variables) = self.expression_converter.convert(
+                let (instructions, used_variables) = self.expression_reference_counter.convert(
                     branch.expression(),
                     branch.type_(),
                     used_variables,
@@ -112,7 +112,7 @@ impl ModuleConverter {
 
                 (instructions, used_variables)
             }
-            TerminalInstruction::Return(return_) => self.expression_converter.convert(
+            TerminalInstruction::Return(return_) => self.expression_reference_counter.convert(
                 return_.expression(),
                 return_.type_(),
                 used_variables,

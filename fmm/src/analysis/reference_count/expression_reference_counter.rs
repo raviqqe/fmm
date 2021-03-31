@@ -3,11 +3,11 @@ use crate::ir::*;
 use crate::types::Type;
 use std::{collections::HashSet, rc::Rc};
 
-pub struct ExpressionConverter {
+pub struct ExpressionReferenceCounter {
     variable_lifetime_manager: Rc<VariableLifetimeManger>,
 }
 
-impl ExpressionConverter {
+impl ExpressionReferenceCounter {
     pub fn new(variable_lifetime_manager: Rc<VariableLifetimeManger>) -> Self {
         Self {
             variable_lifetime_manager,
@@ -85,8 +85,8 @@ mod tests {
     use super::*;
     use crate::{build::NameGenerator, types};
 
-    fn initialize_expression_converter() -> ExpressionConverter {
-        ExpressionConverter::new(
+    fn initialize_expression_reference_counter() -> ExpressionReferenceCounter {
+        ExpressionReferenceCounter::new(
             VariableLifetimeManger::new(RefCell::new(NameGenerator::new("rc")).into()).into(),
         )
     }
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn convert_align_of() {
         pretty_assertions::assert_eq!(
-            initialize_expression_converter().convert(
+            initialize_expression_reference_counter().convert(
                 &AlignOf::new(types::Primitive::PointerInteger).into(),
                 &AlignOf::RESULT_TYPE.into(),
                 &Default::default()
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn convert_used_variable() {
-        let (instructions, used_variables) = initialize_expression_converter().convert(
+        let (instructions, used_variables) = initialize_expression_reference_counter().convert(
             &Variable::new("x").into(),
             &types::Pointer::new(types::Primitive::Float64).into(),
             &vec!["x".into()].into_iter().collect(),
@@ -120,7 +120,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
         let variable = Variable::new("x");
 
-        let (instructions, used_variables) = initialize_expression_converter().convert(
+        let (instructions, used_variables) = initialize_expression_reference_counter().convert(
             &Record::new(
                 types::Record::new(vec![
                     pointer_type.clone().into(),
