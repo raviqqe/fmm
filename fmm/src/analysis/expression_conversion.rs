@@ -238,7 +238,7 @@ fn convert_expression(
             )
             .into(),
             Expression::BitwiseOperation(operation) => BitwiseOperation::new(
-                operation.type_().clone(),
+                operation.type_(),
                 operation.operator(),
                 convert(operation.lhs()),
                 convert(operation.rhs()),

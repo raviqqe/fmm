@@ -241,7 +241,7 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
         )
         .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
-            operation.type_().clone(),
+            operation.type_(),
             operation.operator(),
             rename_expression(operation.lhs(), rename),
             rename_expression(operation.rhs(), rename),
