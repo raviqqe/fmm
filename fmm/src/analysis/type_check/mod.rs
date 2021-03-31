@@ -305,8 +305,19 @@ fn check_expression(
 
             bit_cast.to().clone()
         }
+        Expression::BitwiseOperation(operation) => {
+            check_equality(
+                &check_expression(operation.lhs(), variables)?,
+                &operation.type_().into(),
+            )?;
+            check_equality(
+                &check_expression(operation.rhs(), variables)?,
+                &operation.type_().into(),
+            )?;
+
+            operation.type_().into()
+        }
         Expression::Primitive(primitive) => primitive.type_().into(),
-        Expression::SizeOf(_) => SizeOf::RESULT_TYPE.into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
                 return Err(TypeCheckError::RecordElements(record.clone()));
@@ -318,6 +329,7 @@ fn check_expression(
 
             record.type_().clone().into()
         }
+        Expression::SizeOf(_) => SizeOf::RESULT_TYPE.into(),
         Expression::Undefined(undefined) => undefined.type_().clone(),
         Expression::Union(union) => {
             check_equality(
@@ -984,6 +996,33 @@ mod tests {
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),
+                    ),
+                ),
+                types::Primitive::PointerInteger,
+                true,
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_bitwise_operation() -> Result<(), TypeCheckError> {
+        check_types(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperation::new(
+                            types::Primitive::PointerInteger,
+                            BitwiseOperator::And,
+                            Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(1),
+                        ),
                     ),
                 ),
                 types::Primitive::PointerInteger,

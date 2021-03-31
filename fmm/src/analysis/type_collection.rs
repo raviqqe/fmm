@@ -63,6 +63,11 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(bit_cast.expression()))
             .collect(),
+        Expression::BitwiseOperation(operation) => vec![operation.type_().clone().into()]
+            .into_iter()
+            .chain(collect_from_expression(operation.lhs()))
+            .chain(collect_from_expression(operation.rhs()))
+            .collect(),
         Expression::Record(record) => vec![record.type_().clone().into()]
             .into_iter()
             .chain(record.elements().iter().flat_map(collect_from_expression))

@@ -24,6 +24,17 @@ pub fn compile_expression(
                 compile_expression(bit_cast.expression()),
             )
         }
+        Expression::BitwiseOperation(operation) => {
+            format!(
+                "(({}){}({}))",
+                compile_expression(operation.lhs()),
+                match operation.operator() {
+                    fmm::ir::BitwiseOperator::And => "&",
+                    fmm::ir::BitwiseOperator::Or => "|",
+                },
+                compile_expression(operation.rhs()),
+            )
+        }
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
