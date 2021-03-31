@@ -16,6 +16,22 @@ pub fn bit_cast(to: impl Into<Type>, expression: impl Into<TypedExpression>) -> 
     )
 }
 
+pub fn bitwise_operation(
+    operator: BitwiseOperator,
+    lhs: impl Into<TypedExpression>,
+    rhs: impl Into<TypedExpression>,
+) -> BitwiseOperation {
+    let lhs = lhs.into();
+    let rhs = rhs.into();
+
+    BitwiseOperation::new(
+        lhs.type_().to_primitive().unwrap(),
+        operator,
+        lhs.expression().clone(),
+        rhs.expression().clone(),
+    )
+}
+
 pub fn record(elements: Vec<TypedExpression>) -> Record {
     Record::new(
         types::Record::new(

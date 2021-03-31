@@ -1,3 +1,4 @@
+// TODO Split float and integer primitive types.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Primitive {
     Boolean,
