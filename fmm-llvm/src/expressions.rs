@@ -13,25 +13,17 @@ pub fn compile_expression<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression =
-        |expression| compile_expression(builder, expression, variables, context, target_data);
-    let compile_type = |type_| compile_type(type_, context, target_data);
+    let compile_expression = |expression: &Expression| {
+        compile_expression(builder, expression, variables, context, target_data)
+    };
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
-        Expression::BitCast(bit_cast) => builder.build_bitcast(
-            compile_expression(bit_cast.expression()),
-            compile_type(bit_cast.to()),
-            "",
-        ),
+        Expression::BitCast(bit_cast) => {
+            compile_bit_cast(builder, bit_cast, context, target_data, &compile_expression)
+        }
         Expression::BitwiseOperation(operation) => {
-            let lhs = compile_expression(operation.lhs()).into_int_value();
-            let rhs = compile_expression(operation.rhs()).into_int_value();
-            match operation.operator() {
-                fmm::ir::BitwiseOperator::And => builder.build_and(lhs, rhs, ""),
-                fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
-            }
-            .into()
+            compile_bitwise_operation(builder, operation, &compile_expression).into()
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => {
@@ -46,12 +38,7 @@ pub fn compile_expression<'c>(
 
             value.into()
         }
-        Expression::SizeOf(size_of) => compile_pointer_integer(
-            target_data.get_store_size(&compile_type(size_of.type_())) as u64,
-            context,
-            target_data,
-        )
-        .into(),
+        Expression::SizeOf(size_of) => compile_size_of(size_of, context, target_data).into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
         Expression::Union(union) => {
             let member = compile_expression(union.member());
@@ -90,27 +77,22 @@ pub fn compile_constant_expression<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression =
-        |expression| compile_constant_expression(expression, variables, context, target_data);
-    let compile_type = |type_| compile_type(type_, context, target_data);
+    let compile_expression = |expression: &Expression| {
+        compile_constant_expression(expression, variables, context, target_data)
+    };
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
-        Expression::BitCast(bit_cast) => context.create_builder().build_bitcast(
-            compile_expression(bit_cast.expression()),
-            compile_type(bit_cast.to()),
-            "",
+        Expression::BitCast(bit_cast) => compile_bit_cast(
+            &context.create_builder(),
+            bit_cast,
+            context,
+            target_data,
+            &compile_expression,
         ),
         Expression::BitwiseOperation(operation) => {
-            let builder = context.create_builder();
-            let lhs = compile_expression(operation.lhs()).into_int_value();
-            let rhs = compile_expression(operation.rhs()).into_int_value();
-
-            match operation.operator() {
-                fmm::ir::BitwiseOperator::And => builder.build_and(lhs, rhs, ""),
-                fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
-            }
-            .into()
+            compile_bitwise_operation(&context.create_builder(), operation, &compile_expression)
+                .into()
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => context
@@ -123,12 +105,7 @@ pub fn compile_constant_expression<'c>(
                 false,
             )
             .into(),
-        Expression::SizeOf(size_of) => compile_pointer_integer(
-            target_data.get_store_size(&compile_type(size_of.type_())) as u64,
-            context,
-            target_data,
-        )
-        .into(),
+        Expression::SizeOf(size_of) => compile_size_of(size_of, context, target_data).into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
         Expression::Union(union) => context
             .const_struct(
@@ -157,6 +134,46 @@ fn compile_align_of<'c>(
 ) -> inkwell::values::IntValue<'c> {
     compile_pointer_integer(
         target_data.get_abi_alignment(&compile_type(align_of.type_(), context, target_data)) as u64,
+        context,
+        target_data,
+    )
+}
+
+fn compile_bit_cast<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    bit_cast: &BitCast,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::BasicValueEnum<'c> {
+    builder.build_bitcast(
+        compile_expression(bit_cast.expression()),
+        compile_type(bit_cast.to(), context, target_data),
+        "",
+    )
+}
+
+fn compile_bitwise_operation<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    operation: &BitwiseOperation,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::IntValue<'c> {
+    let lhs = compile_expression(operation.lhs()).into_int_value();
+    let rhs = compile_expression(operation.rhs()).into_int_value();
+
+    match operation.operator() {
+        fmm::ir::BitwiseOperator::And => builder.build_and(lhs, rhs, ""),
+        fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
+    }
+}
+
+fn compile_size_of<'c>(
+    size_of: &SizeOf,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::values::IntValue<'c> {
+    compile_pointer_integer(
+        target_data.get_store_size(&compile_type(size_of.type_(), context, target_data)) as u64,
         context,
         target_data,
     )
