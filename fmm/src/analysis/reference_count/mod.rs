@@ -16,7 +16,7 @@ pub fn count_references(module: &Module) -> Module {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
     let variable_lifetime_manager = VariableLifetimeManger::new(name_generator).into();
     let expression_reference_counter =
-        Rc::new(ExpressionReferenceCounter::new(variable_lifetime_manager)).into();
+        Rc::new(ExpressionReferenceCounter::new(variable_lifetime_manager));
 
     ModuleConverter::new(expression_reference_counter).convert(module)
 }

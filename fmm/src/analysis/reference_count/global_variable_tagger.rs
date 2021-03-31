@@ -12,7 +12,7 @@ pub fn tag_expression(
     match expression {
         Expression::BitCast(bit_cast) => tag_expression(bit_cast.expression(), bit_cast.from()),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
-            operation.type_().clone(),
+            operation.type_(),
             operation.operator(),
             tag_expression(operation.lhs(), &operation.type_().into()),
             tag_expression(operation.rhs(), &operation.type_().into()),
@@ -31,7 +31,7 @@ pub fn tag_expression(
         Expression::Union(_) => todo!(),
         Expression::Variable(variable) => {
             if global_variables.contains(variable.name()) {
-                tag_pointer_to_global_variable(variable, type_).into()
+                tag_pointer_to_global_variable(variable, type_)
             } else {
                 variable.clone().into()
             }

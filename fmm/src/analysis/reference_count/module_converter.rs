@@ -47,7 +47,7 @@ impl ModuleConverter {
     fn convert_function_definition(
         &self,
         definition: &FunctionDefinition,
-        global_variables: &HashSet<String>,
+        _global_variables: &HashSet<String>,
     ) -> FunctionDefinition {
         // TODO Tag static variables.
         let instructions = self.convert_instructions(
@@ -85,7 +85,7 @@ impl ModuleConverter {
         terminal_instruction: &TerminalInstruction,
         used_variables: &HashSet<String>,
     ) -> Vec<Instruction> {
-        let (more_instructions, used_variables) =
+        let (more_instructions, _used_variables) =
             self.convert_terminal_instruction(terminal_instruction, used_variables);
 
         // TODO Convert instructions.

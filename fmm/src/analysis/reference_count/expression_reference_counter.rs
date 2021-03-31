@@ -126,7 +126,7 @@ mod tests {
                     pointer_type.clone().into(),
                     pointer_type.clone().into(),
                 ]),
-                vec![variable.clone().into(), variable.clone().into()],
+                vec![variable.clone().into(), variable.into()],
             )
             .into(),
             &pointer_type.into(),
