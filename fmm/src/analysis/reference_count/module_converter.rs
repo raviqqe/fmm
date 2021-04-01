@@ -1,16 +1,29 @@
-use super::expression_reference_counter::ExpressionReferenceCounter;
-use crate::ir::*;
+use super::global_variable_tagger::tag_expression;
+use super::{
+    expression_lifetime_manager::ExpressionLifetimeManger,
+    expression_reference_counter::ExpressionReferenceCounter,
+    record_rc_function_creator::RecordRcFunctionCreator,
+};
+use crate::{analysis::collect_types, ir::*, types::Type};
 use std::collections::HashSet;
 use std::rc::Rc;
 
 pub struct ModuleConverter {
     expression_reference_counter: Rc<ExpressionReferenceCounter>,
+    expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+    record_rc_function_creator: Rc<RecordRcFunctionCreator>,
 }
 
 impl ModuleConverter {
-    pub fn new(expression_reference_counter: Rc<ExpressionReferenceCounter>) -> Self {
+    pub fn new(
+        expression_reference_counter: Rc<ExpressionReferenceCounter>,
+        expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+        record_rc_function_creator: Rc<RecordRcFunctionCreator>,
+    ) -> Self {
         Self {
             expression_reference_counter,
+            expression_lifetime_manager,
+            record_rc_function_creator,
         }
     }
 
@@ -21,7 +34,11 @@ impl ModuleConverter {
             module.variable_declarations().to_vec(),
             module.function_declarations().to_vec(),
             // TODO Tag static variables in variable definitions.
-            module.variable_definitions().to_vec(),
+            module
+                .variable_definitions()
+                .iter()
+                .map(|definition| self.convert_variable_definition(definition, &global_variables))
+                .collect(),
             module
                 .function_definitions()
                 .iter()
@@ -44,23 +61,52 @@ impl ModuleConverter {
             .collect()
     }
 
+    fn create_record_functions(&self, module: &Module) -> Vec<FunctionDefinition> {
+        collect_types(module)
+            .into_iter()
+            .flat_map(|type_| match type_ {
+                Type::Record(record_type) => {
+                    vec![
+                        self.record_rc_function_creator
+                            .create_record_clone_function(&record_type),
+                        self.record_rc_function_creator
+                            .create_record_drop_function(&record_type),
+                    ]
+                }
+                _ => vec![],
+            })
+            .collect()
+    }
+
+    fn convert_variable_definition(
+        &self,
+        definition: &VariableDefinition,
+        global_variables: &HashSet<String>,
+    ) -> VariableDefinition {
+        VariableDefinition::new(
+            definition.name(),
+            tag_expression(definition.body(), definition.type_(), global_variables),
+            definition.type_().clone(),
+            definition.is_mutable(),
+            definition.is_global(),
+        )
+    }
+
     fn convert_function_definition(
         &self,
         definition: &FunctionDefinition,
-        _global_variables: &HashSet<String>,
+        global_variables: &HashSet<String>,
     ) -> FunctionDefinition {
         // TODO Tag static variables.
-        let instructions = self.convert_instructions(
-            definition.body().instructions(),
-            definition.body().terminal_instruction(),
-            &HashSet::new(),
-        );
-
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
             Block::new(
-                instructions,
+                self.convert_instructions(
+                    definition.body().instructions(),
+                    definition.body().terminal_instruction(),
+                    &HashSet::new(),
+                ),
                 definition.body().terminal_instruction().clone(),
             ),
             definition.result_type().clone(),

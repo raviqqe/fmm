@@ -1,16 +1,16 @@
-use super::variable_lifetime_manager::VariableLifetimeManger;
+use super::expression_lifetime_manager::ExpressionLifetimeManger;
 use crate::ir::*;
 use crate::types::Type;
 use std::{collections::HashSet, rc::Rc};
 
 pub struct ExpressionReferenceCounter {
-    variable_lifetime_manager: Rc<VariableLifetimeManger>,
+    expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
 }
 
 impl ExpressionReferenceCounter {
-    pub fn new(variable_lifetime_manager: Rc<VariableLifetimeManger>) -> Self {
+    pub fn new(expression_lifetime_manager: Rc<ExpressionLifetimeManger>) -> Self {
         Self {
-            variable_lifetime_manager,
+            expression_lifetime_manager,
         }
     }
 
@@ -63,8 +63,8 @@ impl ExpressionReferenceCounter {
             Expression::Union(_) => todo!(),
             Expression::Variable(variable) => (
                 if used_variables.contains(variable.name()) {
-                    self.variable_lifetime_manager
-                        .clone_variable(variable, type_)
+                    self.expression_lifetime_manager
+                        .clone_expression(expression, type_)
                 } else {
                     vec![]
                 },
@@ -87,7 +87,7 @@ mod tests {
 
     fn initialize_expression_reference_counter() -> ExpressionReferenceCounter {
         ExpressionReferenceCounter::new(
-            VariableLifetimeManger::new(RefCell::new(NameGenerator::new("rc")).into()).into(),
+            ExpressionLifetimeManger::new(RefCell::new(NameGenerator::new("rc")).into()).into(),
         )
     }
 

@@ -1,27 +1,26 @@
-use super::utilities;
+use super::utilities::{self, VOID_TYPE, VOID_VALUE};
 use crate::build::{self, InstructionBuilder, NameGenerator, TypedExpression};
 use crate::ir::*;
 use crate::types::{self, Type};
-use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-static VOID_TYPE: Lazy<types::Record> = Lazy::new(|| types::Record::new(vec![]));
-static VOID_VALUE: Lazy<Record> = Lazy::new(|| Record::new(VOID_TYPE.clone(), vec![]));
-
-pub struct VariableLifetimeManger {
+pub struct ExpressionLifetimeManger {
     name_generator: Rc<RefCell<NameGenerator>>,
 }
 
-impl VariableLifetimeManger {
+impl ExpressionLifetimeManger {
     pub fn new(name_generator: Rc<RefCell<NameGenerator>>) -> Self {
         Self { name_generator }
     }
 
-    pub fn clone_variable(&self, variable: &Variable, type_: &Type) -> Vec<Instruction> {
+    pub fn clone_expression(&self, expression: &Expression, type_: &Type) -> Vec<Instruction> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-        self.clone_typed_expression(&builder, &build::variable(variable.name(), type_.clone()));
+        self.clone_typed_expression(
+            &builder,
+            &TypedExpression::new(expression.clone(), type_.clone()),
+        );
 
         builder.into_instructions()
     }
@@ -54,10 +53,13 @@ impl VariableLifetimeManger {
         }
     }
 
-    pub fn drop_variable(&self, variable: &Variable, type_: &Type) -> Vec<Instruction> {
+    pub fn drop_expression(&self, expression: &Expression, type_: &Type) -> Vec<Instruction> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-        self.drop_typed_expression(&builder, &build::variable(variable.name(), type_.clone()));
+        self.drop_typed_expression(
+            &builder,
+            &TypedExpression::new(expression.clone(), type_.clone()),
+        );
 
         builder.into_instructions()
     }

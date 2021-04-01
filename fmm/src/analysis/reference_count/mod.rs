@@ -1,8 +1,9 @@
+mod expression_lifetime_manager;
 mod expression_reference_counter;
 mod global_variable_tagger;
 mod module_converter;
+mod record_rc_function_creator;
 mod utilities;
-mod variable_lifetime_manager;
 
 use crate::{build::NameGenerator, ir::*};
 use expression_reference_counter::ExpressionReferenceCounter;
@@ -10,15 +11,28 @@ use module_converter::ModuleConverter;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use self::variable_lifetime_manager::VariableLifetimeManger;
+use self::{
+    expression_lifetime_manager::ExpressionLifetimeManger,
+    record_rc_function_creator::RecordRcFunctionCreator,
+};
 
 pub fn count_references(module: &Module) -> Module {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
-    let variable_lifetime_manager = VariableLifetimeManger::new(name_generator).into();
-    let expression_reference_counter =
-        Rc::new(ExpressionReferenceCounter::new(variable_lifetime_manager));
+    let expression_lifetime_manager =
+        Rc::new(ExpressionLifetimeManger::new(name_generator.clone()));
+    let expression_reference_counter = Rc::new(ExpressionReferenceCounter::new(
+        expression_lifetime_manager.clone(),
+    ));
+    let record_rc_function_creator =
+        RecordRcFunctionCreator::new(expression_lifetime_manager.clone(), name_generator.clone())
+            .into();
 
-    ModuleConverter::new(expression_reference_counter).convert(module)
+    ModuleConverter::new(
+        expression_reference_counter,
+        expression_lifetime_manager,
+        record_rc_function_creator,
+    )
+    .convert(module)
 }
 
 #[cfg(test)]
