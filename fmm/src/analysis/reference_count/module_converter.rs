@@ -39,10 +39,11 @@ impl ModuleConverter {
                 .iter()
                 .map(|definition| self.convert_variable_definition(definition, &global_variables))
                 .collect(),
-            module
-                .function_definitions()
-                .iter()
-                .map(|definition| self.convert_function_definition(definition, &global_variables))
+            self.create_record_functions(module)
+                .into_iter()
+                .chain(module.function_definitions().iter().map(|definition| {
+                    self.convert_function_definition(definition, &global_variables)
+                }))
                 .collect(),
         )
     }
