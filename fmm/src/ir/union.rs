@@ -2,7 +2,7 @@ use super::expression::Expression;
 use crate::types;
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Union {
     type_: types::Union,
     member_index: usize,

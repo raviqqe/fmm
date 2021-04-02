@@ -2,13 +2,13 @@ use super::expression::Expression;
 use crate::types;
 use std::sync::Arc;
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum BitwiseOperator {
     And,
     Or,
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BitwiseOperation {
     type_: types::Primitive,
     operator: BitwiseOperator,

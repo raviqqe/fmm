@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Variable {
     name: String,
 }

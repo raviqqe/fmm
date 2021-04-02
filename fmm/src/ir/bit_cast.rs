@@ -2,7 +2,7 @@ use crate::ir::Expression;
 use crate::types::Type;
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BitCast {
     from: Type,
     to: Type,

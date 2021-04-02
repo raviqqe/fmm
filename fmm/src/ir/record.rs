@@ -1,7 +1,7 @@
 use super::expression::Expression;
 use crate::types;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Record {
     type_: types::Record,
     elements: Vec<Expression>,

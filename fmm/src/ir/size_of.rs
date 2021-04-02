@@ -1,6 +1,6 @@
 use crate::types::{self, Type};
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SizeOf {
     type_: Type,
 }

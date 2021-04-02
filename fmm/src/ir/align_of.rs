@@ -1,7 +1,7 @@
 use super::size_of::SizeOf;
 use crate::types::{self, Type};
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AlignOf {
     type_: Type,
 }
