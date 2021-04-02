@@ -1,6 +1,6 @@
 use super::primitive::Primitive;
+use super::tag_expression::TagExpression;
 use super::type_::Type;
-use crate::ir::Expression;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Hash, PartialEq)]
@@ -25,19 +25,19 @@ impl TaggedUnion {
 
 #[derive(Clone, Debug, Hash, PartialEq)]
 pub struct TaggedUnionMember {
-    tag: Arc<Expression>,
+    tag: TagExpression,
     payload: Arc<Type>,
 }
 
 impl TaggedUnionMember {
-    pub fn new(tag: impl Into<Expression>, payload: impl Into<Type>) -> Self {
+    pub fn new(tag: impl Into<TagExpression>, payload: impl Into<Type>) -> Self {
         Self {
-            tag: tag.into().into(),
+            tag: tag.into(),
             payload: payload.into().into(),
         }
     }
 
-    pub fn tag(&self) -> &Expression {
+    pub fn tag(&self) -> &TagExpression {
         &self.tag
     }
 
