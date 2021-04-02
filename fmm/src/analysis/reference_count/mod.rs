@@ -5,16 +5,15 @@ mod module_converter;
 mod record_rc_function_creator;
 mod utilities;
 
+use self::{
+    expression_lifetime_manager::ExpressionLifetimeManger,
+    record_rc_function_creator::RecordRcFunctionCreator,
+};
 use crate::{build::NameGenerator, ir::*};
 use expression_reference_counter::ExpressionReferenceCounter;
 use module_converter::ModuleConverter;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-use self::{
-    expression_lifetime_manager::ExpressionLifetimeManger,
-    record_rc_function_creator::RecordRcFunctionCreator,
-};
 
 pub fn count_references(module: &Module) -> Module {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
