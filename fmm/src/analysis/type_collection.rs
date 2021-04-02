@@ -200,7 +200,7 @@ fn collect_child_types(type_: &Type) -> HashSet<Type> {
             .flat_map(collect_from_type)
             .collect(),
         Type::Pointer(pointer) => collect_from_type(pointer.element()),
-        Type::TaggedUnion(union) => vec![union.tag_type().into()]
+        Type::TaggedUnion(union) => vec![union.tag().into()]
             .into_iter()
             .chain(
                 union

@@ -5,17 +5,17 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct TaggedUnion {
-    tag_type: Primitive,
+    tag: Primitive,
     members: Vec<TaggedUnionMember>,
 }
 
 impl TaggedUnion {
-    pub const fn new(tag_type: Primitive, members: Vec<TaggedUnionMember>) -> Self {
-        Self { tag_type, members }
+    pub const fn new(tag: Primitive, members: Vec<TaggedUnionMember>) -> Self {
+        Self { tag, members }
     }
 
-    pub fn tag_type(&self) -> Primitive {
-        self.tag_type
+    pub fn tag(&self) -> Primitive {
+        self.tag
     }
 
     pub fn members(&self) -> &[TaggedUnionMember] {

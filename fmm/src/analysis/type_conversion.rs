@@ -325,7 +325,7 @@ fn convert_type(type_: &Type, convert: &impl Fn(&Type) -> Type) -> Type {
             }
             Type::Pointer(pointer) => types::Pointer::new(convert(pointer.element())).into(),
             Type::TaggedUnion(union) => types::TaggedUnion::new(
-                union.tag_type(),
+                union.tag(),
                 union
                     .members()
                     .iter()
