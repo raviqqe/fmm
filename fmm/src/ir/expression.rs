@@ -8,7 +8,7 @@ use super::undefined::Undefined;
 use super::union::Union;
 use super::variable::Variable;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Expression {
     AlignOf(AlignOf),
     BitCast(BitCast),

@@ -1,4 +1,5 @@
 use crate::types;
+use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Primitive {
@@ -16,13 +17,29 @@ pub enum Primitive {
 impl Primitive {
     pub fn type_(&self) -> types::Primitive {
         match self {
-            Primitive::Boolean(_) => types::Primitive::Boolean,
-            Primitive::Float32(_) => types::Primitive::Float32,
-            Primitive::Float64(_) => types::Primitive::Float64,
-            Primitive::Integer8(_) => types::Primitive::Integer8,
-            Primitive::Integer32(_) => types::Primitive::Integer32,
-            Primitive::Integer64(_) => types::Primitive::Integer64,
-            Primitive::PointerInteger(_) => types::Primitive::PointerInteger,
+            Self::Boolean(_) => types::Primitive::Boolean,
+            Self::Float32(_) => types::Primitive::Float32,
+            Self::Float64(_) => types::Primitive::Float64,
+            Self::Integer8(_) => types::Primitive::Integer8,
+            Self::Integer32(_) => types::Primitive::Integer32,
+            Self::Integer64(_) => types::Primitive::Integer64,
+            Self::PointerInteger(_) => types::Primitive::PointerInteger,
+        }
+    }
+}
+
+impl Eq for Primitive {}
+
+impl Hash for Primitive {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        match self {
+            Self::Boolean(value) => value.hash(hasher),
+            Self::Float32(value) => format!("{}", value).hash(hasher),
+            Self::Float64(value) => format!("{}", value).hash(hasher),
+            Self::Integer8(value) => value.hash(hasher),
+            Self::Integer32(value) => value.hash(hasher),
+            Self::Integer64(value) => value.hash(hasher),
+            Self::PointerInteger(value) => value.hash(hasher),
         }
     }
 }

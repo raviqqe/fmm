@@ -1,6 +1,6 @@
 use crate::types::Type;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Undefined {
     type_: Type,
 }
