@@ -324,6 +324,20 @@ fn convert_type(type_: &Type, convert: &impl Fn(&Type) -> Type) -> Type {
                 types::Record::new(record.elements().iter().map(convert).collect()).into()
             }
             Type::Pointer(pointer) => types::Pointer::new(convert(pointer.element())).into(),
+            Type::TaggedUnion(union) => types::TaggedUnion::new(
+                union.tag_type(),
+                union
+                    .members()
+                    .iter()
+                    .map(|member| {
+                        types::TaggedUnionMember::new(
+                            member.tag().clone(),
+                            convert(member.payload()),
+                        )
+                    })
+                    .collect(),
+            )
+            .into(),
             Type::Union(union) => {
                 types::Union::new(union.members().iter().map(convert).collect()).into()
             }

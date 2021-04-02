@@ -200,6 +200,15 @@ fn collect_child_types(type_: &Type) -> HashSet<Type> {
             .flat_map(collect_from_type)
             .collect(),
         Type::Pointer(pointer) => collect_from_type(pointer.element()),
+        Type::TaggedUnion(union) => vec![union.tag_type().into()]
+            .into_iter()
+            .chain(
+                union
+                    .members()
+                    .iter()
+                    .flat_map(|member| collect_from_type(member.payload())),
+            )
+            .collect(),
         Type::Union(union) => union.members().iter().flat_map(collect_from_type).collect(),
     }
 }

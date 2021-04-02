@@ -1,5 +1,5 @@
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TagExpression {
-    PointerInteger(i64),
+    PointerInteger(u64),
     Pointer(String),
 }

@@ -2,6 +2,7 @@ use super::function::Function;
 use super::pointer::Pointer;
 use super::primitive::Primitive;
 use super::record::Record;
+use super::tagged_union::TaggedUnion;
 use super::union::Union;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -10,6 +11,7 @@ pub enum Type {
     Record(Record),
     Primitive(Primitive),
     Pointer(Pointer),
+    TaggedUnion(TaggedUnion),
     Union(Union),
 }
 
@@ -46,6 +48,14 @@ impl Type {
         }
     }
 
+    pub fn to_tagged_union(&self) -> Option<&TaggedUnion> {
+        if let Type::TaggedUnion(union) = self {
+            Some(union)
+        } else {
+            None
+        }
+    }
+
     pub fn to_union(&self) -> Option<&Union> {
         if let Type::Union(union) = self {
             Some(union)
@@ -76,6 +86,12 @@ impl From<Primitive> for Type {
 impl From<Pointer> for Type {
     fn from(pointer: Pointer) -> Self {
         Self::Pointer(pointer)
+    }
+}
+
+impl From<TaggedUnion> for Type {
+    fn from(union: TaggedUnion) -> Self {
+        Self::TaggedUnion(union)
     }
 }
 

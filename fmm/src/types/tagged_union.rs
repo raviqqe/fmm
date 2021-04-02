@@ -3,7 +3,7 @@ use super::tag_expression::TagExpression;
 use super::type_::Type;
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct TaggedUnion {
     tag_type: Primitive,
     members: Vec<TaggedUnionMember>,
@@ -23,7 +23,7 @@ impl TaggedUnion {
     }
 }
 
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct TaggedUnionMember {
     tag: TagExpression,
     payload: Arc<Type>,
