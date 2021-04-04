@@ -15,6 +15,7 @@ pub fn compile_type<'c>(
         Type::Primitive(primitive) => compile_primitive_type(*primitive, context, target_data),
         Type::Record(record) => compile_record_type(record, context, target_data).into(),
         Type::Pointer(pointer) => compile_pointer_type(pointer, context, target_data).into(),
+        Type::TaggedUnion(union) => compile_tagged_union_type(union, context, target_data).into(),
         Type::Union(union) => compile_union_type(union, context, target_data).into(),
     }
 }
@@ -94,6 +95,31 @@ pub fn compile_record_type<'c>(
     )
 }
 
+pub fn compile_tagged_union_type<'c>(
+    union: &types::TaggedUnion,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+) -> inkwell::types::StructType<'c> {
+    let integer_type = context.ptr_sized_int_type(target_data, None);
+
+    context.struct_type(
+        &[
+            compile_primitive_type(union.tag(), context, target_data),
+            integer_type
+                .array_type(get_pointer_integer_array_size(
+                    get_union_size(
+                        union.members().iter().map(|member| member.payload()),
+                        context,
+                        target_data,
+                    ) as usize,
+                    target_data.get_store_size(&integer_type) as usize,
+                ) as u32)
+                .into(),
+        ],
+        false,
+    )
+}
+
 pub fn compile_union_type<'c>(
     union: &types::Union,
     context: &'c inkwell::context::Context,
@@ -104,7 +130,7 @@ pub fn compile_union_type<'c>(
     context.struct_type(
         &[integer_type
             .array_type(get_pointer_integer_array_size(
-                get_union_size(union, context, target_data) as usize,
+                get_union_size(union.members(), context, target_data) as usize,
                 target_data.get_store_size(&integer_type) as usize,
             ) as u32)
             .into()],
@@ -136,19 +162,18 @@ pub fn compile_union_member_padding_type<'c>(
     let member_type = compile_type(&union.members()[member_index], context, target_data);
 
     context.i8_type().array_type(
-        (get_union_size(union, context, target_data) - target_data.get_store_size(&member_type))
-            as u32,
+        (get_union_size(union.members(), context, target_data)
+            - target_data.get_store_size(&member_type)) as u32,
     )
 }
 
-fn get_union_size<'c>(
-    union: &types::Union,
+fn get_union_size<'c, 'a>(
+    members: impl IntoIterator<Item = &'a Type>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> u64 {
-    union
-        .members()
-        .iter()
+    members
+        .into_iter()
         .map(|type_| target_data.get_store_size(&compile_type(type_, context, target_data)))
         .max()
         .unwrap()

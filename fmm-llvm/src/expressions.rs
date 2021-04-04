@@ -199,6 +199,9 @@ fn compile_undefined<'c>(
         types::Type::Record(record) => compile_record_type(record, context, target_data)
             .const_zero()
             .into(),
+        types::Type::TaggedUnion(union) => compile_tagged_union_type(union, context, target_data)
+            .const_zero()
+            .into(),
         types::Type::Union(union) => compile_union_type(union, context, target_data)
             .const_zero()
             .into(),
