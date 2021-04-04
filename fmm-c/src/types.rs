@@ -12,6 +12,7 @@ pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &HashMap<Type, Str
         Type::Pointer(pointer) => {
             compile_typed_name(pointer.element(), &format!("*{}", name), type_ids)
         }
+        Type::TaggedUnion(union) => compile_tagged_union_type_id(union, type_ids) + " " + name,
         Type::Union(union) => compile_union_type_id(union, type_ids) + " " + name,
     }
 }
@@ -48,6 +49,7 @@ pub fn compile_type_id(type_: &Type, type_ids: &HashMap<Type, String>) -> String
         Type::Primitive(primitive) => compile_primitive_type_id(*primitive),
         Type::Record(record) => compile_record_type_id(record, type_ids),
         Type::Pointer(pointer) => compile_typed_name(pointer.element(), "*", type_ids),
+        Type::TaggedUnion(union) => compile_tagged_union_type_id(union, type_ids),
         Type::Union(union) => compile_union_type_id(union, type_ids),
     }
 }
@@ -56,7 +58,7 @@ pub fn compile_atomic_pointer_type_id(type_: &Type, type_ids: &HashMap<Type, Str
     match type_ {
         Type::Function(function) => compile_function_name(function, "(*_Atomic *)", type_ids),
         Type::Pointer(pointer) => compile_typed_name(pointer.element(), "_Atomic *", type_ids),
-        Type::Primitive(_) | Type::Record(_) | Type::Union(_) => {
+        Type::Primitive(_) | Type::Record(_) | Type::TaggedUnion(_) | Type::Union(_) => {
             "_Atomic ".to_owned() + &compile_type_id(type_, type_ids) + " *"
         }
     }
@@ -81,6 +83,13 @@ pub fn compile_record_type_id(record: &types::Record, type_ids: &HashMap<Type, S
 
 pub fn compile_union_type_id(union: &types::Union, type_ids: &HashMap<Type, String>) -> String {
     "union ".to_owned() + &type_ids[&union.clone().into()]
+}
+
+pub fn compile_tagged_union_type_id(
+    union: &types::TaggedUnion,
+    type_ids: &HashMap<Type, String>,
+) -> String {
+    "struct ".to_owned() + &type_ids[&union.clone().into()]
 }
 
 pub fn compile_record_elements(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
