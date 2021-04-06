@@ -1,5 +1,6 @@
 use super::name_generator::NameGenerator;
 use super::typed_expression::*;
+use super::void::VOID_TYPE;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
@@ -263,7 +264,7 @@ impl InstructionBuilder {
         } else if let Some(branch) = else_.terminal_instruction().to_branch() {
             branch.type_().clone()
         } else {
-            types::Record::new(vec![]).into()
+            VOID_TYPE.clone().into()
         };
 
         self.add_instruction(If::new(

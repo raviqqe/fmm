@@ -20,11 +20,10 @@ pub fn transform_to_cps(
 mod tests {
     use super::*;
     use crate::analysis::check_types;
+    use crate::build::VOID_TYPE;
     use crate::types::{self, CallingConvention, Type};
     use once_cell::sync::Lazy;
     use stack::STACK_TYPE;
-
-    static VOID_TYPE: Lazy<Type> = Lazy::new(|| types::Record::new(vec![]).into());
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(arguments, result, CallingConvention::Source)
