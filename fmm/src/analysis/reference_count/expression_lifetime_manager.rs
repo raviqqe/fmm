@@ -1,7 +1,8 @@
-use super::utilities::{self, VOID_TYPE, VOID_VALUE};
+use super::utilities;
 use crate::build::{self, InstructionBuilder, NameGenerator, TypedExpression};
 use crate::ir::*;
 use crate::types::{self, Type};
+use build::{VOID_TYPE, VOID_VALUE};
 use std::cell::RefCell;
 use std::rc::Rc;
 

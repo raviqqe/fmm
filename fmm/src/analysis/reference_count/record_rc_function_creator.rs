@@ -1,12 +1,10 @@
-use super::{
-    expression_lifetime_manager::ExpressionLifetimeManger,
-    utilities::{self, VOID_TYPE, VOID_VALUE},
-};
+use super::{expression_lifetime_manager::ExpressionLifetimeManger, utilities};
 use crate::{
     build::{self, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
     types::{self, CallingConvention},
 };
+use build::{VOID_TYPE, VOID_VALUE};
 use std::cell::RefCell;
 use std::rc::Rc;
 
