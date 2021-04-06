@@ -48,7 +48,7 @@ impl ExpressionLifetimeManger {
                     vec![expression.clone()],
                 );
             }
-            Type::Union(_) => todo!(),
+            Type::Union(_) => unimplemented!(),
             Type::Function(_) | Type::Primitive(_) => {}
         }
     }
@@ -103,7 +103,7 @@ impl ExpressionLifetimeManger {
                     vec![expression.clone()],
                 );
             }
-            Type::Union(_) => todo!(),
+            Type::Union(_) => unimplemented!(),
             Type::Function(_) | Type::Primitive(_) => {}
         }
     }
