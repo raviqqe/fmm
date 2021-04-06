@@ -1,11 +1,15 @@
-use super::global_variable_tagger::tag_expression;
+use super::global_variable_tag::tag_expression;
 use super::{
     expression_lifetime_manager::ExpressionLifetimeManger,
     expression_reference_counter::ExpressionReferenceCounter,
     record_rc_function_creator::RecordRcFunctionCreator,
 };
-use crate::{analysis::collect_types, ir::*, types::Type};
-use std::collections::HashSet;
+use crate::{
+    analysis::collect_types,
+    ir::*,
+    types::{self, Type},
+};
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 pub struct ModuleConverter {
@@ -33,7 +37,6 @@ impl ModuleConverter {
         Module::new(
             module.variable_declarations().to_vec(),
             module.function_declarations().to_vec(),
-            // TODO Tag static variables in variable definitions.
             module
                 .variable_definitions()
                 .iter()
@@ -48,17 +51,18 @@ impl ModuleConverter {
         )
     }
 
-    fn collect_global_variables(&self, module: &Module) -> HashSet<String> {
+    fn collect_global_variables(&self, module: &Module) -> HashMap<String, Type> {
         module
             .variable_declarations()
             .iter()
-            .map(|declaration| declaration.name().into())
+            .map(|declaration| (declaration.name().into(), declaration.type_().clone()))
             .chain(
                 module
                     .variable_definitions()
                     .iter()
-                    .map(|definition| definition.name().into()),
+                    .map(|definition| (definition.name().into(), definition.type_().clone())),
             )
+            .map(|(name, type_)| (name, types::Pointer::new(type_).into()))
             .collect()
     }
 
@@ -82,7 +86,7 @@ impl ModuleConverter {
     fn convert_variable_definition(
         &self,
         definition: &VariableDefinition,
-        global_variables: &HashSet<String>,
+        global_variables: &HashMap<String, Type>,
     ) -> VariableDefinition {
         VariableDefinition::new(
             definition.name(),
@@ -96,18 +100,39 @@ impl ModuleConverter {
     fn convert_function_definition(
         &self,
         definition: &FunctionDefinition,
-        global_variables: &HashSet<String>,
+        global_variables: &HashMap<String, Type>,
     ) -> FunctionDefinition {
-        // TODO Tag static variables.
+        let tag_instructions = global_variables
+            .iter()
+            .filter(|(name, _)| {
+                !definition
+                    .arguments()
+                    .iter()
+                    .find(|argument| argument.name() == name.as_str())
+                    .is_some()
+            })
+            .map(|(name, type_)| {
+                PassThrough::new(
+                    type_.clone(),
+                    tag_expression(&Variable::new(name).into(), type_, global_variables),
+                    name,
+                )
+                .into()
+            })
+            .collect::<Vec<_>>();
+
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
             Block::new(
-                self.convert_instructions(
-                    definition.body().instructions(),
-                    definition.body().terminal_instruction(),
-                    &HashSet::new(),
-                ),
+                tag_instructions
+                    .into_iter()
+                    .chain(self.convert_instructions(
+                        definition.body().instructions(),
+                        definition.body().terminal_instruction(),
+                        &HashSet::new(),
+                    ))
+                    .collect(),
                 definition.body().terminal_instruction().clone(),
             ),
             definition.result_type().clone(),

@@ -1,6 +1,6 @@
 mod expression_lifetime_manager;
 mod expression_reference_counter;
-mod global_variable_tagger;
+mod global_variable_tag;
 mod module_converter;
 mod record_rc_function_creator;
 mod utilities;

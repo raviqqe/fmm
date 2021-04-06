@@ -1,11 +1,11 @@
 use crate::ir::*;
 use crate::types::{self, Type};
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 pub fn tag_expression(
     expression: &Expression,
     type_: &Type,
-    global_variables: &HashSet<String>,
+    global_variables: &HashMap<String, Type>,
 ) -> Expression {
     let tag_expression = |expression, type_| tag_expression(expression, type_, global_variables);
 
@@ -30,7 +30,7 @@ pub fn tag_expression(
         .into(),
         Expression::Union(_) => todo!(),
         Expression::Variable(variable) => {
-            if global_variables.contains(variable.name()) {
+            if global_variables.contains_key(variable.name()) {
                 tag_pointer_to_global_variable(variable, type_)
             } else {
                 variable.clone().into()
