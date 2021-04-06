@@ -38,7 +38,7 @@ impl From<BitCast> for TypedExpression {
 
 impl From<BitwiseOperation> for TypedExpression {
     fn from(operation: BitwiseOperation) -> Self {
-        Self::new(operation.clone(), operation.type_().clone())
+        Self::new(operation.clone(), operation.type_())
     }
 }
 

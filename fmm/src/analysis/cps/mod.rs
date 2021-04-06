@@ -22,7 +22,7 @@ mod tests {
     use crate::analysis::check_types;
     use crate::build::VOID_TYPE;
     use crate::types::{self, CallingConvention, Type};
-    use once_cell::sync::Lazy;
+    
     use stack::STACK_TYPE;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
