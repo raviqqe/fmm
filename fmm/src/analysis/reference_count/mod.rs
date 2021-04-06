@@ -70,6 +70,31 @@ mod tests {
     }
 
     #[test]
+    fn transform_variable_definition() {
+        test_transformation(&Module::new(
+            vec![],
+            vec![],
+            vec![
+                VariableDefinition::new(
+                    "x",
+                    Primitive::PointerInteger(42),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                ),
+                VariableDefinition::new(
+                    "y",
+                    Variable::new("x"),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                    false,
+                ),
+            ],
+            vec![],
+        ));
+    }
+
+    #[test]
     fn transform_record_of_one_element() {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
         let record_type = types::Record::new(vec![
