@@ -6,7 +6,7 @@ mod record_rc_function_creator;
 mod utilities;
 
 use self::{
-    expression_lifetime_manager::ExpressionLifetimeManger,
+    expression_lifetime_manager::ExpressionLifetimeManager,
     record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{build::NameGenerator, ir::*};
@@ -18,7 +18,7 @@ use std::rc::Rc;
 pub fn count_references(module: &Module) -> Module {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
     let expression_lifetime_manager =
-        Rc::new(ExpressionLifetimeManger::new(name_generator.clone()));
+        Rc::new(ExpressionLifetimeManager::new(name_generator.clone()));
     let expression_reference_counter = Rc::new(ExpressionReferenceCounter::new(
         expression_lifetime_manager.clone(),
     ));

@@ -1,6 +1,6 @@
 use super::global_variable_tag::tag_expression;
 use super::{
-    expression_lifetime_manager::ExpressionLifetimeManger,
+    expression_lifetime_manager::ExpressionLifetimeManager,
     expression_reference_counter::ExpressionReferenceCounter,
     record_rc_function_creator::RecordRcFunctionCreator,
 };
@@ -14,14 +14,14 @@ use std::rc::Rc;
 
 pub struct ModuleConverter {
     expression_reference_counter: Rc<ExpressionReferenceCounter>,
-    expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+    expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
     record_rc_function_creator: Rc<RecordRcFunctionCreator>,
 }
 
 impl ModuleConverter {
     pub fn new(
         expression_reference_counter: Rc<ExpressionReferenceCounter>,
-        expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+        expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
         record_rc_function_creator: Rc<RecordRcFunctionCreator>,
     ) -> Self {
         Self {

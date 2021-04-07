@@ -1,4 +1,4 @@
-use super::{expression_lifetime_manager::ExpressionLifetimeManger, utilities};
+use super::{expression_lifetime_manager::ExpressionLifetimeManager, utilities};
 use crate::{
     build::{self, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
@@ -11,13 +11,13 @@ use std::rc::Rc;
 const ARGUMENT_NAME: &str = "x";
 
 pub struct RecordRcFunctionCreator {
-    expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+    expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
     name_generator: Rc<RefCell<NameGenerator>>,
 }
 
 impl RecordRcFunctionCreator {
     pub fn new(
-        expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+        expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
         name_generator: Rc<RefCell<NameGenerator>>,
     ) -> Self {
         Self {

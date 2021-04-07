@@ -1,14 +1,14 @@
-use super::expression_lifetime_manager::ExpressionLifetimeManger;
+use super::expression_lifetime_manager::ExpressionLifetimeManager;
 use crate::ir::*;
 use crate::types::Type;
 use std::{collections::HashSet, rc::Rc};
 
 pub struct ExpressionReferenceCounter {
-    expression_lifetime_manager: Rc<ExpressionLifetimeManger>,
+    expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
 }
 
 impl ExpressionReferenceCounter {
-    pub fn new(expression_lifetime_manager: Rc<ExpressionLifetimeManger>) -> Self {
+    pub fn new(expression_lifetime_manager: Rc<ExpressionLifetimeManager>) -> Self {
         Self {
             expression_lifetime_manager,
         }
@@ -87,7 +87,7 @@ mod tests {
 
     fn initialize_expression_reference_counter() -> ExpressionReferenceCounter {
         ExpressionReferenceCounter::new(
-            ExpressionLifetimeManger::new(RefCell::new(NameGenerator::new("rc")).into()).into(),
+            ExpressionLifetimeManager::new(RefCell::new(NameGenerator::new("rc")).into()).into(),
         )
     }
 
