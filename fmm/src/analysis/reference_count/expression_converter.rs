@@ -14,7 +14,7 @@ impl ExpressionConverter {
         }
     }
 
-    pub fn count(
+    pub fn convert(
         &self,
         expression: &Expression,
         type_: &Type,
@@ -23,13 +23,13 @@ impl ExpressionConverter {
         match expression {
             Expression::BitCast(bit_cast) => {
                 // TODO Do bit casts move the values?
-                self.count(bit_cast.expression(), bit_cast.from(), &used_variables)
+                self.convert(bit_cast.expression(), bit_cast.from(), &used_variables)
             }
             Expression::BitwiseOperation(operation) => {
                 let (rhs_instructions, used_variables) =
-                    self.count(operation.rhs(), &operation.type_().into(), &used_variables);
+                    self.convert(operation.rhs(), &operation.type_().into(), &used_variables);
                 let (lhs_instructions, used_variables) =
-                    self.count(operation.lhs(), &operation.type_().into(), &used_variables);
+                    self.convert(operation.lhs(), &operation.type_().into(), &used_variables);
 
                 (
                     lhs_instructions
@@ -49,7 +49,7 @@ impl ExpressionConverter {
                         (vec![], used_variables.clone()),
                         |(all_instructions, used_variables), (element, type_)| {
                             let (instructions, used_variables) =
-                                self.count(element, type_, &used_variables);
+                                self.convert(element, type_, &used_variables);
 
                             (
                                 instructions.into_iter().chain(all_instructions).collect(),
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn convert_align_of() {
         pretty_assertions::assert_eq!(
-            initialize_expression_converter().count(
+            initialize_expression_converter().convert(
                 &AlignOf::new(types::Primitive::PointerInteger).into(),
                 &AlignOf::RESULT_TYPE.into(),
                 &Default::default()
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn convert_used_variable() {
-        let (instructions, used_variables) = initialize_expression_converter().count(
+        let (instructions, used_variables) = initialize_expression_converter().convert(
             &Variable::new("x").into(),
             &types::Pointer::new(types::Primitive::Float64).into(),
             &vec!["x".into()].into_iter().collect(),
@@ -120,7 +120,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
         let variable = Variable::new("x");
 
-        let (instructions, used_variables) = initialize_expression_converter().count(
+        let (instructions, used_variables) = initialize_expression_converter().convert(
             &Record::new(
                 types::Record::new(vec![
                     pointer_type.clone().into(),
