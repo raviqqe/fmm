@@ -10,7 +10,13 @@ pub fn tag_expression(
     let tag_expression = |expression, type_| tag_expression(expression, type_, global_variables);
 
     match expression {
-        Expression::BitCast(bit_cast) => tag_expression(bit_cast.expression(), bit_cast.from()),
+        // TODO Is this correct?
+        Expression::BitCast(bit_cast) => BitCast::new(
+            bit_cast.from().clone(),
+            bit_cast.to().clone(),
+            tag_expression(bit_cast.expression(), bit_cast.from()),
+        )
+        .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             operation.type_(),
             operation.operator(),
