@@ -1,7 +1,7 @@
 use super::global_variable_tag::tag_expression;
 use super::{
     expression_lifetime_manager::ExpressionLifetimeManager,
-    expression_reference_counter::ExpressionReferenceCounter,
+    expression_converter::ExpressionConverter,
     record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{
@@ -13,19 +13,19 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 pub struct ModuleConverter {
-    expression_reference_counter: Rc<ExpressionReferenceCounter>,
+    expression_converter: Rc<ExpressionConverter>,
     expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
     record_rc_function_creator: Rc<RecordRcFunctionCreator>,
 }
 
 impl ModuleConverter {
     pub fn new(
-        expression_reference_counter: Rc<ExpressionReferenceCounter>,
+        expression_converter: Rc<ExpressionConverter>,
         expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
         record_rc_function_creator: Rc<RecordRcFunctionCreator>,
     ) -> Self {
         Self {
-            expression_reference_counter,
+            expression_converter,
             expression_lifetime_manager,
             record_rc_function_creator,
         }
@@ -176,7 +176,7 @@ impl ModuleConverter {
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
             TerminalInstruction::Branch(branch) => {
-                let (instructions, used_variables) = self.expression_reference_counter.count(
+                let (instructions, used_variables) = self.expression_converter.count(
                     branch.expression(),
                     branch.type_(),
                     used_variables,
@@ -184,7 +184,7 @@ impl ModuleConverter {
 
                 (instructions, used_variables)
             }
-            TerminalInstruction::Return(return_) => self.expression_reference_counter.count(
+            TerminalInstruction::Return(return_) => self.expression_converter.count(
                 return_.expression(),
                 return_.type_(),
                 used_variables,
