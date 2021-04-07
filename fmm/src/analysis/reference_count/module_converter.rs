@@ -1,7 +1,7 @@
 use super::global_variable_tag::tag_expression;
 use super::{
-    expression_lifetime_manager::ExpressionLifetimeManager,
     expression_converter::ExpressionConverter,
+    expression_lifetime_manager::ExpressionLifetimeManager,
     record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{
@@ -102,31 +102,26 @@ impl ModuleConverter {
         definition: &FunctionDefinition,
         global_variables: &HashMap<String, Type>,
     ) -> FunctionDefinition {
-        let tag_instructions = global_variables
-            .iter()
-            .filter(|(name, _)| {
-                !definition
-                    .arguments()
-                    .iter()
-                    .find(|argument| argument.name() == name.as_str())
-                    .is_some()
-            })
-            .map(|(name, type_)| {
-                PassThrough::new(
-                    type_.clone(),
-                    tag_expression(&Variable::new(name).into(), type_, global_variables),
-                    name,
-                )
-                .into()
-            })
-            .collect::<Vec<_>>();
-
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
             Block::new(
-                tag_instructions
-                    .into_iter()
+                global_variables
+                    .iter()
+                    .filter(|(name, _)| {
+                        !definition
+                            .arguments()
+                            .iter()
+                            .any(|argument| argument.name() == name.as_str())
+                    })
+                    .map(|(name, type_)| {
+                        PassThrough::new(
+                            type_.clone(),
+                            tag_expression(&Variable::new(name).into(), type_, global_variables),
+                            name,
+                        )
+                        .into()
+                    })
                     .chain(self.convert_instructions(
                         definition.body().instructions(),
                         definition.body().terminal_instruction(),

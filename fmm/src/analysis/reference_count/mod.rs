@@ -1,5 +1,5 @@
-mod expression_lifetime_manager;
 mod expression_converter;
+mod expression_lifetime_manager;
 mod global_variable_tag;
 mod module_converter;
 mod record_rc_function_creator;
@@ -23,8 +23,7 @@ pub fn count_references(module: &Module) -> Module {
         expression_lifetime_manager.clone(),
     ));
     let record_rc_function_creator =
-        RecordRcFunctionCreator::new(expression_lifetime_manager.clone(), name_generator.clone())
-            .into();
+        RecordRcFunctionCreator::new(expression_lifetime_manager.clone(), name_generator).into();
 
     ModuleConverter::new(
         expression_converter,
