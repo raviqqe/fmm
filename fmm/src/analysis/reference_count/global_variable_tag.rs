@@ -28,7 +28,7 @@ pub fn tag_expression(
                 .collect(),
         )
         .into(),
-        Expression::Union(_) => todo!(),
+        Expression::Union(_) => unimplemented!(),
         Expression::Variable(variable) => {
             if global_variables.contains_key(variable.name()) {
                 tag_pointer_to_global_variable(variable, type_)
