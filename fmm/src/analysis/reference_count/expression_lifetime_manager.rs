@@ -119,7 +119,7 @@ impl ExpressionLifetimeManager {
                 ComparisonOperator::NotEqual,
                 build::bitwise_operation(
                     BitwiseOperator::And,
-                    pointer.clone(),
+                    build::bit_cast(types::Primitive::PointerInteger, pointer.clone()),
                     Primitive::PointerInteger(1),
                 ),
                 Primitive::PointerInteger(1),
