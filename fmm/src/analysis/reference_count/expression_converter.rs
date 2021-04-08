@@ -60,7 +60,7 @@ impl ExpressionConverter {
 
                 (instructions, used_variables)
             }
-            Expression::Union(_) => todo!(),
+            Expression::Union(_) => unimplemented!(),
             Expression::Variable(variable) => (
                 if used_variables.contains(variable.name()) {
                     self.expression_lifetime_manager
