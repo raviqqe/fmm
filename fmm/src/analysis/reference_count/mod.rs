@@ -23,12 +23,14 @@ pub fn count_references(module: &Module) -> Module {
         expression_lifetime_manager.clone(),
     ));
     let record_rc_function_creator =
-        RecordRcFunctionCreator::new(expression_lifetime_manager.clone(), name_generator).into();
+        RecordRcFunctionCreator::new(expression_lifetime_manager.clone(), name_generator.clone())
+            .into();
 
     ModuleConverter::new(
         expression_converter,
         expression_lifetime_manager,
         record_rc_function_creator,
+        name_generator,
     )
     .convert(module)
 }

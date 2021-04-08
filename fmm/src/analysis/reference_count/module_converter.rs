@@ -6,16 +6,21 @@ use super::{
 };
 use crate::{
     analysis::collect_types,
+    build::{InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
     types::{self, Type},
 };
-use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+};
 
 pub struct ModuleConverter {
     expression_converter: Rc<ExpressionConverter>,
     expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
     record_rc_function_creator: Rc<RecordRcFunctionCreator>,
+    name_generator: Rc<RefCell<NameGenerator>>,
 }
 
 impl ModuleConverter {
@@ -23,11 +28,13 @@ impl ModuleConverter {
         expression_converter: Rc<ExpressionConverter>,
         expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
         record_rc_function_creator: Rc<RecordRcFunctionCreator>,
+        name_generator: Rc<RefCell<NameGenerator>>,
     ) -> Self {
         Self {
             expression_converter,
             expression_lifetime_manager,
             record_rc_function_creator,
+            name_generator,
         }
     }
 
@@ -122,11 +129,19 @@ impl ModuleConverter {
                         )
                         .into()
                     })
-                    .chain(self.convert_instructions(
-                        definition.body().instructions(),
-                        definition.body().terminal_instruction(),
-                        &HashSet::new(),
-                    ))
+                    .chain(
+                        self.convert_instructions(
+                            definition.body().instructions(),
+                            definition.body().terminal_instruction(),
+                            &definition
+                                .arguments()
+                                .iter()
+                                .map(|argument| argument.name().into())
+                                .collect(),
+                            &HashSet::new(),
+                        )
+                        .0,
+                    )
                     .collect(),
                 definition.body().terminal_instruction().clone(),
             ),
@@ -136,32 +151,134 @@ impl ModuleConverter {
         )
     }
 
-    fn convert_block(&self, block: &Block, used_variables: &HashSet<String>) -> Block {
-        let instructions = self.convert_instructions(
-            block.instructions(),
-            block.terminal_instruction(),
-            used_variables,
-        );
-
-        Block::new(instructions, block.terminal_instruction().clone())
-    }
-
     fn convert_instructions(
         &self,
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
+        owned_variables: &HashSet<String>,
+        used_variables: &HashSet<String>,
+    ) -> (Vec<Instruction>, HashSet<String>) {
+        match instructions {
+            [] => self.convert_terminal_instruction(terminal_instruction, used_variables),
+            [instruction, ..] => {
+                let rest_instructions = &instructions[1..];
+                let owned_variables = owned_variables
+                    .clone()
+                    .into_iter()
+                    .chain(self.get_owned_variable_from_instruction(instruction))
+                    .collect();
+
+                let (rest_instructions, used_variables) = self.convert_instructions(
+                    rest_instructions,
+                    terminal_instruction,
+                    &owned_variables,
+                    used_variables,
+                );
+
+                self.convert_instruction(instruction, &owned_variables, &used_variables)
+                    .into_iter()
+                    .chain(rest_instructions)
+                    .collect()
+            }
+        }
+    }
+
+    fn get_owned_variable_from_instruction(&self, instruction: &Instruction) -> Option<String> {
+        match instruction {
+            Instruction::AllocateHeap(_)
+            | Instruction::AllocateStack(_)
+            | Instruction::AtomicLoad(_)
+            | Instruction::Call(_)
+            | Instruction::DeconstructRecord(_)
+            | Instruction::DeconstructUnion(_)
+            | Instruction::If(_)
+            | Instruction::Load(_)
+            | Instruction::PassThrough(_)
+            | Instruction::ReallocateHeap(_) => instruction.name().map(|name| name.into()),
+            Instruction::ArithmeticOperation(_)
+            | Instruction::AtomicOperation(_)
+            | Instruction::AtomicStore(_)
+            // TODO Drop old values after compare-and-swap instructions.
+            | Instruction::CompareAndSwap(_)
+            | Instruction::ComparisonOperation(_)
+            | Instruction::FreeHeap(_)
+            | Instruction::PointerAddress(_)
+            | Instruction::RecordAddress(_)
+            | Instruction::Store(_)
+            | Instruction::UnionAddress(_) => None,
+        }
+    }
+
+    // Returned instructions include instructions of arguments.
+    fn convert_instruction(
+        &self,
+        instruction: &Instruction,
+        owned_variables: &HashSet<String>,
         used_variables: &HashSet<String>,
     ) -> Vec<Instruction> {
-        let (more_instructions, _used_variables) =
-            self.convert_terminal_instruction(terminal_instruction, used_variables);
+        let builder = InstructionBuilder::new(self.name_generator.clone());
 
-        // TODO Convert instructions.
+        match instruction {
+            Instruction::AllocateHeap(allocate) => {
+                let record_type = types::Record::new(vec![
+                    types::Primitive::PointerInteger.into(),
+                    allocate.type_().clone(),
+                ]);
+                let pointer = builder.allocate_heap(record_type.clone());
 
-        instructions
-            .iter()
-            .cloned()
-            .chain(more_instructions)
-            .collect()
+                builder.store(Undefined::new(record_type.clone()), pointer.clone());
+
+                builder
+                    .into_instructions()
+                    .into_iter()
+                    .chain(vec![RecordAddress::new(
+                        record_type.clone(),
+                        pointer.expression().clone(),
+                        1,
+                        allocate.name(),
+                    )
+                    .into()])
+                    .collect()
+            }
+            Instruction::Store(store) => {
+                let value = builder.load(TypedExpression::new(
+                    store.pointer().clone(),
+                    types::Pointer::new(store.type_().clone()),
+                ));
+
+                builder
+                    .into_instructions()
+                    .into_iter()
+                    .chain(
+                        self.expression_lifetime_manager
+                            .drop_expression(value.expression(), value.type_()),
+                    )
+                    .chain(
+                        self.expression_lifetime_manager
+                            .clone_expression(store.value(), store.type_()),
+                    )
+                    .chain(vec![store.clone().into()])
+                    .collect()
+            }
+            Instruction::AllocateStack(_)
+            | Instruction::ArithmeticOperation(_)
+            | Instruction::AtomicLoad(_)
+            | Instruction::AtomicOperation(_)
+            | Instruction::AtomicStore(_)
+            | Instruction::Call(_)
+            | Instruction::CompareAndSwap(_)
+            | Instruction::ComparisonOperation(_)
+            | Instruction::DeconstructRecord(_)
+            | Instruction::DeconstructUnion(_)
+            | Instruction::If(_)
+            | Instruction::Load(_)
+            | Instruction::PassThrough(_)
+            | Instruction::PointerAddress(_)
+            | Instruction::ReallocateHeap(_)
+            | Instruction::RecordAddress(_)
+            | Instruction::UnionAddress(_) => todo!(),
+            Instruction::FreeHeap(_) => vec![instruction.clone()],
+        }
     }
 
     fn convert_terminal_instruction(

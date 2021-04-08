@@ -29,7 +29,7 @@ impl ExpressionLifetimeManager {
     fn clone_typed_expression(&self, builder: &InstructionBuilder, expression: &TypedExpression) {
         match expression.type_() {
             Type::Pointer(_) => {
-                self.if_pointer_is_dynamic(builder, expression, |builder| {
+                self.if_heap_pointer(builder, expression, |builder| {
                     builder.atomic_operation(
                         AtomicOperator::Add,
                         self.get_counter_pointer(&builder, expression),
@@ -69,7 +69,7 @@ impl ExpressionLifetimeManager {
     fn drop_typed_expression(&self, builder: &InstructionBuilder, expression: &TypedExpression) {
         match expression.type_() {
             Type::Pointer(_) => {
-                self.if_pointer_is_dynamic(builder, expression, |builder| {
+                self.if_heap_pointer(builder, expression, |builder| {
                     builder.if_(
                         builder.comparison_operation(
                             ComparisonOperator::Equal,
@@ -108,7 +108,7 @@ impl ExpressionLifetimeManager {
         }
     }
 
-    fn if_pointer_is_dynamic(
+    fn if_heap_pointer(
         &self,
         builder: &InstructionBuilder,
         pointer: &TypedExpression,
@@ -117,15 +117,26 @@ impl ExpressionLifetimeManager {
         builder.if_(
             builder.comparison_operation(
                 ComparisonOperator::NotEqual,
-                build::bitwise_operation(
-                    BitwiseOperator::And,
-                    build::bit_cast(types::Primitive::PointerInteger, pointer.clone()),
-                    Primitive::PointerInteger(1),
-                ),
-                Primitive::PointerInteger(1),
+                build::bit_cast(types::Primitive::PointerInteger, pointer.clone()),
+                Undefined::new(types::Primitive::PointerInteger),
             ),
             |builder| {
-                then(&builder);
+                builder.if_(
+                    builder.comparison_operation(
+                        ComparisonOperator::NotEqual,
+                        build::bitwise_operation(
+                            BitwiseOperator::And,
+                            build::bit_cast(types::Primitive::PointerInteger, pointer.clone()),
+                            Primitive::PointerInteger(1),
+                        ),
+                        Primitive::PointerInteger(1),
+                    ),
+                    |builder| {
+                        then(&builder);
+                        builder.branch(VOID_VALUE.clone())
+                    },
+                    |builder| builder.branch(VOID_VALUE.clone()),
+                );
                 builder.branch(VOID_VALUE.clone())
             },
             |builder| builder.branch(VOID_VALUE.clone()),
