@@ -175,10 +175,13 @@ impl ModuleConverter {
                     used_variables,
                 );
 
-                self.convert_instruction(instruction, &owned_variables, &used_variables)
-                    .into_iter()
-                    .chain(rest_instructions)
-                    .collect()
+                (
+                    self.convert_instruction(instruction, &owned_variables, &used_variables)
+                        .into_iter()
+                        .chain(rest_instructions)
+                        .collect(),
+                    used_variables,
+                )
             }
         }
     }
