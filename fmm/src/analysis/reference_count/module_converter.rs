@@ -159,7 +159,11 @@ impl ModuleConverter {
         used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instructions {
-            [] => self.convert_terminal_instruction(terminal_instruction, used_variables),
+            [] => self.convert_terminal_instruction(
+                terminal_instruction,
+                owned_variables,
+                used_variables,
+            ),
             [instruction, ..] => {
                 let rest_instructions = &instructions[1..];
                 let owned_variables = owned_variables
@@ -216,8 +220,8 @@ impl ModuleConverter {
     fn convert_instruction(
         &self,
         instruction: &Instruction,
-        owned_variables: &HashSet<String>,
-        used_variables: &HashSet<String>,
+        _owned_variables: &HashSet<String>,
+        _used_variables: &HashSet<String>,
     ) -> Vec<Instruction> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
@@ -235,7 +239,7 @@ impl ModuleConverter {
                     .into_instructions()
                     .into_iter()
                     .chain(vec![RecordAddress::new(
-                        record_type.clone(),
+                        record_type,
                         pointer.expression().clone(),
                         1,
                         allocate.name(),
@@ -287,6 +291,7 @@ impl ModuleConverter {
     fn convert_terminal_instruction(
         &self,
         instruction: &TerminalInstruction,
+        owned_variables: &HashSet<String>,
         used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
@@ -294,6 +299,7 @@ impl ModuleConverter {
                 let (instructions, used_variables) = self.expression_converter.convert(
                     branch.expression(),
                     branch.type_(),
+                    owned_variables,
                     used_variables,
                 );
 
@@ -302,6 +308,7 @@ impl ModuleConverter {
             TerminalInstruction::Return(return_) => self.expression_converter.convert(
                 return_.expression(),
                 return_.type_(),
+                owned_variables,
                 used_variables,
             ),
             TerminalInstruction::Unreachable => (Default::default(), Default::default()),
