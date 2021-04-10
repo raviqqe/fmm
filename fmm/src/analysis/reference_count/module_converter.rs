@@ -1,7 +1,6 @@
 use super::global_variable_tag::tag_expression;
 use super::{
-    expression_converter::ExpressionConverter,
-    expression_lifetime_manager::ExpressionLifetimeManager,
+    expression_cloner::ExpressionCloner, expression_lifetime_manager::ExpressionLifetimeManager,
     record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{
@@ -17,7 +16,7 @@ use std::{
 };
 
 pub struct ModuleConverter {
-    expression_converter: Rc<ExpressionConverter>,
+    expression_cloner: Rc<ExpressionCloner>,
     expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
     record_rc_function_creator: Rc<RecordRcFunctionCreator>,
     name_generator: Rc<RefCell<NameGenerator>>,
@@ -25,13 +24,13 @@ pub struct ModuleConverter {
 
 impl ModuleConverter {
     pub fn new(
-        expression_converter: Rc<ExpressionConverter>,
+        expression_cloner: Rc<ExpressionCloner>,
         expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
         record_rc_function_creator: Rc<RecordRcFunctionCreator>,
         name_generator: Rc<RefCell<NameGenerator>>,
     ) -> Self {
         Self {
-            expression_converter,
+            expression_cloner,
             expression_lifetime_manager,
             record_rc_function_creator,
             name_generator,
@@ -178,12 +177,11 @@ impl ModuleConverter {
                     &owned_variables,
                     used_variables,
                 );
+                let (instructions, used_variables) =
+                    self.convert_instruction(instruction, &owned_variables, &used_variables);
 
                 (
-                    self.convert_instruction(instruction, &owned_variables, &used_variables)
-                        .into_iter()
-                        .chain(rest_instructions)
-                        .collect(),
+                    instructions.into_iter().chain(rest_instructions).collect(),
                     used_variables,
                 )
             }
@@ -221,31 +219,38 @@ impl ModuleConverter {
         &self,
         instruction: &Instruction,
         _owned_variables: &HashSet<String>,
-        _used_variables: &HashSet<String>,
-    ) -> Vec<Instruction> {
+        used_variables: &HashSet<String>,
+    ) -> (Vec<Instruction>, HashSet<String>) {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
         match instruction {
             Instruction::AllocateHeap(allocate) => {
-                let record_type = types::Record::new(vec![
-                    types::Primitive::PointerInteger.into(),
-                    allocate.type_().clone(),
-                ]);
-                let pointer = builder.allocate_heap(record_type.clone());
+                if used_variables.contains(allocate.name()) {
+                    let record_type = types::Record::new(vec![
+                        types::Primitive::PointerInteger.into(),
+                        allocate.type_().clone(),
+                    ]);
+                    let pointer = builder.allocate_heap(record_type.clone());
 
-                builder.store(Undefined::new(record_type.clone()), pointer.clone());
+                    builder.store(Undefined::new(record_type.clone()), pointer.clone());
 
-                builder
-                    .into_instructions()
-                    .into_iter()
-                    .chain(vec![RecordAddress::new(
-                        record_type,
-                        pointer.expression().clone(),
-                        1,
-                        allocate.name(),
+                    (
+                        builder
+                            .into_instructions()
+                            .into_iter()
+                            .chain(vec![RecordAddress::new(
+                                record_type,
+                                pointer.expression().clone(),
+                                1,
+                                allocate.name(),
+                            )
+                            .into()])
+                            .collect(),
+                        used_variables.clone(),
                     )
-                    .into()])
-                    .collect()
+                } else {
+                    (vec![], used_variables.clone())
+                }
             }
             Instruction::Store(store) => {
                 let value = builder.load(TypedExpression::new(
@@ -253,19 +258,22 @@ impl ModuleConverter {
                     types::Pointer::new(store.type_().clone()),
                 ));
 
-                builder
-                    .into_instructions()
-                    .into_iter()
-                    .chain(
-                        self.expression_lifetime_manager
-                            .drop_expression(value.expression(), value.type_()),
-                    )
-                    .chain(
-                        self.expression_lifetime_manager
-                            .clone_expression(store.value(), store.type_()),
-                    )
-                    .chain(vec![store.clone().into()])
-                    .collect()
+                (
+                    builder
+                        .into_instructions()
+                        .into_iter()
+                        .chain(
+                            self.expression_lifetime_manager
+                                .drop_expression(value.expression(), value.type_()),
+                        )
+                        .chain(
+                            self.expression_lifetime_manager
+                                .clone_expression(store.value(), store.type_()),
+                        )
+                        .chain(vec![store.clone().into()])
+                        .collect(),
+                    used_variables.clone(),
+                )
             }
             Instruction::AllocateStack(_)
             | Instruction::AtomicLoad(_)
@@ -284,7 +292,7 @@ impl ModuleConverter {
             | Instruction::PointerAddress(_)
             | Instruction::ReallocateHeap(_)
             | Instruction::RecordAddress(_)
-            | Instruction::UnionAddress(_) => vec![instruction.clone()],
+            | Instruction::UnionAddress(_) => (vec![instruction.clone()], used_variables.clone()),
         }
     }
 
@@ -295,13 +303,13 @@ impl ModuleConverter {
         used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
-            TerminalInstruction::Branch(branch) => self.expression_converter.convert(
+            TerminalInstruction::Branch(branch) => self.expression_cloner.clone_expression(
                 branch.expression(),
                 branch.type_(),
                 owned_variables,
                 used_variables,
             ),
-            TerminalInstruction::Return(return_) => self.expression_converter.convert(
+            TerminalInstruction::Return(return_) => self.expression_cloner.clone_expression(
                 return_.expression(),
                 return_.type_(),
                 owned_variables,

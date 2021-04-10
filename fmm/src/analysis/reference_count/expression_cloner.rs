@@ -3,18 +3,18 @@ use crate::ir::*;
 use crate::types::Type;
 use std::{collections::HashSet, rc::Rc};
 
-pub struct ExpressionConverter {
+pub struct ExpressionCloner {
     expression_lifetime_manager: Rc<ExpressionLifetimeManager>,
 }
 
-impl ExpressionConverter {
+impl ExpressionCloner {
     pub fn new(expression_lifetime_manager: Rc<ExpressionLifetimeManager>) -> Self {
         Self {
             expression_lifetime_manager,
         }
     }
 
-    pub fn convert(
+    pub fn clone_expression(
         &self,
         expression: &Expression,
         type_: &Type,
@@ -22,7 +22,7 @@ impl ExpressionConverter {
         used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         let convert = |expression: &Expression, type_: &Type, used_variables: &HashSet<String>| {
-            self.convert(expression, type_, owned_variables, used_variables)
+            self.clone_expression(expression, type_, owned_variables, used_variables)
         };
 
         match expression {
@@ -88,8 +88,8 @@ mod tests {
     use super::*;
     use crate::{build::NameGenerator, types};
 
-    fn initialize_expression_converter() -> ExpressionConverter {
-        ExpressionConverter::new(
+    fn initialize_expression_cloner() -> ExpressionCloner {
+        ExpressionCloner::new(
             ExpressionLifetimeManager::new(RefCell::new(NameGenerator::new("rc")).into()).into(),
         )
     }
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn convert_align_of() {
         pretty_assertions::assert_eq!(
-            initialize_expression_converter().convert(
+            initialize_expression_cloner().clone_expression(
                 &AlignOf::new(types::Primitive::PointerInteger).into(),
                 &AlignOf::RESULT_TYPE.into(),
                 &Default::default(),
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn convert_used_variable() {
-        let (instructions, used_variables) = initialize_expression_converter().convert(
+        let (instructions, used_variables) = initialize_expression_cloner().clone_expression(
             &Variable::new("x").into(),
             &types::Pointer::new(types::Primitive::Float64).into(),
             &vec!["x".into()].into_iter().collect(),
@@ -125,7 +125,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
         let variable = Variable::new("x");
 
-        let (instructions, used_variables) = initialize_expression_converter().convert(
+        let (instructions, used_variables) = initialize_expression_cloner().clone_expression(
             &Record::new(
                 types::Record::new(vec![
                     pointer_type.clone().into(),

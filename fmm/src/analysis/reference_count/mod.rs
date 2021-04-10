@@ -1,4 +1,4 @@
-mod expression_converter;
+mod expression_cloner;
 mod expression_lifetime_manager;
 mod global_variable_tag;
 mod module_converter;
@@ -10,7 +10,7 @@ use self::{
     record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{build::NameGenerator, ir::*};
-use expression_converter::ExpressionConverter;
+use expression_cloner::ExpressionCloner;
 use module_converter::ModuleConverter;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -19,7 +19,7 @@ pub fn count_references(module: &Module) -> Module {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
     let expression_lifetime_manager =
         Rc::new(ExpressionLifetimeManager::new(name_generator.clone()));
-    let expression_converter = Rc::new(ExpressionConverter::new(
+    let expression_cloner = Rc::new(ExpressionCloner::new(
         expression_lifetime_manager.clone(),
     ));
     let record_rc_function_creator =
@@ -27,7 +27,7 @@ pub fn count_references(module: &Module) -> Module {
             .into();
 
     ModuleConverter::new(
-        expression_converter,
+        expression_cloner,
         expression_lifetime_manager,
         record_rc_function_creator,
         name_generator,
