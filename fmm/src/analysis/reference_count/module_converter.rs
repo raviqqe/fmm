@@ -268,23 +268,23 @@ impl ModuleConverter {
                     .collect()
             }
             Instruction::AllocateStack(_)
-            | Instruction::ArithmeticOperation(_)
             | Instruction::AtomicLoad(_)
-            | Instruction::AtomicOperation(_)
             | Instruction::AtomicStore(_)
             | Instruction::Call(_)
             | Instruction::CompareAndSwap(_)
-            | Instruction::ComparisonOperation(_)
             | Instruction::DeconstructRecord(_)
             | Instruction::DeconstructUnion(_)
             | Instruction::If(_)
             | Instruction::Load(_)
-            | Instruction::PassThrough(_)
+            | Instruction::PassThrough(_) => todo!(),
+            Instruction::ArithmeticOperation(_)
+            | Instruction::AtomicOperation(_)
+            | Instruction::ComparisonOperation(_)
+            | Instruction::FreeHeap(_)
             | Instruction::PointerAddress(_)
             | Instruction::ReallocateHeap(_)
             | Instruction::RecordAddress(_)
-            | Instruction::UnionAddress(_) => todo!(),
-            Instruction::FreeHeap(_) => vec![instruction.clone()],
+            | Instruction::UnionAddress(_) => vec![instruction.clone()],
         }
     }
 
@@ -295,16 +295,12 @@ impl ModuleConverter {
         used_variables: &HashSet<String>,
     ) -> (Vec<Instruction>, HashSet<String>) {
         match instruction {
-            TerminalInstruction::Branch(branch) => {
-                let (instructions, used_variables) = self.expression_converter.convert(
-                    branch.expression(),
-                    branch.type_(),
-                    owned_variables,
-                    used_variables,
-                );
-
-                (instructions, used_variables)
-            }
+            TerminalInstruction::Branch(branch) => self.expression_converter.convert(
+                branch.expression(),
+                branch.type_(),
+                owned_variables,
+                used_variables,
+            ),
             TerminalInstruction::Return(return_) => self.expression_converter.convert(
                 return_.expression(),
                 return_.type_(),
