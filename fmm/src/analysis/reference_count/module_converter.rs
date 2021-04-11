@@ -325,7 +325,7 @@ impl ModuleConverter {
                         .into_iter()
                         .chain(vec![store.clone().into()])
                         .collect(),
-                    moved_variables.clone(),
+                    moved_variables,
                 )
             }
             Instruction::Call(call) => {
@@ -369,7 +369,7 @@ impl ModuleConverter {
                     moved_variables,
                 )
             }
-            Instruction::DeconstructUnion(_) => Err(ReferenceCountError::UnionNotSupported)?,
+            Instruction::DeconstructUnion(_) => return Err(ReferenceCountError::UnionNotSupported),
             Instruction::If(if_) => {
                 let convert_block = |block: &Block| -> Result<_, ReferenceCountError> {
                     let (instructions, moved_variables) = self.convert_instructions(
@@ -490,7 +490,7 @@ impl ModuleConverter {
                         .into_iter()
                         .chain(vec![store.clone().into()])
                         .collect(),
-                    moved_variables.clone(),
+                    moved_variables,
                 )
             }
             Instruction::ArithmeticOperation(_)

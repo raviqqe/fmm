@@ -55,7 +55,7 @@ impl ExpressionDropper {
                     vec![expression.clone()],
                 )?;
             }
-            Type::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
+            Type::Union(_) => return Err(ReferenceCountError::UnionNotSupported),
             Type::Function(_) | Type::Primitive(_) => {}
         }
 

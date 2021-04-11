@@ -51,7 +51,7 @@ impl ExpressionMover {
 
                 moved_variables
             }
-            Expression::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
+            Expression::Union(_) => return Err(ReferenceCountError::UnionNotSupported),
             Expression::Variable(variable) => {
                 if owned_variables.contains(variable.name())
                     && moved_variables.contains(variable.name())

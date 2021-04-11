@@ -35,7 +35,7 @@ pub fn tag_expression(
                 .collect::<Result<_, _>>()?,
         )
         .into(),
-        Expression::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
+        Expression::Union(_) => return Err(ReferenceCountError::UnionNotSupported),
         Expression::Variable(variable) => {
             if global_variables.contains_key(variable.name()) {
                 tag_pointer_to_global_variable(variable, type_)

@@ -26,7 +26,7 @@ pub fn count_references(module: &Module) -> Result<Module, ReferenceCountError> 
     let expression_mover = Rc::new(ExpressionMover::new(expression_cloner.clone()));
     let expression_dropper = Rc::new(ExpressionDropper::new());
     let record_clone_function_creator =
-        RecordCloneFunctionCreator::new(expression_cloner.clone(), name_generator.clone()).into();
+        RecordCloneFunctionCreator::new(expression_cloner, name_generator.clone()).into();
     let record_drop_function_creator =
         RecordDropFunctionCreator::new(expression_dropper.clone(), name_generator.clone()).into();
 
