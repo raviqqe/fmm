@@ -4,12 +4,14 @@ mod expression_dropper;
 mod expression_mover;
 mod global_variable_tag;
 mod module_converter;
-mod record_rc_function_creator;
+mod record_clone_function_creator;
+mod record_drop_function_creator;
 mod utilities;
 
 use self::{
     error::ReferenceCountError, expression_cloner::ExpressionCloner,
-    record_rc_function_creator::RecordRcFunctionCreator,
+    record_clone_function_creator::RecordCloneFunctionCreator,
+    record_drop_function_creator::RecordDropFunctionCreator,
 };
 use crate::{build::NameGenerator, ir::*};
 use expression_dropper::ExpressionDropper;
@@ -23,17 +25,16 @@ pub fn count_references(module: &Module) -> Result<Module, ReferenceCountError> 
     let expression_cloner = Rc::new(ExpressionCloner::new(name_generator.clone()));
     let expression_mover = Rc::new(ExpressionMover::new(expression_cloner.clone()));
     let expression_dropper = Rc::new(ExpressionDropper::new(name_generator.clone()));
-    let record_rc_function_creator = RecordRcFunctionCreator::new(
-        expression_cloner.clone(),
-        expression_dropper.clone(),
-        name_generator.clone(),
-    )
-    .into();
+    let record_clone_function_creator =
+        RecordCloneFunctionCreator::new(expression_cloner.clone(), name_generator.clone()).into();
+    let record_drop_function_creator =
+        RecordDropFunctionCreator::new(expression_dropper.clone(), name_generator.clone()).into();
 
     ModuleConverter::new(
         expression_mover,
         expression_dropper,
-        record_rc_function_creator,
+        record_clone_function_creator,
+        record_drop_function_creator,
         name_generator,
     )
     .convert(module)

@@ -1,7 +1,10 @@
-use super::global_variable_tag::tag_expression;
-use super::{error::ReferenceCountError, expression_dropper::ExpressionDropper};
+use super::expression_mover::ExpressionMover;
 use super::{
-    expression_mover::ExpressionMover, record_rc_function_creator::RecordRcFunctionCreator,
+    error::ReferenceCountError, expression_dropper::ExpressionDropper,
+    record_drop_function_creator::RecordDropFunctionCreator,
+};
+use super::{
+    global_variable_tag::tag_expression, record_clone_function_creator::RecordCloneFunctionCreator,
 };
 use crate::{
     analysis::collect_types,
@@ -18,7 +21,8 @@ use std::{
 pub struct ModuleConverter {
     expression_mover: Rc<ExpressionMover>,
     expression_dropper: Rc<ExpressionDropper>,
-    record_rc_function_creator: Rc<RecordRcFunctionCreator>,
+    record_clone_function_creator: Rc<RecordCloneFunctionCreator>,
+    record_drop_function_creator: Rc<RecordDropFunctionCreator>,
     name_generator: Rc<RefCell<NameGenerator>>,
 }
 
@@ -26,13 +30,15 @@ impl ModuleConverter {
     pub fn new(
         expression_mover: Rc<ExpressionMover>,
         expression_dropper: Rc<ExpressionDropper>,
-        record_rc_function_creator: Rc<RecordRcFunctionCreator>,
+        record_clone_function_creator: Rc<RecordCloneFunctionCreator>,
+        record_drop_function_creator: Rc<RecordDropFunctionCreator>,
         name_generator: Rc<RefCell<NameGenerator>>,
     ) -> Self {
         Self {
             expression_mover,
             expression_dropper,
-            record_rc_function_creator,
+            record_clone_function_creator,
+            record_drop_function_creator,
             name_generator,
         }
     }
@@ -84,10 +90,8 @@ impl ModuleConverter {
             .flat_map(|type_| match type_ {
                 Type::Record(record_type) => {
                     vec![
-                        self.record_rc_function_creator
-                            .create_record_clone_function(&record_type),
-                        self.record_rc_function_creator
-                            .create_record_drop_function(&record_type),
+                        self.record_clone_function_creator.create(&record_type),
+                        self.record_drop_function_creator.create(&record_type),
                     ]
                 }
                 _ => vec![],

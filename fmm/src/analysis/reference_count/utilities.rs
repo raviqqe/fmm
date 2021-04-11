@@ -53,6 +53,21 @@ pub fn get_counter_pointer(
     )
 }
 
+pub fn extract_record_elements(
+    builder: &InstructionBuilder,
+    variable: &Variable,
+    record_type: &types::Record,
+) -> Vec<TypedExpression> {
+    record_type
+        .elements()
+        .iter()
+        .enumerate()
+        .map(|(index, _)| {
+            builder.deconstruct_record(build::variable(variable.name(), record_type.clone()), index)
+        })
+        .collect()
+}
+
 pub fn get_record_clone_function_name(record: &types::Record) -> String {
     format!("rc_record_clone_{:x}", hash_record_type(record))
 }
