@@ -248,15 +248,15 @@ impl InstructionBuilder {
         ));
     }
 
-    pub fn if_(
+    pub fn if_<E>(
         &self,
         condition: impl Into<TypedExpression>,
-        then: impl Fn(Self) -> Block,
-        else_: impl Fn(Self) -> Block,
-    ) -> TypedExpression {
+        then: impl Fn(Self) -> Result<Block, E>,
+        else_: impl Fn(Self) -> Result<Block, E>,
+    ) -> Result<TypedExpression, E> {
         let condition = condition.into();
-        let then = then(self.clone_empty());
-        let else_ = else_(self.clone_empty());
+        let then = then(self.clone_empty())?;
+        let else_ = else_(self.clone_empty())?;
 
         let name = self.generate_name();
         let type_ = if let Some(branch) = then.terminal_instruction().to_branch() {
@@ -275,7 +275,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
     pub fn load(&self, pointer: impl Into<TypedExpression>) -> TypedExpression {
