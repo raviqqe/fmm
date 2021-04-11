@@ -7,6 +7,7 @@
     "bitcast",
     "bitcode",
     "canonicalizing",
+    "cloner",
     "cmpxchg",
     "conv",
     "hasher",
