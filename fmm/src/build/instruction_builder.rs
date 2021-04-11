@@ -1,6 +1,7 @@
-use super::name_generator::NameGenerator;
+use super::expressions::variable;
 use super::typed_expression::*;
 use super::void::VOID_TYPE;
+use super::{error::BuildError, name_generator::NameGenerator};
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::cell::RefCell;
@@ -66,10 +67,13 @@ impl InstructionBuilder {
         operator: ArithmeticOperator,
         lhs: impl Into<TypedExpression>,
         rhs: impl Into<TypedExpression>,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let lhs = lhs.into();
         let rhs = rhs.into();
-        let type_ = lhs.type_().to_primitive().unwrap();
+        let type_ = lhs
+            .type_()
+            .to_primitive()
+            .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?;
         let name = self.generate_name();
 
         self.add_instruction(ArithmeticOperation::new(
@@ -80,12 +84,20 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
-    pub fn atomic_load(&self, pointer: impl Into<TypedExpression>) -> TypedExpression {
+    pub fn atomic_load(
+        &self,
+        pointer: impl Into<TypedExpression>,
+    ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
-        let type_ = pointer.type_().to_pointer().unwrap().element().clone();
+        let type_ = pointer
+            .type_()
+            .to_pointer()
+            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+            .element()
+            .clone();
         let name = self.generate_name();
 
         self.add_instruction(AtomicLoad::new(
@@ -94,7 +106,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
     pub fn atomic_operation(
@@ -102,10 +114,13 @@ impl InstructionBuilder {
         operator: AtomicOperator,
         pointer: impl Into<TypedExpression>,
         value: impl Into<TypedExpression>,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
         let value = value.into();
-        let type_ = value.type_().to_primitive().unwrap();
+        let type_ = value
+            .type_()
+            .to_primitive()
+            .ok_or_else(|| BuildError::PrimitiveExpected(value.type_().clone()))?;
         let name = self.generate_name();
 
         self.add_instruction(AtomicOperation::new(
@@ -116,7 +131,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(variable(name, type_))
     }
 
     pub fn atomic_store(
@@ -138,10 +153,14 @@ impl InstructionBuilder {
         &self,
         function: impl Into<TypedExpression>,
         arguments: Vec<TypedExpression>,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let function = function.into();
         let arguments = arguments.into_iter().collect::<Vec<_>>();
-        let type_ = function.type_().to_function().unwrap().clone();
+        let type_ = function
+            .type_()
+            .to_function()
+            .ok_or_else(|| BuildError::FunctionExpected(function.type_().clone()))?
+            .clone();
         let name = self.generate_name();
 
         self.add_instruction(Call::new(
@@ -155,7 +174,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_.result().clone())
+        Ok(variable(name, type_.result().clone()))
     }
 
     pub fn compare_and_swap(
@@ -185,29 +204,35 @@ impl InstructionBuilder {
         operator: ComparisonOperator,
         lhs: impl Into<TypedExpression>,
         rhs: impl Into<TypedExpression>,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let lhs = lhs.into();
         let rhs = rhs.into();
         let name = self.generate_name();
 
         self.add_instruction(ComparisonOperation::new(
-            lhs.type_().to_primitive().unwrap(),
+            lhs.type_()
+                .to_primitive()
+                .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?,
             operator,
             lhs.expression().clone(),
             rhs.expression().clone(),
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), types::Primitive::Boolean)
+        Ok(variable(name, types::Primitive::Boolean))
     }
 
     pub fn deconstruct_record(
         &self,
         record: impl Into<TypedExpression>,
         element_index: usize,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let record = record.into();
-        let type_ = record.type_().to_record().unwrap().clone();
+        let type_ = record
+            .type_()
+            .to_record()
+            .ok_or_else(|| BuildError::RecordExpected(record.type_().clone()))?
+            .clone();
         let name = self.generate_name();
 
         self.add_instruction(DeconstructRecord::new(
@@ -217,16 +242,20 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_.elements()[element_index].clone())
+        Ok(variable(name, type_.elements()[element_index].clone()))
     }
 
     pub fn deconstruct_union(
         &self,
         union: impl Into<TypedExpression>,
         member_index: usize,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let union = union.into();
-        let type_ = union.type_().to_union().unwrap().clone();
+        let type_ = union
+            .type_()
+            .to_union()
+            .ok_or_else(|| BuildError::UnionExpected(union.type_().clone()))?
+            .clone();
         let name = self.generate_name();
 
         self.add_instruction(DeconstructUnion::new(
@@ -236,27 +265,34 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_.members()[member_index].clone())
+        Ok(variable(name, type_.members()[member_index].clone()))
     }
 
-    pub fn free_heap(&self, pointer: impl Into<TypedExpression>) {
+    pub fn free_heap(&self, pointer: impl Into<TypedExpression>) -> Result<(), BuildError> {
         let pointer = pointer.into();
 
         self.add_instruction(FreeHeap::new(
-            pointer.type_().to_pointer().unwrap().element().clone(),
+            pointer
+                .type_()
+                .to_pointer()
+                .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+                .element()
+                .clone(),
             pointer.expression().clone(),
         ));
+
+        Ok(())
     }
 
-    pub fn if_(
+    pub fn if_<E>(
         &self,
         condition: impl Into<TypedExpression>,
-        then: impl Fn(Self) -> Block,
-        else_: impl Fn(Self) -> Block,
-    ) -> TypedExpression {
+        then: impl Fn(Self) -> Result<Block, E>,
+        else_: impl Fn(Self) -> Result<Block, E>,
+    ) -> Result<TypedExpression, E> {
         let condition = condition.into();
-        let then = then(self.clone_empty());
-        let else_ = else_(self.clone_empty());
+        let then = then(self.clone_empty())?;
+        let else_ = else_(self.clone_empty())?;
 
         let name = self.generate_name();
         let type_ = if let Some(branch) = then.terminal_instruction().to_branch() {
@@ -275,12 +311,17 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(variable(name, type_))
     }
 
-    pub fn load(&self, pointer: impl Into<TypedExpression>) -> TypedExpression {
+    pub fn load(&self, pointer: impl Into<TypedExpression>) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
-        let type_ = pointer.type_().to_pointer().unwrap().element().clone();
+        let type_ = pointer
+            .type_()
+            .to_pointer()
+            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+            .element()
+            .clone();
         let name = self.generate_name();
 
         self.add_instruction(Load::new(
@@ -289,7 +330,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
     pub fn pass_through(&self, value: impl Into<TypedExpression>) -> TypedExpression {
@@ -309,10 +350,14 @@ impl InstructionBuilder {
         &self,
         pointer: impl Into<TypedExpression>,
         offset: impl Into<TypedExpression>,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
         let offset = offset.into();
-        let type_ = pointer.type_().to_pointer().unwrap().clone();
+        let type_ = pointer
+            .type_()
+            .to_pointer()
+            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+            .clone();
         let name = self.generate_name();
 
         self.add_instruction(PointerAddress::new(
@@ -322,22 +367,23 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), type_)
+        Ok(variable(name, type_))
     }
 
     pub fn record_address(
         &self,
         pointer: impl Into<TypedExpression>,
         element_index: usize,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
-        let type_ = pointer
+        let element_type = pointer
             .type_()
             .to_pointer()
-            .unwrap()
-            .element()
+            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+            .element();
+        let type_ = element_type
             .to_record()
-            .unwrap()
+            .ok_or_else(|| BuildError::RecordExpected(element_type.clone()))?
             .clone();
         let name = self.generate_name();
 
@@ -348,10 +394,10 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(
-            Variable::new(name),
+        Ok(variable(
+            name,
             types::Pointer::new(type_.elements()[element_index].clone()),
-        )
+        ))
     }
 
     pub fn store(&self, value: impl Into<TypedExpression>, pointer: impl Into<TypedExpression>) {
@@ -369,15 +415,16 @@ impl InstructionBuilder {
         &self,
         pointer: impl Into<TypedExpression>,
         member_index: usize,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
-        let type_ = pointer
+        let element_type = pointer
             .type_()
             .to_pointer()
-            .unwrap()
-            .element()
+            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+            .element();
+        let type_ = element_type
             .to_union()
-            .unwrap()
+            .ok_or_else(|| BuildError::UnionExpected(element_type.clone()))?
             .clone();
         let name = self.generate_name();
 
@@ -388,10 +435,10 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(
-            Variable::new(name),
+        Ok(variable(
+            name,
             types::Pointer::new(type_.members()[member_index].clone()),
-        )
+        ))
     }
 
     pub fn branch(&self, typed_expression: impl Into<TypedExpression>) -> Block {
