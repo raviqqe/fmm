@@ -1,4 +1,4 @@
-use super::typed_expression::TypedExpression;
+use super::{typed_expression::TypedExpression, BuildError};
 use crate::ir::*;
 use crate::types::{self, Type};
 
@@ -20,16 +20,18 @@ pub fn bitwise_operation(
     operator: BitwiseOperator,
     lhs: impl Into<TypedExpression>,
     rhs: impl Into<TypedExpression>,
-) -> BitwiseOperation {
+) -> Result<BitwiseOperation, BuildError> {
     let lhs = lhs.into();
     let rhs = rhs.into();
 
-    BitwiseOperation::new(
-        lhs.type_().to_primitive().unwrap(),
+    Ok(BitwiseOperation::new(
+        lhs.type_()
+            .to_primitive()
+            .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?,
         operator,
         lhs.expression().clone(),
         rhs.expression().clone(),
-    )
+    ))
 }
 
 pub fn record(elements: Vec<TypedExpression>) -> Record {

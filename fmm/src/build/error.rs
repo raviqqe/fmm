@@ -1,10 +1,17 @@
+use crate::types::Type;
 use std::{
     error::Error,
     fmt::{self, Display, Formatter},
 };
 
-#[derive(Clone, Debug)]
-pub enum BuildError {}
+#[derive(Clone, Debug, PartialEq)]
+pub enum BuildError {
+    FunctionExpected(Type),
+    PointerExpected(Type),
+    PrimitiveExpected(Type),
+    RecordExpected(Type),
+    UnionExpected(Type),
+}
 
 impl Display for BuildError {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {

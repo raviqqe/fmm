@@ -12,7 +12,7 @@ use crate::ir::*;
 use crate::types::{self, CallingConvention, Type};
 use crate::{
     analysis::convert_types,
-    build::{self, InstructionBuilder, NameGenerator},
+    build::{self, BuildError, InstructionBuilder, NameGenerator},
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -89,7 +89,7 @@ impl CpsTransformer {
                                 continuation_type.into(),
                             )])
                             .collect(),
-                    ),
+                    )?,
                     self.result_type.clone(),
                     CallingConvention::Tail,
                     definition.is_global(),
@@ -104,14 +104,18 @@ impl CpsTransformer {
         })
     }
 
-    fn transform_block(&mut self, block: &Block, local_variables: &HashMap<String, Type>) -> Block {
+    fn transform_block(
+        &mut self,
+        block: &Block,
+        local_variables: &HashMap<String, Type>,
+    ) -> Result<Block, BuildError> {
         let (instructions, terminal_instruction) = self.transform_instructions(
             block.instructions(),
             block.terminal_instruction(),
             local_variables,
-        );
+        )?;
 
-        Block::new(instructions, terminal_instruction)
+        Ok(Block::new(instructions, terminal_instruction))
     }
 
     fn transform_instructions(
@@ -119,8 +123,8 @@ impl CpsTransformer {
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
         local_variables: &HashMap<String, Type>,
-    ) -> (Vec<Instruction>, TerminalInstruction) {
-        match instructions {
+    ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
+        Ok(match instructions {
             [] => match terminal_instruction {
                 TerminalInstruction::Branch(_) => unreachable!(),
                 TerminalInstruction::Return(return_) => (
@@ -164,7 +168,7 @@ impl CpsTransformer {
                                 instructions,
                                 terminal_instruction,
                                 &environment,
-                            )
+                            )?
                         };
 
                         let builder = InstructionBuilder::new(self.name_generator.clone());
@@ -174,10 +178,10 @@ impl CpsTransformer {
                                 &builder,
                                 build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                                 self.get_environment_record(&environment),
-                            );
+                            )?;
                         }
 
-                        return (
+                        return Ok((
                             builder
                                 .into_instructions()
                                 .into_iter()
@@ -194,7 +198,7 @@ impl CpsTransformer {
                                 .collect(),
                             Return::new(self.result_type.clone(), Variable::new(RESULT_NAME))
                                 .into(),
-                        );
+                        ));
                     }
                 } else if let Instruction::If(if_) = instruction {
                     let then = self.transform_if_block(
@@ -203,16 +207,16 @@ impl CpsTransformer {
                         local_variables,
                         instructions,
                         terminal_instruction,
-                    );
+                    )?;
                     let else_ = self.transform_if_block(
                         if_.name(),
                         if_.else_(),
                         local_variables,
                         instructions,
                         terminal_instruction,
-                    );
+                    )?;
 
-                    return (
+                    return Ok((
                         vec![If::new(
                             if_.type_().clone(),
                             if_.condition().clone(),
@@ -222,7 +226,7 @@ impl CpsTransformer {
                         )
                         .into()],
                         TerminalInstruction::Unreachable,
-                    );
+                    ));
                 }
 
                 let (instructions, terminal_instruction) = self.transform_instructions(
@@ -235,7 +239,7 @@ impl CpsTransformer {
                             instruction.result_type().map(|type_| (name.into(), type_))
                         }))
                         .collect(),
-                );
+                )?;
 
                 (
                     vec![instruction.clone()]
@@ -245,7 +249,7 @@ impl CpsTransformer {
                     terminal_instruction,
                 )
             }
-        }
+        })
     }
 
     fn transform_if_block(
@@ -255,39 +259,41 @@ impl CpsTransformer {
         local_variables: &HashMap<String, Type>,
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
-    ) -> Block {
-        if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
-            let replace_variable = |expression: &Expression| match expression {
-                Expression::Variable(variable) => {
-                    if variable.name() == name {
-                        branch.expression().clone()
-                    } else {
-                        expression.clone()
+    ) -> Result<Block, BuildError> {
+        Ok(
+            if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
+                let replace_variable = |expression: &Expression| match expression {
+                    Expression::Variable(variable) => {
+                        if variable.name() == name {
+                            branch.expression().clone()
+                        } else {
+                            expression.clone()
+                        }
                     }
-                }
-                _ => expression.clone(),
-            };
+                    _ => expression.clone(),
+                };
 
-            self.transform_block(
-                &Block::new(
-                    block
-                        .instructions()
-                        .iter()
-                        .cloned()
-                        .chain(instructions.iter().map(|instruction| {
-                            convert_expressions_in_instruction(instruction, &replace_variable)
-                        }))
-                        .collect(),
-                    convert_expressions_in_terminal_instruction(
-                        terminal_instruction,
-                        &replace_variable,
+                self.transform_block(
+                    &Block::new(
+                        block
+                            .instructions()
+                            .iter()
+                            .cloned()
+                            .chain(instructions.iter().map(|instruction| {
+                                convert_expressions_in_instruction(instruction, &replace_variable)
+                            }))
+                            .collect(),
+                        convert_expressions_in_terminal_instruction(
+                            terminal_instruction,
+                            &replace_variable,
+                        ),
                     ),
-                ),
-                local_variables,
-            )
-        } else {
-            self.transform_block(block, local_variables)
-        }
+                    local_variables,
+                )?
+            } else {
+                self.transform_block(block, local_variables)?
+            },
+        )
     }
 
     fn get_environment_record(&self, environment: &[(String, Type)]) -> Record {
@@ -305,7 +311,7 @@ impl CpsTransformer {
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
         environment: &[(String, Type)],
-    ) -> Expression {
+    ) -> Result<Expression, BuildError> {
         let name = self.generate_continuation_name();
         let block = self.transform_block(
             &Block::new(instructions.to_vec(), terminal_instruction.clone()),
@@ -314,7 +320,7 @@ impl CpsTransformer {
                 .cloned()
                 .chain(vec![(call.name().into(), call.type_().result().clone())])
                 .collect(),
-        );
+        )?;
 
         self.function_definitions.push(FunctionDefinition::new(
             &name,
@@ -332,7 +338,7 @@ impl CpsTransformer {
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                         &environment_record_type.clone().into(),
-                    );
+                    )?;
 
                     builder
                         .into_instructions()
@@ -356,7 +362,7 @@ impl CpsTransformer {
             false,
         ));
 
-        Variable::new(name).into()
+        Ok(Variable::new(name).into())
     }
 
     // The local variables should not include call results because they are
