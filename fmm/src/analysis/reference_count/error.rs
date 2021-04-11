@@ -9,7 +9,7 @@ pub enum ReferenceCountError {
 }
 
 impl Display for ReferenceCountError {
-    fn fmt(&self, &mut formatter: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
         write!(formatter, "{:?}", self)
     }
 }
