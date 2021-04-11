@@ -381,7 +381,6 @@ impl InstructionBuilder {
             .to_pointer()
             .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
             .element();
-
         let type_ = element_type
             .to_record()
             .ok_or_else(|| BuildError::RecordExpected(element_type.clone()))?
