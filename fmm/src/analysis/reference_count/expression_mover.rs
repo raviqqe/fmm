@@ -19,25 +19,25 @@ impl ExpressionMover {
         expression: &Expression,
         type_: &Type,
         owned_variables: &HashSet<String>,
-        used_variables: &HashSet<String>,
+        moved_variables: &HashSet<String>,
     ) -> HashSet<String> {
         let move_expression =
-            |expression: &Expression, type_: &Type, used_variables: &HashSet<String>| {
-                self.move_expression(builder, expression, type_, owned_variables, used_variables)
+            |expression: &Expression, type_: &Type, moved_variables: &HashSet<String>| {
+                self.move_expression(builder, expression, type_, owned_variables, moved_variables)
             };
 
         match expression {
             Expression::BitCast(bit_cast) => {
-                move_expression(bit_cast.expression(), bit_cast.from(), used_variables)
+                move_expression(bit_cast.expression(), bit_cast.from(), moved_variables)
             }
             Expression::BitwiseOperation(operation) => {
-                let used_variables =
-                    move_expression(operation.rhs(), &operation.type_().into(), used_variables);
+                let moved_variables =
+                    move_expression(operation.rhs(), &operation.type_().into(), moved_variables);
 
-                move_expression(operation.lhs(), &operation.type_().into(), &used_variables)
+                move_expression(operation.lhs(), &operation.type_().into(), &moved_variables)
             }
             Expression::Record(record) => {
-                let mut used_variables = used_variables.clone();
+                let mut moved_variables = moved_variables.clone();
 
                 for (expression, type_) in record
                     .elements()
@@ -45,34 +45,34 @@ impl ExpressionMover {
                     .zip(record.type_().elements())
                     .rev()
                 {
-                    used_variables = move_expression(expression, type_, &used_variables);
+                    moved_variables = move_expression(expression, type_, &moved_variables);
                 }
 
-                used_variables
+                moved_variables
             }
             Expression::Union(_) => unimplemented!(),
             Expression::Variable(variable) => {
                 if owned_variables.contains(variable.name())
-                    && used_variables.contains(variable.name())
+                    && moved_variables.contains(variable.name())
                 {
                     self.expression_cloner.clone_expression(
                         builder,
                         &TypedExpression::new(expression.clone(), type_.clone()),
                     );
 
-                    used_variables
+                    moved_variables
                         .iter()
                         .cloned()
                         .chain(vec![variable.name().into()])
                         .collect()
                 } else {
-                    used_variables.clone()
+                    moved_variables.clone()
                 }
             }
             Expression::AlignOf(_)
             | Expression::Primitive(_)
             | Expression::SizeOf(_)
-            | Expression::Undefined(_) => used_variables.clone(),
+            | Expression::Undefined(_) => moved_variables.clone(),
         }
     }
 }
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn convert_align_of() {
         let (mover, builder) = initialize_expression_mover();
-        let used_variables = mover.move_expression(
+        let moved_variables = mover.move_expression(
             &builder,
             &AlignOf::new(types::Primitive::PointerInteger).into(),
             &AlignOf::RESULT_TYPE.into(),
@@ -104,13 +104,13 @@ mod tests {
         );
 
         assert!(builder.into_instructions().is_empty());
-        assert_eq!(used_variables, Default::default());
+        assert_eq!(moved_variables, Default::default());
     }
 
     #[test]
-    fn convert_used_variable() {
+    fn convert_moved_variable() {
         let (mover, builder) = initialize_expression_mover();
-        let used_variables = mover.move_expression(
+        let moved_variables = mover.move_expression(
             &builder,
             &Variable::new("x").into(),
             &types::Pointer::new(types::Primitive::Float64).into(),
@@ -119,16 +119,16 @@ mod tests {
         );
 
         assert!(!builder.into_instructions().is_empty());
-        assert_eq!(used_variables, vec!["x".into()].into_iter().collect());
+        assert_eq!(moved_variables, vec!["x".into()].into_iter().collect());
     }
 
     #[test]
-    fn convert_used_variable_in_record() {
+    fn convert_moved_variable_in_record() {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
         let variable = Variable::new("x");
 
         let (mover, builder) = initialize_expression_mover();
-        let used_variables = mover.move_expression(
+        let moved_variables = mover.move_expression(
             &builder,
             &Record::new(
                 types::Record::new(vec![
@@ -144,6 +144,6 @@ mod tests {
         );
 
         assert!(!builder.into_instructions().is_empty());
-        assert_eq!(used_variables, vec!["x".into()].into_iter().collect());
+        assert_eq!(moved_variables, vec!["x".into()].into_iter().collect());
     }
 }
