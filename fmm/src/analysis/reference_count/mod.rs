@@ -46,7 +46,7 @@ mod tests {
     use crate::types::{self, CallingConvention, Type};
 
     fn test_transformation(module: &Module) {
-        check_types(&count_references(module)).unwrap();
+        check_types(&count_references(module).unwrap()).unwrap();
     }
 
     fn test_function_definition(

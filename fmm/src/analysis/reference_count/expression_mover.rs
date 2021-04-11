@@ -51,7 +51,7 @@ impl ExpressionMover {
 
                 moved_variables
             }
-            Expression::Union(_) => unimplemented!(),
+            Expression::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
             Expression::Variable(variable) => {
                 if owned_variables.contains(variable.name())
                     && moved_variables.contains(variable.name())
@@ -96,13 +96,15 @@ mod tests {
     #[test]
     fn convert_align_of() {
         let (mover, builder) = initialize_expression_mover();
-        let moved_variables = mover.move_expression(
-            &builder,
-            &AlignOf::new(types::Primitive::PointerInteger).into(),
-            &AlignOf::RESULT_TYPE.into(),
-            &Default::default(),
-            &Default::default(),
-        );
+        let moved_variables = mover
+            .move_expression(
+                &builder,
+                &AlignOf::new(types::Primitive::PointerInteger).into(),
+                &AlignOf::RESULT_TYPE.into(),
+                &Default::default(),
+                &Default::default(),
+            )
+            .unwrap();
 
         assert!(builder.into_instructions().is_empty());
         assert_eq!(moved_variables, Default::default());
@@ -111,13 +113,15 @@ mod tests {
     #[test]
     fn convert_moved_variable() {
         let (mover, builder) = initialize_expression_mover();
-        let moved_variables = mover.move_expression(
-            &builder,
-            &Variable::new("x").into(),
-            &types::Pointer::new(types::Primitive::Float64).into(),
-            &vec!["x".into()].into_iter().collect(),
-            &vec!["x".into()].into_iter().collect(),
-        );
+        let moved_variables = mover
+            .move_expression(
+                &builder,
+                &Variable::new("x").into(),
+                &types::Pointer::new(types::Primitive::Float64).into(),
+                &vec!["x".into()].into_iter().collect(),
+                &vec!["x".into()].into_iter().collect(),
+            )
+            .unwrap();
 
         assert!(!builder.into_instructions().is_empty());
         assert_eq!(moved_variables, vec!["x".into()].into_iter().collect());
@@ -129,20 +133,22 @@ mod tests {
         let variable = Variable::new("x");
 
         let (mover, builder) = initialize_expression_mover();
-        let moved_variables = mover.move_expression(
-            &builder,
-            &Record::new(
-                types::Record::new(vec![
-                    pointer_type.clone().into(),
-                    pointer_type.clone().into(),
-                ]),
-                vec![variable.clone().into(), variable.into()],
+        let moved_variables = mover
+            .move_expression(
+                &builder,
+                &Record::new(
+                    types::Record::new(vec![
+                        pointer_type.clone().into(),
+                        pointer_type.clone().into(),
+                    ]),
+                    vec![variable.clone().into(), variable.into()],
+                )
+                .into(),
+                &pointer_type.into(),
+                &vec!["x".into()].into_iter().collect(),
+                &vec!["x".into()].into_iter().collect(),
             )
-            .into(),
-            &pointer_type.into(),
-            &vec!["x".into()].into_iter().collect(),
-            &vec!["x".into()].into_iter().collect(),
-        );
+            .unwrap();
 
         assert!(!builder.into_instructions().is_empty());
         assert_eq!(moved_variables, vec!["x".into()].into_iter().collect());

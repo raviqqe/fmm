@@ -34,8 +34,7 @@ impl RecordRcFunctionCreator {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
         for element in self.extract_elements(&builder, &Variable::new(ARGUMENT_NAME), record_type) {
-            self.expression_cloner
-                .clone_expression(&builder, &element);
+            self.expression_cloner.clone_expression(&builder, &element);
         }
 
         FunctionDefinition::new(

@@ -47,7 +47,7 @@ impl ModuleConverter {
                 .variable_definitions()
                 .iter()
                 .map(|definition| self.convert_variable_definition(definition, &global_variables))
-                .collect(),
+                .collect::<Result<_, _>>()?,
             self.create_record_functions(module)
                 .into_iter()
                 .chain(
@@ -99,14 +99,14 @@ impl ModuleConverter {
         &self,
         definition: &VariableDefinition,
         global_variables: &HashMap<String, Type>,
-    ) -> VariableDefinition {
-        VariableDefinition::new(
+    ) -> Result<VariableDefinition, ReferenceCountError> {
+        Ok(VariableDefinition::new(
             definition.name(),
-            tag_expression(definition.body(), definition.type_(), global_variables),
+            tag_expression(definition.body(), definition.type_(), global_variables)?,
             definition.type_().clone(),
             definition.is_mutable(),
             definition.is_global(),
-        )
+        ))
     }
 
     fn convert_function_definition(
@@ -114,6 +114,17 @@ impl ModuleConverter {
         definition: &FunctionDefinition,
         global_variables: &HashMap<String, Type>,
     ) -> Result<FunctionDefinition, ReferenceCountError> {
+        let (instructions, _) = self.convert_instructions(
+            definition.body().instructions(),
+            definition.body().terminal_instruction(),
+            &definition
+                .arguments()
+                .iter()
+                .map(|argument| argument.name().into())
+                .collect(),
+            &HashSet::new(),
+        )?;
+
         Ok(FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
@@ -127,26 +138,16 @@ impl ModuleConverter {
                             .any(|argument| argument.name() == name.as_str())
                     })
                     .map(|(name, type_)| {
-                        PassThrough::new(
+                        Ok(PassThrough::new(
                             type_.clone(),
-                            tag_expression(&Variable::new(name).into(), type_, global_variables),
+                            tag_expression(&Variable::new(name).into(), type_, global_variables)?,
                             name,
                         )
-                        .into()
+                        .into())
                     })
-                    .chain(
-                        self.convert_instructions(
-                            definition.body().instructions(),
-                            definition.body().terminal_instruction(),
-                            &definition
-                                .arguments()
-                                .iter()
-                                .map(|argument| argument.name().into())
-                                .collect(),
-                            &HashSet::new(),
-                        )?
-                        .0,
-                    )
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
+                    .chain(instructions)
                     .collect(),
                 definition.body().terminal_instruction().clone(),
             ),
@@ -352,7 +353,7 @@ impl ModuleConverter {
                     moved_variables,
                 )
             }
-            Instruction::DeconstructUnion(_) => unimplemented!(),
+            Instruction::DeconstructUnion(_) => Err(ReferenceCountError::UnionNotSupported)?,
             Instruction::If(if_) => {
                 let convert_block = |block: &Block| {
                     let (instructions, moved_variables) = self.convert_instructions(
@@ -362,10 +363,10 @@ impl ModuleConverter {
                         moved_variables,
                     )?;
 
-                    (instructions, moved_variables)
+                    Ok((instructions, moved_variables))
                 };
-                let (then_instructions, then_moved_variables) = convert_block(if_.then());
-                let (else_instructions, else_moved_variables) = convert_block(if_.then());
+                let (then_instructions, then_moved_variables) = convert_block(if_.then())?;
+                let (else_instructions, else_moved_variables) = convert_block(if_.else_())?;
 
                 let create_block = |block: &Block,
                                     instructions,
@@ -401,8 +402,8 @@ impl ModuleConverter {
                         create_block(
                             if_.else_(),
                             else_instructions,
-                            &then_moved_variables,
                             &else_moved_variables,
+                            &then_moved_variables,
                         )?,
                         if_.name(),
                     )

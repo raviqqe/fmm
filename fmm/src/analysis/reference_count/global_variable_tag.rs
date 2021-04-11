@@ -1,3 +1,4 @@
+use super::error::ReferenceCountError;
 use crate::ir::*;
 use crate::types::{self, Type};
 use std::collections::HashMap;
@@ -6,22 +7,22 @@ pub fn tag_expression(
     expression: &Expression,
     type_: &Type,
     global_variables: &HashMap<String, Type>,
-) -> Expression {
+) -> Result<Expression, ReferenceCountError> {
     let tag_expression = |expression, type_| tag_expression(expression, type_, global_variables);
 
-    match expression {
+    Ok(match expression {
         // TODO Is this correct?
         Expression::BitCast(bit_cast) => BitCast::new(
             bit_cast.from().clone(),
             bit_cast.to().clone(),
-            tag_expression(bit_cast.expression(), bit_cast.from()),
+            tag_expression(bit_cast.expression(), bit_cast.from())?,
         )
         .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             operation.type_(),
             operation.operator(),
-            tag_expression(operation.lhs(), &operation.type_().into()),
-            tag_expression(operation.rhs(), &operation.type_().into()),
+            tag_expression(operation.lhs(), &operation.type_().into())?,
+            tag_expression(operation.rhs(), &operation.type_().into())?,
         )
         .into(),
         Expression::Record(record) => Record::new(
@@ -31,10 +32,10 @@ pub fn tag_expression(
                 .iter()
                 .zip(record.type_().elements())
                 .map(|(element, type_)| tag_expression(element, type_))
-                .collect(),
+                .collect::<Result<_, _>>()?,
         )
         .into(),
-        Expression::Union(_) => unimplemented!(),
+        Expression::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
         Expression::Variable(variable) => {
             if global_variables.contains_key(variable.name()) {
                 tag_pointer_to_global_variable(variable, type_)
@@ -46,7 +47,7 @@ pub fn tag_expression(
         | Expression::Primitive(_)
         | Expression::SizeOf(_)
         | Expression::Undefined(_) => expression.clone(),
-    }
+    })
 }
 
 fn tag_pointer_to_global_variable(variable: &Variable, type_: &Type) -> Expression {
