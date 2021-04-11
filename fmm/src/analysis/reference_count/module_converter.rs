@@ -497,22 +497,23 @@ impl ModuleConverter {
         moved_variables: &HashSet<String>,
     ) -> Result<(Vec<Instruction>, HashSet<String>), ReferenceCountError> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
+        let move_expression = |expression, type_| {
+            self.expression_mover.move_expression(
+                &builder,
+                expression,
+                type_,
+                owned_variables,
+                moved_variables,
+            )
+        };
 
         let moved_variables = match instruction {
-            TerminalInstruction::Branch(branch) => self.expression_mover.move_expression(
-                &builder,
-                branch.expression(),
-                branch.type_(),
-                owned_variables,
-                moved_variables,
-            )?,
-            TerminalInstruction::Return(return_) => self.expression_mover.move_expression(
-                &builder,
-                return_.expression(),
-                return_.type_(),
-                owned_variables,
-                moved_variables,
-            )?,
+            TerminalInstruction::Branch(branch) => {
+                move_expression(branch.expression(), branch.type_())?
+            }
+            TerminalInstruction::Return(return_) => {
+                move_expression(return_.expression(), return_.type_())?
+            }
             TerminalInstruction::Unreachable => Default::default(),
         };
 
