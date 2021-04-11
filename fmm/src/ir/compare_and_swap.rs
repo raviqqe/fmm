@@ -2,6 +2,7 @@ use super::expression::Expression;
 use crate::types::Type;
 use std::sync::Arc;
 
+// TODO Return old values top drop them on reference counting.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompareAndSwap {
     type_: Type, // pointer element type
