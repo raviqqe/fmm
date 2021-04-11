@@ -1,5 +1,6 @@
+use super::error::ReferenceCountError;
 use crate::{
-    build::{self, InstructionBuilder, TypedExpression, VOID_VALUE},
+    build::{self, BuildError, InstructionBuilder, TypedExpression, VOID_VALUE},
     ir::*,
     types,
 };
@@ -9,15 +10,15 @@ use std::hash::{Hash, Hasher};
 pub fn if_heap_pointer(
     builder: &InstructionBuilder,
     pointer: &TypedExpression,
-    then: impl Fn(&InstructionBuilder),
-) {
+    then: impl Fn(&InstructionBuilder) -> Result<(), ReferenceCountError>,
+) -> Result<(), ReferenceCountError> {
     builder.if_(
         builder.comparison_operation(
             ComparisonOperator::NotEqual,
             build::bit_cast(types::Primitive::PointerInteger, pointer.clone()),
             Undefined::new(types::Primitive::PointerInteger),
-        ),
-        |builder| {
+        )?,
+        |builder| -> Result<_, ReferenceCountError> {
             builder.if_(
                 builder.comparison_operation(
                     ComparisonOperator::NotEqual,
@@ -25,25 +26,27 @@ pub fn if_heap_pointer(
                         BitwiseOperator::And,
                         build::bit_cast(types::Primitive::PointerInteger, pointer.clone()),
                         Primitive::PointerInteger(1),
-                    ),
+                    )?,
                     Primitive::PointerInteger(1),
-                ),
-                |builder| {
-                    then(&builder);
-                    builder.branch(VOID_VALUE.clone())
+                )?,
+                |builder| -> Result<_, ReferenceCountError> {
+                    then(&builder)?;
+                    Ok(builder.branch(VOID_VALUE.clone()))
                 },
-                |builder| builder.branch(VOID_VALUE.clone()),
-            );
-            builder.branch(VOID_VALUE.clone())
+                |builder| Ok(builder.branch(VOID_VALUE.clone())),
+            )?;
+            Ok(builder.branch(VOID_VALUE.clone()))
         },
-        |builder| builder.branch(VOID_VALUE.clone()),
-    );
+        |builder| Ok(builder.branch(VOID_VALUE.clone())),
+    )?;
+
+    Ok(())
 }
 
 pub fn get_counter_pointer(
     builder: &InstructionBuilder,
     heap_pointer: &TypedExpression,
-) -> TypedExpression {
+) -> Result<TypedExpression, BuildError> {
     builder.pointer_address(
         build::bit_cast(
             types::Pointer::new(types::Primitive::PointerInteger),
@@ -57,7 +60,7 @@ pub fn extract_record_elements(
     builder: &InstructionBuilder,
     variable: &Variable,
     record_type: &types::Record,
-) -> Vec<TypedExpression> {
+) -> Result<Vec<TypedExpression>, BuildError> {
     record_type
         .elements()
         .iter()

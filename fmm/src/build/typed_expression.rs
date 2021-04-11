@@ -1,6 +1,7 @@
 use crate::ir::*;
 use crate::types::Type;
 
+// TODO Make this enum creating TypedVariable.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypedExpression {
     expression: Expression,

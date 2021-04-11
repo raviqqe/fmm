@@ -1,3 +1,4 @@
+use super::error::ReferenceCountError;
 use super::expression_dropper::ExpressionDropper;
 use super::utilities;
 use crate::{
@@ -27,22 +28,28 @@ impl RecordDropFunctionCreator {
         }
     }
 
-    pub fn create(&self, record_type: &types::Record) -> FunctionDefinition {
+    pub fn create(
+        &self,
+        record_type: &types::Record,
+    ) -> Result<FunctionDefinition, ReferenceCountError> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-        for element in
-            utilities::extract_record_elements(&builder, &Variable::new(ARGUMENT_NAME), record_type)
-        {
-            self.expression_dropper.drop_expression(&builder, &element);
+        for element in utilities::extract_record_elements(
+            &builder,
+            &Variable::new(ARGUMENT_NAME),
+            record_type,
+        )? {
+            self.expression_dropper
+                .drop_expression(&builder, &element)?;
         }
 
-        FunctionDefinition::new(
+        Ok(FunctionDefinition::new(
             utilities::get_record_drop_function_name(record_type),
             vec![Argument::new(ARGUMENT_NAME, record_type.clone())],
             builder.return_(VOID_VALUE.clone()),
             VOID_TYPE.clone(),
             CallingConvention::Target,
             false,
-        )
+        ))
     }
 }

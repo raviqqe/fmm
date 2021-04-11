@@ -1,3 +1,4 @@
+use crate::build::BuildError;
 use std::{
     error::Error,
     fmt::{self, Display, Formatter},
@@ -5,6 +6,7 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub enum ReferenceCountError {
+    BuildError(BuildError),
     UnionNotSupported,
 }
 
@@ -15,3 +17,9 @@ impl Display for ReferenceCountError {
 }
 
 impl Error for ReferenceCountError {}
+
+impl From<BuildError> for ReferenceCountError {
+    fn from(error: BuildError) -> Self {
+        Self::BuildError(error)
+    }
+}

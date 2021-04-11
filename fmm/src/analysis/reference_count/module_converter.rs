@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     analysis::collect_types,
-    build::{InstructionBuilder, NameGenerator, TypedExpression},
+    build::{self, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
     types::{self, Type},
 };
@@ -54,7 +54,7 @@ impl ModuleConverter {
                 .iter()
                 .map(|definition| self.convert_variable_definition(definition, &global_variables))
                 .collect::<Result<_, _>>()?,
-            self.create_record_functions(module)
+            self.create_record_functions(module)?
                 .into_iter()
                 .chain(
                     module
@@ -84,7 +84,10 @@ impl ModuleConverter {
             .collect()
     }
 
-    fn create_record_functions(&self, module: &Module) -> Vec<FunctionDefinition> {
+    fn create_record_functions(
+        &self,
+        module: &Module,
+    ) -> Result<Vec<FunctionDefinition>, ReferenceCountError> {
         collect_types(module)
             .into_iter()
             .flat_map(|type_| match type_ {
@@ -124,7 +127,7 @@ impl ModuleConverter {
             &definition
                 .arguments()
                 .iter()
-                .map(|argument| argument.name().into())
+                .map(|argument| (argument.name().into(), argument.type_().clone()))
                 .collect(),
             &HashSet::new(),
         )?;
@@ -149,7 +152,7 @@ impl ModuleConverter {
                         )
                         .into())
                     })
-                    .collect::<Result<Vec<_>, _>>()?
+                    .collect::<Result<Vec<_>, ReferenceCountError>>()?
                     .into_iter()
                     .chain(instructions)
                     .collect(),
@@ -165,13 +168,13 @@ impl ModuleConverter {
         &self,
         instructions: &[Instruction],
         terminal_instruction: &TerminalInstruction,
-        owned_variables: &HashSet<String>,
+        owned_variables: &HashMap<String, Type>,
         moved_variables: &HashSet<String>,
     ) -> Result<(Vec<Instruction>, HashSet<String>), ReferenceCountError> {
         Ok(match instructions {
             [] => self.move_terminal_instruction_arguments(
                 terminal_instruction,
-                owned_variables,
+                &owned_variables.keys().cloned().collect(),
                 moved_variables,
             )?,
             [instruction, ..] => {
@@ -199,7 +202,10 @@ impl ModuleConverter {
         })
     }
 
-    fn get_owned_variable_from_instruction(&self, instruction: &Instruction) -> Option<String> {
+    fn get_owned_variable_from_instruction(
+        &self,
+        instruction: &Instruction,
+    ) -> Option<(String, Type)> {
         match instruction {
             Instruction::AllocateHeap(_)
             | Instruction::AtomicLoad(_)
@@ -209,7 +215,12 @@ impl ModuleConverter {
             | Instruction::If(_)
             | Instruction::Load(_)
             | Instruction::PassThrough(_)
-            | Instruction::ReallocateHeap(_) => instruction.name().map(|name| name.into()),
+            | Instruction::ReallocateHeap(_) => {
+                match (instruction.name(), instruction.result_type()) {
+                    (Some(name), Some(type_)) => Some((name.into(), type_)),
+                    _ => None,
+                }
+            }
             Instruction::AllocateStack(_)
             | Instruction::ArithmeticOperation(_)
             | Instruction::AtomicOperation(_)
@@ -228,9 +239,10 @@ impl ModuleConverter {
     fn move_instruction_arguments(
         &self,
         instruction: &Instruction,
-        owned_variables: &HashSet<String>,
+        owned_variables: &HashMap<String, Type>,
         moved_variables: &HashSet<String>,
     ) -> Result<(Vec<Instruction>, HashSet<String>), ReferenceCountError> {
+        let owned_variable_names = owned_variables.keys().cloned().collect();
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
         Ok(match instruction {
@@ -279,7 +291,7 @@ impl ModuleConverter {
                     &builder,
                     &Variable::new(load.name()).into(),
                     load.type_(),
-                    owned_variables,
+                    &&owned_variable_names,
                     moved_variables,
                 )?;
 
@@ -297,13 +309,13 @@ impl ModuleConverter {
                     &builder.load(TypedExpression::new(
                         store.pointer().clone(),
                         types::Pointer::new(store.type_().clone()),
-                    )),
-                );
+                    ))?,
+                )?;
                 let moved_variables = self.expression_mover.move_expression(
                     &builder,
                     store.value(),
                     store.type_(),
-                    owned_variables,
+                    &owned_variable_names,
                     moved_variables,
                 )?;
 
@@ -326,7 +338,7 @@ impl ModuleConverter {
                         &builder,
                         expression,
                         type_,
-                        owned_variables,
+                        &owned_variable_names,
                         &moved_variables,
                     )?;
                 }
@@ -345,7 +357,7 @@ impl ModuleConverter {
                     &builder,
                     &Variable::new(deconstruct.name()).into(),
                     &deconstruct.type_().elements()[deconstruct.element_index()],
-                    owned_variables,
+                    &owned_variable_names,
                     moved_variables,
                 )?;
 
@@ -359,7 +371,7 @@ impl ModuleConverter {
             }
             Instruction::DeconstructUnion(_) => Err(ReferenceCountError::UnionNotSupported)?,
             Instruction::If(if_) => {
-                let convert_block = |block: &Block| {
+                let convert_block = |block: &Block| -> Result<_, ReferenceCountError> {
                     let (instructions, moved_variables) = self.convert_instructions(
                         block.instructions(),
                         block.terminal_instruction(),
@@ -379,8 +391,11 @@ impl ModuleConverter {
                  -> Result<_, ReferenceCountError> {
                     let builder = InstructionBuilder::new(self.name_generator.clone());
 
-                    for variable in other_moved_variables.difference(self_moved_variables) {
-                        self.expression_dropper.drop_expression(variable)?;
+                    for variable_name in other_moved_variables.difference(self_moved_variables) {
+                        self.expression_dropper.drop_expression(
+                            &builder,
+                            &build::variable(variable_name, owned_variables[variable_name].clone()),
+                        )?;
                     }
 
                     Ok(Block::new(
@@ -423,7 +438,7 @@ impl ModuleConverter {
                     &builder,
                     &Variable::new(load.name()).into(),
                     load.type_(),
-                    owned_variables,
+                    &owned_variable_names,
                     moved_variables,
                 )?;
 
@@ -440,7 +455,7 @@ impl ModuleConverter {
                     &builder,
                     pass.expression(),
                     pass.type_(),
-                    owned_variables,
+                    &owned_variable_names,
                     moved_variables,
                 )?;
 
@@ -459,13 +474,13 @@ impl ModuleConverter {
                     &builder.load(TypedExpression::new(
                         store.pointer().clone(),
                         types::Pointer::new(store.type_().clone()),
-                    )),
-                );
+                    ))?,
+                )?;
                 let moved_variables = self.expression_mover.move_expression(
                     &builder,
                     store.value(),
                     store.type_(),
-                    owned_variables,
+                    &owned_variable_names,
                     moved_variables,
                 )?;
 

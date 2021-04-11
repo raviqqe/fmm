@@ -22,9 +22,9 @@ use std::rc::Rc;
 
 pub fn count_references(module: &Module) -> Result<Module, ReferenceCountError> {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
-    let expression_cloner = Rc::new(ExpressionCloner::new(name_generator.clone()));
+    let expression_cloner = Rc::new(ExpressionCloner::new());
     let expression_mover = Rc::new(ExpressionMover::new(expression_cloner.clone()));
-    let expression_dropper = Rc::new(ExpressionDropper::new(name_generator.clone()));
+    let expression_dropper = Rc::new(ExpressionDropper::new());
     let record_clone_function_creator =
         RecordCloneFunctionCreator::new(expression_cloner.clone(), name_generator.clone()).into();
     let record_drop_function_creator =

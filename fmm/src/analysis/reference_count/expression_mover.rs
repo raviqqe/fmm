@@ -59,7 +59,7 @@ impl ExpressionMover {
                     self.expression_cloner.clone_expression(
                         builder,
                         &TypedExpression::new(expression.clone(), type_.clone()),
-                    );
+                    )?;
 
                     moved_variables
                         .iter()
@@ -88,8 +88,8 @@ mod tests {
         let name_generator = Rc::new(NameGenerator::new("test_").into());
 
         (
-            ExpressionMover::new(ExpressionCloner::new(name_generator).into()),
-            InstructionBuilder::new(name_generator.clone()),
+            ExpressionMover::new(ExpressionCloner::new().into()),
+            InstructionBuilder::new(name_generator),
         )
     }
 

@@ -1,18 +1,15 @@
 use super::{error::ReferenceCountError, utilities};
 use crate::{
-    build::{self, InstructionBuilder, NameGenerator, TypedExpression, VOID_TYPE, VOID_VALUE},
+    build::{self, InstructionBuilder, TypedExpression, VOID_TYPE, VOID_VALUE},
     ir::*,
     types::{self, Type},
 };
-use std::{cell::RefCell, rc::Rc};
 
-pub struct ExpressionDropper {
-    name_generator: Rc<RefCell<NameGenerator>>,
-}
+pub struct ExpressionDropper {}
 
 impl ExpressionDropper {
-    pub fn new(name_generator: Rc<RefCell<NameGenerator>>) -> Self {
-        Self { name_generator }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn drop_expression(
@@ -28,20 +25,22 @@ impl ExpressionDropper {
                             ComparisonOperator::Equal,
                             builder.atomic_operation(
                                 AtomicOperator::Subtract,
-                                utilities::get_counter_pointer(&builder, expression),
+                                utilities::get_counter_pointer(&builder, expression)?,
                                 Primitive::PointerInteger(1),
-                            ),
+                            )?,
                             Primitive::PointerInteger(0),
-                        ),
-                        |builder| {
-                            self.drop_expression(&builder, &builder.load(expression.clone()));
-                            builder.free_heap(expression.clone());
+                        )?,
+                        |builder| -> Result<_, ReferenceCountError> {
+                            self.drop_expression(&builder, &builder.load(expression.clone())?)?;
+                            builder.free_heap(expression.clone())?;
 
-                            builder.branch(VOID_VALUE.clone())
+                            Ok(builder.branch(VOID_VALUE.clone()))
                         },
-                        |builder| builder.branch(VOID_VALUE.clone()),
-                    );
-                });
+                        |builder| Ok(builder.branch(VOID_VALUE.clone())),
+                    )?;
+
+                    Ok(())
+                })?;
             }
             Type::Record(record_type) => {
                 builder.call(
@@ -54,7 +53,7 @@ impl ExpressionDropper {
                         ),
                     ),
                     vec![expression.clone()],
-                );
+                )?;
             }
             Type::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
             Type::Function(_) | Type::Primitive(_) => {}

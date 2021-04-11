@@ -1,19 +1,15 @@
 use super::error::ReferenceCountError;
 use super::utilities;
-use crate::build::{self, InstructionBuilder, NameGenerator, TypedExpression};
+use crate::build::{self, InstructionBuilder, TypedExpression};
 use crate::ir::*;
 use crate::types::{self, Type};
 use build::VOID_TYPE;
-use std::cell::RefCell;
-use std::rc::Rc;
 
-pub struct ExpressionCloner {
-    name_generator: Rc<RefCell<NameGenerator>>,
-}
+pub struct ExpressionCloner {}
 
 impl ExpressionCloner {
-    pub fn new(name_generator: Rc<RefCell<NameGenerator>>) -> Self {
-        Self { name_generator }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn clone_expression(
@@ -26,10 +22,12 @@ impl ExpressionCloner {
                 utilities::if_heap_pointer(builder, expression, |builder| {
                     builder.atomic_operation(
                         AtomicOperator::Add,
-                        utilities::get_counter_pointer(&builder, expression),
+                        utilities::get_counter_pointer(&builder, expression)?,
                         Primitive::PointerInteger(1),
-                    );
-                });
+                    )?;
+
+                    Ok(())
+                })?;
             }
             Type::Record(record_type) => {
                 builder.call(
@@ -42,7 +40,7 @@ impl ExpressionCloner {
                         ),
                     ),
                     vec![expression.clone()],
-                );
+                )?;
             }
             Type::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
             Type::Function(_) | Type::Primitive(_) => {}
