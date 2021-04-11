@@ -1,11 +1,11 @@
-use super::expression_dropper::ExpressionDropper;
 use super::global_variable_tag::tag_expression;
+use super::{error::ReferenceCountError, expression_dropper::ExpressionDropper};
 use super::{
     expression_mover::ExpressionMover, record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{
     analysis::collect_types,
-    build::{self, InstructionBuilder, NameGenerator, TypedExpression},
+    build::{InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
     types::{self, Type},
 };
@@ -37,10 +37,10 @@ impl ModuleConverter {
         }
     }
 
-    pub fn convert(&self, module: &Module) -> Module {
+    pub fn convert(&self, module: &Module) -> Result<Module, ReferenceCountError> {
         let global_variables = self.collect_global_variables(module);
 
-        Module::new(
+        Ok(Module::new(
             module.variable_declarations().to_vec(),
             module.function_declarations().to_vec(),
             module
@@ -50,11 +50,17 @@ impl ModuleConverter {
                 .collect(),
             self.create_record_functions(module)
                 .into_iter()
-                .chain(module.function_definitions().iter().map(|definition| {
-                    self.convert_function_definition(definition, &global_variables)
-                }))
+                .chain(
+                    module
+                        .function_definitions()
+                        .iter()
+                        .map(|definition| {
+                            self.convert_function_definition(definition, &global_variables)
+                        })
+                        .collect::<Result<Vec<_>, _>>()?,
+                )
                 .collect(),
-        )
+        ))
     }
 
     fn collect_global_variables(&self, module: &Module) -> HashMap<String, Type> {
@@ -107,8 +113,8 @@ impl ModuleConverter {
         &self,
         definition: &FunctionDefinition,
         global_variables: &HashMap<String, Type>,
-    ) -> FunctionDefinition {
-        FunctionDefinition::new(
+    ) -> Result<FunctionDefinition, ReferenceCountError> {
+        Ok(FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
             Block::new(
@@ -138,7 +144,7 @@ impl ModuleConverter {
                                 .map(|argument| argument.name().into())
                                 .collect(),
                             &HashSet::new(),
-                        )
+                        )?
                         .0,
                     )
                     .collect(),
@@ -147,7 +153,7 @@ impl ModuleConverter {
             definition.result_type().clone(),
             definition.calling_convention(),
             definition.is_global(),
-        )
+        ))
     }
 
     fn convert_instructions(
@@ -156,13 +162,13 @@ impl ModuleConverter {
         terminal_instruction: &TerminalInstruction,
         owned_variables: &HashSet<String>,
         moved_variables: &HashSet<String>,
-    ) -> (Vec<Instruction>, HashSet<String>) {
-        match instructions {
+    ) -> Result<(Vec<Instruction>, HashSet<String>), ReferenceCountError> {
+        Ok(match instructions {
             [] => self.move_terminal_instruction_arguments(
                 terminal_instruction,
                 owned_variables,
                 moved_variables,
-            ),
+            )?,
             [instruction, ..] => {
                 let (rest_instructions, moved_variables) = self.convert_instructions(
                     &instructions[1..],
@@ -173,16 +179,19 @@ impl ModuleConverter {
                         .chain(self.get_owned_variable_from_instruction(instruction))
                         .collect(),
                     moved_variables,
-                );
-                let (instructions, moved_variables) =
-                    self.move_instruction_arguments(instruction, &owned_variables, &moved_variables);
+                )?;
+                let (instructions, moved_variables) = self.move_instruction_arguments(
+                    instruction,
+                    &owned_variables,
+                    &moved_variables,
+                )?;
 
                 (
                     instructions.into_iter().chain(rest_instructions).collect(),
                     moved_variables,
                 )
             }
-        }
+        })
     }
 
     fn get_owned_variable_from_instruction(&self, instruction: &Instruction) -> Option<String> {
@@ -216,10 +225,10 @@ impl ModuleConverter {
         instruction: &Instruction,
         owned_variables: &HashSet<String>,
         moved_variables: &HashSet<String>,
-    ) -> (Vec<Instruction>, HashSet<String>) {
+    ) -> Result<(Vec<Instruction>, HashSet<String>), ReferenceCountError> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
-        match instruction {
+        Ok(match instruction {
             Instruction::AllocateHeap(allocate) => {
                 if moved_variables.contains(allocate.name()) {
                     let record_type = types::Record::new(vec![
@@ -267,7 +276,7 @@ impl ModuleConverter {
                     load.type_(),
                     owned_variables,
                     moved_variables,
-                );
+                )?;
 
                 (
                     vec![load.clone().into()]
@@ -291,7 +300,7 @@ impl ModuleConverter {
                     store.type_(),
                     owned_variables,
                     moved_variables,
-                );
+                )?;
 
                 (
                     builder
@@ -314,7 +323,7 @@ impl ModuleConverter {
                         type_,
                         owned_variables,
                         &moved_variables,
-                    );
+                    )?;
                 }
 
                 (
@@ -333,7 +342,7 @@ impl ModuleConverter {
                     &deconstruct.type_().elements()[deconstruct.element_index()],
                     owned_variables,
                     moved_variables,
-                );
+                )?;
 
                 (
                     vec![deconstruct.clone().into()]
@@ -351,33 +360,33 @@ impl ModuleConverter {
                         block.terminal_instruction(),
                         owned_variables,
                         moved_variables,
-                    );
+                    )?;
 
                     (instructions, moved_variables)
                 };
                 let (then_instructions, then_moved_variables) = convert_block(if_.then());
                 let (else_instructions, else_moved_variables) = convert_block(if_.then());
 
-                let create_block =
-                    |block: &Block,
-                     instructions,
-                     self_moved_variables: &HashSet<String>,
-                     other_moved_variables: &HashSet<String>| {
-                        let builder = InstructionBuilder::new(self.name_generator.clone());
+                let create_block = |block: &Block,
+                                    instructions,
+                                    self_moved_variables: &HashSet<String>,
+                                    other_moved_variables: &HashSet<String>|
+                 -> Result<_, ReferenceCountError> {
+                    let builder = InstructionBuilder::new(self.name_generator.clone());
 
-                        for variable in other_moved_variables.difference(self_moved_variables) {
-                            self.expression_dropper.drop_expression(variable);
-                        }
+                    for variable in other_moved_variables.difference(self_moved_variables) {
+                        self.expression_dropper.drop_expression(variable)?;
+                    }
 
-                        Block::new(
-                            builder
-                                .into_instructions()
-                                .into_iter()
-                                .chain(instructions)
-                                .collect(),
-                            block.terminal_instruction().clone(),
-                        )
-                    };
+                    Ok(Block::new(
+                        builder
+                            .into_instructions()
+                            .into_iter()
+                            .chain(instructions)
+                            .collect(),
+                        block.terminal_instruction().clone(),
+                    ))
+                };
 
                 (
                     vec![If::new(
@@ -388,13 +397,13 @@ impl ModuleConverter {
                             then_instructions,
                             &then_moved_variables,
                             &else_moved_variables,
-                        ),
+                        )?,
                         create_block(
                             if_.else_(),
                             else_instructions,
                             &then_moved_variables,
                             &else_moved_variables,
-                        ),
+                        )?,
                         if_.name(),
                     )
                     .into()],
@@ -411,7 +420,7 @@ impl ModuleConverter {
                     load.type_(),
                     owned_variables,
                     moved_variables,
-                );
+                )?;
 
                 (
                     vec![load.clone().into()]
@@ -428,7 +437,7 @@ impl ModuleConverter {
                     pass.type_(),
                     owned_variables,
                     moved_variables,
-                );
+                )?;
 
                 (
                     builder
@@ -453,7 +462,7 @@ impl ModuleConverter {
                     store.type_(),
                     owned_variables,
                     moved_variables,
-                );
+                )?;
 
                 (
                     builder
@@ -473,7 +482,7 @@ impl ModuleConverter {
             | Instruction::ReallocateHeap(_)
             | Instruction::RecordAddress(_)
             | Instruction::UnionAddress(_) => (vec![instruction.clone()], moved_variables.clone()),
-        }
+        })
     }
 
     fn move_terminal_instruction_arguments(
@@ -481,7 +490,7 @@ impl ModuleConverter {
         instruction: &TerminalInstruction,
         owned_variables: &HashSet<String>,
         moved_variables: &HashSet<String>,
-    ) -> (Vec<Instruction>, HashSet<String>) {
+    ) -> Result<(Vec<Instruction>, HashSet<String>), ReferenceCountError> {
         let builder = InstructionBuilder::new(self.name_generator.clone());
 
         let moved_variables = match instruction {
@@ -491,17 +500,17 @@ impl ModuleConverter {
                 branch.type_(),
                 owned_variables,
                 moved_variables,
-            ),
+            )?,
             TerminalInstruction::Return(return_) => self.expression_mover.move_expression(
                 &builder,
                 return_.expression(),
                 return_.type_(),
                 owned_variables,
                 moved_variables,
-            ),
+            )?,
             TerminalInstruction::Unreachable => Default::default(),
         };
 
-        (builder.into_instructions(), moved_variables)
+        Ok((builder.into_instructions(), moved_variables))
     }
 }

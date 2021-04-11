@@ -1,3 +1,4 @@
+use super::error::ReferenceCountError;
 use super::expression_cloner::ExpressionCloner;
 use crate::build::{InstructionBuilder, TypedExpression};
 use crate::ir::*;
@@ -20,21 +21,21 @@ impl ExpressionMover {
         type_: &Type,
         owned_variables: &HashSet<String>,
         moved_variables: &HashSet<String>,
-    ) -> HashSet<String> {
+    ) -> Result<HashSet<String>, ReferenceCountError> {
         let move_expression =
             |expression: &Expression, type_: &Type, moved_variables: &HashSet<String>| {
                 self.move_expression(builder, expression, type_, owned_variables, moved_variables)
             };
 
-        match expression {
+        Ok(match expression {
             Expression::BitCast(bit_cast) => {
-                move_expression(bit_cast.expression(), bit_cast.from(), moved_variables)
+                move_expression(bit_cast.expression(), bit_cast.from(), moved_variables)?
             }
             Expression::BitwiseOperation(operation) => {
                 let moved_variables =
-                    move_expression(operation.rhs(), &operation.type_().into(), moved_variables);
+                    move_expression(operation.rhs(), &operation.type_().into(), moved_variables)?;
 
-                move_expression(operation.lhs(), &operation.type_().into(), &moved_variables)
+                move_expression(operation.lhs(), &operation.type_().into(), &moved_variables)?
             }
             Expression::Record(record) => {
                 let mut moved_variables = moved_variables.clone();
@@ -45,7 +46,7 @@ impl ExpressionMover {
                     .zip(record.type_().elements())
                     .rev()
                 {
-                    moved_variables = move_expression(expression, type_, &moved_variables);
+                    moved_variables = move_expression(expression, type_, &moved_variables)?;
                 }
 
                 moved_variables
@@ -73,7 +74,7 @@ impl ExpressionMover {
             | Expression::Primitive(_)
             | Expression::SizeOf(_)
             | Expression::Undefined(_) => moved_variables.clone(),
-        }
+        })
     }
 }
 

@@ -1,3 +1,4 @@
+mod error;
 mod expression_cloner;
 mod expression_dropper;
 mod expression_mover;
@@ -7,7 +8,8 @@ mod record_rc_function_creator;
 mod utilities;
 
 use self::{
-    expression_cloner::ExpressionCloner, record_rc_function_creator::RecordRcFunctionCreator,
+    error::ReferenceCountError, expression_cloner::ExpressionCloner,
+    record_rc_function_creator::RecordRcFunctionCreator,
 };
 use crate::{build::NameGenerator, ir::*};
 use expression_dropper::ExpressionDropper;
@@ -16,7 +18,7 @@ use module_converter::ModuleConverter;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub fn count_references(module: &Module) -> Module {
+pub fn count_references(module: &Module) -> Result<Module, ReferenceCountError> {
     let name_generator = Rc::new(RefCell::new(NameGenerator::new("rc")));
     let expression_cloner = Rc::new(ExpressionCloner::new(name_generator.clone()));
     let expression_mover = Rc::new(ExpressionMover::new(expression_cloner.clone()));

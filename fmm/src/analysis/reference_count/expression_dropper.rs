@@ -1,4 +1,4 @@
-use super::utilities;
+use super::{error::ReferenceCountError, utilities};
 use crate::{
     build::{self, InstructionBuilder, NameGenerator, TypedExpression, VOID_TYPE, VOID_VALUE},
     ir::*,
@@ -15,7 +15,11 @@ impl ExpressionDropper {
         Self { name_generator }
     }
 
-    pub fn drop_expression(&self, builder: &InstructionBuilder, expression: &TypedExpression) {
+    pub fn drop_expression(
+        &self,
+        builder: &InstructionBuilder,
+        expression: &TypedExpression,
+    ) -> Result<(), ReferenceCountError> {
         match expression.type_() {
             Type::Pointer(_) => {
                 utilities::if_heap_pointer(builder, expression, |builder| {
@@ -52,8 +56,10 @@ impl ExpressionDropper {
                     vec![expression.clone()],
                 );
             }
-            Type::Union(_) => unimplemented!(),
+            Type::Union(_) => Err(ReferenceCountError::UnionNotSupported)?,
             Type::Function(_) | Type::Primitive(_) => {}
         }
+
+        Ok(())
     }
 }
