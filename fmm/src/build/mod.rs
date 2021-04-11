@@ -1,3 +1,4 @@
+mod error;
 mod expressions;
 mod instruction_builder;
 mod module_builder;
