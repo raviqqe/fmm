@@ -96,6 +96,7 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashS
 fn collect_from_expression(expression: &Expression) -> HashSet<String> {
     match expression {
         Expression::BitCast(bit_cast) => collect_from_expression(bit_cast.expression()),
+        Expression::BitwiseNotOperation(operation) => collect_from_expression(operation.value()),
         Expression::BitwiseOperation(operation) => collect_from_expression(operation.lhs())
             .into_iter()
             .chain(collect_from_expression(operation.rhs()))

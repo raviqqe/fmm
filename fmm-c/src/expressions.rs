@@ -24,6 +24,9 @@ pub fn compile_expression(
                 compile_expression(bit_cast.expression()),
             )
         }
+        Expression::BitwiseNotOperation(operation) => {
+            format!("(~({}))", compile_expression(operation.value()))
+        }
         Expression::BitwiseOperation(operation) => {
             format!(
                 "(({}){}({}))",
