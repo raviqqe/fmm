@@ -11,7 +11,6 @@ pub fn tag_expression(
     let tag_expression = |expression, type_| tag_expression(expression, type_, global_variables);
 
     Ok(match expression {
-        // TODO Is this correct?
         Expression::BitCast(bit_cast) => BitCast::new(
             bit_cast.from().clone(),
             bit_cast.to().clone(),
