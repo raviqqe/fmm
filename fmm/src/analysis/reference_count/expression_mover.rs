@@ -14,6 +14,7 @@ impl ExpressionMover {
         Self { expression_cloner }
     }
 
+    // TODO Refactor this method simply accumulating counts of moved variables and then clone them.
     pub fn move_expression(
         &self,
         builder: &InstructionBuilder,
