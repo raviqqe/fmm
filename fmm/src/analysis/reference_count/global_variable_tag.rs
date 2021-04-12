@@ -17,6 +17,11 @@ pub fn tag_expression(
             tag_expression(bit_cast.expression(), bit_cast.from())?,
         )
         .into(),
+        Expression::BitwiseNotOperation(operation) => BitwiseNotOperation::new(
+            operation.type_(),
+            tag_expression(operation.value(), &operation.type_().into())?,
+        )
+        .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             operation.type_(),
             operation.operator(),

@@ -32,6 +32,11 @@ impl ExpressionMover {
             Expression::BitCast(bit_cast) => {
                 move_expression(bit_cast.expression(), bit_cast.from(), moved_variables)?
             }
+            Expression::BitwiseNotOperation(operation) => move_expression(
+                operation.value(),
+                &operation.type_().into(),
+                moved_variables,
+            )?,
             Expression::BitwiseOperation(operation) => {
                 let moved_variables =
                     move_expression(operation.rhs(), &operation.type_().into(), moved_variables)?;
