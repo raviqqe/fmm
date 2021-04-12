@@ -51,7 +51,7 @@ impl ExpressionMover {
                 .fold(
                     Ok(moved_variables.clone()),
                     |moved_variables, (expression, type_)| -> Result<_, ReferenceCountError> {
-                        Ok(move_expression(expression, type_, &moved_variables?)?)
+                        move_expression(expression, type_, &moved_variables?)
                     },
                 )?,
             Expression::Union(_) => return Err(ReferenceCountError::UnionNotSupported),
