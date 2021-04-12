@@ -240,6 +240,11 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
             rename_expression(bit_cast.expression(), rename),
         )
         .into(),
+        Expression::BitwiseNotOperation(operation) => BitwiseNotOperation::new(
+            operation.type_(),
+            rename_expression(operation.value(), rename),
+        )
+        .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             operation.type_(),
             operation.operator(),
