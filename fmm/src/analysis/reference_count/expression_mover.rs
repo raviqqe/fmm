@@ -37,20 +37,17 @@ impl ExpressionMover {
 
                 move_expression(operation.lhs(), &operation.type_().into(), &moved_variables)?
             }
-            Expression::Record(record) => {
-                let mut moved_variables = moved_variables.clone();
-
-                for (expression, type_) in record
-                    .elements()
-                    .iter()
-                    .zip(record.type_().elements())
-                    .rev()
-                {
-                    moved_variables = move_expression(expression, type_, &moved_variables)?;
-                }
-
-                moved_variables
-            }
+            Expression::Record(record) => record
+                .elements()
+                .iter()
+                .zip(record.type_().elements())
+                .rev()
+                .fold(
+                    Ok(moved_variables.clone()),
+                    |moved_variables, (expression, type_)| -> Result<_, ReferenceCountError> {
+                        Ok(move_expression(expression, type_, &moved_variables?)?)
+                    },
+                )?,
             Expression::Union(_) => return Err(ReferenceCountError::UnionNotSupported),
             Expression::Variable(variable) => {
                 if owned_variables.contains(variable.name())

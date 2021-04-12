@@ -49,6 +49,27 @@ pub fn tag_expression(
     })
 }
 
+pub fn untag_pointer(expression: &Expression, type_: &Type) -> Expression {
+    BitCast::new(
+        types::Primitive::PointerInteger,
+        type_.clone(),
+        BitwiseOperation::new(
+            types::Primitive::PointerInteger,
+            BitwiseOperator::And,
+            BitCast::new(
+                type_.clone(),
+                types::Primitive::PointerInteger,
+                expression.clone(),
+            ),
+            BitwiseNotOperation::new(
+                types::Primitive::PointerInteger,
+                Primitive::PointerInteger(1),
+            ),
+        ),
+    )
+    .into()
+}
+
 fn tag_pointer_to_global_variable(variable: &Variable, type_: &Type) -> Expression {
     BitCast::new(
         types::Primitive::PointerInteger,
