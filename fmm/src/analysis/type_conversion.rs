@@ -274,6 +274,11 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
             convert_expression(bit_cast.expression()),
         )
         .into(),
+        Expression::BitwiseNotOperation(operation) => BitwiseNotOperation::new(
+            convert(&operation.type_().into()).to_primitive().unwrap(),
+            convert_expression(operation.value()),
+        )
+        .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             convert(&operation.type_().into()).to_primitive().unwrap(),
             operation.operator(),

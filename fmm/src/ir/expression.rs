@@ -1,4 +1,3 @@
-use super::align_of::AlignOf;
 use super::bit_cast::BitCast;
 use super::bitwise_operation::BitwiseOperation;
 use super::primitive::Primitive;
@@ -7,11 +6,13 @@ use super::size_of::SizeOf;
 use super::undefined::Undefined;
 use super::union::Union;
 use super::variable::Variable;
+use super::{align_of::AlignOf, bitwise_not_operation::BitwiseNotOperation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     AlignOf(AlignOf),
     BitCast(BitCast),
+    BitwiseNotOperation(BitwiseNotOperation),
     BitwiseOperation(BitwiseOperation),
     Primitive(Primitive),
     Record(Record),
@@ -30,6 +31,12 @@ impl From<AlignOf> for Expression {
 impl From<BitCast> for Expression {
     fn from(bit_cast: BitCast) -> Self {
         Self::BitCast(bit_cast)
+    }
+}
+
+impl From<BitwiseNotOperation> for Expression {
+    fn from(operation: BitwiseNotOperation) -> Self {
+        Self::BitwiseNotOperation(operation)
     }
 }
 

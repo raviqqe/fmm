@@ -758,6 +758,25 @@ mod tests {
                 vec![],
             ));
         }
+
+        #[test]
+        fn compile_bitwise_not() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseNotOperation::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::PointerInteger(0),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    false,
+                )],
+                vec![],
+            ));
+        }
     }
 
     mod instructions {

@@ -305,6 +305,14 @@ fn check_expression(
 
             bit_cast.to().clone()
         }
+        Expression::BitwiseNotOperation(operation) => {
+            check_equality(
+                &check_expression(operation.value(), variables)?,
+                &operation.type_().into(),
+            )?;
+
+            operation.type_().into()
+        }
         Expression::BitwiseOperation(operation) => {
             check_equality(
                 &check_expression(operation.lhs(), variables)?,

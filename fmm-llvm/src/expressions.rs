@@ -22,6 +22,9 @@ pub fn compile_expression<'c>(
         Expression::BitCast(bit_cast) => {
             compile_bit_cast(builder, bit_cast, context, target_data, &compile_expression)
         }
+        Expression::BitwiseNotOperation(operation) => {
+            compile_bitwise_not_operation(builder, operation, &compile_expression).into()
+        }
         Expression::BitwiseOperation(operation) => {
             compile_bitwise_operation(builder, operation, &compile_expression).into()
         }
@@ -90,6 +93,10 @@ pub fn compile_constant_expression<'c>(
             target_data,
             &compile_expression,
         ),
+        Expression::BitwiseNotOperation(operation) => {
+            compile_bitwise_not_operation(&context.create_builder(), operation, &compile_expression)
+                .into()
+        }
         Expression::BitwiseOperation(operation) => {
             compile_bitwise_operation(&context.create_builder(), operation, &compile_expression)
                 .into()
@@ -151,6 +158,14 @@ fn compile_bit_cast<'c>(
         compile_type(bit_cast.to(), context, target_data),
         "",
     )
+}
+
+fn compile_bitwise_not_operation<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    operation: &BitwiseNotOperation,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::IntValue<'c> {
+    builder.build_not(compile_expression(operation.value()).into_int_value(), "")
 }
 
 fn compile_bitwise_operation<'c>(

@@ -237,6 +237,9 @@ fn convert_expression(
                 convert(bit_cast.expression()),
             )
             .into(),
+            Expression::BitwiseNotOperation(operation) => {
+                BitwiseNotOperation::new(operation.type_(), convert(operation.value())).into()
+            }
             Expression::BitwiseOperation(operation) => BitwiseOperation::new(
                 operation.type_(),
                 operation.operator(),
