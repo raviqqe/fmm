@@ -4,7 +4,8 @@ use super::{
     record_drop_function_creator::RecordDropFunctionCreator,
 };
 use super::{
-    global_variable_tag::tag_expression, record_clone_function_creator::RecordCloneFunctionCreator,
+    global_variable_tag::{tag_expression, untag_pointer},
+    record_clone_function_creator::RecordCloneFunctionCreator,
 };
 use crate::{
     analysis::collect_types,
@@ -291,15 +292,23 @@ impl ModuleConverter {
                     &builder,
                     &Variable::new(load.name()).into(),
                     load.type_(),
-                    &&owned_variable_names,
+                    &owned_variable_names,
                     moved_variables,
                 )?;
 
                 (
-                    vec![load.clone().into()]
-                        .into_iter()
-                        .chain(builder.into_instructions())
-                        .collect(),
+                    vec![AtomicLoad::new(
+                        load.type_().clone(),
+                        untag_pointer(
+                            load.pointer(),
+                            &types::Pointer::new(load.type_().clone()).into(),
+                        ),
+                        load.name(),
+                    )
+                    .into()]
+                    .into_iter()
+                    .chain(builder.into_instructions())
+                    .collect(),
                     moved_variables,
                 )
             }
@@ -323,7 +332,16 @@ impl ModuleConverter {
                     builder
                         .into_instructions()
                         .into_iter()
-                        .chain(vec![store.clone().into()])
+                        .chain(vec![AtomicStore::new(
+                            store.type_().clone(),
+                            store.value().clone(),
+                            untag_pointer(
+                                store.pointer(),
+                                &types::Pointer::new(store.type_().clone()).into(),
+                            ),
+                        )
+                        .clone()
+                        .into()])
                         .collect(),
                     moved_variables,
                 )
@@ -443,10 +461,19 @@ impl ModuleConverter {
                 )?;
 
                 (
-                    vec![load.clone().into()]
-                        .into_iter()
-                        .chain(builder.into_instructions())
-                        .collect(),
+                    vec![Load::new(
+                        load.type_().clone(),
+                        untag_pointer(
+                            load.pointer(),
+                            &types::Pointer::new(load.type_().clone()).into(),
+                        ),
+                        load.name(),
+                    )
+                    .clone()
+                    .into()]
+                    .into_iter()
+                    .chain(builder.into_instructions())
+                    .collect(),
                     moved_variables,
                 )
             }
@@ -468,6 +495,16 @@ impl ModuleConverter {
                     moved_variables,
                 )
             }
+            Instruction::PointerAddress(address) => (
+                vec![PointerAddress::new(
+                    address.type_().clone(),
+                    untag_pointer(address.pointer(), &address.type_().clone().into()).clone(),
+                    address.offset().clone(),
+                    address.name(),
+                )
+                .into()],
+                moved_variables.clone(),
+            ),
             Instruction::Store(store) => {
                 self.expression_dropper.drop_expression(
                     &builder,
@@ -488,7 +525,16 @@ impl ModuleConverter {
                     builder
                         .into_instructions()
                         .into_iter()
-                        .chain(vec![store.clone().into()])
+                        .chain(vec![Store::new(
+                            store.type_().clone(),
+                            store.value().clone(),
+                            untag_pointer(
+                                store.pointer(),
+                                &types::Pointer::new(store.type_().clone()).into(),
+                            ),
+                        )
+                        .clone()
+                        .into()])
                         .collect(),
                     moved_variables,
                 )
@@ -498,7 +544,6 @@ impl ModuleConverter {
             | Instruction::CompareAndSwap(_)
             | Instruction::ComparisonOperation(_)
             | Instruction::FreeHeap(_)
-            | Instruction::PointerAddress(_)
             | Instruction::ReallocateHeap(_)
             | Instruction::RecordAddress(_)
             | Instruction::UnionAddress(_) => (vec![instruction.clone()], moved_variables.clone()),
