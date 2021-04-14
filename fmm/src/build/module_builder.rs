@@ -90,18 +90,18 @@ impl ModuleBuilder {
         )
     }
 
-    pub fn define_function(
+    pub fn define_function<E>(
         &self,
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: impl Fn(InstructionBuilder) -> Block,
+        body: impl Fn(InstructionBuilder) -> Result<Block, E>,
         result_type: impl Into<Type>,
         calling_convention: CallingConvention,
         global: bool,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, E> {
         let result_type = result_type.into();
         let name = name.into();
-        let body = body(InstructionBuilder::new(self.name_generator.clone()));
+        let body = body(InstructionBuilder::new(self.name_generator.clone()))?;
 
         self.function_definitions
             .borrow_mut()
@@ -114,7 +114,7 @@ impl ModuleBuilder {
                 global,
             ));
 
-        TypedExpression::new(
+        Ok(TypedExpression::new(
             Variable::new(name),
             types::Function::new(
                 arguments
@@ -124,16 +124,16 @@ impl ModuleBuilder {
                 result_type,
                 calling_convention,
             ),
-        )
+        ))
     }
 
-    pub fn define_anonymous_function(
+    pub fn define_anonymous_function<E>(
         &self,
         arguments: Vec<Argument>,
-        body: impl Fn(InstructionBuilder) -> Block,
+        body: impl Fn(InstructionBuilder) -> Result<Block, E>,
         result_type: impl Into<Type>,
         calling_convention: CallingConvention,
-    ) -> TypedExpression {
+    ) -> Result<TypedExpression, E> {
         self.define_function(
             self.generate_name(),
             arguments,
