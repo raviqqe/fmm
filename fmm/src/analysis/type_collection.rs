@@ -63,11 +63,11 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(bit_cast.expression()))
             .collect(),
-        Expression::BitwiseNotOperation(operation) => vec![operation.type_().clone().into()]
+        Expression::BitwiseNotOperation(operation) => vec![operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.value()))
             .collect(),
-        Expression::BitwiseOperation(operation) => vec![operation.type_().clone().into()]
+        Expression::BitwiseOperation(operation) => vec![operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.lhs()))
             .chain(collect_from_expression(operation.rhs()))

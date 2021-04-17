@@ -76,7 +76,7 @@ impl Instruction {
             Self::AllocateStack(allocate) => {
                 Some(types::Pointer::new(allocate.type_().clone()).into())
             }
-            Self::ArithmeticOperation(operation) => Some(operation.type_().clone().into()),
+            Self::ArithmeticOperation(operation) => Some(operation.type_().into()),
             Self::AtomicLoad(load) => Some(load.type_().clone()),
             Self::AtomicOperation(operation) => Some(operation.type_().into()),
             Self::Call(call) => Some(call.type_().result().clone()),
