@@ -1201,7 +1201,7 @@ mod tests {
                     .into()],
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
-                pointer_type.clone(),
+                pointer_type,
                 true,
             ));
         }
