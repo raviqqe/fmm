@@ -16,6 +16,20 @@ pub fn bit_cast(to: impl Into<Type>, expression: impl Into<TypedExpression>) -> 
     )
 }
 
+pub fn bitwise_not_operation(
+    value: impl Into<TypedExpression>,
+) -> Result<BitwiseNotOperation, BuildError> {
+    let value = value.into();
+
+    Ok(BitwiseNotOperation::new(
+        value
+            .type_()
+            .to_primitive()
+            .ok_or_else(|| BuildError::PrimitiveExpected(value.type_().clone()))?,
+        value.expression().clone(),
+    ))
+}
+
 pub fn bitwise_operation(
     operator: BitwiseOperator,
     lhs: impl Into<TypedExpression>,
