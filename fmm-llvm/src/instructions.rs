@@ -414,9 +414,11 @@ fn compile_terminal_instruction<'c>(
 
     match instruction {
         TerminalInstruction::Branch(branch) => {
+            let value = compile_expression(branch.expression());
+
             builder.build_unconditional_branch(destination.unwrap());
 
-            Some(compile_expression(branch.expression()))
+            Some(value)
         }
         TerminalInstruction::Return(return_) => {
             builder.build_return(Some(&compile_expression(return_.expression())));

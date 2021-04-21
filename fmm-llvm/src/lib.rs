@@ -1174,6 +1174,39 @@ mod tests {
         }
 
         #[test]
+        fn compile_if_with_expression_generating_instructions() {
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        pointer_type.clone(),
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                pointer_type.clone(),
+                                BitCast::new(
+                                    types::Pointer::new(types::Primitive::Float64),
+                                    pointer_type.clone(),
+                                    Undefined::new(types::Pointer::new(types::Primitive::Float64)),
+                                ),
+                            ),
+                        ),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(pointer_type.clone(), Variable::new("x")),
+                ),
+                pointer_type.clone(),
+                true,
+            ));
+        }
+
+        #[test]
         fn compile_deconstruct_record() {
             let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
 
