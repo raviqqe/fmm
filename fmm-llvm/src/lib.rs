@@ -48,6 +48,8 @@ pub fn compile_to_object(
 
     let module = compile_module(&context, &target_machine, module, heap_configuration)?;
 
+    module.print_to_stderr();
+
     // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in C++?
     // https://llvm.org/docs/LangRef.html#call-instruction
     Ok(target_machine
@@ -297,6 +299,7 @@ fn compile_function_definition<'c>(
         heap_function_set,
     );
 
+    function.print_to_stderr();
     function.verify(true);
 }
 
