@@ -718,6 +718,55 @@ mod tests {
         }
 
         #[test]
+        fn compile_bit_cast_from_pointer() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![
+                    VariableDefinition::new(
+                        "x",
+                        Primitive::Float64(42.0),
+                        types::Primitive::Float64,
+                        false,
+                        false,
+                    ),
+                    VariableDefinition::new(
+                        "y",
+                        BitCast::new(
+                            types::Pointer::new(types::Primitive::Float64),
+                            types::Primitive::Float64,
+                            Variable::new("x"),
+                        ),
+                        types::Primitive::Float64,
+                        false,
+                        false,
+                    ),
+                ],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_bit_cast_to_pointer() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitCast::new(
+                        types::Primitive::Float64,
+                        types::Pointer::new(types::Primitive::Float64),
+                        Primitive::Float64(42.0),
+                    ),
+                    types::Pointer::new(types::Primitive::Float64),
+                    false,
+                    false,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
         fn compile_bitwise_and() {
             compile_module(&Module::new(
                 vec![],

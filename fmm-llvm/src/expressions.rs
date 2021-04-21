@@ -153,11 +153,36 @@ fn compile_bit_cast<'c>(
     target_data: &inkwell::targets::TargetData,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    builder.build_bitcast(
-        compile_expression(bit_cast.expression()),
-        compile_type(bit_cast.to(), context, target_data),
+    let argument = compile_expression(bit_cast.expression());
+    let to_type = compile_type(bit_cast.to(), context, target_data);
+
+    let value = builder.build_bitcast(
+        if argument.is_pointer_value() {
+            builder
+                .build_ptr_to_int(
+                    argument.into_pointer_value(),
+                    compile_pointer_integer_type(context, target_data),
+                    "",
+                )
+                .into()
+        } else {
+            argument
+        },
+        if to_type.is_pointer_type() {
+            compile_pointer_integer_type(context, target_data).into()
+        } else {
+            to_type
+        },
         "",
-    )
+    );
+
+    if to_type.is_pointer_type() {
+        builder
+            .build_int_to_ptr(value.into_int_value(), to_type.into_pointer_type(), "")
+            .into()
+    } else {
+        value
+    }
 }
 
 fn compile_bitwise_not_operation<'c>(
