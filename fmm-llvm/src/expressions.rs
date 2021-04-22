@@ -86,7 +86,7 @@ pub fn compile_constant_expression<'c>(
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
-        Expression::BitCast(bit_cast) => compile_bit_cast(
+        Expression::BitCast(bit_cast) => compile_constant_bit_cast(
             &context.create_builder(),
             bit_cast,
             context,
@@ -153,6 +153,39 @@ fn compile_bit_cast<'c>(
     target_data: &inkwell::targets::TargetData,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
 ) -> inkwell::values::BasicValueEnum<'c> {
+    if is_constant_bit_cast_supported(bit_cast.from())
+        && is_constant_bit_cast_supported(bit_cast.to())
+    {
+        compile_constant_bit_cast(builder, bit_cast, context, target_data, compile_expression)
+    } else {
+        let pointer = builder.build_alloca(compile_type(bit_cast.from(), context, target_data), "");
+
+        builder.build_store(pointer, compile_expression(bit_cast.expression()));
+
+        builder.build_load(
+            builder
+                .build_bitcast(
+                    pointer,
+                    compile_pointer_type(
+                        &types::Pointer::new(bit_cast.to().clone()),
+                        context,
+                        target_data,
+                    ),
+                    "",
+                )
+                .into_pointer_value(),
+            "",
+        )
+    }
+}
+
+fn compile_constant_bit_cast<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    bit_cast: &BitCast,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::BasicValueEnum<'c> {
     let argument = compile_expression(bit_cast.expression());
     let to_type = compile_type(bit_cast.to(), context, target_data);
 
@@ -183,6 +216,15 @@ fn compile_bit_cast<'c>(
     } else {
         value
     }
+}
+
+fn is_constant_bit_cast_supported(type_: &fmm::types::Type) -> bool {
+    matches!(
+        type_,
+        fmm::types::Type::Function(_)
+            | fmm::types::Type::Pointer(_)
+            | fmm::types::Type::Primitive(_)
+    )
 }
 
 fn compile_bitwise_not_operation<'c>(
