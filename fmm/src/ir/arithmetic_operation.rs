@@ -16,7 +16,6 @@ pub struct ArithmeticOperation {
     operator: ArithmeticOperator,
     lhs: Arc<Expression>,
     rhs: Arc<Expression>,
-    name: String,
 }
 
 impl ArithmeticOperation {
@@ -25,14 +24,12 @@ impl ArithmeticOperation {
         operator: ArithmeticOperator,
         lhs: impl Into<Expression>,
         rhs: impl Into<Expression>,
-        name: impl Into<String>,
     ) -> Self {
         Self {
             type_,
             operator,
             lhs: Arc::new(lhs.into()),
             rhs: Arc::new(rhs.into()),
-            name: name.into(),
         }
     }
 
@@ -50,9 +47,5 @@ impl ArithmeticOperation {
 
     pub fn rhs(&self) -> &Expression {
         &self.rhs
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 }

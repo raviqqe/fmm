@@ -16,6 +16,12 @@ pub fn compile_expression(
         Expression::AlignOf(align_of) => {
             format!("alignof({})", compile_type_id(align_of.type_(), type_ids))
         }
+        Expression::ArithmeticOperation(operation) => format!(
+            "{}{}{}",
+            compile_expression(operation.lhs()),
+            compile_arithmetic_operator(operation.operator()),
+            compile_expression(operation.rhs()),
+        ),
         Expression::BitCast(bit_cast) => {
             format!(
                 "__builtin_bit_cast({},({})({}))",
@@ -38,6 +44,12 @@ pub fn compile_expression(
                 compile_expression(operation.rhs()),
             )
         }
+        Expression::ComparisonOperation(operation) => format!(
+            "{}{}{}",
+            compile_expression(operation.lhs()),
+            compile_comparison_operator(operation.operator()),
+            compile_expression(operation.rhs()),
+        ),
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
@@ -110,5 +122,25 @@ fn compile_undefined_primitive(primitive: types::Primitive) -> &'static str {
         | types::Primitive::Integer32
         | types::Primitive::Integer64
         | types::Primitive::PointerInteger => "0",
+    }
+}
+
+fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
+    match operator {
+        ArithmeticOperator::Add => "+",
+        ArithmeticOperator::Subtract => "-",
+        ArithmeticOperator::Multiply => "*",
+        ArithmeticOperator::Divide => "/",
+    }
+}
+
+fn compile_comparison_operator(operator: ComparisonOperator) -> &'static str {
+    match operator {
+        ComparisonOperator::Equal => "==",
+        ComparisonOperator::NotEqual => "!=",
+        ComparisonOperator::LessThan => "<",
+        ComparisonOperator::LessThanOrEqual => "<=",
+        ComparisonOperator::GreaterThan => ">",
+        ComparisonOperator::GreaterThanOrEqual => ">=",
     }
 }

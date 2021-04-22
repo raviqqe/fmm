@@ -59,6 +59,11 @@ fn flat_types(types: &HashSet<Type>) -> HashSet<Type> {
 fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
     match expression {
         Expression::AlignOf(align_of) => vec![align_of.type_().clone()].into_iter().collect(),
+        Expression::ArithmeticOperation(operation) => vec![operation.type_().into()]
+            .into_iter()
+            .chain(collect_from_expression(operation.lhs()))
+            .chain(collect_from_expression(operation.rhs()))
+            .collect(),
         Expression::BitCast(bit_cast) => vec![bit_cast.from().clone(), bit_cast.to().clone()]
             .into_iter()
             .chain(collect_from_expression(bit_cast.expression()))
@@ -68,6 +73,11 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
             .chain(collect_from_expression(operation.value()))
             .collect(),
         Expression::BitwiseOperation(operation) => vec![operation.type_().into()]
+            .into_iter()
+            .chain(collect_from_expression(operation.lhs()))
+            .chain(collect_from_expression(operation.rhs()))
+            .collect(),
+        Expression::ComparisonOperation(operation) => vec![operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.lhs()))
             .chain(collect_from_expression(operation.rhs()))
@@ -111,7 +121,6 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
         Instruction::AllocateStack(allocate) => {
             vec![allocate.type_().clone()].into_iter().collect()
         }
-        Instruction::ArithmeticOperation(_) => Default::default(),
         Instruction::AtomicLoad(load) => vec![load.type_().clone()].into_iter().collect(),
         Instruction::AtomicOperation(operation) => vec![operation.type_().into()]
             .into_iter()
@@ -125,7 +134,6 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .chain(call.arguments().iter().flat_map(collect_from_expression))
             .collect(),
         Instruction::CompareAndSwap(cas) => vec![cas.type_().clone()].into_iter().collect(),
-        Instruction::ComparisonOperation(_) => Default::default(),
         Instruction::DeconstructRecord(deconstruct) => vec![deconstruct.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(deconstruct.record()))

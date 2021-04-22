@@ -356,6 +356,10 @@ mod tests {
         )
     }
 
+    fn compile_function_definition(definition: FunctionDefinition) {
+        compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
+    }
+
     #[test]
     fn compile_empty_module() {
         compile_module(&Module::new(vec![], vec![], vec![], vec![]));
@@ -718,6 +722,101 @@ mod tests {
         }
 
         #[test]
+        fn compile_bit_cast_from_pointer() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![
+                    VariableDefinition::new(
+                        "x",
+                        Primitive::Float64(42.0),
+                        types::Primitive::Float64,
+                        false,
+                        false,
+                    ),
+                    VariableDefinition::new(
+                        "y",
+                        BitCast::new(
+                            types::Pointer::new(types::Primitive::Float64),
+                            types::Primitive::Float64,
+                            Variable::new("x"),
+                        ),
+                        types::Primitive::Float64,
+                        false,
+                        false,
+                    ),
+                ],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_bit_cast_to_pointer() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitCast::new(
+                        types::Primitive::Float64,
+                        types::Pointer::new(types::Primitive::Float64),
+                        Primitive::Float64(42.0),
+                    ),
+                    types::Pointer::new(types::Primitive::Float64),
+                    false,
+                    false,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_bit_cast_to_record() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        record_type.clone(),
+                        BitCast::new(
+                            types::Primitive::PointerInteger,
+                            record_type.clone(),
+                            Primitive::PointerInteger(42),
+                        ),
+                    ),
+                ),
+                record_type,
+                false,
+            ));
+        }
+
+        #[test]
+        fn compile_bit_cast_to_union() {
+            let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        union_type.clone(),
+                        BitCast::new(
+                            types::Primitive::PointerInteger,
+                            union_type.clone(),
+                            Primitive::PointerInteger(42),
+                        ),
+                    ),
+                ),
+                union_type,
+                false,
+            ));
+        }
+
+        #[test]
         fn compile_bitwise_and() {
             compile_module(&Module::new(
                 vec![],
@@ -777,14 +876,68 @@ mod tests {
                 vec![],
             ));
         }
+
+        #[test]
+        fn compile_arithmetic_operation() {
+            for &operator in &[
+                ArithmeticOperator::Add,
+                ArithmeticOperator::Subtract,
+                ArithmeticOperator::Multiply,
+                ArithmeticOperator::Divide,
+            ] {
+                compile_module(&Module::new(
+                    vec![],
+                    vec![],
+                    vec![VariableDefinition::new(
+                        "x",
+                        ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            operator,
+                            Primitive::PointerInteger(1),
+                            Primitive::PointerInteger(1),
+                        ),
+                        types::Primitive::PointerInteger,
+                        false,
+                        false,
+                    )],
+                    vec![],
+                ));
+            }
+        }
+
+        #[test]
+        fn compile_comparison_operation() {
+            for &operator in &[
+                ComparisonOperator::Equal,
+                ComparisonOperator::NotEqual,
+                ComparisonOperator::LessThan,
+                ComparisonOperator::GreaterThan,
+                ComparisonOperator::LessThanOrEqual,
+                ComparisonOperator::GreaterThanOrEqual,
+            ] {
+                compile_module(&Module::new(
+                    vec![],
+                    vec![],
+                    vec![VariableDefinition::new(
+                        "x",
+                        ComparisonOperation::new(
+                            types::Primitive::PointerInteger,
+                            operator,
+                            Primitive::PointerInteger(1),
+                            Primitive::PointerInteger(1),
+                        ),
+                        types::Primitive::Boolean,
+                        false,
+                        false,
+                    )],
+                    vec![],
+                ));
+            }
+        }
     }
 
     mod instructions {
         use super::*;
-
-        fn compile_function_definition(definition: FunctionDefinition) {
-            compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
-        }
 
         #[test]
         fn compile_unreachable() {
@@ -872,64 +1025,6 @@ mod tests {
                 types::Pointer::new(function_type),
                 true,
             ));
-        }
-
-        #[test]
-        fn compile_arithmetic_operation() {
-            for &operator in &[
-                ArithmeticOperator::Add,
-                ArithmeticOperator::Subtract,
-                ArithmeticOperator::Multiply,
-                ArithmeticOperator::Divide,
-            ] {
-                compile_function_definition(create_function_definition(
-                    "f",
-                    vec![],
-                    Block::new(
-                        vec![ArithmeticOperation::new(
-                            types::Primitive::PointerInteger,
-                            operator,
-                            Primitive::PointerInteger(1),
-                            Primitive::PointerInteger(1),
-                            "x",
-                        )
-                        .into()],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("x")),
-                    ),
-                    types::Primitive::PointerInteger,
-                    true,
-                ));
-            }
-        }
-
-        #[test]
-        fn compile_comparison_operation() {
-            for &operator in &[
-                ComparisonOperator::Equal,
-                ComparisonOperator::NotEqual,
-                ComparisonOperator::LessThan,
-                ComparisonOperator::GreaterThan,
-                ComparisonOperator::LessThanOrEqual,
-                ComparisonOperator::GreaterThanOrEqual,
-            ] {
-                compile_function_definition(create_function_definition(
-                    "f",
-                    vec![],
-                    Block::new(
-                        vec![ComparisonOperation::new(
-                            types::Primitive::PointerInteger,
-                            operator,
-                            Primitive::PointerInteger(1),
-                            Primitive::PointerInteger(1),
-                            "x",
-                        )
-                        .into()],
-                        Return::new(types::Primitive::Boolean, Variable::new("x")),
-                    ),
-                    types::Primitive::Boolean,
-                    true,
-                ));
-            }
         }
 
         #[test]
@@ -1120,6 +1215,39 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
+                true,
+            ));
+        }
+
+        #[test]
+        fn compile_if_with_expression_generating_instructions() {
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        pointer_type.clone(),
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                pointer_type.clone(),
+                                BitCast::new(
+                                    types::Pointer::new(types::Primitive::Float64),
+                                    pointer_type.clone(),
+                                    Undefined::new(types::Pointer::new(types::Primitive::Float64)),
+                                ),
+                            ),
+                        ),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "x",
+                    )
+                    .into()],
+                    Return::new(pointer_type.clone(), Variable::new("x")),
+                ),
+                pointer_type,
                 true,
             ));
         }

@@ -19,6 +19,9 @@ pub fn compile_expression<'c>(
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
+        Expression::ArithmeticOperation(operation) => {
+            compile_arithmetic_operation(builder, operation, &compile_expression)
+        }
         Expression::BitCast(bit_cast) => {
             compile_bit_cast(builder, bit_cast, context, target_data, &compile_expression)
         }
@@ -27,6 +30,9 @@ pub fn compile_expression<'c>(
         }
         Expression::BitwiseOperation(operation) => {
             compile_bitwise_operation(builder, operation, &compile_expression).into()
+        }
+        Expression::ComparisonOperation(operation) => {
+            compile_comparison_operation(builder, operation, &compile_expression)
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => {
@@ -86,7 +92,10 @@ pub fn compile_constant_expression<'c>(
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
-        Expression::BitCast(bit_cast) => compile_bit_cast(
+        Expression::ArithmeticOperation(operation) => {
+            compile_arithmetic_operation(&context.create_builder(), operation, &compile_expression)
+        }
+        Expression::BitCast(bit_cast) => compile_constant_bit_cast(
             &context.create_builder(),
             bit_cast,
             context,
@@ -100,6 +109,9 @@ pub fn compile_constant_expression<'c>(
         Expression::BitwiseOperation(operation) => {
             compile_bitwise_operation(&context.create_builder(), operation, &compile_expression)
                 .into()
+        }
+        Expression::ComparisonOperation(operation) => {
+            compile_comparison_operation(&context.create_builder(), operation, &compile_expression)
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => context
@@ -146,6 +158,46 @@ fn compile_align_of<'c>(
     )
 }
 
+fn compile_arithmetic_operation<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    operation: &ArithmeticOperation,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::BasicValueEnum<'c> {
+    let lhs = compile_expression(operation.lhs());
+    let rhs = compile_expression(operation.rhs());
+
+    match operation.type_() {
+        fmm::types::Primitive::Boolean
+        | fmm::types::Primitive::Integer8
+        | fmm::types::Primitive::Integer32
+        | fmm::types::Primitive::Integer64
+        | fmm::types::Primitive::PointerInteger => {
+            let lhs = lhs.into_int_value();
+            let rhs = rhs.into_int_value();
+
+            match operation.operator() {
+                fmm::ir::ArithmeticOperator::Add => builder.build_int_add(lhs, rhs, ""),
+                fmm::ir::ArithmeticOperator::Subtract => builder.build_int_sub(lhs, rhs, ""),
+                fmm::ir::ArithmeticOperator::Multiply => builder.build_int_mul(lhs, rhs, ""),
+                fmm::ir::ArithmeticOperator::Divide => builder.build_int_unsigned_div(lhs, rhs, ""),
+            }
+            .into()
+        }
+        fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => {
+            let lhs = lhs.into_float_value();
+            let rhs = rhs.into_float_value();
+
+            match operation.operator() {
+                fmm::ir::ArithmeticOperator::Add => builder.build_float_add(lhs, rhs, ""),
+                fmm::ir::ArithmeticOperator::Subtract => builder.build_float_sub(lhs, rhs, ""),
+                fmm::ir::ArithmeticOperator::Multiply => builder.build_float_mul(lhs, rhs, ""),
+                fmm::ir::ArithmeticOperator::Divide => builder.build_float_div(lhs, rhs, ""),
+            }
+            .into()
+        }
+    }
+}
+
 fn compile_bit_cast<'c>(
     builder: &inkwell::builder::Builder<'c>,
     bit_cast: &BitCast,
@@ -153,10 +205,77 @@ fn compile_bit_cast<'c>(
     target_data: &inkwell::targets::TargetData,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    builder.build_bitcast(
-        compile_expression(bit_cast.expression()),
-        compile_type(bit_cast.to(), context, target_data),
+    if is_constant_bit_cast_supported(bit_cast.from())
+        && is_constant_bit_cast_supported(bit_cast.to())
+    {
+        compile_constant_bit_cast(builder, bit_cast, context, target_data, compile_expression)
+    } else {
+        let pointer = builder.build_alloca(compile_type(bit_cast.from(), context, target_data), "");
+
+        builder.build_store(pointer, compile_expression(bit_cast.expression()));
+
+        builder.build_load(
+            builder
+                .build_bitcast(
+                    pointer,
+                    compile_pointer_type(
+                        &types::Pointer::new(bit_cast.to().clone()),
+                        context,
+                        target_data,
+                    ),
+                    "",
+                )
+                .into_pointer_value(),
+            "",
+        )
+    }
+}
+
+fn compile_constant_bit_cast<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    bit_cast: &BitCast,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::BasicValueEnum<'c> {
+    let argument = compile_expression(bit_cast.expression());
+    let to_type = compile_type(bit_cast.to(), context, target_data);
+
+    let value = builder.build_bitcast(
+        if argument.is_pointer_value() {
+            builder
+                .build_ptr_to_int(
+                    argument.into_pointer_value(),
+                    compile_pointer_integer_type(context, target_data),
+                    "",
+                )
+                .into()
+        } else {
+            argument
+        },
+        if to_type.is_pointer_type() {
+            compile_pointer_integer_type(context, target_data).into()
+        } else {
+            to_type
+        },
         "",
+    );
+
+    if to_type.is_pointer_type() {
+        builder
+            .build_int_to_ptr(value.into_int_value(), to_type.into_pointer_type(), "")
+            .into()
+    } else {
+        value
+    }
+}
+
+fn is_constant_bit_cast_supported(type_: &fmm::types::Type) -> bool {
+    matches!(
+        type_,
+        fmm::types::Type::Function(_)
+            | fmm::types::Type::Pointer(_)
+            | fmm::types::Type::Primitive(_)
     )
 }
 
@@ -180,6 +299,33 @@ fn compile_bitwise_operation<'c>(
         fmm::ir::BitwiseOperator::And => builder.build_and(lhs, rhs, ""),
         fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
     }
+}
+
+fn compile_comparison_operation<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    operation: &ComparisonOperation,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::BasicValueEnum<'c> {
+    match operation.type_() {
+        fmm::types::Primitive::Boolean
+        | fmm::types::Primitive::Integer8
+        | fmm::types::Primitive::Integer32
+        | fmm::types::Primitive::Integer64
+        | fmm::types::Primitive::PointerInteger => builder.build_int_compare(
+            compile_integer_comparison_operator(operation.operator()),
+            compile_expression(operation.lhs()).into_int_value(),
+            compile_expression(operation.rhs()).into_int_value(),
+            "",
+        ),
+        fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => builder
+            .build_float_compare(
+                compile_float_comparison_operator(operation.operator()),
+                compile_expression(operation.lhs()).into_float_value(),
+                compile_expression(operation.rhs()).into_float_value(),
+                "",
+            ),
+    }
+    .into()
 }
 
 fn compile_size_of<'c>(
@@ -258,5 +404,27 @@ fn compile_undefined_primitive<'c>(
         inkwell::types::BasicTypeEnum::IntType(integer) => integer.const_zero().into(),
         inkwell::types::BasicTypeEnum::PointerType(pointer) => pointer.const_zero().into(),
         _ => unreachable!(),
+    }
+}
+
+fn compile_integer_comparison_operator(operator: ComparisonOperator) -> inkwell::IntPredicate {
+    match operator {
+        ComparisonOperator::Equal => inkwell::IntPredicate::EQ,
+        ComparisonOperator::NotEqual => inkwell::IntPredicate::NE,
+        ComparisonOperator::LessThan => inkwell::IntPredicate::ULT,
+        ComparisonOperator::LessThanOrEqual => inkwell::IntPredicate::ULE,
+        ComparisonOperator::GreaterThan => inkwell::IntPredicate::UGT,
+        ComparisonOperator::GreaterThanOrEqual => inkwell::IntPredicate::UGE,
+    }
+}
+
+fn compile_float_comparison_operator(operator: ComparisonOperator) -> inkwell::FloatPredicate {
+    match operator {
+        ComparisonOperator::Equal => inkwell::FloatPredicate::OEQ,
+        ComparisonOperator::NotEqual => inkwell::FloatPredicate::ONE,
+        ComparisonOperator::LessThan => inkwell::FloatPredicate::OLT,
+        ComparisonOperator::LessThanOrEqual => inkwell::FloatPredicate::OLE,
+        ComparisonOperator::GreaterThan => inkwell::FloatPredicate::OGT,
+        ComparisonOperator::GreaterThanOrEqual => inkwell::FloatPredicate::OGE,
     }
 }
