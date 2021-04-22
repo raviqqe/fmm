@@ -788,7 +788,7 @@ mod tests {
                         ),
                     ),
                 ),
-                record_type.clone(),
+                record_type,
                 false,
             ));
         }
@@ -811,7 +811,7 @@ mod tests {
                         ),
                     ),
                 ),
-                union_type.clone(),
+                union_type,
                 false,
             ));
         }
