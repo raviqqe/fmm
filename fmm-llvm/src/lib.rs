@@ -356,6 +356,10 @@ mod tests {
         )
     }
 
+    fn compile_function_definition(definition: FunctionDefinition) {
+        compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
+    }
+
     #[test]
     fn compile_empty_module() {
         compile_module(&Module::new(vec![], vec![], vec![], vec![]));
@@ -767,6 +771,52 @@ mod tests {
         }
 
         #[test]
+        fn compile_bit_cast_to_record() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        record_type.clone(),
+                        BitCast::new(
+                            types::Primitive::PointerInteger,
+                            record_type.clone(),
+                            Primitive::PointerInteger(42),
+                        ),
+                    ),
+                ),
+                record_type.clone(),
+                false,
+            ));
+        }
+
+        #[test]
+        fn compile_bit_cast_to_union() {
+            let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        union_type.clone(),
+                        BitCast::new(
+                            types::Primitive::PointerInteger,
+                            union_type.clone(),
+                            Primitive::PointerInteger(42),
+                        ),
+                    ),
+                ),
+                union_type.clone(),
+                false,
+            ));
+        }
+
+        #[test]
         fn compile_bitwise_and() {
             compile_module(&Module::new(
                 vec![],
@@ -830,10 +880,6 @@ mod tests {
 
     mod instructions {
         use super::*;
-
-        fn compile_function_definition(definition: FunctionDefinition) {
-            compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
-        }
 
         #[test]
         fn compile_unreachable() {
