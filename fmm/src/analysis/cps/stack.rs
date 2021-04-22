@@ -21,7 +21,7 @@ pub fn push_to_stack(
     let element = element.into();
 
     let size = builder.load(builder.record_address(stack.clone(), 1)?)?;
-    let new_size = builder.arithmetic_operation(
+    let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
         get_element_size(builder, element.type_())?,
@@ -29,7 +29,7 @@ pub fn push_to_stack(
     let capacity = builder.load(builder.record_address(stack.clone(), 2)?)?;
 
     builder.if_(
-        builder.comparison_operation(
+        build::comparison_operation(
             ComparisonOperator::GreaterThan,
             new_size.clone(),
             capacity.clone(),
@@ -37,7 +37,7 @@ pub fn push_to_stack(
         |builder| {
             let pointer = builder.record_address(stack.clone(), 0)?;
 
-            let new_capacity = builder.arithmetic_operation(
+            let new_capacity = build::arithmetic_operation(
                 ArithmeticOperator::Multiply,
                 capacity.clone(),
                 Primitive::PointerInteger(2),
@@ -70,7 +70,7 @@ pub fn pop_from_stack(
     let stack = stack.into();
 
     builder.store(
-        builder.arithmetic_operation(
+        build::arithmetic_operation(
             ArithmeticOperator::Subtract,
             builder.load(builder.record_address(stack.clone(), 1)?)?,
             get_element_size(builder, type_)?,
@@ -112,20 +112,20 @@ fn align_size(
     let alignment = build::align_of(types::Primitive::PointerInteger);
 
     builder.if_(
-        builder.comparison_operation(
+        build::comparison_operation(
             ComparisonOperator::Equal,
             size.clone(),
             Primitive::PointerInteger(0),
         )?,
         |builder| Ok(builder.branch(Primitive::PointerInteger(0))),
         |builder| {
-            Ok(builder.branch(builder.arithmetic_operation(
+            Ok(builder.branch(build::arithmetic_operation(
                 ArithmeticOperator::Multiply,
-                builder.arithmetic_operation(
+                build::arithmetic_operation(
                     ArithmeticOperator::Add,
-                    builder.arithmetic_operation(
+                    build::arithmetic_operation(
                         ArithmeticOperator::Divide,
-                        builder.arithmetic_operation(
+                        build::arithmetic_operation(
                             ArithmeticOperator::Subtract,
                             size.clone(),
                             Primitive::PointerInteger(1),

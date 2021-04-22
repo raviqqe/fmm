@@ -86,57 +86,6 @@ fn compile_instruction<'c>(
                 .build_alloca(compile_type(allocate.type_()), allocate.name())
                 .into(),
         ),
-        Instruction::ArithmeticOperation(operation) => {
-            let lhs = compile_expression(operation.lhs());
-            let rhs = compile_expression(operation.rhs());
-
-            Some(match operation.type_() {
-                fmm::types::Primitive::Boolean
-                | fmm::types::Primitive::Integer8
-                | fmm::types::Primitive::Integer32
-                | fmm::types::Primitive::Integer64
-                | fmm::types::Primitive::PointerInteger => {
-                    let lhs = lhs.into_int_value();
-                    let rhs = rhs.into_int_value();
-
-                    match operation.operator() {
-                        fmm::ir::ArithmeticOperator::Add => {
-                            builder.build_int_add(lhs, rhs, operation.name())
-                        }
-                        fmm::ir::ArithmeticOperator::Subtract => {
-                            builder.build_int_sub(lhs, rhs, operation.name())
-                        }
-                        fmm::ir::ArithmeticOperator::Multiply => {
-                            builder.build_int_mul(lhs, rhs, operation.name())
-                        }
-                        fmm::ir::ArithmeticOperator::Divide => {
-                            builder.build_int_unsigned_div(lhs, rhs, operation.name())
-                        }
-                    }
-                    .into()
-                }
-                fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => {
-                    let lhs = lhs.into_float_value();
-                    let rhs = rhs.into_float_value();
-
-                    match operation.operator() {
-                        fmm::ir::ArithmeticOperator::Add => {
-                            builder.build_float_add(lhs, rhs, operation.name())
-                        }
-                        fmm::ir::ArithmeticOperator::Subtract => {
-                            builder.build_float_sub(lhs, rhs, operation.name())
-                        }
-                        fmm::ir::ArithmeticOperator::Multiply => {
-                            builder.build_float_mul(lhs, rhs, operation.name())
-                        }
-                        fmm::ir::ArithmeticOperator::Divide => {
-                            builder.build_float_div(lhs, rhs, operation.name())
-                        }
-                    }
-                    .into()
-                }
-            })
-        }
         Instruction::AtomicLoad(load) => {
             let value = builder.build_load(
                 compile_expression(load.pointer()).into_pointer_value(),
@@ -214,28 +163,6 @@ fn compile_instruction<'c>(
                     cas.name(),
                 )
                 .unwrap(),
-        ),
-        Instruction::ComparisonOperation(operation) => Some(
-            match operation.type_() {
-                fmm::types::Primitive::Boolean
-                | fmm::types::Primitive::Integer8
-                | fmm::types::Primitive::Integer32
-                | fmm::types::Primitive::Integer64
-                | fmm::types::Primitive::PointerInteger => builder.build_int_compare(
-                    compile_integer_comparison_operator(operation.operator()),
-                    compile_expression(operation.lhs()).into_int_value(),
-                    compile_expression(operation.rhs()).into_int_value(),
-                    operation.name(),
-                ),
-                fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => builder
-                    .build_float_compare(
-                        compile_float_comparison_operator(operation.operator()),
-                        compile_expression(operation.lhs()).into_float_value(),
-                        compile_expression(operation.rhs()).into_float_value(),
-                        operation.name(),
-                    ),
-            }
-            .into(),
         ),
         Instruction::DeconstructRecord(deconstruct) => builder.build_extract_value(
             compile_expression(deconstruct.record()).into_struct_value(),
@@ -428,27 +355,5 @@ fn compile_terminal_instruction<'c>(
             builder.build_unreachable();
             None
         }
-    }
-}
-
-fn compile_integer_comparison_operator(operator: ComparisonOperator) -> inkwell::IntPredicate {
-    match operator {
-        ComparisonOperator::Equal => inkwell::IntPredicate::EQ,
-        ComparisonOperator::NotEqual => inkwell::IntPredicate::NE,
-        ComparisonOperator::LessThan => inkwell::IntPredicate::ULT,
-        ComparisonOperator::LessThanOrEqual => inkwell::IntPredicate::ULE,
-        ComparisonOperator::GreaterThan => inkwell::IntPredicate::UGT,
-        ComparisonOperator::GreaterThanOrEqual => inkwell::IntPredicate::UGE,
-    }
-}
-
-fn compile_float_comparison_operator(operator: ComparisonOperator) -> inkwell::FloatPredicate {
-    match operator {
-        ComparisonOperator::Equal => inkwell::FloatPredicate::OEQ,
-        ComparisonOperator::NotEqual => inkwell::FloatPredicate::ONE,
-        ComparisonOperator::LessThan => inkwell::FloatPredicate::OLT,
-        ComparisonOperator::LessThanOrEqual => inkwell::FloatPredicate::OLE,
-        ComparisonOperator::GreaterThan => inkwell::FloatPredicate::OGT,
-        ComparisonOperator::GreaterThanOrEqual => inkwell::FloatPredicate::OGE,
     }
 }

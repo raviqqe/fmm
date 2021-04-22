@@ -788,7 +788,7 @@ mod tests {
                         ),
                     ),
                 ),
-                record_type.clone(),
+                record_type,
                 false,
             ));
         }
@@ -811,7 +811,7 @@ mod tests {
                         ),
                     ),
                 ),
-                union_type.clone(),
+                union_type,
                 false,
             ));
         }
@@ -875,6 +875,64 @@ mod tests {
                 )],
                 vec![],
             ));
+        }
+
+        #[test]
+        fn compile_arithmetic_operation() {
+            for &operator in &[
+                ArithmeticOperator::Add,
+                ArithmeticOperator::Subtract,
+                ArithmeticOperator::Multiply,
+                ArithmeticOperator::Divide,
+            ] {
+                compile_module(&Module::new(
+                    vec![],
+                    vec![],
+                    vec![VariableDefinition::new(
+                        "x",
+                        ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            operator,
+                            Primitive::PointerInteger(1),
+                            Primitive::PointerInteger(1),
+                        ),
+                        types::Primitive::PointerInteger,
+                        false,
+                        false,
+                    )],
+                    vec![],
+                ));
+            }
+        }
+
+        #[test]
+        fn compile_comparison_operation() {
+            for &operator in &[
+                ComparisonOperator::Equal,
+                ComparisonOperator::NotEqual,
+                ComparisonOperator::LessThan,
+                ComparisonOperator::GreaterThan,
+                ComparisonOperator::LessThanOrEqual,
+                ComparisonOperator::GreaterThanOrEqual,
+            ] {
+                compile_module(&Module::new(
+                    vec![],
+                    vec![],
+                    vec![VariableDefinition::new(
+                        "x",
+                        ComparisonOperation::new(
+                            types::Primitive::PointerInteger,
+                            operator,
+                            Primitive::PointerInteger(1),
+                            Primitive::PointerInteger(1),
+                        ),
+                        types::Primitive::Boolean,
+                        false,
+                        false,
+                    )],
+                    vec![],
+                ));
+            }
         }
     }
 
@@ -967,64 +1025,6 @@ mod tests {
                 types::Pointer::new(function_type),
                 true,
             ));
-        }
-
-        #[test]
-        fn compile_arithmetic_operation() {
-            for &operator in &[
-                ArithmeticOperator::Add,
-                ArithmeticOperator::Subtract,
-                ArithmeticOperator::Multiply,
-                ArithmeticOperator::Divide,
-            ] {
-                compile_function_definition(create_function_definition(
-                    "f",
-                    vec![],
-                    Block::new(
-                        vec![ArithmeticOperation::new(
-                            types::Primitive::PointerInteger,
-                            operator,
-                            Primitive::PointerInteger(1),
-                            Primitive::PointerInteger(1),
-                            "x",
-                        )
-                        .into()],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("x")),
-                    ),
-                    types::Primitive::PointerInteger,
-                    true,
-                ));
-            }
-        }
-
-        #[test]
-        fn compile_comparison_operation() {
-            for &operator in &[
-                ComparisonOperator::Equal,
-                ComparisonOperator::NotEqual,
-                ComparisonOperator::LessThan,
-                ComparisonOperator::GreaterThan,
-                ComparisonOperator::LessThanOrEqual,
-                ComparisonOperator::GreaterThanOrEqual,
-            ] {
-                compile_function_definition(create_function_definition(
-                    "f",
-                    vec![],
-                    Block::new(
-                        vec![ComparisonOperation::new(
-                            types::Primitive::PointerInteger,
-                            operator,
-                            Primitive::PointerInteger(1),
-                            Primitive::PointerInteger(1),
-                            "x",
-                        )
-                        .into()],
-                        Return::new(types::Primitive::Boolean, Variable::new("x")),
-                    ),
-                    types::Primitive::Boolean,
-                    true,
-                ));
-            }
         }
 
         #[test]

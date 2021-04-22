@@ -100,14 +100,6 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
         Instruction::AllocateStack(allocate) => {
             AllocateStack::new(convert(allocate.type_()), allocate.name()).into()
         }
-        Instruction::ArithmeticOperation(operation) => ArithmeticOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
-            operation.operator(),
-            convert_expression(operation.lhs()),
-            convert_expression(operation.rhs()),
-            operation.name(),
-        )
-        .into(),
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             convert(load.type_()),
             convert_expression(load.pointer()),
@@ -144,14 +136,6 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             convert_expression(cas.old_value()),
             convert_expression(cas.new_value()),
             cas.name(),
-        )
-        .into(),
-        Instruction::ComparisonOperation(operation) => ComparisonOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
-            operation.operator(),
-            convert_expression(operation.lhs()),
-            convert_expression(operation.rhs()),
-            operation.name(),
         )
         .into(),
         Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
@@ -274,12 +258,26 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
             convert_expression(bit_cast.expression()),
         )
         .into(),
+        Expression::ArithmeticOperation(operation) => ArithmeticOperation::new(
+            convert(&operation.type_().into()).to_primitive().unwrap(),
+            operation.operator(),
+            convert_expression(operation.lhs()),
+            convert_expression(operation.rhs()),
+        )
+        .into(),
         Expression::BitwiseNotOperation(operation) => BitwiseNotOperation::new(
             convert(&operation.type_().into()).to_primitive().unwrap(),
             convert_expression(operation.value()),
         )
         .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
+            convert(&operation.type_().into()).to_primitive().unwrap(),
+            operation.operator(),
+            convert_expression(operation.lhs()),
+            convert_expression(operation.rhs()),
+        )
+        .into(),
+        Expression::ComparisonOperation(operation) => ComparisonOperation::new(
             convert(&operation.type_().into()).to_primitive().unwrap(),
             operation.operator(),
             convert_expression(operation.lhs()),
