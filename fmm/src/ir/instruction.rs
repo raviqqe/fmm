@@ -1,12 +1,10 @@
 use super::allocate_heap::AllocateHeap;
 use super::allocate_stack::AllocateStack;
-use super::arithmetic_operation::ArithmeticOperation;
 use super::atomic_load::AtomicLoad;
 use super::atomic_operation::AtomicOperation;
 use super::atomic_store::AtomicStore;
 use super::call::Call;
 use super::compare_and_swap::CompareAndSwap;
-use super::comparison_operation::ComparisonOperation;
 use super::deconstruct_record::DeconstructRecord;
 use super::deconstruct_union::DeconstructUnion;
 use super::free_heap::FreeHeap;
@@ -24,13 +22,11 @@ use crate::types::{self, Type};
 pub enum Instruction {
     AllocateHeap(AllocateHeap),
     AllocateStack(AllocateStack),
-    ArithmeticOperation(ArithmeticOperation),
     AtomicLoad(AtomicLoad),
     AtomicOperation(AtomicOperation),
     AtomicStore(AtomicStore),
     Call(Call),
     CompareAndSwap(CompareAndSwap),
-    ComparisonOperation(ComparisonOperation),
     DeconstructRecord(DeconstructRecord),
     DeconstructUnion(DeconstructUnion),
     FreeHeap(FreeHeap),
@@ -49,12 +45,10 @@ impl Instruction {
         match self {
             Self::AllocateHeap(allocate) => Some(allocate.name()),
             Self::AllocateStack(allocate) => Some(allocate.name()),
-            Self::ArithmeticOperation(operation) => Some(operation.name()),
             Self::AtomicLoad(load) => Some(load.name()),
             Self::AtomicOperation(operation) => Some(operation.name()),
             Self::Call(call) => Some(call.name()),
             Self::CompareAndSwap(cas) => Some(cas.name()),
-            Self::ComparisonOperation(operation) => Some(operation.name()),
             Self::DeconstructRecord(deconstruct) => Some(deconstruct.name()),
             Self::DeconstructUnion(deconstruct) => Some(deconstruct.name()),
             Self::If(if_) => Some(if_.name()),
@@ -76,12 +70,10 @@ impl Instruction {
             Self::AllocateStack(allocate) => {
                 Some(types::Pointer::new(allocate.type_().clone()).into())
             }
-            Self::ArithmeticOperation(operation) => Some(operation.type_().clone().into()),
             Self::AtomicLoad(load) => Some(load.type_().clone()),
             Self::AtomicOperation(operation) => Some(operation.type_().into()),
             Self::Call(call) => Some(call.type_().result().clone()),
             Self::CompareAndSwap(_) => Some(types::Primitive::Boolean.into()),
-            Self::ComparisonOperation(_) => Some(types::Primitive::Boolean.into()),
             Self::DeconstructRecord(deconstruct) => {
                 Some(deconstruct.type_().elements()[deconstruct.element_index()].clone())
             }
@@ -118,12 +110,6 @@ impl From<AllocateStack> for Instruction {
     }
 }
 
-impl From<ArithmeticOperation> for Instruction {
-    fn from(operation: ArithmeticOperation) -> Self {
-        Self::ArithmeticOperation(operation)
-    }
-}
-
 impl From<AtomicLoad> for Instruction {
     fn from(load: AtomicLoad) -> Self {
         Self::AtomicLoad(load)
@@ -151,12 +137,6 @@ impl From<Call> for Instruction {
 impl From<CompareAndSwap> for Instruction {
     fn from(compare_and_swap: CompareAndSwap) -> Self {
         Self::CompareAndSwap(compare_and_swap)
-    }
-}
-
-impl From<ComparisonOperation> for Instruction {
-    fn from(operation: ComparisonOperation) -> Self {
-        Self::ComparisonOperation(operation)
     }
 }
 

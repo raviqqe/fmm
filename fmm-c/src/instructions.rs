@@ -60,13 +60,6 @@ fn compile_instruction(
                 entity_name,
             )
         }
-        Instruction::ArithmeticOperation(operation) => format!(
-            "{}={}{}{};",
-            compile_typed_name(&operation.type_().into(), operation.name()),
-            compile_expression(operation.lhs()),
-            compile_arithmetic_operator(operation.operator()),
-            compile_expression(operation.rhs()),
-        ),
         Instruction::AtomicLoad(load) => format!(
             "{}=({})atomic_load(({}){});",
             compile_typed_name(&load.type_(), load.name()),
@@ -115,13 +108,6 @@ fn compile_instruction(
                 compile_expression(cas.new_value()),
             )
         }
-        Instruction::ComparisonOperation(operation) => format!(
-            "bool {}={}{}{};",
-            operation.name(),
-            compile_expression(operation.lhs()),
-            compile_comparison_operator(operation.operator()),
-            compile_expression(operation.rhs()),
-        ),
         Instruction::DeconstructRecord(deconstruct) => format!(
             "{}={}.{};",
             compile_typed_name(
@@ -229,25 +215,5 @@ fn compile_terminal_instruction(
             format!("return {};", compile_expression(return_.expression(),))
         }
         TerminalInstruction::Unreachable => "abort();".into(),
-    }
-}
-
-fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
-    match operator {
-        ArithmeticOperator::Add => "+",
-        ArithmeticOperator::Subtract => "-",
-        ArithmeticOperator::Multiply => "*",
-        ArithmeticOperator::Divide => "/",
-    }
-}
-
-fn compile_comparison_operator(operator: ComparisonOperator) -> &'static str {
-    match operator {
-        ComparisonOperator::Equal => "==",
-        ComparisonOperator::NotEqual => "!=",
-        ComparisonOperator::LessThan => "<",
-        ComparisonOperator::LessThanOrEqual => "<=",
-        ComparisonOperator::GreaterThan => ">",
-        ComparisonOperator::GreaterThanOrEqual => ">=",
     }
 }

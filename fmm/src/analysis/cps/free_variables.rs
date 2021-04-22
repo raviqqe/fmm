@@ -26,10 +26,6 @@ fn collect_from_block(block: &Block) -> HashSet<String> {
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
     match instruction {
-        Instruction::ArithmeticOperation(operation) => [operation.lhs(), operation.rhs()]
-            .iter()
-            .flat_map(|expression| collect_from_expression(*expression))
-            .collect(),
         Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
         Instruction::AtomicOperation(operation) => [operation.pointer(), operation.value()]
             .iter()
@@ -44,10 +40,6 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
             .chain(call.arguments().iter().flat_map(collect_from_expression))
             .collect(),
         Instruction::CompareAndSwap(cas) => [cas.pointer(), cas.old_value(), cas.new_value()]
-            .iter()
-            .flat_map(|expression| collect_from_expression(*expression))
-            .collect(),
-        Instruction::ComparisonOperation(operation) => [operation.lhs(), operation.rhs()]
             .iter()
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
@@ -95,10 +87,19 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashS
 
 fn collect_from_expression(expression: &Expression) -> HashSet<String> {
     match expression {
+        Expression::ArithmeticOperation(operation) => [operation.lhs(), operation.rhs()]
+            .iter()
+            .flat_map(|expression| collect_from_expression(*expression))
+            .collect(),
         Expression::BitCast(bit_cast) => collect_from_expression(bit_cast.expression()),
+        Expression::BitwiseNotOperation(operation) => collect_from_expression(operation.value()),
         Expression::BitwiseOperation(operation) => collect_from_expression(operation.lhs())
             .into_iter()
             .chain(collect_from_expression(operation.rhs()))
+            .collect(),
+        Expression::ComparisonOperation(operation) => [operation.lhs(), operation.rhs()]
+            .iter()
+            .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
         Expression::Record(record) => record
             .elements()

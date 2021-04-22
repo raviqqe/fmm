@@ -1,18 +1,23 @@
-use super::align_of::AlignOf;
+use super::arithmetic_operation::ArithmeticOperation;
 use super::bit_cast::BitCast;
 use super::bitwise_operation::BitwiseOperation;
+use super::comparison_operation::ComparisonOperation;
 use super::primitive::Primitive;
 use super::record::Record;
 use super::size_of::SizeOf;
 use super::undefined::Undefined;
 use super::union::Union;
 use super::variable::Variable;
+use super::{align_of::AlignOf, bitwise_not_operation::BitwiseNotOperation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     AlignOf(AlignOf),
+    ArithmeticOperation(ArithmeticOperation),
     BitCast(BitCast),
+    BitwiseNotOperation(BitwiseNotOperation),
     BitwiseOperation(BitwiseOperation),
+    ComparisonOperation(ComparisonOperation),
     Primitive(Primitive),
     Record(Record),
     SizeOf(SizeOf),
@@ -27,15 +32,33 @@ impl From<AlignOf> for Expression {
     }
 }
 
+impl From<ArithmeticOperation> for Expression {
+    fn from(operation: ArithmeticOperation) -> Self {
+        Self::ArithmeticOperation(operation)
+    }
+}
+
 impl From<BitCast> for Expression {
     fn from(bit_cast: BitCast) -> Self {
         Self::BitCast(bit_cast)
     }
 }
 
+impl From<BitwiseNotOperation> for Expression {
+    fn from(operation: BitwiseNotOperation) -> Self {
+        Self::BitwiseNotOperation(operation)
+    }
+}
+
 impl From<BitwiseOperation> for Expression {
     fn from(operation: BitwiseOperation) -> Self {
         Self::BitwiseOperation(operation)
+    }
+}
+
+impl From<ComparisonOperation> for Expression {
+    fn from(operation: ComparisonOperation) -> Self {
+        Self::ComparisonOperation(operation)
     }
 }
 

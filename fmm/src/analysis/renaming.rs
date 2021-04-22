@@ -85,14 +85,6 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
     let rename_expression = |expression| rename_expression(expression, rename);
 
     match instruction {
-        Instruction::ArithmeticOperation(operation) => ArithmeticOperation::new(
-            operation.type_(),
-            operation.operator(),
-            rename_expression(operation.lhs()),
-            rename_expression(operation.rhs()),
-            rename(operation.name()),
-        )
-        .into(),
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             load.type_().clone(),
             rename_expression(load.pointer()),
@@ -129,14 +121,6 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename_expression(cas.old_value()),
             rename_expression(cas.new_value()),
             rename(cas.name()),
-        )
-        .into(),
-        Instruction::ComparisonOperation(operation) => ComparisonOperation::new(
-            operation.type_(),
-            operation.operator(),
-            rename_expression(operation.lhs()),
-            rename_expression(operation.rhs()),
-            rename(operation.name()),
         )
         .into(),
         Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
@@ -233,18 +217,37 @@ fn rename_terminal_instruction(
 }
 
 fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) -> Expression {
+    let rename_expression = |expression| rename_expression(expression, rename);
+
     match expression {
+        Expression::ArithmeticOperation(operation) => ArithmeticOperation::new(
+            operation.type_(),
+            operation.operator(),
+            rename_expression(operation.lhs()),
+            rename_expression(operation.rhs()),
+        )
+        .into(),
         Expression::BitCast(bit_cast) => BitCast::new(
             bit_cast.from().clone(),
             bit_cast.to().clone(),
-            rename_expression(bit_cast.expression(), rename),
+            rename_expression(bit_cast.expression()),
         )
         .into(),
+        Expression::BitwiseNotOperation(operation) => {
+            BitwiseNotOperation::new(operation.type_(), rename_expression(operation.value())).into()
+        }
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             operation.type_(),
             operation.operator(),
-            rename_expression(operation.lhs(), rename),
-            rename_expression(operation.rhs(), rename),
+            rename_expression(operation.lhs()),
+            rename_expression(operation.rhs()),
+        )
+        .into(),
+        Expression::ComparisonOperation(operation) => ComparisonOperation::new(
+            operation.type_(),
+            operation.operator(),
+            rename_expression(operation.lhs()),
+            rename_expression(operation.rhs()),
         )
         .into(),
         Expression::Record(record) => Record::new(
@@ -252,14 +255,14 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
             record
                 .elements()
                 .iter()
-                .map(|element| rename_expression(element, rename))
+                .map(|element| rename_expression(element))
                 .collect(),
         )
         .into(),
         Expression::Union(union) => Union::new(
             union.type_().clone(),
             union.member_index(),
-            rename_expression(union.member(), rename),
+            rename_expression(union.member()),
         )
         .into(),
         Expression::Variable(variable) => Variable::new(rename(variable.name())).into(),

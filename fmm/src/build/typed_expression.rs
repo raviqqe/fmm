@@ -30,6 +30,12 @@ impl From<AlignOf> for TypedExpression {
     }
 }
 
+impl From<ArithmeticOperation> for TypedExpression {
+    fn from(operation: ArithmeticOperation) -> Self {
+        Self::new(operation.clone(), operation.type_())
+    }
+}
+
 impl From<BitCast> for TypedExpression {
     fn from(bit_cast: BitCast) -> Self {
         Self::new(bit_cast.clone(), bit_cast.to().clone())
@@ -39,6 +45,12 @@ impl From<BitCast> for TypedExpression {
 impl From<BitwiseOperation> for TypedExpression {
     fn from(operation: BitwiseOperation) -> Self {
         Self::new(operation.clone(), operation.type_())
+    }
+}
+
+impl From<ComparisonOperation> for TypedExpression {
+    fn from(operation: ComparisonOperation) -> Self {
+        Self::new(operation, ComparisonOperation::RESULT_TYPE)
     }
 }
 

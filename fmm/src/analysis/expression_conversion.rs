@@ -90,14 +90,6 @@ fn convert_instruction(
         Instruction::AllocateStack(allocate) => {
             AllocateStack::new(allocate.type_().clone(), allocate.name()).into()
         }
-        Instruction::ArithmeticOperation(operation) => ArithmeticOperation::new(
-            operation.type_(),
-            operation.operator(),
-            convert(operation.lhs()),
-            convert(operation.rhs()),
-            operation.name(),
-        )
-        .into(),
         Instruction::AtomicLoad(load) => {
             AtomicLoad::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
         }
@@ -128,14 +120,6 @@ fn convert_instruction(
             convert(cas.old_value()),
             convert(cas.new_value()),
             cas.name(),
-        )
-        .into(),
-        Instruction::ComparisonOperation(operation) => ComparisonOperation::new(
-            operation.type_(),
-            operation.operator(),
-            convert(operation.lhs()),
-            convert(operation.rhs()),
-            operation.name(),
         )
         .into(),
         Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
@@ -231,13 +215,30 @@ fn convert_expression(
         let convert = |expression| convert_expression(expression, convert);
 
         match expression {
+            Expression::ArithmeticOperation(operation) => ArithmeticOperation::new(
+                operation.type_(),
+                operation.operator(),
+                convert(operation.lhs()),
+                convert(operation.rhs()),
+            )
+            .into(),
             Expression::BitCast(bit_cast) => BitCast::new(
                 bit_cast.from().clone(),
                 bit_cast.to().clone(),
                 convert(bit_cast.expression()),
             )
             .into(),
+            Expression::BitwiseNotOperation(operation) => {
+                BitwiseNotOperation::new(operation.type_(), convert(operation.value())).into()
+            }
             Expression::BitwiseOperation(operation) => BitwiseOperation::new(
+                operation.type_(),
+                operation.operator(),
+                convert(operation.lhs()),
+                convert(operation.rhs()),
+            )
+            .into(),
+            Expression::ComparisonOperation(operation) => ComparisonOperation::new(
                 operation.type_(),
                 operation.operator(),
                 convert(operation.lhs()),
