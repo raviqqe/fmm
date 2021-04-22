@@ -62,31 +62,6 @@ impl InstructionBuilder {
         TypedExpression::new(Variable::new(name), types::Pointer::new(type_))
     }
 
-    pub fn arithmetic_operation(
-        &self,
-        operator: ArithmeticOperator,
-        lhs: impl Into<TypedExpression>,
-        rhs: impl Into<TypedExpression>,
-    ) -> Result<TypedExpression, BuildError> {
-        let lhs = lhs.into();
-        let rhs = rhs.into();
-        let type_ = lhs
-            .type_()
-            .to_primitive()
-            .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?;
-        let name = self.generate_name();
-
-        self.add_instruction(ArithmeticOperation::new(
-            type_,
-            operator,
-            lhs.expression().clone(),
-            rhs.expression().clone(),
-            &name,
-        ));
-
-        Ok(TypedExpression::new(Variable::new(name), type_))
-    }
-
     pub fn atomic_load(
         &self,
         pointer: impl Into<TypedExpression>,
@@ -197,29 +172,6 @@ impl InstructionBuilder {
         ));
 
         TypedExpression::new(Variable::new(name), types::Primitive::Boolean)
-    }
-
-    pub fn comparison_operation(
-        &self,
-        operator: ComparisonOperator,
-        lhs: impl Into<TypedExpression>,
-        rhs: impl Into<TypedExpression>,
-    ) -> Result<TypedExpression, BuildError> {
-        let lhs = lhs.into();
-        let rhs = rhs.into();
-        let name = self.generate_name();
-
-        self.add_instruction(ComparisonOperation::new(
-            lhs.type_()
-                .to_primitive()
-                .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?,
-            operator,
-            lhs.expression().clone(),
-            rhs.expression().clone(),
-            &name,
-        ));
-
-        Ok(variable(name, types::Primitive::Boolean))
     }
 
     pub fn deconstruct_record(

@@ -94,16 +94,6 @@ fn check_block(
     for instruction in block.instructions() {
         match instruction {
             Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => {}
-            Instruction::ArithmeticOperation(operation) => {
-                check_equality(
-                    &check_expression(operation.lhs(), &variables)?,
-                    &operation.type_().into(),
-                )?;
-                check_equality(
-                    &check_expression(operation.rhs(), &variables)?,
-                    &operation.type_().into(),
-                )?;
-            }
             Instruction::AtomicLoad(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
@@ -158,16 +148,6 @@ fn check_block(
                 check_equality(
                     &check_expression(cas.new_value(), &variables)?,
                     &cas.type_().clone(),
-                )?;
-            }
-            Instruction::ComparisonOperation(operation) => {
-                check_equality(
-                    &check_expression(operation.lhs(), &variables)?,
-                    &operation.type_().into(),
-                )?;
-                check_equality(
-                    &check_expression(operation.rhs(), &variables)?,
-                    &operation.type_().into(),
                 )?;
             }
             Instruction::DeconstructRecord(deconstruct) => {
@@ -297,6 +277,18 @@ fn check_expression(
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
+        Expression::ArithmeticOperation(operation) => {
+            check_equality(
+                &check_expression(operation.lhs(), &variables)?,
+                &operation.type_().into(),
+            )?;
+            check_equality(
+                &check_expression(operation.rhs(), &variables)?,
+                &operation.type_().into(),
+            )?;
+
+            operation.type_().into()
+        }
         Expression::BitCast(bit_cast) => {
             check_equality(
                 &check_expression(bit_cast.expression(), variables)?,
@@ -324,6 +316,18 @@ fn check_expression(
             )?;
 
             operation.type_().into()
+        }
+        Expression::ComparisonOperation(operation) => {
+            check_equality(
+                &check_expression(operation.lhs(), &variables)?,
+                &operation.type_().into(),
+            )?;
+            check_equality(
+                &check_expression(operation.rhs(), &variables)?,
+                &operation.type_().into(),
+            )?;
+
+            ComparisonOperation::RESULT_TYPE.into()
         }
         Expression::Primitive(primitive) => primitive.type_().into(),
         Expression::Record(record) => {

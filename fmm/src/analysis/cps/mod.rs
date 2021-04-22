@@ -174,14 +174,7 @@ mod tests {
                             "y",
                         )
                         .into(),
-                        ArithmeticOperation::new(
-                            types::Primitive::Float64,
-                            ArithmeticOperator::Add,
-                            Variable::new("x"),
-                            Variable::new("y"),
-                            "z",
-                        )
-                        .into(),
+                        PassThrough::new(types::Primitive::Float64, Variable::new("y"), "z").into(),
                     ],
                     Return::new(types::Primitive::Float64, Variable::new("z")),
                 ),

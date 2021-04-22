@@ -6,6 +6,24 @@ pub fn align_of(type_: impl Into<Type>) -> TypedExpression {
     AlignOf::new(type_.into()).into()
 }
 
+pub fn arithmetic_operation(
+    operator: ArithmeticOperator,
+    lhs: impl Into<TypedExpression>,
+    rhs: impl Into<TypedExpression>,
+) -> Result<ArithmeticOperation, BuildError> {
+    let lhs = lhs.into();
+    let rhs = rhs.into();
+
+    Ok(ArithmeticOperation::new(
+        lhs.type_()
+            .to_primitive()
+            .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?,
+        operator,
+        lhs.expression().clone(),
+        rhs.expression().clone(),
+    ))
+}
+
 pub fn bit_cast(to: impl Into<Type>, expression: impl Into<TypedExpression>) -> BitCast {
     let expression = expression.into();
 
@@ -39,6 +57,24 @@ pub fn bitwise_operation(
     let rhs = rhs.into();
 
     Ok(BitwiseOperation::new(
+        lhs.type_()
+            .to_primitive()
+            .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?,
+        operator,
+        lhs.expression().clone(),
+        rhs.expression().clone(),
+    ))
+}
+
+pub fn comparison_operation(
+    operator: ComparisonOperator,
+    lhs: impl Into<TypedExpression>,
+    rhs: impl Into<TypedExpression>,
+) -> Result<ComparisonOperation, BuildError> {
+    let lhs = lhs.into();
+    let rhs = rhs.into();
+
+    Ok(ComparisonOperation::new(
         lhs.type_()
             .to_primitive()
             .ok_or_else(|| BuildError::PrimitiveExpected(lhs.type_().clone()))?,

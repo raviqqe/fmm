@@ -18,23 +18,22 @@ pub struct ComparisonOperation {
     operator: ComparisonOperator,
     lhs: Arc<Expression>,
     rhs: Arc<Expression>,
-    name: String,
 }
 
 impl ComparisonOperation {
+    pub const RESULT_TYPE: types::Primitive = types::Primitive::Boolean;
+
     pub fn new(
         type_: types::Primitive,
         operator: ComparisonOperator,
         lhs: impl Into<Expression>,
         rhs: impl Into<Expression>,
-        name: impl Into<String>,
     ) -> Self {
         Self {
             type_,
             operator,
             lhs: Arc::new(lhs.into()),
             rhs: Arc::new(rhs.into()),
-            name: name.into(),
         }
     }
 
@@ -52,9 +51,5 @@ impl ComparisonOperation {
 
     pub fn rhs(&self) -> &Expression {
         &self.rhs
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 }
