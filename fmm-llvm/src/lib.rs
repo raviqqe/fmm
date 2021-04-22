@@ -297,6 +297,7 @@ fn compile_function_definition<'c>(
         heap_function_set,
     );
 
+    function.print_to_stderr();
     function.verify(true);
 }
 
