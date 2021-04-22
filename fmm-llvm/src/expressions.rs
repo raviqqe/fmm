@@ -20,7 +20,7 @@ pub fn compile_expression<'c>(
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
         Expression::ArithmeticOperation(operation) => {
-            compile_arithmetic_operation(&context.create_builder(), operation, &compile_expression)
+            compile_arithmetic_operation(builder, operation, &compile_expression)
         }
         Expression::BitCast(bit_cast) => {
             compile_bit_cast(builder, bit_cast, context, target_data, &compile_expression)
@@ -32,7 +32,7 @@ pub fn compile_expression<'c>(
             compile_bitwise_operation(builder, operation, &compile_expression).into()
         }
         Expression::ComparisonOperation(operation) => {
-            compile_comparison_operation(&context.create_builder(), operation, &compile_expression)
+            compile_comparison_operation(builder, operation, &compile_expression)
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => {
