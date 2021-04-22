@@ -17,7 +17,7 @@ It's designed to be a compiler target for high-level functional programming lang
     - `if`
     - `return`
   - No backward jump
-- Portability
+- Portable
   - Pointer-sized integer
   - C-like union type
   - Boolean type
