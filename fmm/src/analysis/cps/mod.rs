@@ -59,7 +59,7 @@ mod tests {
             body,
             result_type,
             CallingConvention::Source,
-            false,
+            Linkage::Internal,
         )
     }
 
@@ -146,7 +146,7 @@ mod tests {
                 ),
                 types::Primitive::Float64,
                 CallingConvention::Target,
-                false,
+                Linkage::Internal,
             )],
         ));
     }
@@ -415,7 +415,7 @@ mod tests {
                     ),
                     VOID_TYPE.clone(),
                     CallingConvention::Tail,
-                    false,
+                    Linkage::Internal,
                 )],
             ))
         );
@@ -547,7 +547,7 @@ mod tests {
                     ),
                     VOID_TYPE.clone(),
                     CallingConvention::Tail,
-                    false,
+                    Linkage::Internal,
                 )],
             ))
         );

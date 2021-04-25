@@ -50,7 +50,7 @@ fn convert_variable_definition(
         convert(definition.body()),
         definition.type_().clone(),
         definition.is_mutable(),
-        definition.is_global(),
+        definition.linkage(),
     )
 }
 
@@ -64,7 +64,7 @@ fn convert_function_definition(
         convert_block(definition.body(), convert),
         definition.result_type().clone(),
         definition.calling_convention(),
-        definition.is_global(),
+        definition.linkage(),
     )
 }
 

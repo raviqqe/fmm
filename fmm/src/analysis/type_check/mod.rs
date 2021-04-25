@@ -400,7 +400,6 @@ mod tests {
         arguments: Vec<Argument>,
         body: Block,
         result_type: impl Into<Type>,
-        global: bool,
     ) -> FunctionDefinition {
         FunctionDefinition::new(
             name,
@@ -408,7 +407,7 @@ mod tests {
             body,
             result_type,
             CallingConvention::Target,
-            global,
+            Linkage::External,
         )
     }
 
@@ -442,7 +441,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -457,7 +455,7 @@ mod tests {
                 Primitive::PointerInteger(42),
                 types::Primitive::PointerInteger,
                 false,
-                true,
+                Linkage::External,
             )],
             vec![create_function_definition(
                 "f",
@@ -475,7 +473,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -509,7 +506,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                true,
             )],
         ))
     }
@@ -531,7 +527,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -552,7 +547,6 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
-                true,
             )],
         ))
     }
@@ -576,7 +570,6 @@ mod tests {
                     Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
                 ),
                 GENERIC_POINTER_TYPE.clone(),
-                true,
             )],
         ))
     }
@@ -597,7 +590,6 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("x")),
                 ),
                 pointer_type,
-                true,
             )],
         ))
     }
@@ -625,7 +617,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                true,
             )],
         ))
     }
@@ -660,7 +651,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                true,
             )],
         ))
         .unwrap()
@@ -693,7 +683,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-                true,
             )],
         ))
     }
@@ -717,7 +706,6 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -747,7 +735,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -774,7 +761,6 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -804,7 +790,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -831,7 +816,6 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
-                true,
             )],
         ))
     }
@@ -855,7 +839,6 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                true,
             )],
         ))
     }
@@ -879,7 +862,6 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                true,
             )],
         ))
     }
@@ -894,7 +876,7 @@ mod tests {
                 AlignOf::new(types::Primitive::Float64),
                 types::Primitive::PointerInteger,
                 false,
-                true,
+                Linkage::External,
             )],
             vec![],
         ))
@@ -910,7 +892,7 @@ mod tests {
                 SizeOf::new(types::Primitive::Float64),
                 types::Primitive::PointerInteger,
                 false,
-                true,
+                Linkage::External,
             )],
             vec![],
         ))
@@ -930,7 +912,7 @@ mod tests {
                 ),
                 types::Primitive::Float64,
                 false,
-                true,
+                Linkage::External,
             )],
             vec![],
         ))
@@ -955,7 +937,6 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -984,7 +965,6 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -1011,7 +991,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }
@@ -1038,7 +1017,6 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
             )],
         ))
     }

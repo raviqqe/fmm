@@ -160,12 +160,7 @@ fn compile_function_forward_declaration(
     definition: &FunctionDefinition,
     type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
-    if definition.is_global() {
-        ""
-    } else {
-        "static "
-    }
-    .to_owned()
+    compile_linkage(definition.linkage()).to_owned()
         + &compile_function_name(definition.type_(), definition.name(), type_ids)
         + ";"
 }
@@ -185,12 +180,7 @@ fn compile_variable_definition_lhs(
     definition: &VariableDefinition,
     type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
-    if definition.is_global() {
-        ""
-    } else {
-        "static "
-    }
-    .to_owned()
+    compile_linkage(definition.linkage()).to_owned()
         + &compile_typed_name(
             definition.type_(),
             &(if definition.is_mutable() {
@@ -209,12 +199,7 @@ fn compile_function_definition(
     global_variables: &HashSet<String>,
     type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
-    if definition.is_global() {
-        ""
-    } else {
-        "static "
-    }
-    .to_owned()
+    compile_linkage(definition.linkage()).to_owned()
         + &compile_typed_name(
             definition.result_type(),
             &format!(
@@ -264,6 +249,14 @@ fn compile_type_ids(types: &[fmm::types::Type]) -> HashMap<fmm::types::Type, Str
                 .map(|(index, union)| (union.clone().into(), generate_union_type_name(index))),
         )
         .collect()
+}
+
+fn compile_linkage(linkage: Linkage) -> &'static str {
+    match linkage {
+        fmm::ir::Linkage::External => "",
+        fmm::ir::Linkage::Internal => "static ",
+        fmm::ir::Linkage::Weak => unimplemented!("weak linkage not supported"),
+    }
 }
 
 #[cfg(test)]
@@ -318,7 +311,7 @@ mod tests {
         arguments: Vec<Argument>,
         body: Block,
         result_type: impl Into<Type>,
-        global: bool,
+        linkage: Linkage,
     ) -> FunctionDefinition {
         FunctionDefinition::new(
             name,
@@ -326,7 +319,7 @@ mod tests {
             body,
             result_type,
             CallingConvention::Source,
-            global,
+            linkage,
         )
     }
 
@@ -410,7 +403,7 @@ mod tests {
                         ),
                     ),
                     types::Pointer::new(types::Primitive::PointerInteger),
-                    false,
+                    Linkage::Internal,
                 )],
             ));
         }
@@ -534,7 +527,7 @@ mod tests {
                     fmm::ir::Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     false,
-                    true,
+                    Linkage::External,
                 )],
                 vec![],
             ));
@@ -550,14 +543,14 @@ mod tests {
                     fmm::ir::Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     true,
-                    true,
+                    Linkage::External,
                 )],
                 vec![],
             ));
         }
 
         #[test]
-        fn compile_local_variable() {
+        fn compile_internal_variable() {
             compile_module(&Module::new(
                 vec![],
                 vec![],
@@ -566,7 +559,24 @@ mod tests {
                     fmm::ir::Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     true,
-                    false,
+                    Linkage::Internal,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        #[should_panic]
+        fn compile_weak_variable() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    true,
+                    Linkage::Weak,
                 )],
                 vec![],
             ));
@@ -582,7 +592,7 @@ mod tests {
                     fmm::ir::Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     false,
-                    false,
+                    Linkage::Internal,
                 )],
                 vec![create_function_definition(
                     "f",
@@ -595,7 +605,7 @@ mod tests {
                         ),
                     ),
                     types::Pointer::new(types::Primitive::PointerInteger),
-                    false,
+                    Linkage::Internal,
                 )],
             ));
         }
@@ -605,7 +615,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn compile_global_function() {
+        fn compile_external_function() {
             compile_module(&Module::new(
                 vec![],
                 vec![],
@@ -621,13 +631,13 @@ mod tests {
                         ),
                     ),
                     types::Primitive::PointerInteger,
-                    true,
+                    Linkage::External,
                 )],
             ));
         }
 
         #[test]
-        fn compile_local_function() {
+        fn compile_internal_function() {
             compile_module(&Module::new(
                 vec![],
                 vec![],
@@ -643,7 +653,30 @@ mod tests {
                         ),
                     ),
                     types::Primitive::PointerInteger,
-                    false,
+                    Linkage::Internal,
+                )],
+            ));
+        }
+
+        #[test]
+        #[should_panic]
+        fn fail_to_compile_weak_function() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "x",
+                    vec![],
+                    fmm::ir::Block::new(
+                        vec![],
+                        fmm::ir::Return::new(
+                            types::Primitive::PointerInteger,
+                            fmm::ir::Primitive::PointerInteger(0),
+                        ),
+                    ),
+                    types::Primitive::PointerInteger,
+                    Linkage::Weak,
                 )],
             ));
         }
@@ -662,7 +695,7 @@ mod tests {
                     fmm::ir::SizeOf::new(types::Primitive::Float64),
                     types::Primitive::PointerInteger,
                     false,
-                    false,
+                    Linkage::Internal,
                 )],
                 vec![],
             ));
@@ -678,7 +711,7 @@ mod tests {
                     fmm::ir::AlignOf::new(types::Primitive::Float64),
                     types::Primitive::PointerInteger,
                     false,
-                    false,
+                    Linkage::External,
                 )],
                 vec![],
             ));
@@ -698,7 +731,7 @@ mod tests {
                     ),
                     types::Primitive::Float64,
                     false,
-                    true,
+                    Linkage::External,
                 )],
                 vec![],
             ));
@@ -719,7 +752,7 @@ mod tests {
                     ),
                     types::Primitive::PointerInteger,
                     false,
-                    false,
+                    Linkage::External,
                 )],
                 vec![],
             ));
@@ -740,7 +773,7 @@ mod tests {
                     ),
                     types::Primitive::PointerInteger,
                     false,
-                    false,
+                    Linkage::External,
                 )],
                 vec![],
             ));
@@ -759,7 +792,7 @@ mod tests {
                     ),
                     types::Primitive::PointerInteger,
                     false,
-                    false,
+                    Linkage::External,
                 )],
                 vec![],
             ));
@@ -786,7 +819,7 @@ mod tests {
                         ),
                         types::Primitive::PointerInteger,
                         false,
-                        false,
+                        Linkage::External,
                     )],
                     vec![],
                 ));
@@ -816,7 +849,7 @@ mod tests {
                         ),
                         types::Primitive::Boolean,
                         false,
-                        false,
+                        Linkage::External,
                     )],
                     vec![],
                 ));
@@ -838,7 +871,7 @@ mod tests {
                 vec![],
                 Block::new(vec![], TerminalInstruction::Unreachable),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -855,7 +888,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                true,
+                Linkage::External,
             ));
         }
 
@@ -876,7 +909,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::Integer8),
-                true,
+                Linkage::External,
             ));
         }
 
@@ -893,7 +926,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                true,
+                Linkage::External,
             ));
         }
 
@@ -915,7 +948,7 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(function_type),
-                true,
+                Linkage::External,
             ));
         }
 
@@ -937,7 +970,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -959,7 +992,7 @@ mod tests {
                     Return::new(function_type.clone(), Variable::new("y")),
                 ),
                 function_type,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -984,7 +1017,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1014,7 +1047,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1047,7 +1080,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1080,7 +1113,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1107,7 +1140,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1129,7 +1162,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1151,7 +1184,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1175,7 +1208,7 @@ mod tests {
                     Return::new(types::Primitive::Boolean, Variable::new("y")),
                 ),
                 types::Primitive::Boolean,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1192,7 +1225,7 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1213,7 +1246,7 @@ mod tests {
                         Return::new(pointer_type.clone(), Variable::new("y")),
                     ),
                     pointer_type,
-                    true,
+                    Linkage::External,
                 )],
             ));
         }
@@ -1234,7 +1267,7 @@ mod tests {
                     Return::new(pointer_type.clone(), Variable::new("y")),
                 ),
                 pointer_type,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1258,7 +1291,7 @@ mod tests {
                         Return::new(pointer_type.clone(), Variable::new("y")),
                     ),
                     pointer_type,
-                    true,
+                    Linkage::External,
                 )],
             ));
         }
@@ -1278,7 +1311,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1302,7 +1335,7 @@ mod tests {
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
 
@@ -1324,7 +1357,7 @@ mod tests {
                     ),
                 ),
                 types::Primitive::PointerInteger,
-                true,
+                Linkage::External,
             ));
         }
     }

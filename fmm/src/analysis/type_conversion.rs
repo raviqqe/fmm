@@ -57,7 +57,7 @@ fn convert_variable_definition(
         convert_expression(definition.body(), convert),
         convert(definition.type_()),
         definition.is_mutable(),
-        definition.is_global(),
+        definition.linkage(),
     )
 }
 
@@ -75,7 +75,7 @@ fn convert_function_definition(
         convert_block(definition.body(), convert),
         convert(definition.result_type()),
         definition.calling_convention(),
-        definition.is_global(),
+        definition.linkage(),
     )
 }
 

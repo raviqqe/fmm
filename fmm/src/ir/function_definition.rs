@@ -1,5 +1,6 @@
 use super::argument::Argument;
 use super::block::Block;
+use super::linkage::Linkage;
 use crate::types::{self, CallingConvention, Type};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -9,7 +10,7 @@ pub struct FunctionDefinition {
     body: Block,
     result_type: Type,
     type_: types::Function,
-    global: bool,
+    linkage: Linkage,
 }
 
 impl FunctionDefinition {
@@ -19,7 +20,7 @@ impl FunctionDefinition {
         body: Block,
         result_type: impl Into<Type>,
         calling_convention: CallingConvention,
-        global: bool,
+        linkage: Linkage,
     ) -> Self {
         let result_type = result_type.into();
 
@@ -36,7 +37,7 @@ impl FunctionDefinition {
             arguments,
             body,
             result_type,
-            global,
+            linkage,
         }
     }
 
@@ -64,7 +65,7 @@ impl FunctionDefinition {
         self.type_.calling_convention()
     }
 
-    pub fn is_global(&self) -> bool {
-        self.global
+    pub fn linkage(&self) -> Linkage {
+        self.linkage
     }
 }

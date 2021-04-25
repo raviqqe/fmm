@@ -1,4 +1,5 @@
 use super::expression::Expression;
+use super::linkage::Linkage;
 use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -7,7 +8,7 @@ pub struct VariableDefinition {
     body: Expression,
     type_: Type,
     mutable: bool,
-    global: bool,
+    linkage: Linkage,
 }
 
 impl VariableDefinition {
@@ -16,14 +17,14 @@ impl VariableDefinition {
         body: impl Into<Expression>,
         type_: impl Into<Type>,
         mutable: bool,
-        global: bool,
+        linkage: Linkage,
     ) -> Self {
         Self {
             name: name.into(),
             body: body.into(),
             type_: type_.into(),
             mutable,
-            global,
+            linkage,
         }
     }
 
@@ -43,7 +44,7 @@ impl VariableDefinition {
         self.mutable
     }
 
-    pub fn is_global(&self) -> bool {
-        self.global
+    pub fn linkage(&self) -> Linkage {
+        self.linkage
     }
 }

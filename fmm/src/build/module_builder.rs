@@ -69,7 +69,7 @@ impl ModuleBuilder {
         name: impl Into<String>,
         body: impl Into<TypedExpression>,
         mutable: bool,
-        global: bool,
+        linkage: Linkage,
     ) -> TypedExpression {
         let name = name.into();
         let body = body.into();
@@ -81,7 +81,7 @@ impl ModuleBuilder {
                 body.expression().clone(),
                 body.type_().clone(),
                 mutable,
-                global,
+                linkage,
             ));
 
         TypedExpression::new(
@@ -97,7 +97,7 @@ impl ModuleBuilder {
         body: impl Fn(InstructionBuilder) -> Result<Block, E>,
         result_type: impl Into<Type>,
         calling_convention: CallingConvention,
-        global: bool,
+        linkage: Linkage,
     ) -> Result<TypedExpression, E> {
         let result_type = result_type.into();
         let name = name.into();
@@ -111,7 +111,7 @@ impl ModuleBuilder {
                 body,
                 result_type.clone(),
                 calling_convention,
-                global,
+                linkage,
             ));
 
         Ok(TypedExpression::new(
@@ -140,7 +140,7 @@ impl ModuleBuilder {
             body,
             result_type,
             calling_convention,
-            false,
+            Linkage::Internal,
         )
     }
 
