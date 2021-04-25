@@ -48,7 +48,7 @@ fn rename_variable_definition(
         rename_expression(definition.body(), rename),
         definition.type_().clone(),
         definition.is_mutable(),
-        definition.is_global(),
+        definition.linkage(),
     )
 }
 
@@ -66,7 +66,7 @@ fn rename_function_definition(
         rename_block(definition.body(), rename),
         definition.result_type().clone(),
         definition.calling_convention(),
-        definition.is_global(),
+        definition.linkage(),
     )
 }
 
@@ -294,7 +294,7 @@ mod tests {
             body,
             result_type,
             CallingConvention::Target,
-            false,
+            Linkage::Internal,
         )
     }
 
@@ -396,7 +396,7 @@ mod tests {
                         Primitive::PointerInteger(0),
                         types::Primitive::PointerInteger,
                         false,
-                        false
+                        Linkage::Internal,
                     )],
                     vec![create_function_definition(
                         "f",
@@ -418,7 +418,7 @@ mod tests {
                     Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     false,
-                    false
+                    Linkage::Internal,
                 )],
                 vec![create_function_definition(
                     "f",

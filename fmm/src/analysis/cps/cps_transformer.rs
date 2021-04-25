@@ -92,7 +92,7 @@ impl CpsTransformer {
                     )?,
                     self.result_type.clone(),
                     CallingConvention::Tail,
-                    definition.is_global(),
+                    definition.linkage(),
                 )
             }
             CallingConvention::Tail => definition.clone(),
@@ -359,7 +359,7 @@ impl CpsTransformer {
             ),
             self.result_type.clone(),
             CallingConvention::Tail,
-            false,
+            Linkage::Internal,
         ));
 
         Ok(Variable::new(name).into())
