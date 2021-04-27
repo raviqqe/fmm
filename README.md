@@ -30,11 +30,12 @@ It's designed to be a compiler target for high-level functional programming lang
 - [LLVM](fmm-llvm)
 - [C](fmm-c)
   - No guarantee for tail call optimization
+  - No support for weak linkage
 
 ## Limitations
 
 - Inductive types
-- Weakly typed
+- Weak typing
 - No type inference
 
 ## License
