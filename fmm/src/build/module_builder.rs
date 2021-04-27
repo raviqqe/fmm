@@ -90,6 +90,14 @@ impl ModuleBuilder {
         )
     }
 
+    pub fn define_anonymous_variable(
+        &self,
+        body: impl Into<TypedExpression>,
+        mutable: bool,
+    ) -> TypedExpression {
+        self.define_variable(self.generate_name(), body, mutable, Linkage::Internal)
+    }
+
     pub fn define_function<E>(
         &self,
         name: impl Into<String>,
