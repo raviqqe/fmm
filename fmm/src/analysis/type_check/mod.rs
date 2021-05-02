@@ -1,7 +1,9 @@
 mod error;
 
-use crate::ir::*;
-use crate::types::{self, Type};
+use crate::{
+    ir::*,
+    types::{self, Type},
+};
 pub use error::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;

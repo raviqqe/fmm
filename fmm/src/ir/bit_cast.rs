@@ -1,5 +1,4 @@
-use crate::ir::Expression;
-use crate::types::Type;
+use crate::{ir::Expression, types::Type};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]

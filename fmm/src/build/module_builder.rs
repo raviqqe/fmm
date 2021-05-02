@@ -1,10 +1,11 @@
-use super::instruction_builder::InstructionBuilder;
-use super::name_generator::NameGenerator;
-use super::typed_expression::*;
-use crate::ir::*;
-use crate::types::{self, CallingConvention, Type};
-use std::cell::RefCell;
-use std::rc::Rc;
+use super::{
+    instruction_builder::InstructionBuilder, name_generator::NameGenerator, typed_expression::*,
+};
+use crate::{
+    ir::*,
+    types::{self, CallingConvention, Type},
+};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Clone, Debug, Default)]
 pub struct ModuleBuilder {

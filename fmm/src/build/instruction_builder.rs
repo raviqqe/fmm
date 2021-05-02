@@ -1,11 +1,12 @@
-use super::expressions::variable;
-use super::typed_expression::*;
-use super::void::VOID_TYPE;
-use super::{error::BuildError, name_generator::NameGenerator};
-use crate::ir::*;
-use crate::types::{self, Type};
-use std::cell::RefCell;
-use std::rc::Rc;
+use super::{
+    error::BuildError, expressions::variable, name_generator::NameGenerator, typed_expression::*,
+    void::VOID_TYPE,
+};
+use crate::{
+    ir::*,
+    types::{self, Type},
+};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Clone, Debug, Default)]
 pub struct InstructionBuilder {

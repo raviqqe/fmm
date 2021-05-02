@@ -1,8 +1,5 @@
-use crate::expressions::*;
-use crate::names::*;
-use crate::types::*;
-use fmm::ir::*;
-use fmm::types;
+use crate::{expressions::*, names::*, types::*};
+use fmm::{ir::*, types};
 use std::collections::{HashMap, HashSet};
 
 pub fn compile_block(

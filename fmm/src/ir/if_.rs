@@ -1,5 +1,4 @@
-use super::block::Block;
-use super::expression::Expression;
+use super::{block::Block, expression::Expression};
 use crate::types::Type;
 use std::sync::Arc;
 

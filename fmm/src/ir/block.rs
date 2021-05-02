@@ -1,5 +1,4 @@
-use super::instruction::Instruction;
-use super::terminal_instruction::TerminalInstruction;
+use super::{instruction::Instruction, terminal_instruction::TerminalInstruction};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {

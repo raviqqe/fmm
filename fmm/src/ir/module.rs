@@ -1,7 +1,7 @@
-use super::function_declaration::FunctionDeclaration;
-use super::function_definition::FunctionDefinition;
-use super::variable_declaration::VariableDeclaration;
-use super::variable_definition::VariableDefinition;
+use super::{
+    function_declaration::FunctionDeclaration, function_definition::FunctionDefinition,
+    variable_declaration::VariableDeclaration, variable_definition::VariableDefinition,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Module {

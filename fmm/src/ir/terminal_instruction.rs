@@ -1,5 +1,4 @@
-use super::branch::Branch;
-use super::return_::Return;
+use super::{branch::Branch, return_::Return};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TerminalInstruction {

@@ -1,5 +1,4 @@
-use crate::ir::*;
-use crate::types::Type;
+use crate::{ir::*, types::Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypedExpression {

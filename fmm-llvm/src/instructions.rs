@@ -1,9 +1,9 @@
-use crate::types::*;
-use crate::{calling_convention::compile_calling_convention, heap::HeapFunctionSet};
-use crate::{expressions::*, union::compile_union_cast};
+use crate::{
+    calling_convention::compile_calling_convention, expressions::*, heap::HeapFunctionSet,
+    types::*, union::compile_union_cast,
+};
 use fmm::ir::*;
-use inkwell::types::BasicType;
-use inkwell::values::BasicValue;
+use inkwell::{types::BasicType, values::BasicValue};
 use std::collections::HashMap;
 
 pub fn compile_block<'c>(

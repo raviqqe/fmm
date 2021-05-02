@@ -1,5 +1,4 @@
-use crate::ir::*;
-use crate::types::Type;
+use crate::{ir::*, types::Type};
 use std::collections::{HashMap, HashSet};
 
 pub fn collect_types(module: &Module) -> Vec<Type> {
