@@ -1,21 +1,11 @@
-use super::allocate_heap::AllocateHeap;
-use super::allocate_stack::AllocateStack;
-use super::atomic_load::AtomicLoad;
-use super::atomic_operation::AtomicOperation;
-use super::atomic_store::AtomicStore;
-use super::call::Call;
-use super::compare_and_swap::CompareAndSwap;
-use super::deconstruct_record::DeconstructRecord;
-use super::deconstruct_union::DeconstructUnion;
-use super::free_heap::FreeHeap;
-use super::if_::If;
-use super::load::Load;
-use super::pass_through::PassThrough;
-use super::pointer_address::PointerAddress;
-use super::reallocate_heap::ReallocateHeap;
-use super::record_address::RecordAddress;
-use super::store::Store;
-use super::union_address::UnionAddress;
+use super::{
+    allocate_heap::AllocateHeap, allocate_stack::AllocateStack, atomic_load::AtomicLoad,
+    atomic_operation::AtomicOperation, atomic_store::AtomicStore, call::Call,
+    compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
+    deconstruct_union::DeconstructUnion, free_heap::FreeHeap, if_::If, load::Load,
+    pass_through::PassThrough, pointer_address::PointerAddress, reallocate_heap::ReallocateHeap,
+    record_address::RecordAddress, store::Store, union_address::UnionAddress,
+};
 use crate::types::{self, Type};
 
 #[derive(Clone, Debug, PartialEq)]

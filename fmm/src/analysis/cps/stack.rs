@@ -1,6 +1,8 @@
-use crate::build::{self, BuildError, InstructionBuilder, TypedExpression, VOID_VALUE};
-use crate::ir::*;
-use crate::types::{self, Type};
+use crate::{
+    build::{self, BuildError, InstructionBuilder, TypedExpression, VOID_VALUE},
+    ir::*,
+    types::{self, Type},
+};
 use once_cell::sync::Lazy;
 
 pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {

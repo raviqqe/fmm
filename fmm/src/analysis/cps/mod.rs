@@ -4,8 +4,7 @@ mod free_variables;
 mod stack;
 mod target_functions;
 
-use crate::ir::*;
-use crate::types::Type;
+use crate::{ir::*, types::Type};
 use cps_transformer::*;
 use error::CpsTransformationError;
 
@@ -19,9 +18,11 @@ pub fn transform_to_cps(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analysis::check_types;
-    use crate::build::VOID_TYPE;
-    use crate::types::{self, CallingConvention, Type};
+    use crate::{
+        analysis::check_types,
+        build::VOID_TYPE,
+        types::{self, CallingConvention, Type},
+    };
     use stack::STACK_TYPE;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {

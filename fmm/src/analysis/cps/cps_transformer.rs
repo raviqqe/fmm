@@ -1,22 +1,21 @@
 use super::{
     error::CpsTransformationError,
+    free_variables::collect_free_variables,
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
+    target_functions::validate_target_function_definition,
 };
-use super::{
-    free_variables::collect_free_variables, target_functions::validate_target_function_definition,
-};
-use crate::analysis::expression_conversion::{
-    convert_expressions_in_instruction, convert_expressions_in_terminal_instruction,
-};
-use crate::ir::*;
-use crate::types::{self, CallingConvention, Type};
 use crate::{
-    analysis::convert_types,
+    analysis::{
+        convert_types,
+        expression_conversion::{
+            convert_expressions_in_instruction, convert_expressions_in_terminal_instruction,
+        },
+    },
     build::{self, BuildError, InstructionBuilder, NameGenerator},
+    ir::*,
+    types::{self, CallingConvention, Type},
 };
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";

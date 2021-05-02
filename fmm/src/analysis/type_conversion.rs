@@ -1,5 +1,7 @@
-use crate::ir::*;
-use crate::types::{self, Type};
+use crate::{
+    ir::*,
+    types::{self, Type},
+};
 
 pub fn convert_types(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
     let convert = |type_: &Type| -> Type { convert_type(type_, convert) };

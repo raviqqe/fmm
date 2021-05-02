@@ -1,5 +1,4 @@
-use super::calling_convention::CallingConvention;
-use super::type_::Type;
+use super::{calling_convention::CallingConvention, type_::Type};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]

@@ -1,8 +1,6 @@
-use super::function::Function;
-use super::pointer::Pointer;
-use super::primitive::Primitive;
-use super::record::Record;
-use super::union::Union;
+use super::{
+    function::Function, pointer::Pointer, primitive::Primitive, record::Record, union::Union,
+};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Type {

@@ -6,8 +6,7 @@ mod renaming;
 mod types;
 
 use expressions::*;
-use fmm::analysis::collect_types;
-use fmm::ir::*;
+use fmm::{analysis::collect_types, ir::*};
 use instructions::*;
 pub use malloc_configuration::MallocConfiguration;
 use names::*;

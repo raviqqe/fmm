@@ -1,6 +1,8 @@
 use super::{typed_expression::TypedExpression, BuildError};
-use crate::ir::*;
-use crate::types::{self, Type};
+use crate::{
+    ir::*,
+    types::{self, Type},
+};
 
 pub fn align_of(type_: impl Into<Type>) -> TypedExpression {
     AlignOf::new(type_.into()).into()

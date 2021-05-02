@@ -1,14 +1,9 @@
-use super::arithmetic_operation::ArithmeticOperation;
-use super::bit_cast::BitCast;
-use super::bitwise_operation::BitwiseOperation;
-use super::comparison_operation::ComparisonOperation;
-use super::primitive::Primitive;
-use super::record::Record;
-use super::size_of::SizeOf;
-use super::undefined::Undefined;
-use super::union::Union;
-use super::variable::Variable;
-use super::{align_of::AlignOf, bitwise_not_operation::BitwiseNotOperation};
+use super::{
+    align_of::AlignOf, arithmetic_operation::ArithmeticOperation, bit_cast::BitCast,
+    bitwise_not_operation::BitwiseNotOperation, bitwise_operation::BitwiseOperation,
+    comparison_operation::ComparisonOperation, primitive::Primitive, record::Record,
+    size_of::SizeOf, undefined::Undefined, union::Union, variable::Variable,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expression {

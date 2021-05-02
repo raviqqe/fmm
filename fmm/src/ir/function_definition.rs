@@ -1,6 +1,4 @@
-use super::argument::Argument;
-use super::block::Block;
-use super::linkage::Linkage;
+use super::{argument::Argument, block::Block, linkage::Linkage};
 use crate::types::{self, CallingConvention, Type};
 
 #[derive(Clone, Debug, PartialEq)]

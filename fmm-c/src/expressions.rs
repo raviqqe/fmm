@@ -1,7 +1,6 @@
 use super::types::*;
 use crate::names::*;
-use fmm::ir::*;
-use fmm::types;
+use fmm::{ir::*, types};
 use std::collections::{HashMap, HashSet};
 
 pub fn compile_expression(

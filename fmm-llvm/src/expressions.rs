@@ -1,8 +1,7 @@
 use crate::union::compile_union_cast;
 
 use super::types::*;
-use fmm::ir::*;
-use fmm::types;
+use fmm::{ir::*, types};
 use inkwell::values::BasicValue;
 use std::collections::HashMap;
 

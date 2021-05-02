@@ -1,5 +1,4 @@
-use super::expression::Expression;
-use super::linkage::Linkage;
+use super::{expression::Expression, linkage::Linkage};
 use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq)]
