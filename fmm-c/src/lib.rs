@@ -779,6 +779,27 @@ mod tests {
         }
 
         #[test]
+        fn compile_bitwise_xor() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperator::Xor,
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    Linkage::External,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
         fn compile_bitwise_not() {
             compile_module(&Module::new(
                 vec![],
