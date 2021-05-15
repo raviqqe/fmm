@@ -297,6 +297,7 @@ fn compile_bitwise_operation<'c>(
     match operation.operator() {
         fmm::ir::BitwiseOperator::And => builder.build_and(lhs, rhs, ""),
         fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
+        fmm::ir::BitwiseOperator::Xor => builder.build_xor(lhs, rhs, ""),
     }
 }
 

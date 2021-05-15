@@ -6,6 +6,7 @@ use std::sync::Arc;
 pub enum BitwiseOperator {
     And,
     Or,
+    Xor,
 }
 
 #[derive(Clone, Debug, PartialEq)]

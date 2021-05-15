@@ -39,6 +39,7 @@ pub fn compile_expression(
                 match operation.operator() {
                     fmm::ir::BitwiseOperator::And => "&",
                     fmm::ir::BitwiseOperator::Or => "|",
+                    fmm::ir::BitwiseOperator::Xor => "^",
                 },
                 compile_expression(operation.rhs()),
             )
