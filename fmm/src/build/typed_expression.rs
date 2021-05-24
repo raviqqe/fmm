@@ -41,6 +41,12 @@ impl From<BitCast> for TypedExpression {
     }
 }
 
+impl From<BitwiseNotOperation> for TypedExpression {
+    fn from(operation: BitwiseNotOperation) -> Self {
+        Self::new(operation.clone(), operation.type_())
+    }
+}
+
 impl From<BitwiseOperation> for TypedExpression {
     fn from(operation: BitwiseOperation) -> Self {
         Self::new(operation.clone(), operation.type_())
