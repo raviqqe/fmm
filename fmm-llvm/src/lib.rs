@@ -219,6 +219,10 @@ fn declare_variable_definition<'c>(
     global.set_constant(!definition.is_mutable());
     global.set_linkage(compile_linkage(definition.linkage()));
 
+    if let Some(alignment) = definition.alignment() {
+        global.set_alignment(alignment as u32);
+    }
+
     global
 }
 
@@ -635,6 +639,23 @@ mod tests {
                     types::Pointer::new(types::Primitive::PointerInteger),
                     Linkage::External,
                 )],
+            ));
+        }
+
+        #[test]
+        fn compile_variable_with_alignment() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::Integer8(0),
+                    types::Primitive::Integer8,
+                    false,
+                    Linkage::External,
+                    16,
+                )],
+                vec![],
             ));
         }
     }
