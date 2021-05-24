@@ -60,6 +60,7 @@ fn convert_variable_definition(
         convert(definition.type_()),
         definition.is_mutable(),
         definition.linkage(),
+        definition.alignment(),
     )
 }
 

@@ -458,6 +458,7 @@ mod tests {
                 types::Primitive::PointerInteger,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![create_function_definition(
                 "f",
@@ -879,6 +880,7 @@ mod tests {
                 types::Primitive::PointerInteger,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![],
         ))
@@ -895,6 +897,7 @@ mod tests {
                 types::Primitive::PointerInteger,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![],
         ))
@@ -915,6 +918,7 @@ mod tests {
                 types::Primitive::Float64,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![],
         ))
