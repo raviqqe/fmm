@@ -71,6 +71,7 @@ impl ModuleBuilder {
         body: impl Into<TypedExpression>,
         mutable: bool,
         linkage: Linkage,
+        alignment: impl Into<Option<usize>>,
     ) -> TypedExpression {
         let name = name.into();
         let body = body.into();
@@ -83,6 +84,7 @@ impl ModuleBuilder {
                 body.type_().clone(),
                 mutable,
                 linkage,
+                alignment,
             ));
 
         TypedExpression::new(
@@ -95,8 +97,15 @@ impl ModuleBuilder {
         &self,
         body: impl Into<TypedExpression>,
         mutable: bool,
+        alignment: impl Into<Option<usize>>,
     ) -> TypedExpression {
-        self.define_variable(self.generate_name(), body, mutable, Linkage::Internal)
+        self.define_variable(
+            self.generate_name(),
+            body,
+            mutable,
+            Linkage::Internal,
+            alignment,
+        )
     }
 
     pub fn define_function<E>(

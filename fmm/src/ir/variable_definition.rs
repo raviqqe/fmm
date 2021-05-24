@@ -8,6 +8,7 @@ pub struct VariableDefinition {
     type_: Type,
     mutable: bool,
     linkage: Linkage,
+    alignment: Option<usize>,
 }
 
 impl VariableDefinition {
@@ -17,6 +18,7 @@ impl VariableDefinition {
         type_: impl Into<Type>,
         mutable: bool,
         linkage: Linkage,
+        alignment: impl Into<Option<usize>>,
     ) -> Self {
         Self {
             name: name.into(),
@@ -24,6 +26,7 @@ impl VariableDefinition {
             type_: type_.into(),
             mutable,
             linkage,
+            alignment: alignment.into(),
         }
     }
 
@@ -45,5 +48,9 @@ impl VariableDefinition {
 
     pub fn linkage(&self) -> Linkage {
         self.linkage
+    }
+
+    pub fn alignment(&self) -> Option<usize> {
+        self.alignment
     }
 }

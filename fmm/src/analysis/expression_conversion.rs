@@ -51,6 +51,7 @@ fn convert_variable_definition(
         definition.type_().clone(),
         definition.is_mutable(),
         definition.linkage(),
+        definition.alignment(),
     )
 }
 

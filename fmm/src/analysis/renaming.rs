@@ -49,6 +49,7 @@ fn rename_variable_definition(
         definition.type_().clone(),
         definition.is_mutable(),
         definition.linkage(),
+        definition.alignment(),
     )
 }
 
@@ -397,6 +398,7 @@ mod tests {
                         types::Primitive::PointerInteger,
                         false,
                         Linkage::Internal,
+                        None,
                     )],
                     vec![create_function_definition(
                         "f",
@@ -419,6 +421,7 @@ mod tests {
                     types::Primitive::PointerInteger,
                     false,
                     Linkage::Internal,
+                    None,
                 )],
                 vec![create_function_definition(
                     "f",
