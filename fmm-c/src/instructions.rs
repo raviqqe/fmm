@@ -157,10 +157,7 @@ fn compile_instruction(
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",
-                compile_typed_name(
-                    &types::GENERIC_POINTER_TYPE.clone(),
-                    reallocate.name()
-                ),
+                compile_typed_name(&types::GENERIC_POINTER_TYPE.clone(), reallocate.name()),
                 compile_expression(reallocate.pointer()),
                 compile_expression(reallocate.size()),
             )
