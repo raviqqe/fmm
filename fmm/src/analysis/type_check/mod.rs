@@ -1,4 +1,5 @@
 mod error;
+mod names;
 
 use crate::{
     ir::*,
@@ -12,6 +13,8 @@ static GENERIC_POINTER_TYPE: Lazy<Type> =
     Lazy::new(|| types::Pointer::new(types::Primitive::Integer8).into());
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
+    names::check_names(module)?;
+
     let variables = module
         .variable_declarations()
         .iter()
