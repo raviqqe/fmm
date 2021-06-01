@@ -1,15 +1,15 @@
 use crate::{
     build::{self, BuildError, InstructionBuilder, TypedExpression, VOID_VALUE},
     ir::*,
-    types::{self, Type},
+    types::{self, Type, GENERIC_POINTER_TYPE},
 };
 use once_cell::sync::Lazy;
 
 pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
     types::Pointer::new(types::Record::new(vec![
-        types::Pointer::new(types::Primitive::Integer8).into(), // base pointer
-        types::Primitive::PointerInteger.into(),                // size
-        types::Primitive::PointerInteger.into(),                // capacity
+        GENERIC_POINTER_TYPE.clone().into(),     // base pointer
+        types::Primitive::PointerInteger.into(), // size
+        types::Primitive::PointerInteger.into(), // capacity
     ]))
     .into()
 });
