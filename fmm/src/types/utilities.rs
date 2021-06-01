@@ -1,6 +1,4 @@
-use super::pointer::Pointer;
-use super::primitive::Primitive;
-use super::type_::Type;
+use super::{pointer::Pointer, primitive::Primitive, type_::Type};
 use once_cell::sync::Lazy;
 
 pub static GENERIC_POINTER_TYPE: Lazy<Type> =
