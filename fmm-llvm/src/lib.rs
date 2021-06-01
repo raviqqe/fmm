@@ -136,7 +136,7 @@ fn compile_module<'c>(
             &context,
             &target_data,
             &heap_function_set,
-        );
+        )?;
     }
 
     llvm_module.verify()?;
@@ -270,7 +270,7 @@ fn compile_function_definition<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
-) {
+) -> Result<(), CompileError> {
     let function = module.get_function(definition.name()).unwrap();
     let builder = context.create_builder();
 
@@ -299,9 +299,11 @@ fn compile_function_definition<'c>(
         context,
         target_data,
         heap_function_set,
-    );
+    )?;
 
     function.verify(true);
+
+    Ok(())
 }
 
 fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
