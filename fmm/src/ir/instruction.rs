@@ -6,7 +6,7 @@ use super::{
     pass_through::PassThrough, pointer_address::PointerAddress, reallocate_heap::ReallocateHeap,
     record_address::RecordAddress, store::Store, union_address::UnionAddress,
 };
-use crate::types::{self, Type};
+use crate::types::{self, Type, GENERIC_POINTER_TYPE};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
@@ -54,9 +54,7 @@ impl Instruction {
 
     pub fn result_type(&self) -> Option<Type> {
         match self {
-            Self::AllocateHeap(allocate) => {
-                Some(types::Pointer::new(allocate.type_().clone()).into())
-            }
+            Self::AllocateHeap(_) => Some(GENERIC_POINTER_TYPE.clone()),
             Self::AllocateStack(allocate) => {
                 Some(types::Pointer::new(allocate.type_().clone()).into())
             }
@@ -74,7 +72,7 @@ impl Instruction {
             Self::Load(load) => Some(load.type_().clone()),
             Self::PassThrough(pass) => Some(pass.type_().clone()),
             Self::PointerAddress(address) => Some(address.type_().clone().into()),
-            Self::ReallocateHeap(_) => Some(types::Pointer::new(types::Primitive::Integer8).into()),
+            Self::ReallocateHeap(_) => Some(GENERIC_POINTER_TYPE.clone()),
             Self::RecordAddress(address) => Some(
                 types::Pointer::new(address.type_().elements()[address.element_index()].clone())
                     .into(),

@@ -915,13 +915,10 @@ mod tests {
                 "f",
                 vec![],
                 Block::new(
-                    vec![AllocateHeap::new(types::Primitive::PointerInteger, "y").into()],
-                    Return::new(
-                        types::Pointer::new(types::Primitive::PointerInteger),
-                        Variable::new("y"),
-                    ),
+                    vec![AllocateHeap::new(Primitive::PointerInteger(42), "y").into()],
+                    Return::new(types::GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
                 ),
-                types::Pointer::new(types::Primitive::PointerInteger),
+                types::GENERIC_POINTER_TYPE.clone(),
                 Linkage::External,
             ));
         }
@@ -933,16 +930,13 @@ mod tests {
                 vec![],
                 Block::new(
                     vec![
-                        AllocateHeap::new(types::Primitive::Integer8, "x").into(),
+                        AllocateHeap::new(Primitive::PointerInteger(42), "x").into(),
                         ReallocateHeap::new(Variable::new("x"), Primitive::PointerInteger(42), "y")
                             .into(),
                     ],
-                    Return::new(
-                        types::Pointer::new(types::Primitive::Integer8),
-                        Variable::new("y"),
-                    ),
+                    Return::new(types::GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
                 ),
-                types::Pointer::new(types::Primitive::Integer8),
+                types::GENERIC_POINTER_TYPE.clone(),
                 Linkage::External,
             ));
         }
@@ -960,28 +954,6 @@ mod tests {
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
-                Linkage::External,
-            ));
-        }
-
-        #[test]
-        fn compile_allocate_heap_with_function_pointer() {
-            let function_type = create_function_type(
-                vec![types::Primitive::PointerInteger.into()],
-                types::Primitive::PointerInteger,
-            );
-
-            compile_function_definition(create_function_definition(
-                "f",
-                vec![],
-                Block::new(
-                    vec![AllocateHeap::new(function_type.clone(), "y").into()],
-                    Return::new(
-                        types::Pointer::new(function_type.clone()),
-                        Variable::new("y"),
-                    ),
-                ),
-                types::Pointer::new(function_type),
                 Linkage::External,
             ));
         }
@@ -1377,14 +1349,9 @@ mod tests {
         fn compile_free_heap() {
             compile_function_definition(create_function_definition(
                 "f",
-                vec![Argument::new(
-                    "x",
-                    types::Pointer::new(types::Primitive::PointerInteger),
-                )],
+                vec![Argument::new("x", types::GENERIC_POINTER_TYPE.clone())],
                 Block::new(
-                    vec![
-                        FreeHeap::new(types::Primitive::PointerInteger, Variable::new("x")).into(),
-                    ],
+                    vec![FreeHeap::new(Variable::new("x")).into()],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),

@@ -1,21 +1,21 @@
-use crate::types::Type;
+use super::expression::Expression;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AllocateHeap {
-    type_: Type,
+    size: Expression,
     name: String,
 }
 
 impl AllocateHeap {
-    pub fn new(type_: impl Into<Type>, name: impl Into<String>) -> Self {
+    pub fn new(size: impl Into<Expression>, name: impl Into<String>) -> Self {
         Self {
-            type_: type_.into(),
+            size: size.into(),
             name: name.into(),
         }
     }
 
-    pub fn type_(&self) -> &Type {
-        &self.type_
+    pub fn size(&self) -> &Expression {
+        &self.size
     }
 
     pub fn name(&self) -> &str {
