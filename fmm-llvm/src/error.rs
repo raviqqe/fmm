@@ -26,3 +26,9 @@ impl From<inkwell::support::LLVMString> for CompileError {
         Self::Llvm(string.to_string())
     }
 }
+
+impl From<&str> for CompileError {
+    fn from(string: &str) -> Self {
+        Self::Llvm(string.to_string())
+    }
+}

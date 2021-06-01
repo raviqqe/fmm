@@ -1,6 +1,6 @@
 use crate::{
-    calling_convention::compile_calling_convention, expressions::*, heap::HeapFunctionSet,
-    types::*, union::compile_union_cast,
+    calling_convention::compile_calling_convention, error::CompileError, expressions::*,
+    heap::HeapFunctionSet, types::*, union::compile_union_cast,
 };
 use fmm::ir::*;
 use inkwell::{types::BasicType, values::BasicValue};
@@ -14,7 +14,7 @@ pub fn compile_block<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
-) -> Option<inkwell::values::BasicValueEnum<'c>> {
+) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let mut variables = variables.clone();
 
     for instruction in block.instructions() {
@@ -25,7 +25,7 @@ pub fn compile_block<'c>(
             context,
             target_data,
             heap_function_set,
-        );
+        )?;
 
         if let Some(value) = value {
             if let Some(name) = instruction.name() {
@@ -34,14 +34,14 @@ pub fn compile_block<'c>(
         }
     }
 
-    compile_terminal_instruction(
+    Ok(compile_terminal_instruction(
         builder,
         block.terminal_instruction(),
         destination,
         &variables,
         context,
         target_data,
-    )
+    ))
 }
 
 fn compile_instruction<'c>(
@@ -51,12 +51,12 @@ fn compile_instruction<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
-) -> Option<inkwell::values::BasicValueEnum<'c>> {
+) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
         |expression| compile_expression(builder, expression, variables, context, target_data);
     let compile_type = |type_| compile_type(type_, context, target_data);
 
-    match instruction {
+    Ok(match instruction {
         Instruction::AllocateHeap(allocate) => {
             let type_ = compile_type(allocate.type_());
 
@@ -96,8 +96,7 @@ fn compile_instruction<'c>(
             value
                 .as_instruction_value()
                 .unwrap()
-                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)
-                .unwrap();
+                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)?;
 
             Some(value)
         }
@@ -111,8 +110,7 @@ fn compile_instruction<'c>(
                     compile_expression(operation.pointer()).into_pointer_value(),
                     compile_expression(operation.value()).into_int_value(),
                     inkwell::AtomicOrdering::SequentiallyConsistent,
-                )
-                .unwrap()
+                )?
                 .into(),
         ),
         Instruction::AtomicStore(store) => {
@@ -122,9 +120,7 @@ fn compile_instruction<'c>(
             );
 
             // TODO Optimize this.
-            value
-                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)
-                .unwrap();
+            value.set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)?;
 
             None
         }
@@ -150,15 +146,13 @@ fn compile_instruction<'c>(
         Instruction::CompareAndSwap(cas) => Some(
             builder
                 .build_extract_value(
-                    builder
-                        .build_cmpxchg(
-                            compile_expression(cas.pointer()).into_pointer_value(),
-                            compile_expression(cas.old_value()),
-                            compile_expression(cas.new_value()),
-                            inkwell::AtomicOrdering::SequentiallyConsistent,
-                            inkwell::AtomicOrdering::SequentiallyConsistent,
-                        )
-                        .unwrap(),
+                    builder.build_cmpxchg(
+                        compile_expression(cas.pointer()).into_pointer_value(),
+                        compile_expression(cas.old_value()),
+                        compile_expression(cas.new_value()),
+                        inkwell::AtomicOrdering::SequentiallyConsistent,
+                        inkwell::AtomicOrdering::SequentiallyConsistent,
+                    )?,
                     1,
                     cas.name(),
                 )
@@ -225,7 +219,7 @@ fn compile_instruction<'c>(
                     context,
                     target_data,
                     heap_function_set,
-                );
+                )?;
 
                 if let Some(value) = value {
                     cases.push((value, builder.get_insert_block().unwrap()));
@@ -325,7 +319,7 @@ fn compile_instruction<'c>(
                 )
                 .into()
         }),
-    }
+    })
 }
 
 fn compile_terminal_instruction<'c>(
