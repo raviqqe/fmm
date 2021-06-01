@@ -7,7 +7,7 @@ use once_cell::sync::Lazy;
 
 pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
     types::Pointer::new(types::Record::new(vec![
-        GENERIC_POINTER_TYPE.clone().into(),     // base pointer
+        GENERIC_POINTER_TYPE.clone(),     // base pointer
         types::Primitive::PointerInteger.into(), // size
         types::Primitive::PointerInteger.into(), // capacity
     ]))

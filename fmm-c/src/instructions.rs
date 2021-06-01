@@ -158,7 +158,7 @@ fn compile_instruction(
             format!(
                 "{}=realloc({},{});",
                 compile_typed_name(
-                    &types::GENERIC_POINTER_TYPE.clone().into(),
+                    &types::GENERIC_POINTER_TYPE.clone(),
                     reallocate.name()
                 ),
                 compile_expression(reallocate.pointer()),
