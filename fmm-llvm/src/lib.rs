@@ -1150,37 +1150,6 @@ mod tests {
         }
 
         #[test]
-        fn compile_atomic_load_with_different_ordering() {
-            for &ordering in &[
-                AtomicOrdering::Relaxed,
-                AtomicOrdering::Release,
-                AtomicOrdering::Acquire,
-                AtomicOrdering::AcquireRelease,
-                AtomicOrdering::SequentiallyConsistent,
-            ] {
-                compile_function_definition(create_function_definition(
-                    "f",
-                    vec![Argument::new(
-                        "x",
-                        types::Pointer::new(types::Primitive::PointerInteger),
-                    )],
-                    Block::new(
-                        vec![AtomicLoad::new(
-                            types::Primitive::PointerInteger,
-                            Variable::new("x"),
-                            ordering,
-                            "y",
-                        )
-                        .into()],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
-                    ),
-                    types::Primitive::PointerInteger,
-                    Linkage::External,
-                ));
-            }
-        }
-
-        #[test]
         fn compile_atomic_store() {
             compile_function_definition(create_function_definition(
                 "f",
@@ -1557,6 +1526,39 @@ mod tests {
                 types::Primitive::PointerInteger,
                 Linkage::External,
             ));
+        }
+
+        #[test]
+        fn compile_atomic_operation_with_different_ordering() {
+            for &ordering in &[
+                AtomicOrdering::Relaxed,
+                AtomicOrdering::Release,
+                AtomicOrdering::Acquire,
+                AtomicOrdering::AcquireRelease,
+                AtomicOrdering::SequentiallyConsistent,
+            ] {
+                compile_function_definition(create_function_definition(
+                    "f",
+                    vec![Argument::new(
+                        "x",
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                    )],
+                    Block::new(
+                        vec![AtomicOperation::new(
+                            types::Primitive::PointerInteger,
+                            AtomicOperator::Add,
+                            Variable::new("x"),
+                            Primitive::PointerInteger(42),
+                            ordering,
+                            "y",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                    types::Primitive::PointerInteger,
+                    Linkage::External,
+                ));
+            }
         }
 
         #[test]
