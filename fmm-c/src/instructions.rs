@@ -58,7 +58,7 @@ fn compile_instruction(
             )
         }
         Instruction::AtomicLoad(load) => format!(
-            "{}=({})atomic_load_explicit(({}){},memory_order_{});",
+            "{}=({})atomic_load_explicit(({}){},{});",
             compile_typed_name(&load.type_(), load.name()),
             compile_type_id(load.type_()),
             compile_atomic_pointer_type_id(load.type_(), type_ids),
@@ -66,7 +66,7 @@ fn compile_instruction(
             compile_atomic_ordering(load.ordering()),
         ),
         Instruction::AtomicOperation(operation) => format!(
-            "{}=atomic_fetch_{}_explicit(({}){},{},memory_order_{});",
+            "{}=atomic_fetch_{}_explicit(({}){},{},{});",
             compile_typed_name(&operation.type_().into(), operation.name()),
             match operation.operator() {
                 AtomicOperator::Add => "add",
@@ -78,7 +78,7 @@ fn compile_instruction(
             compile_atomic_ordering(operation.ordering()),
         ),
         Instruction::AtomicStore(store) => format!(
-            "atomic_store_explicit(({}){},{},memory_order_{});",
+            "atomic_store_explicit(({}){},{},{});",
             compile_atomic_pointer_type_id(store.type_(), type_ids),
             compile_expression(store.pointer()),
             compile_expression(store.value()),
@@ -98,7 +98,7 @@ fn compile_instruction(
             let name = "_cas_".to_owned() + cas.name();
 
             format!(
-                "{}={};bool {}=atomic_compare_exchange_strong_explicit(({}){},&{},{},memory_order_{},memory_order_{});",
+                "{}={};bool {}=atomic_compare_exchange_strong_explicit(({}){},&{},{},{},{});",
                 compile_typed_name(cas.type_(), &name),
                 compile_expression(cas.old_value()),
                 cas.name(),
@@ -217,12 +217,15 @@ fn compile_terminal_instruction(
     }
 }
 
-fn compile_atomic_ordering(ordering: AtomicOrdering) -> &'static str {
-    match ordering {
-        AtomicOrdering::Relaxed => "relaxed",
-        AtomicOrdering::Release => "release",
-        AtomicOrdering::Acquire => "acquire",
-        AtomicOrdering::AcquireRelease => "acq_rel",
-        AtomicOrdering::SequentiallyConsistent => "seq_cst",
-    }
+fn compile_atomic_ordering(ordering: AtomicOrdering) -> String {
+    format!(
+        "memory_order_{}",
+        match ordering {
+            AtomicOrdering::Relaxed => "relaxed",
+            AtomicOrdering::Release => "release",
+            AtomicOrdering::Acquire => "acquire",
+            AtomicOrdering::AcquireRelease => "acq_rel",
+            AtomicOrdering::SequentiallyConsistent => "seq_cst",
+        }
+    )
 }
