@@ -1,5 +1,4 @@
-use super::atomic_ordering::AtomicOrdering;
-use super::expression::Expression;
+use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
 use std::sync::Arc;
 
