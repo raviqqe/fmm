@@ -337,7 +337,7 @@ mod tests {
     fn compile_module(module: &Module) {
         compile_final_module(module);
         compile_final_module(
-            &fmm::analysis::transform_to_cps(module, types::Record::new(vec![])).unwrap(),
+            &fmm::analysis::transform_to_cps(module, types::VOID_TYPE.clone()).unwrap(),
         );
     }
 
