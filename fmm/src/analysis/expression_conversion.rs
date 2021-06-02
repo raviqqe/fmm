@@ -126,6 +126,8 @@ fn convert_instruction(
             convert(cas.pointer()),
             convert(cas.old_value()),
             convert(cas.new_value()),
+            cas.success_ordering(),
+            cas.failure_ordering(),
             cas.name(),
         )
         .into(),

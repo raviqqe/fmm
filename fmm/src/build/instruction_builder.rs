@@ -159,6 +159,8 @@ impl InstructionBuilder {
         pointer: impl Into<TypedExpression>,
         old_value: impl Into<TypedExpression>,
         new_value: impl Into<TypedExpression>,
+        success_ordering: AtomicOrdering,
+        failure_ordering: AtomicOrdering,
     ) -> TypedExpression {
         let pointer = pointer.into();
         let old_value = old_value.into();
@@ -170,6 +172,8 @@ impl InstructionBuilder {
             pointer.expression().clone(),
             old_value.expression().clone(),
             new_value.expression().clone(),
+            success_ordering,
+            failure_ordering,
             &name,
         ));
 

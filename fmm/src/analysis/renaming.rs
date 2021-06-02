@@ -124,6 +124,8 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename_expression(cas.pointer()),
             rename_expression(cas.old_value()),
             rename_expression(cas.new_value()),
+            cas.success_ordering(),
+            cas.failure_ordering(),
             rename(cas.name()),
         )
         .into(),

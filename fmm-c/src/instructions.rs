@@ -98,7 +98,7 @@ fn compile_instruction(
             let name = "_cas_".to_owned() + cas.name();
 
             format!(
-                "{}={};bool {}=atomic_compare_exchange_strong(({}){},&{},{});",
+                "{}={};bool {}=atomic_compare_exchange_strong_explicit(({}){},&{},{},memory_order_{},memory_order_{});",
                 compile_typed_name(cas.type_(), &name),
                 compile_expression(cas.old_value()),
                 cas.name(),
@@ -106,6 +106,8 @@ fn compile_instruction(
                 compile_expression(cas.pointer()),
                 name,
                 compile_expression(cas.new_value()),
+                compile_atomic_ordering(cas.success_ordering()),
+                compile_atomic_ordering(cas.failure_ordering()),
             )
         }
         Instruction::DeconstructRecord(deconstruct) => format!(

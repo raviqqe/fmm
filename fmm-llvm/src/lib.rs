@@ -1390,6 +1390,8 @@ mod tests {
                         Variable::new("x"),
                         Primitive::PointerInteger(0),
                         Primitive::PointerInteger(1),
+                        AtomicOrdering::Relaxed,
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],

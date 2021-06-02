@@ -141,6 +141,8 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             convert_expression(cas.pointer()),
             convert_expression(cas.old_value()),
             convert_expression(cas.new_value()),
+            cas.success_ordering(),
+            cas.failure_ordering(),
             cas.name(),
         )
         .into(),
