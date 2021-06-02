@@ -1,3 +1,4 @@
+use super::atomic_ordering::AtomicOrdering;
 use super::expression::Expression;
 use crate::types;
 use std::sync::Arc;
@@ -14,6 +15,7 @@ pub struct AtomicOperation {
     operator: AtomicOperator,
     pointer: Arc<Expression>,
     value: Arc<Expression>,
+    ordering: AtomicOrdering,
     name: String,
 }
 
@@ -23,6 +25,7 @@ impl AtomicOperation {
         operator: AtomicOperator,
         pointer: impl Into<Expression>,
         value: impl Into<Expression>,
+        ordering: AtomicOrdering,
         name: impl Into<String>,
     ) -> Self {
         Self {
@@ -30,6 +33,7 @@ impl AtomicOperation {
             operator,
             pointer: pointer.into().into(),
             value: value.into().into(),
+            ordering,
             name: name.into(),
         }
     }
@@ -48,6 +52,10 @@ impl AtomicOperation {
 
     pub fn value(&self) -> &Expression {
         &self.value
+    }
+
+    pub fn ordering(&self) -> AtomicOrdering {
+        self.ordering
     }
 
     pub fn name(&self) -> &str {

@@ -89,6 +89,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             load.type_().clone(),
             rename_expression(load.pointer()),
+            load.ordering(),
             rename(load.name()),
         )
         .into(),
@@ -97,6 +98,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             operation.operator(),
             rename_expression(operation.pointer()),
             rename_expression(operation.value()),
+            operation.ordering(),
             rename(operation.name()),
         )
         .into(),
@@ -104,6 +106,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             store.type_().clone(),
             rename_expression(store.value()),
             rename_expression(store.pointer()),
+            store.ordering(),
         )
         .into(),
         Instruction::Call(call) => Call::new(

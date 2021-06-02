@@ -106,6 +106,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             convert(load.type_()),
             convert_expression(load.pointer()),
+            load.ordering(),
             load.name(),
         )
         .into(),
@@ -114,6 +115,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             operation.operator(),
             convert_expression(operation.pointer()),
             convert_expression(operation.value()),
+            operation.ordering(),
             operation.name(),
         )
         .into(),
@@ -121,6 +123,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             convert(store.type_()),
             convert_expression(store.value()),
             convert_expression(store.pointer()),
+            store.ordering(),
         )
         .into(),
         Instruction::Call(call) => Call::new(

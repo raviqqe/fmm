@@ -761,6 +761,7 @@ mod tests {
                     vec![AtomicLoad::new(
                         types::Primitive::PointerInteger,
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -788,6 +789,7 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                     )
                     .into()],
                     Return::new(
@@ -968,6 +970,7 @@ mod tests {
                         AtomicOperator::Add,
                         Variable::new("x"),
                         Primitive::PointerInteger(42),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],

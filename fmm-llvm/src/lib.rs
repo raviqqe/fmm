@@ -1110,6 +1110,7 @@ mod tests {
                     vec![AtomicLoad::new(
                         types::Primitive::PointerInteger,
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -1134,7 +1135,13 @@ mod tests {
                     types::Pointer::new(function_type.clone()),
                 )],
                 Block::new(
-                    vec![AtomicLoad::new(function_type.clone(), Variable::new("x"), "y").into()],
+                    vec![AtomicLoad::new(
+                        function_type.clone(),
+                        Variable::new("x"),
+                        AtomicOrdering::Relaxed,
+                        "y",
+                    )
+                    .into()],
                     Return::new(function_type.clone(), Variable::new("y")),
                 ),
                 function_type,
@@ -1155,6 +1162,7 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Undefined::new(types::Primitive::PointerInteger),
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                     )
                     .into()],
                     Return::new(
@@ -1185,6 +1193,7 @@ mod tests {
                         function_type.clone(),
                         Undefined::new(function_type),
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                     )
                     .into()],
                     Return::new(
@@ -1508,6 +1517,7 @@ mod tests {
                         AtomicOperator::Add,
                         Variable::new("x"),
                         Primitive::PointerInteger(42),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
