@@ -25,11 +25,10 @@ impl InstructionBuilder {
         Self::new(self.name_generator.clone())
     }
 
-    pub fn allocate_heap(&self, size: impl Into<Expression>) -> TypedExpression {
+    pub fn allocate_heap(&self, size: impl Into<TypedExpression>) -> TypedExpression {
         let name = self.generate_name();
-        let size = size.into();
 
-        self.add_instruction(AllocateHeap::new(size, &name));
+        self.add_instruction(AllocateHeap::new(size.into().expression().clone(), &name));
 
         TypedExpression::new(Variable::new(name), GENERIC_POINTER_TYPE.clone())
     }
