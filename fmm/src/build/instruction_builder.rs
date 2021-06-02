@@ -61,6 +61,7 @@ impl InstructionBuilder {
     pub fn atomic_load(
         &self,
         pointer: impl Into<TypedExpression>,
+        ordering: AtomicOrdering,
     ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
         let type_ = pointer
@@ -74,6 +75,7 @@ impl InstructionBuilder {
         self.add_instruction(AtomicLoad::new(
             type_.clone(),
             pointer.expression().clone(),
+            ordering,
             &name,
         ));
 
@@ -85,6 +87,7 @@ impl InstructionBuilder {
         operator: AtomicOperator,
         pointer: impl Into<TypedExpression>,
         value: impl Into<TypedExpression>,
+        ordering: AtomicOrdering,
     ) -> Result<TypedExpression, BuildError> {
         let pointer = pointer.into();
         let value = value.into();
@@ -99,6 +102,7 @@ impl InstructionBuilder {
             operator,
             pointer.expression().clone(),
             value.expression().clone(),
+            ordering,
             &name,
         ));
 
@@ -109,6 +113,7 @@ impl InstructionBuilder {
         &self,
         value: impl Into<TypedExpression>,
         pointer: impl Into<TypedExpression>,
+        ordering: AtomicOrdering,
     ) {
         let value = value.into();
         let pointer = pointer.into();
@@ -117,6 +122,7 @@ impl InstructionBuilder {
             value.type_().clone(),
             value.expression().clone(),
             pointer.expression().clone(),
+            ordering,
         ));
     }
 
@@ -153,6 +159,8 @@ impl InstructionBuilder {
         pointer: impl Into<TypedExpression>,
         old_value: impl Into<TypedExpression>,
         new_value: impl Into<TypedExpression>,
+        success_ordering: AtomicOrdering,
+        failure_ordering: AtomicOrdering,
     ) -> TypedExpression {
         let pointer = pointer.into();
         let old_value = old_value.into();
@@ -164,6 +172,8 @@ impl InstructionBuilder {
             pointer.expression().clone(),
             old_value.expression().clone(),
             new_value.expression().clone(),
+            success_ordering,
+            failure_ordering,
             &name,
         ));
 

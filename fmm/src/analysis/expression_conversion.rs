@@ -91,14 +91,19 @@ fn convert_instruction(
         Instruction::AllocateStack(allocate) => {
             AllocateStack::new(allocate.type_().clone(), allocate.name()).into()
         }
-        Instruction::AtomicLoad(load) => {
-            AtomicLoad::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
-        }
+        Instruction::AtomicLoad(load) => AtomicLoad::new(
+            load.type_().clone(),
+            convert(load.pointer()),
+            load.ordering(),
+            load.name(),
+        )
+        .into(),
         Instruction::AtomicOperation(operation) => AtomicOperation::new(
             operation.type_(),
             operation.operator(),
             convert(operation.pointer()),
             convert(operation.value()),
+            operation.ordering(),
             operation.name(),
         )
         .into(),
@@ -106,6 +111,7 @@ fn convert_instruction(
             store.type_().clone(),
             convert(store.value()),
             convert(store.pointer()),
+            store.ordering(),
         )
         .into(),
         Instruction::Call(call) => Call::new(
@@ -120,6 +126,8 @@ fn convert_instruction(
             convert(cas.pointer()),
             convert(cas.old_value()),
             convert(cas.new_value()),
+            cas.success_ordering(),
+            cas.failure_ordering(),
             cas.name(),
         )
         .into(),

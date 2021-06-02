@@ -1110,6 +1110,7 @@ mod tests {
                     vec![AtomicLoad::new(
                         types::Primitive::PointerInteger,
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -1134,7 +1135,13 @@ mod tests {
                     types::Pointer::new(function_type.clone()),
                 )],
                 Block::new(
-                    vec![AtomicLoad::new(function_type.clone(), Variable::new("x"), "y").into()],
+                    vec![AtomicLoad::new(
+                        function_type.clone(),
+                        Variable::new("x"),
+                        AtomicOrdering::Relaxed,
+                        "y",
+                    )
+                    .into()],
                     Return::new(function_type.clone(), Variable::new("y")),
                 ),
                 function_type,
@@ -1155,6 +1162,7 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Undefined::new(types::Primitive::PointerInteger),
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                     )
                     .into()],
                     Return::new(
@@ -1185,6 +1193,7 @@ mod tests {
                         function_type.clone(),
                         Undefined::new(function_type),
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                     )
                     .into()],
                     Return::new(
@@ -1381,6 +1390,8 @@ mod tests {
                         Variable::new("x"),
                         Primitive::PointerInteger(0),
                         Primitive::PointerInteger(1),
+                        AtomicOrdering::Relaxed,
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -1508,6 +1519,7 @@ mod tests {
                         AtomicOperator::Add,
                         Variable::new("x"),
                         Primitive::PointerInteger(42),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -1516,6 +1528,39 @@ mod tests {
                 types::Primitive::PointerInteger,
                 Linkage::External,
             ));
+        }
+
+        #[test]
+        fn compile_atomic_operation_with_different_ordering() {
+            for &ordering in &[
+                AtomicOrdering::Relaxed,
+                AtomicOrdering::Release,
+                AtomicOrdering::Acquire,
+                AtomicOrdering::AcquireRelease,
+                AtomicOrdering::SequentiallyConsistent,
+            ] {
+                compile_function_definition(create_function_definition(
+                    "f",
+                    vec![Argument::new(
+                        "x",
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                    )],
+                    Block::new(
+                        vec![AtomicOperation::new(
+                            types::Primitive::PointerInteger,
+                            AtomicOperator::Add,
+                            Variable::new("x"),
+                            Primitive::PointerInteger(42),
+                            ordering,
+                            "y",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                    types::Primitive::PointerInteger,
+                    Linkage::External,
+                ));
+            }
         }
 
         #[test]

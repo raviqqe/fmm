@@ -1,4 +1,4 @@
-use super::expression::Expression;
+use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
 use std::sync::Arc;
 
@@ -6,6 +6,7 @@ use std::sync::Arc;
 pub struct AtomicLoad {
     type_: Type, // pointer element type
     pointer: Arc<Expression>,
+    ordering: AtomicOrdering,
     name: String,
 }
 
@@ -13,11 +14,13 @@ impl AtomicLoad {
     pub fn new(
         type_: impl Into<Type>,
         pointer: impl Into<Expression>,
+        ordering: AtomicOrdering,
         name: impl Into<String>,
     ) -> Self {
         Self {
             type_: type_.into(),
             pointer: pointer.into().into(),
+            ordering,
             name: name.into(),
         }
     }
@@ -28,6 +31,10 @@ impl AtomicLoad {
 
     pub fn pointer(&self) -> &Expression {
         &self.pointer
+    }
+
+    pub fn ordering(&self) -> AtomicOrdering {
+        self.ordering
     }
 
     pub fn name(&self) -> &str {

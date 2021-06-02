@@ -1,4 +1,4 @@
-use super::expression::Expression;
+use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
 use std::sync::Arc;
 
@@ -8,6 +8,8 @@ pub struct CompareAndSwap {
     pointer: Arc<Expression>,
     old_value: Arc<Expression>,
     new_value: Arc<Expression>,
+    success_ordering: AtomicOrdering,
+    failure_ordering: AtomicOrdering,
     name: String,
 }
 
@@ -17,6 +19,8 @@ impl CompareAndSwap {
         pointer: impl Into<Expression>,
         old_value: impl Into<Expression>,
         new_value: impl Into<Expression>,
+        success_ordering: AtomicOrdering,
+        failure_ordering: AtomicOrdering,
         name: impl Into<String>,
     ) -> Self {
         Self {
@@ -24,6 +28,8 @@ impl CompareAndSwap {
             pointer: pointer.into().into(),
             old_value: old_value.into().into(),
             new_value: new_value.into().into(),
+            success_ordering,
+            failure_ordering,
             name: name.into(),
         }
     }
@@ -42,6 +48,14 @@ impl CompareAndSwap {
 
     pub fn new_value(&self) -> &Expression {
         &self.new_value
+    }
+
+    pub fn success_ordering(&self) -> AtomicOrdering {
+        self.success_ordering
+    }
+
+    pub fn failure_ordering(&self) -> AtomicOrdering {
+        self.failure_ordering
     }
 
     pub fn name(&self) -> &str {

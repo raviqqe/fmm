@@ -79,11 +79,10 @@ fn compile_instruction<'c>(
                 load.name(),
             );
 
-            // TODO Optimize this.
             value
                 .as_instruction_value()
                 .unwrap()
-                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)?;
+                .set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
 
             Some(value)
         }
@@ -96,7 +95,7 @@ fn compile_instruction<'c>(
                     },
                     compile_expression(operation.pointer()).into_pointer_value(),
                     compile_expression(operation.value()).into_int_value(),
-                    inkwell::AtomicOrdering::SequentiallyConsistent,
+                    compile_atomic_ordering(operation.ordering()),
                 )?
                 .into(),
         ),
@@ -106,8 +105,7 @@ fn compile_instruction<'c>(
                 compile_expression(store.value()),
             );
 
-            // TODO Optimize this.
-            value.set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)?;
+            value.set_atomic_ordering(compile_atomic_ordering(store.ordering()))?;
 
             None
         }
@@ -129,7 +127,6 @@ fn compile_instruction<'c>(
 
             Some(value.try_as_basic_value().left().unwrap())
         }
-        // TODO Optimize this.
         Instruction::CompareAndSwap(cas) => Some(
             builder
                 .build_extract_value(
@@ -137,8 +134,8 @@ fn compile_instruction<'c>(
                         compile_expression(cas.pointer()).into_pointer_value(),
                         compile_expression(cas.old_value()),
                         compile_expression(cas.new_value()),
-                        inkwell::AtomicOrdering::SequentiallyConsistent,
-                        inkwell::AtomicOrdering::SequentiallyConsistent,
+                        compile_atomic_ordering(cas.success_ordering()),
+                        compile_atomic_ordering(cas.failure_ordering()),
                     )?,
                     1,
                     cas.name(),
@@ -336,5 +333,15 @@ fn compile_terminal_instruction<'c>(
             builder.build_unreachable();
             None
         }
+    }
+}
+
+fn compile_atomic_ordering(ordering: AtomicOrdering) -> inkwell::AtomicOrdering {
+    match ordering {
+        AtomicOrdering::Relaxed => inkwell::AtomicOrdering::Monotonic,
+        AtomicOrdering::Release => inkwell::AtomicOrdering::Release,
+        AtomicOrdering::Acquire => inkwell::AtomicOrdering::Acquire,
+        AtomicOrdering::AcquireRelease => inkwell::AtomicOrdering::AcquireRelease,
+        AtomicOrdering::SequentiallyConsistent => inkwell::AtomicOrdering::SequentiallyConsistent,
     }
 }
