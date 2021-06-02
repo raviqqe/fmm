@@ -187,46 +187,16 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             pass.name(),
         )
         .into(),
-        Instruction::PointerAddress(address) => PointerAddress::new(
-            convert(&address.type_().clone().into())
-                .to_pointer()
-                .unwrap()
-                .clone(),
-            convert_expression(address.pointer()),
-            convert_expression(address.offset()),
-            address.name(),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert_expression(reallocate.pointer()),
             convert_expression(reallocate.size()),
             reallocate.name(),
         )
         .into(),
-        Instruction::RecordAddress(address) => RecordAddress::new(
-            convert(&address.type_().clone().into())
-                .to_record()
-                .unwrap()
-                .clone(),
-            convert_expression(address.pointer()),
-            address.element_index(),
-            address.name(),
-        )
-        .into(),
         Instruction::Store(store) => Store::new(
             convert(store.type_()),
             convert_expression(store.value()),
             convert_expression(store.pointer()),
-        )
-        .into(),
-        Instruction::UnionAddress(address) => UnionAddress::new(
-            convert(&address.type_().clone().into())
-                .to_union()
-                .unwrap()
-                .clone(),
-            convert_expression(address.pointer()),
-            address.member_index(),
-            address.name(),
         )
         .into(),
     }
@@ -290,12 +260,30 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
             convert_expression(operation.rhs()),
         )
         .into(),
+        Expression::PointerAddress(address) => PointerAddress::new(
+            convert(&address.type_().clone().into())
+                .to_pointer()
+                .unwrap()
+                .clone(),
+            convert_expression(address.pointer()),
+            convert_expression(address.offset()),
+        )
+        .into(),
         Expression::Record(record) => Record::new(
             convert(&record.type_().clone().into())
                 .to_record()
                 .unwrap()
                 .clone(),
             record.elements().iter().map(convert_expression).collect(),
+        )
+        .into(),
+        Expression::RecordAddress(address) => RecordAddress::new(
+            convert(&address.type_().clone().into())
+                .to_record()
+                .unwrap()
+                .clone(),
+            convert_expression(address.pointer()),
+            address.element_index(),
         )
         .into(),
         Expression::SizeOf(size_of) => SizeOf::new(convert(size_of.type_())).into(),
@@ -306,6 +294,15 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
                 .clone(),
             union.member_index(),
             convert_expression(union.member()),
+        )
+        .into(),
+        Expression::UnionAddress(address) => UnionAddress::new(
+            convert(&address.type_().clone().into())
+                .to_union()
+                .unwrap()
+                .clone(),
+            convert_expression(address.pointer()),
+            address.member_index(),
         )
         .into(),
         Expression::Undefined(undefined) => Undefined::new(convert(undefined.type_())).into(),

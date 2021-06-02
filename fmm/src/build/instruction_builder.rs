@@ -292,60 +292,6 @@ impl InstructionBuilder {
         TypedExpression::new(Variable::new(name), value.type_().clone())
     }
 
-    pub fn pointer_address(
-        &self,
-        pointer: impl Into<TypedExpression>,
-        offset: impl Into<TypedExpression>,
-    ) -> Result<TypedExpression, BuildError> {
-        let pointer = pointer.into();
-        let offset = offset.into();
-        let type_ = pointer
-            .type_()
-            .to_pointer()
-            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
-            .clone();
-        let name = self.generate_name();
-
-        self.add_instruction(PointerAddress::new(
-            type_.clone(),
-            pointer.expression().clone(),
-            offset.expression().clone(),
-            &name,
-        ));
-
-        Ok(variable(name, type_))
-    }
-
-    pub fn record_address(
-        &self,
-        pointer: impl Into<TypedExpression>,
-        element_index: usize,
-    ) -> Result<TypedExpression, BuildError> {
-        let pointer = pointer.into();
-        let element_type = pointer
-            .type_()
-            .to_pointer()
-            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
-            .element();
-        let type_ = element_type
-            .to_record()
-            .ok_or_else(|| BuildError::RecordExpected(element_type.clone()))?
-            .clone();
-        let name = self.generate_name();
-
-        self.add_instruction(RecordAddress::new(
-            type_.clone(),
-            pointer.expression().clone(),
-            element_index,
-            &name,
-        ));
-
-        Ok(variable(
-            name,
-            types::Pointer::new(type_.elements()[element_index].clone()),
-        ))
-    }
-
     pub fn store(&self, value: impl Into<TypedExpression>, pointer: impl Into<TypedExpression>) {
         let value = value.into();
         let pointer = pointer.into();
@@ -355,36 +301,6 @@ impl InstructionBuilder {
             value.expression().clone(),
             pointer.expression().clone(),
         ));
-    }
-
-    pub fn union_address(
-        &self,
-        pointer: impl Into<TypedExpression>,
-        member_index: usize,
-    ) -> Result<TypedExpression, BuildError> {
-        let pointer = pointer.into();
-        let element_type = pointer
-            .type_()
-            .to_pointer()
-            .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
-            .element();
-        let type_ = element_type
-            .to_union()
-            .ok_or_else(|| BuildError::UnionExpected(element_type.clone()))?
-            .clone();
-        let name = self.generate_name();
-
-        self.add_instruction(UnionAddress::new(
-            type_.clone(),
-            pointer.expression().clone(),
-            member_index,
-            &name,
-        ));
-
-        Ok(variable(
-            name,
-            types::Pointer::new(type_.members()[member_index].clone()),
-        ))
     }
 
     pub fn branch(&self, typed_expression: impl Into<TypedExpression>) -> Block {

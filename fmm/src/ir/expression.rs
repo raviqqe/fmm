@@ -1,8 +1,9 @@
 use super::{
     align_of::AlignOf, arithmetic_operation::ArithmeticOperation, bit_cast::BitCast,
     bitwise_not_operation::BitwiseNotOperation, bitwise_operation::BitwiseOperation,
-    comparison_operation::ComparisonOperation, primitive::Primitive, record::Record,
-    size_of::SizeOf, undefined::Undefined, union::Union, variable::Variable,
+    comparison_operation::ComparisonOperation, pointer_address::PointerAddress,
+    primitive::Primitive, record::Record, record_address::RecordAddress, size_of::SizeOf,
+    undefined::Undefined, union::Union, union_address::UnionAddress, variable::Variable,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -13,11 +14,14 @@ pub enum Expression {
     BitwiseNotOperation(BitwiseNotOperation),
     BitwiseOperation(BitwiseOperation),
     ComparisonOperation(ComparisonOperation),
+    PointerAddress(PointerAddress),
     Primitive(Primitive),
     Record(Record),
+    RecordAddress(RecordAddress),
     SizeOf(SizeOf),
     Undefined(Undefined),
     Union(Union),
+    UnionAddress(UnionAddress),
     Variable(Variable),
 }
 
@@ -57,6 +61,12 @@ impl From<ComparisonOperation> for Expression {
     }
 }
 
+impl From<PointerAddress> for Expression {
+    fn from(address: PointerAddress) -> Self {
+        Self::PointerAddress(address)
+    }
+}
+
 impl From<Primitive> for Expression {
     fn from(primitive: Primitive) -> Self {
         Self::Primitive(primitive)
@@ -66,6 +76,12 @@ impl From<Primitive> for Expression {
 impl From<Record> for Expression {
     fn from(record: Record) -> Self {
         Self::Record(record)
+    }
+}
+
+impl From<RecordAddress> for Expression {
+    fn from(address: RecordAddress) -> Self {
+        Self::RecordAddress(address)
     }
 }
 
@@ -84,6 +100,12 @@ impl From<Undefined> for Expression {
 impl From<Union> for Expression {
     fn from(union: Union) -> Self {
         Self::Union(union)
+    }
+}
+
+impl From<UnionAddress> for Expression {
+    fn from(address: UnionAddress) -> Self {
+        Self::UnionAddress(address)
     }
 }
 

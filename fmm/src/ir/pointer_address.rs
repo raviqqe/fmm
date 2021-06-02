@@ -7,7 +7,6 @@ pub struct PointerAddress {
     type_: types::Pointer, // type of the pointer value
     pointer: Arc<Expression>,
     offset: Arc<Expression>,
-    name: String,
 }
 
 impl PointerAddress {
@@ -15,13 +14,11 @@ impl PointerAddress {
         type_: types::Pointer,
         pointer: impl Into<Expression>,
         offset: impl Into<Expression>,
-        name: impl Into<String>,
     ) -> Self {
         Self {
             type_,
             pointer: pointer.into().into(),
             offset: offset.into().into(),
-            name: name.into(),
         }
     }
 
@@ -35,9 +32,5 @@ impl PointerAddress {
 
     pub fn offset(&self) -> &Expression {
         &self.offset
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 }

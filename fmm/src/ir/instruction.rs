@@ -44,10 +44,7 @@ impl Instruction {
             Self::If(if_) => Some(if_.name()),
             Self::Load(load) => Some(load.name()),
             Self::PassThrough(pass) => Some(pass.name()),
-            Self::PointerAddress(address) => Some(address.name()),
             Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
-            Self::RecordAddress(address) => Some(address.name()),
-            Self::UnionAddress(address) => Some(address.name()),
             Self::AtomicStore(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
@@ -71,16 +68,7 @@ impl Instruction {
             Self::If(if_) => Some(if_.type_().clone()),
             Self::Load(load) => Some(load.type_().clone()),
             Self::PassThrough(pass) => Some(pass.type_().clone()),
-            Self::PointerAddress(address) => Some(address.type_().clone().into()),
             Self::ReallocateHeap(_) => Some(GENERIC_POINTER_TYPE.clone()),
-            Self::RecordAddress(address) => Some(
-                types::Pointer::new(address.type_().elements()[address.element_index()].clone())
-                    .into(),
-            ),
-            Self::UnionAddress(address) => Some(
-                types::Pointer::new(address.type_().members()[address.member_index()].clone())
-                    .into(),
-            ),
             Self::AtomicStore(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
@@ -164,32 +152,14 @@ impl From<PassThrough> for Instruction {
     }
 }
 
-impl From<PointerAddress> for Instruction {
-    fn from(calculation: PointerAddress) -> Self {
-        Self::PointerAddress(calculation)
-    }
-}
-
 impl From<ReallocateHeap> for Instruction {
     fn from(reallocate: ReallocateHeap) -> Self {
         Self::ReallocateHeap(reallocate)
     }
 }
 
-impl From<RecordAddress> for Instruction {
-    fn from(address: RecordAddress) -> Self {
-        Self::RecordAddress(address)
-    }
-}
-
 impl From<Store> for Instruction {
     fn from(store: Store) -> Self {
         Self::Store(store)
-    }
-}
-
-impl From<UnionAddress> for Instruction {
-    fn from(address: UnionAddress) -> Self {
-        Self::UnionAddress(address)
     }
 }
