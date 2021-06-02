@@ -1,10 +1,9 @@
 use super::{
     error::BuildError, expressions::variable, name_generator::NameGenerator, typed_expression::*,
-    void::VOID_TYPE,
 };
 use crate::{
     ir::*,
-    types::{self, Type, GENERIC_POINTER_TYPE},
+    types::{self, Type, GENERIC_POINTER_TYPE, VOID_TYPE},
 };
 use std::{cell::RefCell, rc::Rc};
 

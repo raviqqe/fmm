@@ -1,5 +1,5 @@
 use crate::{
-    build::{self, BuildError, InstructionBuilder, TypedExpression, VOID_VALUE},
+    build::{self, BuildError, InstructionBuilder, TypedExpression},
     ir::*,
     types::{self, Type, GENERIC_POINTER_TYPE},
 };
