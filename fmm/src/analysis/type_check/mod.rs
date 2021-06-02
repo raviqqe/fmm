@@ -3,14 +3,10 @@ mod names;
 
 use crate::{
     ir::*,
-    types::{self, Type},
+    types::{self, Type, GENERIC_POINTER_TYPE},
 };
 pub use error::*;
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
-
-static GENERIC_POINTER_TYPE: Lazy<Type> =
-    Lazy::new(|| types::Pointer::new(types::Primitive::Integer8).into());
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
     names::check_names(module)?;
@@ -98,7 +94,13 @@ fn check_block(
 
     for instruction in block.instructions() {
         match instruction {
-            Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => {}
+            Instruction::AllocateHeap(allocate) => {
+                check_equality(
+                    &check_expression(allocate.size(), &variables)?,
+                    &types::Primitive::PointerInteger.into(),
+                )?;
+            }
+            Instruction::AllocateStack(_) => {}
             Instruction::AtomicLoad(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
@@ -174,7 +176,7 @@ fn check_block(
             Instruction::FreeHeap(free) => {
                 check_equality(
                     &check_expression(free.pointer(), &variables)?,
-                    &types::Pointer::new(free.type_().clone()).into(),
+                    &GENERIC_POINTER_TYPE.clone(),
                 )?;
             }
             Instruction::If(if_) => {
@@ -539,8 +541,6 @@ mod tests {
 
     #[test]
     fn check_allocate_heap() -> Result<(), TypeCheckError> {
-        let pointer_type = types::Pointer::new(types::Primitive::Float64);
-
         check_types(&Module::new(
             vec![],
             vec![],
@@ -549,10 +549,10 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
-                    vec![AllocateHeap::new(types::Primitive::Float64, "x").into()],
-                    Return::new(pointer_type.clone(), Variable::new("x")),
+                    vec![AllocateHeap::new(Primitive::PointerInteger(42), "x").into()],
+                    Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("x")),
                 ),
-                pointer_type,
+                GENERIC_POINTER_TYPE.clone(),
             )],
         ))
     }
@@ -986,14 +986,9 @@ mod tests {
             vec![],
             vec![create_function_definition(
                 "f",
-                vec![Argument::new(
-                    "x",
-                    types::Pointer::new(types::Primitive::PointerInteger),
-                )],
+                vec![Argument::new("x", GENERIC_POINTER_TYPE.clone())],
                 Block::new(
-                    vec![
-                        FreeHeap::new(types::Primitive::PointerInteger, Variable::new("x")).into(),
-                    ],
+                    vec![FreeHeap::new(Variable::new("x")).into()],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),

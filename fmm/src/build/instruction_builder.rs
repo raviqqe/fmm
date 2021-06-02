@@ -1,10 +1,9 @@
 use super::{
     error::BuildError, expressions::variable, name_generator::NameGenerator, typed_expression::*,
-    void::VOID_TYPE,
 };
 use crate::{
     ir::*,
-    types::{self, Type},
+    types::{self, Type, GENERIC_POINTER_TYPE, VOID_TYPE},
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -26,13 +25,13 @@ impl InstructionBuilder {
         Self::new(self.name_generator.clone())
     }
 
-    pub fn allocate_heap(&self, type_: impl Into<Type>) -> TypedExpression {
+    pub fn allocate_heap(&self, size: impl Into<Expression>) -> TypedExpression {
         let name = self.generate_name();
-        let type_ = type_.into();
+        let size = size.into();
 
-        self.add_instruction(AllocateHeap::new(type_.clone(), &name));
+        self.add_instruction(AllocateHeap::new(size, &name));
 
-        TypedExpression::new(Variable::new(name), types::Pointer::new(type_))
+        TypedExpression::new(Variable::new(name), GENERIC_POINTER_TYPE.clone())
     }
 
     pub fn reallocate_heap(
@@ -48,10 +47,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(
-            Variable::new(name),
-            types::Pointer::new(types::Primitive::Integer8),
-        )
+        TypedExpression::new(Variable::new(name), GENERIC_POINTER_TYPE.clone())
     }
 
     pub fn allocate_stack(&self, type_: impl Into<Type>) -> TypedExpression {
@@ -221,20 +217,8 @@ impl InstructionBuilder {
         Ok(variable(name, type_.members()[member_index].clone()))
     }
 
-    pub fn free_heap(&self, pointer: impl Into<TypedExpression>) -> Result<(), BuildError> {
-        let pointer = pointer.into();
-
-        self.add_instruction(FreeHeap::new(
-            pointer
-                .type_()
-                .to_pointer()
-                .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
-                .element()
-                .clone(),
-            pointer.expression().clone(),
-        ));
-
-        Ok(())
+    pub fn free_heap(&self, pointer: impl Into<TypedExpression>) {
+        self.add_instruction(FreeHeap::new(pointer.into().expression().clone()));
     }
 
     pub fn if_<E>(

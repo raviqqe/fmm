@@ -3,7 +3,7 @@ use crate::{
     heap::HeapFunctionSet, types::*, union::compile_union_cast,
 };
 use fmm::ir::*;
-use inkwell::{types::BasicType, values::BasicValue};
+use inkwell::values::BasicValue;
 use std::collections::HashMap;
 
 pub fn compile_block<'c>(
@@ -57,30 +57,17 @@ fn compile_instruction<'c>(
     let compile_type = |type_| compile_type(type_, context, target_data);
 
     Ok(match instruction {
-        Instruction::AllocateHeap(allocate) => {
-            let type_ = compile_type(allocate.type_());
-
-            Some(
-                builder.build_bitcast(
-                    builder
-                        .build_call(
-                            heap_function_set.allocate_function,
-                            &[compile_pointer_integer(
-                                target_data.get_store_size(&type_) as u64,
-                                context,
-                                target_data,
-                            )
-                            .into()],
-                            "",
-                        )
-                        .try_as_basic_value()
-                        .left()
-                        .unwrap(),
-                    type_.ptr_type(DEFAULT_ADDRESS_SPACE),
+        Instruction::AllocateHeap(allocate) => Some(
+            builder
+                .build_call(
+                    heap_function_set.allocate_function,
+                    &[compile_expression(allocate.size())],
                     allocate.name(),
-                ),
-            )
-        }
+                )
+                .try_as_basic_value()
+                .left()
+                .unwrap(),
+        ),
         Instruction::AllocateStack(allocate) => Some(
             builder
                 .build_alloca(compile_type(allocate.type_()), allocate.name())

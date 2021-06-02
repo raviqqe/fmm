@@ -98,7 +98,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
 
     match instruction {
         Instruction::AllocateHeap(allocate) => {
-            AllocateHeap::new(convert(allocate.type_()), allocate.name()).into()
+            AllocateHeap::new(convert_expression(allocate.size()), allocate.name()).into()
         }
         Instruction::AllocateStack(allocate) => {
             AllocateStack::new(convert(allocate.type_()), allocate.name()).into()
@@ -161,9 +161,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             deconstruct.name(),
         )
         .into(),
-        Instruction::FreeHeap(free) => {
-            FreeHeap::new(convert(&free.type_()), convert_expression(free.pointer())).into()
-        }
+        Instruction::FreeHeap(free) => FreeHeap::new(convert_expression(free.pointer())).into(),
         Instruction::If(if_) => If::new(
             convert(if_.type_()),
             convert_expression(if_.condition()),

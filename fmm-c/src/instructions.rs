@@ -1,5 +1,8 @@
 use crate::{expressions::*, names::*, types::*};
-use fmm::{ir::*, types};
+use fmm::{
+    ir::*,
+    types::{self, GENERIC_POINTER_TYPE},
+};
 use std::collections::{HashMap, HashSet};
 
 pub fn compile_block(
@@ -36,12 +39,9 @@ fn compile_instruction(
     match instruction {
         Instruction::AllocateHeap(allocate) => {
             format!(
-                "{}=malloc(sizeof({}));",
-                compile_typed_name(
-                    &types::Pointer::new(allocate.type_().clone()).into(),
-                    allocate.name()
-                ),
-                compile_type_id(allocate.type_())
+                "{}=malloc({});",
+                compile_typed_name(&GENERIC_POINTER_TYPE, allocate.name()),
+                compile_expression(allocate.size()),
             )
         }
         Instruction::AllocateStack(allocate) => {
@@ -157,10 +157,7 @@ fn compile_instruction(
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",
-                compile_typed_name(
-                    &types::Pointer::new(types::Primitive::Integer8).into(),
-                    reallocate.name()
-                ),
+                compile_typed_name(&types::GENERIC_POINTER_TYPE.clone(), reallocate.name()),
                 compile_expression(reallocate.pointer()),
                 compile_expression(reallocate.size()),
             )
