@@ -23,11 +23,8 @@ pub enum Instruction {
     If(If),
     Load(Load),
     PassThrough(PassThrough),
-    PointerAddress(PointerAddress),
     ReallocateHeap(ReallocateHeap),
-    RecordAddress(RecordAddress),
     Store(Store),
-    UnionAddress(UnionAddress),
 }
 
 impl Instruction {

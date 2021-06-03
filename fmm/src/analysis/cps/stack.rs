@@ -22,13 +22,13 @@ pub fn push_to_stack(
     let stack = stack.into();
     let element = element.into();
 
-    let size = builder.load(builder.record_address(stack.clone(), 1)?)?;
+    let size = builder.load(build::record_address(stack.clone(), 1)?)?;
     let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
         get_element_size(builder, element.type_())?,
     )?;
-    let capacity = builder.load(builder.record_address(stack.clone(), 2)?)?;
+    let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
 
     builder.if_(
         build::comparison_operation(
@@ -37,7 +37,7 @@ pub fn push_to_stack(
             capacity.clone(),
         )?,
         |builder| {
-            let pointer = builder.record_address(stack.clone(), 0)?;
+            let pointer = build::record_address(stack.clone(), 0)?;
 
             let new_capacity = build::arithmetic_operation(
                 ArithmeticOperator::Multiply,
@@ -48,7 +48,7 @@ pub fn push_to_stack(
                 builder.reallocate_heap(builder.load(pointer.clone())?, new_capacity.clone()),
                 pointer,
             );
-            builder.store(new_capacity, builder.record_address(stack.clone(), 2)?);
+            builder.store(new_capacity, build::record_address(stack.clone(), 2)?);
 
             Ok(builder.branch(VOID_VALUE.clone()))
         },
@@ -59,7 +59,7 @@ pub fn push_to_stack(
         element.clone(),
         get_element_pointer(builder, &stack, element.type_())?,
     );
-    builder.store(new_size, builder.record_address(stack, 1)?);
+    builder.store(new_size, build::record_address(stack, 1)?);
 
     Ok(())
 }
@@ -74,10 +74,10 @@ pub fn pop_from_stack(
     builder.store(
         build::arithmetic_operation(
             ArithmeticOperator::Subtract,
-            builder.load(builder.record_address(stack.clone(), 1)?)?,
+            builder.load(build::record_address(stack.clone(), 1)?)?,
             get_element_size(builder, type_)?,
         )?,
-        builder.record_address(stack.clone(), 1)?,
+        build::record_address(stack.clone(), 1)?,
     );
 
     builder.load(get_element_pointer(builder, &stack, type_)?)
@@ -90,9 +90,9 @@ fn get_element_pointer(
 ) -> Result<TypedExpression, BuildError> {
     Ok(build::bit_cast(
         types::Pointer::new(type_.clone()),
-        builder.pointer_address(
-            builder.load(builder.record_address(stack.clone(), 0)?)?,
-            builder.load(builder.record_address(stack.clone(), 1)?)?,
+        build::pointer_address(
+            builder.load(build::record_address(stack.clone(), 0)?)?,
+            builder.load(build::record_address(stack.clone(), 1)?)?,
         )?,
     )
     .into())
