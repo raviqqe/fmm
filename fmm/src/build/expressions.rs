@@ -99,7 +99,7 @@ pub fn pointer_address(
         .clone();
 
     Ok(PointerAddress::new(
-        type_.clone(),
+        type_,
         pointer.expression().clone(),
         offset.expression().clone(),
     ))
@@ -136,7 +136,7 @@ pub fn record_address(
         .clone();
 
     Ok(RecordAddress::new(
-        type_.clone(),
+        type_,
         pointer.expression().clone(),
         element_index,
     ))
@@ -162,7 +162,7 @@ pub fn union_address(
         .clone();
 
     Ok(UnionAddress::new(
-        type_.clone(),
+        type_,
         pointer.expression().clone(),
         member_index,
     ))

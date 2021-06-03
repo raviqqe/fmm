@@ -1025,7 +1025,7 @@ mod tests {
                     "x",
                     RecordAddress::new(
                         record_type.clone(),
-                        Undefined::new(types::Pointer::new(record_type.clone())),
+                        Undefined::new(types::Pointer::new(record_type)),
                         1,
                     ),
                     types::Pointer::new(types::Primitive::PointerInteger),
@@ -1051,7 +1051,7 @@ mod tests {
                     "x",
                     UnionAddress::new(
                         union_type.clone(),
-                        Undefined::new(types::Pointer::new(union_type.clone())),
+                        Undefined::new(types::Pointer::new(union_type)),
                         1,
                     ),
                     types::Pointer::new(types::Primitive::PointerInteger),
