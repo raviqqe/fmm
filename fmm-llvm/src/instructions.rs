@@ -237,15 +237,6 @@ fn compile_instruction<'c>(
             compile_expression(pass.expression()),
             pass.name(),
         )),
-        Instruction::PointerAddress(address) => Some(unsafe {
-            builder
-                .build_gep(
-                    compile_expression(address.pointer()).into_pointer_value(),
-                    &[compile_expression(address.offset()).into_int_value()],
-                    address.name(),
-                )
-                .into()
-        }),
         Instruction::ReallocateHeap(reallocate) => builder
             .build_call(
                 heap_function_set.reallocate_function,
@@ -257,20 +248,6 @@ fn compile_instruction<'c>(
             )
             .try_as_basic_value()
             .left(),
-        Instruction::RecordAddress(address) => Some(unsafe {
-            builder
-                .build_gep(
-                    compile_expression(address.pointer()).into_pointer_value(),
-                    &[
-                        context.i32_type().const_zero(),
-                        context
-                            .i32_type()
-                            .const_int(address.element_index() as u64, false),
-                    ],
-                    address.name(),
-                )
-                .into()
-        }),
         Instruction::Store(store) => {
             builder.build_store(
                 compile_expression(store.pointer()).into_pointer_value(),
@@ -279,30 +256,6 @@ fn compile_instruction<'c>(
 
             None
         }
-        Instruction::UnionAddress(address) => Some(unsafe {
-            builder
-                .build_gep(
-                    builder
-                        .build_bitcast(
-                            compile_expression(address.pointer()),
-                            compile_union_member_type(
-                                address.type_(),
-                                address.member_index(),
-                                context,
-                                target_data,
-                            )
-                            .ptr_type(DEFAULT_ADDRESS_SPACE),
-                            "",
-                        )
-                        .into_pointer_value(),
-                    &[
-                        context.i32_type().const_zero(),
-                        context.i32_type().const_zero(),
-                    ],
-                    address.name(),
-                )
-                .into()
-        }),
     })
 }
 

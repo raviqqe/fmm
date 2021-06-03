@@ -163,37 +163,16 @@ fn convert_instruction(
             pass.name(),
         )
         .into(),
-        Instruction::PointerAddress(address) => PointerAddress::new(
-            address.type_().clone(),
-            convert(address.pointer()),
-            convert(address.offset()),
-            address.name(),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert(reallocate.pointer()),
             convert(reallocate.size()),
             reallocate.name(),
         )
         .into(),
-        Instruction::RecordAddress(address) => RecordAddress::new(
-            address.type_().clone(),
-            convert(address.pointer()),
-            address.element_index(),
-            address.name(),
-        )
-        .into(),
         Instruction::Store(store) => Store::new(
             store.type_().clone(),
             convert(store.value()),
             convert(store.pointer()),
-        )
-        .into(),
-        Instruction::UnionAddress(address) => UnionAddress::new(
-            address.type_().clone(),
-            convert(address.pointer()),
-            address.member_index(),
-            address.name(),
         )
         .into(),
     }
@@ -252,15 +231,33 @@ fn convert_expression(
                 convert(operation.rhs()),
             )
             .into(),
+            Expression::PointerAddress(address) => PointerAddress::new(
+                address.type_().clone(),
+                convert(address.pointer()),
+                convert(address.offset()),
+            )
+            .into(),
             Expression::Record(record) => Record::new(
                 record.type_().clone(),
                 record.elements().iter().map(convert).collect(),
+            )
+            .into(),
+            Expression::RecordAddress(address) => RecordAddress::new(
+                address.type_().clone(),
+                convert(address.pointer()),
+                address.element_index(),
             )
             .into(),
             Expression::Union(union) => Union::new(
                 union.type_().clone(),
                 union.member_index(),
                 convert(union.member()),
+            )
+            .into(),
+            Expression::UnionAddress(address) => UnionAddress::new(
+                address.type_().clone(),
+                convert(address.pointer()),
+                address.member_index(),
             )
             .into(),
             Expression::AlignOf(_)

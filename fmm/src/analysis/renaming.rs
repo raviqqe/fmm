@@ -164,37 +164,16 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(pass.name()),
         )
         .into(),
-        Instruction::PointerAddress(address) => PointerAddress::new(
-            address.type_().clone(),
-            rename_expression(address.pointer()),
-            rename_expression(address.offset()),
-            rename(address.name()),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             rename_expression(reallocate.pointer()),
             rename_expression(reallocate.size()),
             rename(reallocate.name()),
         )
         .into(),
-        Instruction::RecordAddress(address) => RecordAddress::new(
-            address.type_().clone(),
-            rename_expression(address.pointer()),
-            address.element_index(),
-            rename(address.name()),
-        )
-        .into(),
         Instruction::Store(store) => Store::new(
             store.type_().clone(),
             rename_expression(store.value()),
             rename_expression(store.pointer()),
-        )
-        .into(),
-        Instruction::UnionAddress(address) => UnionAddress::new(
-            address.type_().clone(),
-            rename_expression(address.pointer()),
-            address.member_index(),
-            rename(address.name()),
         )
         .into(),
         Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => instruction.clone(),
@@ -254,6 +233,12 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
             rename_expression(operation.rhs()),
         )
         .into(),
+        Expression::PointerAddress(address) => PointerAddress::new(
+            address.type_().clone(),
+            rename_expression(address.pointer()),
+            rename_expression(address.offset()),
+        )
+        .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
             record
@@ -263,10 +248,22 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
                 .collect(),
         )
         .into(),
+        Expression::RecordAddress(address) => RecordAddress::new(
+            address.type_().clone(),
+            rename_expression(address.pointer()),
+            address.element_index(),
+        )
+        .into(),
         Expression::Union(union) => Union::new(
             union.type_().clone(),
             union.member_index(),
             rename_expression(union.member()),
+        )
+        .into(),
+        Expression::UnionAddress(address) => UnionAddress::new(
+            address.type_().clone(),
+            rename_expression(address.pointer()),
+            address.member_index(),
         )
         .into(),
         Expression::Variable(variable) => Variable::new(rename(variable.name())).into(),

@@ -153,12 +153,6 @@ fn compile_instruction(
             compile_typed_name(pass.type_(), pass.name()),
             compile_expression(pass.expression()),
         ),
-        Instruction::PointerAddress(address) => format!(
-            "{}={}+{};",
-            compile_typed_name(&address.type_().clone().into(), address.name()),
-            compile_expression(address.pointer()),
-            compile_expression(address.offset()),
-        ),
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",
@@ -167,33 +161,11 @@ fn compile_instruction(
                 compile_expression(reallocate.size()),
             )
         }
-        Instruction::RecordAddress(address) => format!(
-            "{}=&({})->{};",
-            compile_typed_name(
-                &types::Pointer::new(address.type_().elements()[address.element_index()].clone())
-                    .into(),
-                address.name(),
-            ),
-            compile_expression(address.pointer()),
-            generate_record_element_name(address.element_index()),
-        ),
         Instruction::Store(store) => format!(
             "*{}={};",
             compile_expression(store.pointer()),
             compile_expression(store.value()),
         ),
-        Instruction::UnionAddress(address) => {
-            format!(
-                "{}=&({})->{};",
-                compile_typed_name(
-                    &types::Pointer::new(address.type_().members()[address.member_index()].clone())
-                        .into(),
-                    address.name(),
-                ),
-                compile_expression(address.pointer()),
-                generate_union_member_name(address.member_index()),
-            )
-        }
     }
 }
 
