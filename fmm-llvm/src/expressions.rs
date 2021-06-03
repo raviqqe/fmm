@@ -1,6 +1,5 @@
-use crate::union::compile_union_cast;
-
 use super::types::*;
+use crate::union::compile_union_cast;
 use fmm::{ir::*, types};
 use inkwell::values::BasicValue;
 use std::collections::HashMap;
@@ -33,6 +32,9 @@ pub fn compile_expression<'c>(
         Expression::ComparisonOperation(operation) => {
             compile_comparison_operation(builder, operation, &compile_expression)
         }
+        Expression::PointerAddress(address) => {
+            compile_pointer_address(builder, address, &compile_expression).into()
+        }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => {
             let mut value = compile_record_type(record.type_(), context, target_data).const_zero();
@@ -45,6 +47,9 @@ pub fn compile_expression<'c>(
             }
 
             value.into()
+        }
+        Expression::RecordAddress(address) => {
+            compile_record_address(builder, address, context, &compile_expression).into()
         }
         Expression::SizeOf(size_of) => compile_size_of(size_of, context, target_data).into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
@@ -74,6 +79,10 @@ pub fn compile_expression<'c>(
                     .as_basic_value_enum(),
                 compile_union_type(union.type_(), context, target_data).into(),
             )
+        }
+        Expression::UnionAddress(address) => {
+            compile_union_address(builder, address, context, target_data, &compile_expression)
+                .into()
         }
         Expression::Variable(variable) => variables[variable.name()],
     }
@@ -112,6 +121,9 @@ pub fn compile_constant_expression<'c>(
         Expression::ComparisonOperation(operation) => {
             compile_comparison_operation(&context.create_builder(), operation, &compile_expression)
         }
+        Expression::PointerAddress(address) => {
+            compile_pointer_address(&context.create_builder(), address, &compile_expression).into()
+        }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => context
             .const_struct(
@@ -123,6 +135,13 @@ pub fn compile_constant_expression<'c>(
                 false,
             )
             .into(),
+        Expression::RecordAddress(address) => compile_record_address(
+            &context.create_builder(),
+            address,
+            context,
+            &compile_expression,
+        )
+        .into(),
         Expression::SizeOf(size_of) => compile_size_of(size_of, context, target_data).into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
         Expression::Union(union) => context
@@ -141,6 +160,14 @@ pub fn compile_constant_expression<'c>(
                 false,
             )
             .into(),
+        Expression::UnionAddress(address) => compile_union_address(
+            &context.create_builder(),
+            address,
+            context,
+            target_data,
+            &compile_expression,
+        )
+        .into(),
         Expression::Variable(variable) => variables[variable.name()],
     }
 }
@@ -328,6 +355,26 @@ fn compile_comparison_operation<'c>(
     .into()
 }
 
+fn compile_record_address<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    address: &RecordAddress,
+    context: &'c inkwell::context::Context,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::PointerValue<'c> {
+    unsafe {
+        builder.build_gep(
+            compile_expression(address.pointer()).into_pointer_value(),
+            &[
+                context.i32_type().const_zero(),
+                context
+                    .i32_type()
+                    .const_int(address.element_index() as u64, false),
+            ],
+            "",
+        )
+    }
+}
+
 fn compile_size_of<'c>(
     size_of: &SizeOf,
     context: &'c inkwell::context::Context,
@@ -393,6 +440,20 @@ pub fn compile_pointer_integer<'c>(
     compile_pointer_integer_type(context, target_data).const_int(number, false)
 }
 
+fn compile_pointer_address<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    address: &PointerAddress,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::PointerValue<'c> {
+    unsafe {
+        builder.build_gep(
+            compile_expression(address.pointer()).into_pointer_value(),
+            &[compile_expression(address.offset()).into_int_value()],
+            "",
+        )
+    }
+}
+
 // TODO Refactor this by matching with types::Primitive directly.
 fn compile_undefined_primitive<'c>(
     type_: types::Primitive,
@@ -404,6 +465,37 @@ fn compile_undefined_primitive<'c>(
         inkwell::types::BasicTypeEnum::IntType(integer) => integer.const_zero().into(),
         inkwell::types::BasicTypeEnum::PointerType(pointer) => pointer.const_zero().into(),
         _ => unreachable!(),
+    }
+}
+
+fn compile_union_address<'c>(
+    builder: &inkwell::builder::Builder<'c>,
+    address: &UnionAddress,
+    context: &'c inkwell::context::Context,
+    target_data: &inkwell::targets::TargetData,
+    compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
+) -> inkwell::values::PointerValue<'c> {
+    unsafe {
+        builder.build_gep(
+            builder
+                .build_bitcast(
+                    compile_expression(address.pointer()),
+                    compile_union_member_type(
+                        address.type_(),
+                        address.member_index(),
+                        context,
+                        target_data,
+                    )
+                    .ptr_type(DEFAULT_ADDRESS_SPACE),
+                    "",
+                )
+                .into_pointer_value(),
+            &[
+                context.i32_type().const_zero(),
+                context.i32_type().const_zero(),
+            ],
+            "",
+        )
     }
 }
 
