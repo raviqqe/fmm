@@ -322,6 +322,10 @@ mod tests {
         )
     }
 
+    fn compile_function_definition(definition: FunctionDefinition) {
+        compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
+    }
+
     #[test]
     fn compile_empty_module() {
         compile_module(&Module::new(vec![], vec![], vec![], vec![]));
@@ -889,14 +893,179 @@ mod tests {
                 ));
             }
         }
+
+        #[test]
+        fn compile_record_address() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        pointer_type.clone(),
+                        RecordAddress::new(record_type, Variable::new("x"), 0),
+                    ),
+                ),
+                pointer_type,
+                Linkage::External,
+            ));
+        }
+
+        #[test]
+        fn compile_record_address_with_global_variable() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new("x", record_type.clone())],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            pointer_type.clone(),
+                            RecordAddress::new(record_type, Variable::new("x"), 0),
+                        ),
+                    ),
+                    pointer_type,
+                    Linkage::External,
+                )],
+            ));
+        }
+
+        #[test]
+        fn compile_union_address() {
+            let union_type = types::Union::new(vec![
+                types::Primitive::PointerInteger.into(),
+                types::Primitive::Float64.into(),
+            ]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
+                Block::new(
+                    vec![],
+                    Return::new(
+                        pointer_type.clone(),
+                        UnionAddress::new(union_type, Variable::new("x"), 0),
+                    ),
+                ),
+                pointer_type,
+                Linkage::External,
+            ));
+        }
+
+        #[test]
+        fn compile_union_address_with_global_variable() {
+            let union_type = types::Union::new(vec![
+                types::Primitive::PointerInteger.into(),
+                types::Primitive::Float64.into(),
+            ]);
+            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new("x", union_type.clone())],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            pointer_type.clone(),
+                            UnionAddress::new(union_type, Variable::new("x"), 0),
+                        ),
+                    ),
+                    pointer_type,
+                    Linkage::External,
+                )],
+            ));
+        }
+
+        #[test]
+        fn compile_constant_pointer_address() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    PointerAddress::new(
+                        types::Pointer::new(types::Primitive::Integer8),
+                        Undefined::new(types::Pointer::new(types::Primitive::Integer8)),
+                        Primitive::PointerInteger(42),
+                    ),
+                    types::Pointer::new(types::Primitive::Integer8),
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_constant_record_address() {
+            let record_type = types::Record::new(vec![
+                types::Primitive::Integer8.into(),
+                types::Primitive::PointerInteger.into(),
+            ]);
+
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    RecordAddress::new(
+                        record_type.clone(),
+                        Undefined::new(types::Pointer::new(record_type.clone())),
+                        1,
+                    ),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_constant_union_address() {
+            let union_type = types::Union::new(vec![
+                types::Primitive::Integer8.into(),
+                types::Primitive::PointerInteger.into(),
+            ]);
+
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    UnionAddress::new(
+                        union_type.clone(),
+                        Undefined::new(types::Pointer::new(union_type.clone())),
+                        1,
+                    ),
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
     }
 
     mod instructions {
         use super::*;
-
-        fn compile_function_definition(definition: FunctionDefinition) {
-            compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
-        }
 
         #[test]
         fn compile_unreachable() {
@@ -1226,90 +1395,6 @@ mod tests {
                 ),
                 types::Primitive::Boolean,
                 Linkage::External,
-            ));
-        }
-
-        #[test]
-        fn compile_record_address() {
-            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
-            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
-
-            compile_function_definition(create_function_definition(
-                "f",
-                vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
-                Block::new(
-                    vec![RecordAddress::new(record_type, Variable::new("x"), 0, "y").into()],
-                    Return::new(pointer_type.clone(), Variable::new("y")),
-                ),
-                pointer_type,
-                Linkage::External,
-            ));
-        }
-
-        #[test]
-        fn compile_record_address_with_global_variable() {
-            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
-            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
-
-            compile_module(&Module::new(
-                vec![VariableDeclaration::new("x", record_type.clone())],
-                vec![],
-                vec![],
-                vec![create_function_definition(
-                    "f",
-                    vec![],
-                    Block::new(
-                        vec![RecordAddress::new(record_type, Variable::new("x"), 0, "y").into()],
-                        Return::new(pointer_type.clone(), Variable::new("y")),
-                    ),
-                    pointer_type,
-                    Linkage::External,
-                )],
-            ));
-        }
-
-        #[test]
-        fn compile_union_address() {
-            let union_type = types::Union::new(vec![
-                types::Primitive::PointerInteger.into(),
-                types::Primitive::Float64.into(),
-            ]);
-            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
-
-            compile_function_definition(create_function_definition(
-                "f",
-                vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
-                Block::new(
-                    vec![UnionAddress::new(union_type, Variable::new("x"), 0, "y").into()],
-                    Return::new(pointer_type.clone(), Variable::new("y")),
-                ),
-                pointer_type,
-                Linkage::External,
-            ));
-        }
-
-        #[test]
-        fn compile_union_address_with_global_variable() {
-            let union_type = types::Union::new(vec![
-                types::Primitive::PointerInteger.into(),
-                types::Primitive::Float64.into(),
-            ]);
-            let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
-
-            compile_module(&Module::new(
-                vec![VariableDeclaration::new("x", union_type.clone())],
-                vec![],
-                vec![],
-                vec![create_function_definition(
-                    "f",
-                    vec![],
-                    Block::new(
-                        vec![UnionAddress::new(union_type, Variable::new("x"), 0, "y").into()],
-                        Return::new(pointer_type.clone(), Variable::new("y")),
-                    ),
-                    pointer_type,
-                    Linkage::External,
-                )],
             ));
         }
 
