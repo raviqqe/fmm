@@ -3,8 +3,7 @@ use super::{
     atomic_operation::AtomicOperation, atomic_store::AtomicStore, call::Call,
     compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
     deconstruct_union::DeconstructUnion, free_heap::FreeHeap, if_::If, load::Load,
-    pass_through::PassThrough, pointer_address::PointerAddress, reallocate_heap::ReallocateHeap,
-    record_address::RecordAddress, store::Store, union_address::UnionAddress,
+    pass_through::PassThrough, reallocate_heap::ReallocateHeap, store::Store,
 };
 use crate::types::{self, Type, GENERIC_POINTER_TYPE};
 
