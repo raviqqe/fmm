@@ -84,7 +84,7 @@ impl From<RecordAddress> for TypedExpression {
     fn from(address: RecordAddress) -> Self {
         Self::new(
             address.clone(),
-            types::Pointer::new(address.type_().clone()),
+            types::Pointer::new(address.type_().elements()[address.element_index()].clone()),
         )
     }
 }
@@ -111,7 +111,7 @@ impl From<UnionAddress> for TypedExpression {
     fn from(address: UnionAddress) -> Self {
         Self::new(
             address.clone(),
-            types::Pointer::new(address.type_().clone()),
+            types::Pointer::new(address.type_().members()[address.member_index()].clone()),
         )
     }
 }
