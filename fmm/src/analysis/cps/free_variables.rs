@@ -68,7 +68,7 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
 
-        Instruction::AllocateStack(_) => Default::default(),
+        Instruction::Fence(_) | Instruction::AllocateStack(_) => Default::default(),
     }
 }
 

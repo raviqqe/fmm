@@ -2,7 +2,7 @@ use super::{
     allocate_heap::AllocateHeap, allocate_stack::AllocateStack, atomic_load::AtomicLoad,
     atomic_operation::AtomicOperation, atomic_store::AtomicStore, call::Call,
     compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
-    deconstruct_union::DeconstructUnion, free_heap::FreeHeap, if_::If, load::Load,
+    deconstruct_union::DeconstructUnion, fence::Fence, free_heap::FreeHeap, if_::If, load::Load,
     pass_through::PassThrough, reallocate_heap::ReallocateHeap, store::Store,
 };
 use crate::types::{self, Type, GENERIC_POINTER_TYPE};
@@ -18,6 +18,7 @@ pub enum Instruction {
     CompareAndSwap(CompareAndSwap),
     DeconstructRecord(DeconstructRecord),
     DeconstructUnion(DeconstructUnion),
+    Fence(Fence),
     FreeHeap(FreeHeap),
     If(If),
     Load(Load),
@@ -41,7 +42,7 @@ impl Instruction {
             Self::Load(load) => Some(load.name()),
             Self::PassThrough(pass) => Some(pass.name()),
             Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
-            Self::AtomicStore(_) | Self::FreeHeap(_) | Self::Store(_) => None,
+            Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
 
@@ -65,7 +66,7 @@ impl Instruction {
             Self::Load(load) => Some(load.type_().clone()),
             Self::PassThrough(pass) => Some(pass.type_().clone()),
             Self::ReallocateHeap(_) => Some(GENERIC_POINTER_TYPE.clone()),
-            Self::AtomicStore(_) | Self::FreeHeap(_) | Self::Store(_) => None,
+            Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
 }
@@ -121,6 +122,12 @@ impl From<DeconstructRecord> for Instruction {
 impl From<DeconstructUnion> for Instruction {
     fn from(deconstruct: DeconstructUnion) -> Self {
         Self::DeconstructUnion(deconstruct)
+    }
+}
+
+impl From<Fence> for Instruction {
+    fn from(fence: Fence) -> Self {
+        Self::Fence(fence)
     }
 }
 

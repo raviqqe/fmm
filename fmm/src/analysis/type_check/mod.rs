@@ -173,6 +173,7 @@ fn check_block(
 
                 check_union_index(deconstruct.member_index(), deconstruct.type_())?;
             }
+            Instruction::Fence(_) => {}
             Instruction::FreeHeap(free) => {
                 check_equality(
                     &check_expression(free.pointer(), &variables)?,

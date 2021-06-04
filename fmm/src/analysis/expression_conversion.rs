@@ -145,6 +145,7 @@ fn convert_instruction(
             deconstruct.name(),
         )
         .into(),
+        Instruction::Fence(fence) => fence.clone().into(),
         Instruction::FreeHeap(free) => FreeHeap::new(convert(free.pointer())).into(),
         Instruction::If(if_) => If::new(
             if_.type_().clone(),

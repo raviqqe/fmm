@@ -1376,6 +1376,20 @@ mod tests {
         }
 
         #[test]
+        fn compile_fence() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![Fence::new(AtomicOrdering::Release).into()],
+                    TerminalInstruction::Unreachable,
+                ),
+                types::Primitive::PointerInteger,
+                Linkage::External,
+            ));
+        }
+
+        #[test]
         fn compile_if() {
             compile_function_definition(create_function_definition(
                 "f",

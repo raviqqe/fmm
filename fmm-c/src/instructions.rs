@@ -128,6 +128,12 @@ fn compile_instruction(
             compile_expression(deconstruct.union()),
             generate_union_member_name(deconstruct.member_index()),
         ),
+        Instruction::Fence(fence) => {
+            format!(
+                "atomic_thread_fence({});",
+                compile_atomic_ordering(fence.ordering())
+            )
+        }
         Instruction::FreeHeap(free) => {
             format!("free((void *)({}));", compile_expression(free.pointer()))
         }

@@ -149,6 +149,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(deconstruct.name()),
         )
         .into(),
+        Instruction::Fence(fence) => fence.clone().into(),
         Instruction::FreeHeap(free) => FreeHeap::new(rename_expression(free.pointer())).into(),
         Instruction::If(if_) => If::new(
             if_.type_().clone(),
