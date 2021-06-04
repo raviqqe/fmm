@@ -26,6 +26,7 @@ fn collect_from_block(block: &Block) -> HashSet<String> {
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
     match instruction {
+        Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
         Instruction::AtomicOperation(operation) => [operation.pointer(), operation.value()]
             .iter()
@@ -67,7 +68,7 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
 
-        Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => Default::default(),
+        Instruction::AllocateStack(_) => Default::default(),
     }
 }
 
