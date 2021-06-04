@@ -163,6 +163,11 @@ fn compile_instruction<'c>(
             0,
             deconstruct.name(),
         ),
+        Instruction::Fence(fence) => {
+            builder.build_fence(compile_atomic_ordering(fence.ordering()), 0, "");
+
+            None
+        }
         Instruction::FreeHeap(free) => {
             builder.build_call(
                 heap_function_set.free_function,

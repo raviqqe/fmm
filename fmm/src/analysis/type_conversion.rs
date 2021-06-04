@@ -166,6 +166,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             deconstruct.name(),
         )
         .into(),
+        Instruction::Fence(fence) => fence.clone().into(),
         Instruction::FreeHeap(free) => FreeHeap::new(convert_expression(free.pointer())).into(),
         Instruction::If(if_) => If::new(
             convert(if_.type_()),

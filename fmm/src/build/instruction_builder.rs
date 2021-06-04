@@ -226,6 +226,10 @@ impl InstructionBuilder {
         Ok(variable(name, type_.members()[member_index].clone()))
     }
 
+    pub fn fence(&self, ordering: AtomicOrdering) {
+        self.add_instruction(Fence::new(ordering))
+    }
+
     pub fn free_heap(&self, pointer: impl Into<TypedExpression>) {
         self.add_instruction(FreeHeap::new(pointer.into().expression().clone()));
     }
