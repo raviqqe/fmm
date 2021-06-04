@@ -86,6 +86,14 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
     let rename_expression = |expression| rename_expression(expression, rename);
 
     match instruction {
+        Instruction::AllocateHeap(allocate) => AllocateHeap::new(
+            rename_expression(allocate.size()).clone(),
+            rename(allocate.name()),
+        )
+        .into(),
+        Instruction::AllocateStack(allocate) => {
+            AllocateStack::new(allocate.type_().clone(), rename(allocate.name())).into()
+        }
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             load.type_().clone(),
             rename_expression(load.pointer()),
@@ -176,7 +184,6 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename_expression(store.pointer()),
         )
         .into(),
-        Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => instruction.clone(),
     }
 }
 
