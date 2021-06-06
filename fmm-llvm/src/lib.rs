@@ -15,7 +15,6 @@ use heap::HeapFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use types::*;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     inkwell::targets::TargetMachine::get_default_triple()
@@ -150,8 +149,8 @@ fn compile_heap_functions<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> HeapFunctionSet<'c> {
-    let pointer_type = context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE);
-    let pointer_integer_type = compile_pointer_integer_type(context, target_data);
+    let pointer_type = context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE);
+    let pointer_integer_type = types::compile_pointer_integer(context, target_data);
 
     HeapFunctionSet {
         allocate_function: module.add_function(
@@ -179,7 +178,7 @@ fn compile_variable_declaration<'c>(
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
     module.add_global(
-        compile_type(declaration.type_(), context, target_data),
+        types::compile(declaration.type_(), context, target_data),
         None,
         declaration.name(),
     )
@@ -193,7 +192,7 @@ fn compile_function_declaration<'c>(
 ) -> inkwell::values::FunctionValue<'c> {
     let function = module.add_function(
         declaration.name(),
-        compile_function_type(declaration.type_(), context, target_data),
+        types::compile_function(declaration.type_(), context, target_data),
         None,
     );
 
@@ -211,7 +210,7 @@ fn declare_variable_definition<'c>(
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
     let global = module.add_global(
-        compile_type(definition.type_(), context, target_data),
+        types::compile(definition.type_(), context, target_data),
         None,
         definition.name(),
     );
@@ -252,7 +251,7 @@ fn declare_function_definition<'c>(
 ) -> inkwell::values::FunctionValue<'c> {
     let function = module.add_function(
         definition.name(),
-        compile_function_type(definition.type_(), context, target_data),
+        types::compile_function(definition.type_(), context, target_data),
         Some(compile_linkage(definition.linkage())),
     );
 
