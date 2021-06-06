@@ -54,7 +54,7 @@ fn compile_instruction<'c>(
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
         |expression| compile_expression(builder, expression, variables, context, target_data);
-    let compile_type = |type_| types::compile_type(type_, context, target_data);
+    let compile_type = |type_| types::compile(type_, context, target_data);
 
     Ok(match instruction {
         Instruction::AllocateHeap(allocate) => Some(
@@ -151,7 +151,7 @@ fn compile_instruction<'c>(
             compile_union_cast(
                 builder,
                 compile_expression(deconstruct.union()),
-                types::compile_union_member_type(
+                types::compile_union_member(
                     deconstruct.type_(),
                     deconstruct.member_index(),
                     context,
