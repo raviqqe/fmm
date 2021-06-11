@@ -1,6 +1,6 @@
 use std::error::Error;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CompileError {
     Llvm(String),
     TargetMachineNotCreated,
