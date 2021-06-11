@@ -7,7 +7,7 @@ mod types;
 mod union;
 
 use calling_convention::*;
-use error::CompileError;
+pub use error::CompileError;
 use expressions::*;
 use fmm::ir::*;
 pub use heap::HeapConfiguration;
