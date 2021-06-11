@@ -1,17 +1,16 @@
 mod error;
+mod names;
 
 use crate::{
     ir::*,
-    types::{self, Type},
+    types::{self, Type, GENERIC_POINTER_TYPE},
 };
 pub use error::*;
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
-static GENERIC_POINTER_TYPE: Lazy<Type> =
-    Lazy::new(|| types::Pointer::new(types::Primitive::Integer8).into());
-
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
+    names::check_names(module)?;
+
     let variables = module
         .variable_declarations()
         .iter()
@@ -95,7 +94,13 @@ fn check_block(
 
     for instruction in block.instructions() {
         match instruction {
-            Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => {}
+            Instruction::AllocateHeap(allocate) => {
+                check_equality(
+                    &check_expression(allocate.size(), &variables)?,
+                    &types::Primitive::PointerInteger.into(),
+                )?;
+            }
+            Instruction::AllocateStack(_) => {}
             Instruction::AtomicLoad(load) => {
                 check_equality(
                     &check_expression(load.pointer(), &variables)?,
@@ -168,10 +173,11 @@ fn check_block(
 
                 check_union_index(deconstruct.member_index(), deconstruct.type_())?;
             }
+            Instruction::Fence(_) => {}
             Instruction::FreeHeap(free) => {
                 check_equality(
                     &check_expression(free.pointer(), &variables)?,
-                    &types::Pointer::new(free.type_().clone()).into(),
+                    &GENERIC_POINTER_TYPE.clone(),
                 )?;
             }
             Instruction::If(if_) => {
@@ -195,17 +201,6 @@ fn check_block(
                     pass.type_(),
                 )?;
             }
-            Instruction::PointerAddress(address) => {
-                check_equality(
-                    &check_expression(address.pointer(), &variables)?,
-                    &address.type_().clone().into(),
-                )?;
-
-                check_equality(
-                    &check_expression(address.offset(), &variables)?,
-                    &types::Primitive::PointerInteger.into(),
-                )?;
-            }
             Instruction::ReallocateHeap(reallocate) => {
                 check_equality(
                     &check_expression(reallocate.pointer(), &variables)?,
@@ -217,28 +212,12 @@ fn check_block(
                     &types::Primitive::PointerInteger.into(),
                 )?;
             }
-            Instruction::RecordAddress(address) => {
-                check_equality(
-                    &check_expression(address.pointer(), &variables)?,
-                    &types::Pointer::new(address.type_().clone()).into(),
-                )?;
-
-                check_record_index(address.element_index(), address.type_())?;
-            }
             Instruction::Store(store) => {
                 check_equality(&check_expression(store.value(), &variables)?, store.type_())?;
                 check_equality(
                     &check_expression(store.pointer(), &variables)?,
                     &types::Pointer::new(store.type_().clone()).into(),
                 )?;
-            }
-            Instruction::UnionAddress(address) => {
-                check_equality(
-                    &check_expression(address.pointer(), &variables)?,
-                    &types::Pointer::new(address.type_().clone()).into(),
-                )?;
-
-                check_union_index(address.member_index(), address.type_())?;
             }
         }
 
@@ -331,6 +310,19 @@ fn check_expression(
 
             ComparisonOperation::RESULT_TYPE.into()
         }
+        Expression::PointerAddress(address) => {
+            check_equality(
+                &check_expression(address.pointer(), &variables)?,
+                &address.type_().clone().into(),
+            )?;
+
+            check_equality(
+                &check_expression(address.offset(), &variables)?,
+                &types::Primitive::PointerInteger.into(),
+            )?;
+
+            address.type_().clone().into()
+        }
         Expression::Primitive(primitive) => primitive.type_().into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
@@ -342,6 +334,16 @@ fn check_expression(
             }
 
             record.type_().clone().into()
+        }
+        Expression::RecordAddress(address) => {
+            check_equality(
+                &check_expression(address.pointer(), &variables)?,
+                &types::Pointer::new(address.type_().clone()).into(),
+            )?;
+
+            check_record_index(address.element_index(), address.type_())?;
+
+            types::Pointer::new(address.type_().elements()[address.element_index()].clone()).into()
         }
         Expression::SizeOf(_) => SizeOf::RESULT_TYPE.into(),
         Expression::Undefined(undefined) => undefined.type_().clone(),
@@ -356,6 +358,16 @@ fn check_expression(
             )?;
 
             union.type_().clone().into()
+        }
+        Expression::UnionAddress(address) => {
+            check_equality(
+                &check_expression(address.pointer(), &variables)?,
+                &types::Pointer::new(address.type_().clone()).into(),
+            )?;
+
+            check_union_index(address.member_index(), address.type_())?;
+
+            types::Pointer::new(address.type_().members()[address.member_index()].clone()).into()
         }
         Expression::Variable(variable) => variables
             .get(variable.name())
@@ -458,6 +470,7 @@ mod tests {
                 types::Primitive::PointerInteger,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![create_function_definition(
                 "f",
@@ -535,8 +548,6 @@ mod tests {
 
     #[test]
     fn check_allocate_heap() -> Result<(), TypeCheckError> {
-        let pointer_type = types::Pointer::new(types::Primitive::Float64);
-
         check_types(&Module::new(
             vec![],
             vec![],
@@ -545,10 +556,10 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
-                    vec![AllocateHeap::new(types::Primitive::Float64, "x").into()],
-                    Return::new(pointer_type.clone(), Variable::new("x")),
+                    vec![AllocateHeap::new(Primitive::PointerInteger(42), "x").into()],
+                    Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("x")),
                 ),
-                pointer_type,
+                GENERIC_POINTER_TYPE.clone(),
             )],
         ))
     }
@@ -757,6 +768,7 @@ mod tests {
                     vec![AtomicLoad::new(
                         types::Primitive::PointerInteger,
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -784,6 +796,7 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
                         Variable::new("x"),
+                        AtomicOrdering::Relaxed,
                     )
                     .into()],
                     Return::new(
@@ -808,14 +821,15 @@ mod tests {
                 "f",
                 vec![Argument::new("x", pointer_type.clone())],
                 Block::new(
-                    vec![PointerAddress::new(
+                    vec![],
+                    Return::new(
                         pointer_type.clone(),
-                        Variable::new("x"),
-                        Primitive::PointerInteger(42),
-                        "y",
-                    )
-                    .into()],
-                    Return::new(pointer_type.clone(), Variable::new("y")),
+                        PointerAddress::new(
+                            pointer_type.clone(),
+                            Variable::new("x"),
+                            Primitive::PointerInteger(42),
+                        ),
+                    ),
                 ),
                 pointer_type,
             )],
@@ -834,10 +848,10 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
                 Block::new(
-                    vec![RecordAddress::new(record_type, Variable::new("x"), 0, "y").into()],
+                    vec![],
                     Return::new(
                         types::Pointer::new(types::Primitive::PointerInteger),
-                        Variable::new("y"),
+                        RecordAddress::new(record_type, Variable::new("x"), 0),
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
@@ -857,10 +871,10 @@ mod tests {
                 "f",
                 vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
                 Block::new(
-                    vec![UnionAddress::new(union_type, Variable::new("x"), 0, "y").into()],
+                    vec![],
                     Return::new(
                         types::Pointer::new(types::Primitive::PointerInteger),
-                        Variable::new("y"),
+                        UnionAddress::new(union_type, Variable::new("x"), 0),
                     ),
                 ),
                 types::Pointer::new(types::Primitive::PointerInteger),
@@ -879,6 +893,7 @@ mod tests {
                 types::Primitive::PointerInteger,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![],
         ))
@@ -895,6 +910,7 @@ mod tests {
                 types::Primitive::PointerInteger,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![],
         ))
@@ -915,6 +931,7 @@ mod tests {
                 types::Primitive::Float64,
                 false,
                 Linkage::External,
+                None,
             )],
             vec![],
         ))
@@ -961,6 +978,7 @@ mod tests {
                         AtomicOperator::Add,
                         Variable::new("x"),
                         Primitive::PointerInteger(42),
+                        AtomicOrdering::Relaxed,
                         "y",
                     )
                     .into()],
@@ -979,14 +997,9 @@ mod tests {
             vec![],
             vec![create_function_definition(
                 "f",
-                vec![Argument::new(
-                    "x",
-                    types::Pointer::new(types::Primitive::PointerInteger),
-                )],
+                vec![Argument::new("x", GENERIC_POINTER_TYPE.clone())],
                 Block::new(
-                    vec![
-                        FreeHeap::new(types::Primitive::PointerInteger, Variable::new("x")).into(),
-                    ],
+                    vec![FreeHeap::new(Variable::new("x")).into()],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),

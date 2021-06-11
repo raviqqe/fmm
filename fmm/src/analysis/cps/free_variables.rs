@@ -26,6 +26,7 @@ fn collect_from_block(block: &Block) -> HashSet<String> {
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
     match instruction {
+        Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
         Instruction::AtomicOperation(operation) => [operation.pointer(), operation.value()]
             .iter()
@@ -58,22 +59,16 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
         .collect(),
         Instruction::Load(load) => collect_from_expression(load.pointer()),
         Instruction::PassThrough(pass) => collect_from_expression(pass.expression()),
-        Instruction::PointerAddress(address) => [address.pointer(), address.offset()]
-            .iter()
-            .flat_map(|expression| collect_from_expression(*expression))
-            .collect(),
         Instruction::ReallocateHeap(reallocate) => [reallocate.pointer(), reallocate.size()]
             .iter()
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
-        Instruction::RecordAddress(address) => collect_from_expression(address.pointer()),
         Instruction::Store(store) => [store.value(), store.pointer()]
             .iter()
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
-        Instruction::UnionAddress(address) => collect_from_expression(address.pointer()),
 
-        Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => Default::default(),
+        Instruction::Fence(_) | Instruction::AllocateStack(_) => Default::default(),
     }
 }
 
@@ -101,12 +96,18 @@ fn collect_from_expression(expression: &Expression) -> HashSet<String> {
             .iter()
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
+        Expression::PointerAddress(address) => [address.pointer(), address.offset()]
+            .iter()
+            .flat_map(|expression| collect_from_expression(*expression))
+            .collect(),
         Expression::Record(record) => record
             .elements()
             .iter()
             .flat_map(collect_from_expression)
             .collect(),
+        Expression::RecordAddress(address) => collect_from_expression(address.pointer()),
         Expression::Union(union) => collect_from_expression(union.member()),
+        Expression::UnionAddress(address) => collect_from_expression(address.pointer()),
         Expression::Variable(variable) => vec![variable.name().into()].into_iter().collect(),
         Expression::AlignOf(_)
         | Expression::Primitive(_)

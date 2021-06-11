@@ -86,6 +86,25 @@ pub fn comparison_operation(
     ))
 }
 
+pub fn pointer_address(
+    pointer: impl Into<TypedExpression>,
+    offset: impl Into<TypedExpression>,
+) -> Result<PointerAddress, BuildError> {
+    let pointer = pointer.into();
+    let offset = offset.into();
+    let type_ = pointer
+        .type_()
+        .to_pointer()
+        .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+        .clone();
+
+    Ok(PointerAddress::new(
+        type_,
+        pointer.expression().clone(),
+        offset.expression().clone(),
+    ))
+}
+
 pub fn record(elements: Vec<TypedExpression>) -> Record {
     Record::new(
         types::Record::new(
@@ -101,8 +120,52 @@ pub fn record(elements: Vec<TypedExpression>) -> Record {
     )
 }
 
+pub fn record_address(
+    pointer: impl Into<TypedExpression>,
+    element_index: usize,
+) -> Result<RecordAddress, BuildError> {
+    let pointer = pointer.into();
+    let element_type = pointer
+        .type_()
+        .to_pointer()
+        .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+        .element();
+    let type_ = element_type
+        .to_record()
+        .ok_or_else(|| BuildError::RecordExpected(element_type.clone()))?
+        .clone();
+
+    Ok(RecordAddress::new(
+        type_,
+        pointer.expression().clone(),
+        element_index,
+    ))
+}
+
 pub fn size_of(type_: impl Into<Type>) -> TypedExpression {
     SizeOf::new(type_.into()).into()
+}
+
+pub fn union_address(
+    pointer: impl Into<TypedExpression>,
+    member_index: usize,
+) -> Result<UnionAddress, BuildError> {
+    let pointer = pointer.into();
+    let element_type = pointer
+        .type_()
+        .to_pointer()
+        .ok_or_else(|| BuildError::PointerExpected(pointer.type_().clone()))?
+        .element();
+    let type_ = element_type
+        .to_union()
+        .ok_or_else(|| BuildError::UnionExpected(element_type.clone()))?
+        .clone();
+
+    Ok(UnionAddress::new(
+        type_,
+        pointer.expression().clone(),
+        member_index,
+    ))
 }
 
 pub fn variable(name: impl Into<String>, type_: impl Into<Type>) -> TypedExpression {

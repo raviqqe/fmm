@@ -1,9 +1,9 @@
 use crate::{
-    calling_convention::compile_calling_convention, expressions::*, heap::HeapFunctionSet,
-    types::*, union::compile_union_cast,
+    calling_convention::compile_calling_convention, error::CompileError, expressions::*,
+    heap::HeapFunctionSet, types, union::compile_union_cast,
 };
 use fmm::ir::*;
-use inkwell::{types::BasicType, values::BasicValue};
+use inkwell::values::BasicValue;
 use std::collections::HashMap;
 
 pub fn compile_block<'c>(
@@ -14,7 +14,7 @@ pub fn compile_block<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
-) -> Option<inkwell::values::BasicValueEnum<'c>> {
+) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let mut variables = variables.clone();
 
     for instruction in block.instructions() {
@@ -25,7 +25,7 @@ pub fn compile_block<'c>(
             context,
             target_data,
             heap_function_set,
-        );
+        )?;
 
         if let Some(value) = value {
             if let Some(name) = instruction.name() {
@@ -34,14 +34,14 @@ pub fn compile_block<'c>(
         }
     }
 
-    compile_terminal_instruction(
+    Ok(compile_terminal_instruction(
         builder,
         block.terminal_instruction(),
         destination,
         &variables,
         context,
         target_data,
-    )
+    ))
 }
 
 fn compile_instruction<'c>(
@@ -51,36 +51,23 @@ fn compile_instruction<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     heap_function_set: &HeapFunctionSet<'c>,
-) -> Option<inkwell::values::BasicValueEnum<'c>> {
+) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
         |expression| compile_expression(builder, expression, variables, context, target_data);
-    let compile_type = |type_| compile_type(type_, context, target_data);
+    let compile_type = |type_| types::compile(type_, context, target_data);
 
-    match instruction {
-        Instruction::AllocateHeap(allocate) => {
-            let type_ = compile_type(allocate.type_());
-
-            Some(
-                builder.build_bitcast(
-                    builder
-                        .build_call(
-                            heap_function_set.allocate_function,
-                            &[compile_pointer_integer(
-                                target_data.get_store_size(&type_) as u64,
-                                context,
-                                target_data,
-                            )
-                            .into()],
-                            "",
-                        )
-                        .try_as_basic_value()
-                        .left()
-                        .unwrap(),
-                    type_.ptr_type(DEFAULT_ADDRESS_SPACE),
+    Ok(match instruction {
+        Instruction::AllocateHeap(allocate) => Some(
+            builder
+                .build_call(
+                    heap_function_set.allocate_function,
+                    &[compile_expression(allocate.size())],
                     allocate.name(),
-                ),
-            )
-        }
+                )
+                .try_as_basic_value()
+                .left()
+                .unwrap(),
+        ),
         Instruction::AllocateStack(allocate) => Some(
             builder
                 .build_alloca(compile_type(allocate.type_()), allocate.name())
@@ -92,12 +79,10 @@ fn compile_instruction<'c>(
                 load.name(),
             );
 
-            // TODO Optimize this.
             value
                 .as_instruction_value()
                 .unwrap()
-                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)
-                .unwrap();
+                .set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
 
             Some(value)
         }
@@ -110,9 +95,8 @@ fn compile_instruction<'c>(
                     },
                     compile_expression(operation.pointer()).into_pointer_value(),
                     compile_expression(operation.value()).into_int_value(),
-                    inkwell::AtomicOrdering::SequentiallyConsistent,
-                )
-                .unwrap()
+                    compile_atomic_ordering(operation.ordering()),
+                )?
                 .into(),
         ),
         Instruction::AtomicStore(store) => {
@@ -121,10 +105,7 @@ fn compile_instruction<'c>(
                 compile_expression(store.value()),
             );
 
-            // TODO Optimize this.
-            value
-                .set_atomic_ordering(inkwell::AtomicOrdering::SequentiallyConsistent)
-                .unwrap();
+            value.set_atomic_ordering(compile_atomic_ordering(store.ordering()))?;
 
             None
         }
@@ -146,19 +127,16 @@ fn compile_instruction<'c>(
 
             Some(value.try_as_basic_value().left().unwrap())
         }
-        // TODO Optimize this.
         Instruction::CompareAndSwap(cas) => Some(
             builder
                 .build_extract_value(
-                    builder
-                        .build_cmpxchg(
-                            compile_expression(cas.pointer()).into_pointer_value(),
-                            compile_expression(cas.old_value()),
-                            compile_expression(cas.new_value()),
-                            inkwell::AtomicOrdering::SequentiallyConsistent,
-                            inkwell::AtomicOrdering::SequentiallyConsistent,
-                        )
-                        .unwrap(),
+                    builder.build_cmpxchg(
+                        compile_expression(cas.pointer()).into_pointer_value(),
+                        compile_expression(cas.old_value()),
+                        compile_expression(cas.new_value()),
+                        compile_atomic_ordering(cas.success_ordering()),
+                        compile_atomic_ordering(cas.failure_ordering()),
+                    )?,
                     1,
                     cas.name(),
                 )
@@ -173,7 +151,7 @@ fn compile_instruction<'c>(
             compile_union_cast(
                 builder,
                 compile_expression(deconstruct.union()),
-                compile_union_member_type(
+                types::compile_union_member(
                     deconstruct.type_(),
                     deconstruct.member_index(),
                     context,
@@ -185,12 +163,17 @@ fn compile_instruction<'c>(
             0,
             deconstruct.name(),
         ),
+        Instruction::Fence(fence) => {
+            builder.build_fence(compile_atomic_ordering(fence.ordering()), 0, "");
+
+            None
+        }
         Instruction::FreeHeap(free) => {
             builder.build_call(
                 heap_function_set.free_function,
                 &[builder.build_bitcast(
                     compile_expression(free.pointer()),
-                    context.i8_type().ptr_type(DEFAULT_ADDRESS_SPACE),
+                    context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE),
                     "",
                 )],
                 "",
@@ -225,7 +208,7 @@ fn compile_instruction<'c>(
                     context,
                     target_data,
                     heap_function_set,
-                );
+                )?;
 
                 if let Some(value) = value {
                     cases.push((value, builder.get_insert_block().unwrap()));
@@ -259,15 +242,6 @@ fn compile_instruction<'c>(
             compile_expression(pass.expression()),
             pass.name(),
         )),
-        Instruction::PointerAddress(address) => Some(unsafe {
-            builder
-                .build_gep(
-                    compile_expression(address.pointer()).into_pointer_value(),
-                    &[compile_expression(address.offset()).into_int_value()],
-                    address.name(),
-                )
-                .into()
-        }),
         Instruction::ReallocateHeap(reallocate) => builder
             .build_call(
                 heap_function_set.reallocate_function,
@@ -279,20 +253,6 @@ fn compile_instruction<'c>(
             )
             .try_as_basic_value()
             .left(),
-        Instruction::RecordAddress(address) => Some(unsafe {
-            builder
-                .build_gep(
-                    compile_expression(address.pointer()).into_pointer_value(),
-                    &[
-                        context.i32_type().const_zero(),
-                        context
-                            .i32_type()
-                            .const_int(address.element_index() as u64, false),
-                    ],
-                    address.name(),
-                )
-                .into()
-        }),
         Instruction::Store(store) => {
             builder.build_store(
                 compile_expression(store.pointer()).into_pointer_value(),
@@ -301,31 +261,7 @@ fn compile_instruction<'c>(
 
             None
         }
-        Instruction::UnionAddress(address) => Some(unsafe {
-            builder
-                .build_gep(
-                    builder
-                        .build_bitcast(
-                            compile_expression(address.pointer()),
-                            compile_union_member_type(
-                                address.type_(),
-                                address.member_index(),
-                                context,
-                                target_data,
-                            )
-                            .ptr_type(DEFAULT_ADDRESS_SPACE),
-                            "",
-                        )
-                        .into_pointer_value(),
-                    &[
-                        context.i32_type().const_zero(),
-                        context.i32_type().const_zero(),
-                    ],
-                    address.name(),
-                )
-                .into()
-        }),
-    }
+    })
 }
 
 fn compile_terminal_instruction<'c>(
@@ -355,5 +291,15 @@ fn compile_terminal_instruction<'c>(
             builder.build_unreachable();
             None
         }
+    }
+}
+
+fn compile_atomic_ordering(ordering: AtomicOrdering) -> inkwell::AtomicOrdering {
+    match ordering {
+        AtomicOrdering::Relaxed => inkwell::AtomicOrdering::Monotonic,
+        AtomicOrdering::Release => inkwell::AtomicOrdering::Release,
+        AtomicOrdering::Acquire => inkwell::AtomicOrdering::Acquire,
+        AtomicOrdering::AcquireRelease => inkwell::AtomicOrdering::AcquireRelease,
+        AtomicOrdering::SequentiallyConsistent => inkwell::AtomicOrdering::SequentiallyConsistent,
     }
 }

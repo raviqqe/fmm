@@ -51,6 +51,7 @@ fn convert_variable_definition(
         definition.type_().clone(),
         definition.is_mutable(),
         definition.linkage(),
+        definition.alignment(),
     )
 }
 
@@ -85,19 +86,24 @@ fn convert_instruction(
 ) -> Instruction {
     match instruction {
         Instruction::AllocateHeap(allocate) => {
-            AllocateHeap::new(allocate.type_().clone(), allocate.name()).into()
+            AllocateHeap::new(convert(allocate.size()), allocate.name()).into()
         }
         Instruction::AllocateStack(allocate) => {
             AllocateStack::new(allocate.type_().clone(), allocate.name()).into()
         }
-        Instruction::AtomicLoad(load) => {
-            AtomicLoad::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
-        }
+        Instruction::AtomicLoad(load) => AtomicLoad::new(
+            load.type_().clone(),
+            convert(load.pointer()),
+            load.ordering(),
+            load.name(),
+        )
+        .into(),
         Instruction::AtomicOperation(operation) => AtomicOperation::new(
             operation.type_(),
             operation.operator(),
             convert(operation.pointer()),
             convert(operation.value()),
+            operation.ordering(),
             operation.name(),
         )
         .into(),
@@ -105,6 +111,7 @@ fn convert_instruction(
             store.type_().clone(),
             convert(store.value()),
             convert(store.pointer()),
+            store.ordering(),
         )
         .into(),
         Instruction::Call(call) => Call::new(
@@ -119,6 +126,8 @@ fn convert_instruction(
             convert(cas.pointer()),
             convert(cas.old_value()),
             convert(cas.new_value()),
+            cas.success_ordering(),
+            cas.failure_ordering(),
             cas.name(),
         )
         .into(),
@@ -136,9 +145,8 @@ fn convert_instruction(
             deconstruct.name(),
         )
         .into(),
-        Instruction::FreeHeap(free) => {
-            FreeHeap::new(free.type_().clone(), convert(free.pointer())).into()
-        }
+        Instruction::Fence(fence) => fence.clone().into(),
+        Instruction::FreeHeap(free) => FreeHeap::new(convert(free.pointer())).into(),
         Instruction::If(if_) => If::new(
             if_.type_().clone(),
             convert(if_.condition()),
@@ -156,37 +164,16 @@ fn convert_instruction(
             pass.name(),
         )
         .into(),
-        Instruction::PointerAddress(address) => PointerAddress::new(
-            address.type_().clone(),
-            convert(address.pointer()),
-            convert(address.offset()),
-            address.name(),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert(reallocate.pointer()),
             convert(reallocate.size()),
             reallocate.name(),
         )
         .into(),
-        Instruction::RecordAddress(address) => RecordAddress::new(
-            address.type_().clone(),
-            convert(address.pointer()),
-            address.element_index(),
-            address.name(),
-        )
-        .into(),
         Instruction::Store(store) => Store::new(
             store.type_().clone(),
             convert(store.value()),
             convert(store.pointer()),
-        )
-        .into(),
-        Instruction::UnionAddress(address) => UnionAddress::new(
-            address.type_().clone(),
-            convert(address.pointer()),
-            address.member_index(),
-            address.name(),
         )
         .into(),
     }
@@ -245,15 +232,33 @@ fn convert_expression(
                 convert(operation.rhs()),
             )
             .into(),
+            Expression::PointerAddress(address) => PointerAddress::new(
+                address.type_().clone(),
+                convert(address.pointer()),
+                convert(address.offset()),
+            )
+            .into(),
             Expression::Record(record) => Record::new(
                 record.type_().clone(),
                 record.elements().iter().map(convert).collect(),
+            )
+            .into(),
+            Expression::RecordAddress(address) => RecordAddress::new(
+                address.type_().clone(),
+                convert(address.pointer()),
+                address.element_index(),
             )
             .into(),
             Expression::Union(union) => Union::new(
                 union.type_().clone(),
                 union.member_index(),
                 convert(union.member()),
+            )
+            .into(),
+            Expression::UnionAddress(address) => UnionAddress::new(
+                address.type_().clone(),
+                convert(address.pointer()),
+                address.member_index(),
             )
             .into(),
             Expression::AlignOf(_)

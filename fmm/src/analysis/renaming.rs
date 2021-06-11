@@ -49,6 +49,7 @@ fn rename_variable_definition(
         definition.type_().clone(),
         definition.is_mutable(),
         definition.linkage(),
+        definition.alignment(),
     )
 }
 
@@ -85,9 +86,16 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
     let rename_expression = |expression| rename_expression(expression, rename);
 
     match instruction {
+        Instruction::AllocateHeap(allocate) => {
+            AllocateHeap::new(rename_expression(allocate.size()), rename(allocate.name())).into()
+        }
+        Instruction::AllocateStack(allocate) => {
+            AllocateStack::new(allocate.type_().clone(), rename(allocate.name())).into()
+        }
         Instruction::AtomicLoad(load) => AtomicLoad::new(
             load.type_().clone(),
             rename_expression(load.pointer()),
+            load.ordering(),
             rename(load.name()),
         )
         .into(),
@@ -96,6 +104,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             operation.operator(),
             rename_expression(operation.pointer()),
             rename_expression(operation.value()),
+            operation.ordering(),
             rename(operation.name()),
         )
         .into(),
@@ -103,6 +112,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             store.type_().clone(),
             rename_expression(store.value()),
             rename_expression(store.pointer()),
+            store.ordering(),
         )
         .into(),
         Instruction::Call(call) => Call::new(
@@ -120,6 +130,8 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename_expression(cas.pointer()),
             rename_expression(cas.old_value()),
             rename_expression(cas.new_value()),
+            cas.success_ordering(),
+            cas.failure_ordering(),
             rename(cas.name()),
         )
         .into(),
@@ -137,9 +149,8 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(deconstruct.name()),
         )
         .into(),
-        Instruction::FreeHeap(free) => {
-            FreeHeap::new(free.type_().clone(), rename_expression(free.pointer())).into()
-        }
+        Instruction::Fence(fence) => fence.clone().into(),
+        Instruction::FreeHeap(free) => FreeHeap::new(rename_expression(free.pointer())).into(),
         Instruction::If(if_) => If::new(
             if_.type_().clone(),
             rename_expression(if_.condition()),
@@ -160,24 +171,10 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(pass.name()),
         )
         .into(),
-        Instruction::PointerAddress(address) => PointerAddress::new(
-            address.type_().clone(),
-            rename_expression(address.pointer()),
-            rename_expression(address.offset()),
-            rename(address.name()),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             rename_expression(reallocate.pointer()),
             rename_expression(reallocate.size()),
             rename(reallocate.name()),
-        )
-        .into(),
-        Instruction::RecordAddress(address) => RecordAddress::new(
-            address.type_().clone(),
-            rename_expression(address.pointer()),
-            address.element_index(),
-            rename(address.name()),
         )
         .into(),
         Instruction::Store(store) => Store::new(
@@ -186,14 +183,6 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename_expression(store.pointer()),
         )
         .into(),
-        Instruction::UnionAddress(address) => UnionAddress::new(
-            address.type_().clone(),
-            rename_expression(address.pointer()),
-            address.member_index(),
-            rename(address.name()),
-        )
-        .into(),
-        Instruction::AllocateHeap(_) | Instruction::AllocateStack(_) => instruction.clone(),
     }
 }
 
@@ -250,6 +239,12 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
             rename_expression(operation.rhs()),
         )
         .into(),
+        Expression::PointerAddress(address) => PointerAddress::new(
+            address.type_().clone(),
+            rename_expression(address.pointer()),
+            rename_expression(address.offset()),
+        )
+        .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
             record
@@ -259,10 +254,22 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
                 .collect(),
         )
         .into(),
+        Expression::RecordAddress(address) => RecordAddress::new(
+            address.type_().clone(),
+            rename_expression(address.pointer()),
+            address.element_index(),
+        )
+        .into(),
         Expression::Union(union) => Union::new(
             union.type_().clone(),
             union.member_index(),
             rename_expression(union.member()),
+        )
+        .into(),
+        Expression::UnionAddress(address) => UnionAddress::new(
+            address.type_().clone(),
+            rename_expression(address.pointer()),
+            address.member_index(),
         )
         .into(),
         Expression::Variable(variable) => Variable::new(rename(variable.name())).into(),
@@ -397,6 +404,7 @@ mod tests {
                         types::Primitive::PointerInteger,
                         false,
                         Linkage::Internal,
+                        None,
                     )],
                     vec![create_function_definition(
                         "f",
@@ -419,6 +427,7 @@ mod tests {
                     types::Primitive::PointerInteger,
                     false,
                     Linkage::Internal,
+                    None,
                 )],
                 vec![create_function_definition(
                     "f",

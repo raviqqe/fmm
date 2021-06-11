@@ -1,4 +1,7 @@
-use crate::{ir::*, types::Type};
+use crate::{
+    ir::*,
+    types::{self, Type},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypedExpression {
@@ -41,6 +44,12 @@ impl From<BitCast> for TypedExpression {
     }
 }
 
+impl From<BitwiseNotOperation> for TypedExpression {
+    fn from(operation: BitwiseNotOperation) -> Self {
+        Self::new(operation.clone(), operation.type_())
+    }
+}
+
 impl From<BitwiseOperation> for TypedExpression {
     fn from(operation: BitwiseOperation) -> Self {
         Self::new(operation.clone(), operation.type_())
@@ -53,6 +62,12 @@ impl From<ComparisonOperation> for TypedExpression {
     }
 }
 
+impl From<PointerAddress> for TypedExpression {
+    fn from(address: PointerAddress) -> Self {
+        Self::new(address.clone(), address.type_().clone())
+    }
+}
+
 impl From<Primitive> for TypedExpression {
     fn from(primitive: Primitive) -> Self {
         Self::new(primitive, primitive.type_())
@@ -62,6 +77,15 @@ impl From<Primitive> for TypedExpression {
 impl From<Record> for TypedExpression {
     fn from(record: Record) -> Self {
         Self::new(record.clone(), record.type_().clone())
+    }
+}
+
+impl From<RecordAddress> for TypedExpression {
+    fn from(address: RecordAddress) -> Self {
+        Self::new(
+            address.clone(),
+            types::Pointer::new(address.type_().elements()[address.element_index()].clone()),
+        )
     }
 }
 
@@ -80,5 +104,14 @@ impl From<Undefined> for TypedExpression {
 impl From<Union> for TypedExpression {
     fn from(union: Union) -> Self {
         Self::new(union.clone(), union.type_().clone())
+    }
+}
+
+impl From<UnionAddress> for TypedExpression {
+    fn from(address: UnionAddress) -> Self {
+        Self::new(
+            address.clone(),
+            types::Pointer::new(address.type_().members()[address.member_index()].clone()),
+        )
     }
 }

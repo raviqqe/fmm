@@ -81,14 +81,26 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
             .chain(collect_from_expression(operation.lhs()))
             .chain(collect_from_expression(operation.rhs()))
             .collect(),
+        Expression::PointerAddress(address) => vec![address.type_().clone().into()]
+            .into_iter()
+            .chain(collect_from_expression(address.pointer()))
+            .collect(),
         Expression::Record(record) => vec![record.type_().clone().into()]
             .into_iter()
             .chain(record.elements().iter().flat_map(collect_from_expression))
+            .collect(),
+        Expression::RecordAddress(address) => vec![address.type_().clone().into()]
+            .into_iter()
+            .chain(collect_from_expression(address.pointer()))
             .collect(),
         Expression::SizeOf(size_of) => vec![size_of.type_().clone()].into_iter().collect(),
         Expression::Union(union) => vec![union.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(union.member()))
+            .collect(),
+        Expression::UnionAddress(address) => vec![address.type_().clone().into()]
+            .into_iter()
+            .chain(collect_from_expression(address.pointer()))
             .collect(),
         Expression::Undefined(undefined) => vec![undefined.type_().clone()].into_iter().collect(),
         Expression::Primitive(_) | Expression::Variable(_) => Default::default(),
@@ -116,7 +128,7 @@ fn collect_from_instructions(instructions: &[Instruction]) -> HashSet<Type> {
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
     match instruction {
-        Instruction::AllocateHeap(allocate) => vec![allocate.type_().clone()].into_iter().collect(),
+        Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AllocateStack(allocate) => {
             vec![allocate.type_().clone()].into_iter().collect()
         }
@@ -141,10 +153,8 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(deconstruct.union()))
             .collect(),
-        Instruction::FreeHeap(free) => vec![free.type_().clone()]
-            .into_iter()
-            .chain(collect_from_expression(free.pointer()))
-            .collect(),
+        Instruction::Fence(_) => Default::default(),
+        Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
         Instruction::If(if_) => vec![if_.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(if_.condition()))
@@ -159,26 +169,14 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(pass.expression()))
             .collect(),
-        Instruction::PointerAddress(address) => vec![address.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(address.pointer()))
-            .collect(),
         Instruction::ReallocateHeap(reallocate) => vec![reallocate.pointer(), reallocate.size()]
             .into_iter()
             .flat_map(collect_from_expression)
-            .collect(),
-        Instruction::RecordAddress(address) => vec![address.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(address.pointer()))
             .collect(),
         Instruction::Store(store) => vec![store.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(store.value()))
             .chain(collect_from_expression(store.pointer()))
-            .collect(),
-        Instruction::UnionAddress(address) => vec![address.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(address.pointer()))
             .collect(),
     }
 }

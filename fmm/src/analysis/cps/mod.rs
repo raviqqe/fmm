@@ -20,8 +20,7 @@ mod tests {
     use super::*;
     use crate::{
         analysis::check_types,
-        build::VOID_TYPE,
-        types::{self, CallingConvention, Type},
+        types::{self, CallingConvention, Type, VOID_TYPE},
     };
     use stack::STACK_TYPE;
 

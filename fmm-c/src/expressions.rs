@@ -50,6 +50,11 @@ pub fn compile_expression(
             compile_comparison_operator(operation.operator()),
             compile_expression(operation.rhs()),
         ),
+        Expression::PointerAddress(address) => format!(
+            "(({})+({}))",
+            compile_expression(address.pointer()),
+            compile_expression(address.offset()),
+        ),
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
@@ -63,6 +68,11 @@ pub fn compile_expression(
                     .join(",")
             )
         }
+        Expression::RecordAddress(address) => format!(
+            "(&({})->{})",
+            compile_expression(address.pointer()),
+            generate_record_element_name(address.element_index()),
+        ),
         Expression::SizeOf(size_of) => {
             format!("sizeof({})", compile_type_id(size_of.type_(), type_ids))
         }
@@ -73,6 +83,13 @@ pub fn compile_expression(
                 compile_union_type_id(union.type_(), type_ids),
                 generate_union_member_name(union.member_index()),
                 compile_expression(union.member())
+            )
+        }
+        Expression::UnionAddress(address) => {
+            format!(
+                "(&({})->{})",
+                compile_expression(address.pointer()),
+                generate_union_member_name(address.member_index()),
             )
         }
         Expression::Variable(variable) => {
@@ -94,7 +111,9 @@ fn compile_undefined(
     match undefined.type_() {
         types::Type::Function(_) => "NULL".into(),
         types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
-        types::Type::Pointer(_) => "NULL".into(),
+        types::Type::Pointer(_) => {
+            format!("({})NULL", compile_type_id(undefined.type_(), type_ids))
+        }
         types::Type::Record(record) => {
             format!("({}){{}}", compile_record_type_id(record, type_ids))
         }

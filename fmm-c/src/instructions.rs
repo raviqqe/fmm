@@ -1,5 +1,8 @@
 use crate::{expressions::*, names::*, types::*};
-use fmm::{ir::*, types};
+use fmm::{
+    ir::*,
+    types::{self, GENERIC_POINTER_TYPE},
+};
 use std::collections::{HashMap, HashSet};
 
 pub fn compile_block(
@@ -36,12 +39,9 @@ fn compile_instruction(
     match instruction {
         Instruction::AllocateHeap(allocate) => {
             format!(
-                "{}=malloc(sizeof({}));",
-                compile_typed_name(
-                    &types::Pointer::new(allocate.type_().clone()).into(),
-                    allocate.name()
-                ),
-                compile_type_id(allocate.type_())
+                "{}=malloc({});",
+                compile_typed_name(&GENERIC_POINTER_TYPE, allocate.name()),
+                compile_expression(allocate.size()),
             )
         }
         Instruction::AllocateStack(allocate) => {
@@ -58,14 +58,15 @@ fn compile_instruction(
             )
         }
         Instruction::AtomicLoad(load) => format!(
-            "{}=({})atomic_load(({}){});",
+            "{}=({})atomic_load_explicit(({}){},{});",
             compile_typed_name(&load.type_(), load.name()),
             compile_type_id(load.type_()),
             compile_atomic_pointer_type_id(load.type_(), type_ids),
             compile_expression(load.pointer()),
+            compile_atomic_ordering(load.ordering()),
         ),
         Instruction::AtomicOperation(operation) => format!(
-            "{}=atomic_fetch_{}(({}){},{});",
+            "{}=atomic_fetch_{}_explicit(({}){},{},{});",
             compile_typed_name(&operation.type_().into(), operation.name()),
             match operation.operator() {
                 AtomicOperator::Add => "add",
@@ -74,12 +75,14 @@ fn compile_instruction(
             compile_atomic_pointer_type_id(&operation.type_().into(), type_ids),
             compile_expression(operation.pointer()),
             compile_expression(operation.value()),
+            compile_atomic_ordering(operation.ordering()),
         ),
         Instruction::AtomicStore(store) => format!(
-            "atomic_store(({}){},{});",
+            "atomic_store_explicit(({}){},{},{});",
             compile_atomic_pointer_type_id(store.type_(), type_ids),
             compile_expression(store.pointer()),
             compile_expression(store.value()),
+            compile_atomic_ordering(store.ordering()),
         ),
         Instruction::Call(call) => format!(
             "{}={}({});",
@@ -95,7 +98,7 @@ fn compile_instruction(
             let name = "_cas_".to_owned() + cas.name();
 
             format!(
-                "{}={};bool {}=atomic_compare_exchange_strong(({}){},&{},{});",
+                "{}={};bool {}=atomic_compare_exchange_strong_explicit(({}){},&{},{},{},{});",
                 compile_typed_name(cas.type_(), &name),
                 compile_expression(cas.old_value()),
                 cas.name(),
@@ -103,6 +106,8 @@ fn compile_instruction(
                 compile_expression(cas.pointer()),
                 name,
                 compile_expression(cas.new_value()),
+                compile_atomic_ordering(cas.success_ordering()),
+                compile_atomic_ordering(cas.failure_ordering()),
             )
         }
         Instruction::DeconstructRecord(deconstruct) => format!(
@@ -123,6 +128,12 @@ fn compile_instruction(
             compile_expression(deconstruct.union()),
             generate_union_member_name(deconstruct.member_index()),
         ),
+        Instruction::Fence(fence) => {
+            format!(
+                "atomic_thread_fence({});",
+                compile_atomic_ordering(fence.ordering())
+            )
+        }
         Instruction::FreeHeap(free) => {
             format!("free((void *)({}));", compile_expression(free.pointer()))
         }
@@ -148,50 +159,19 @@ fn compile_instruction(
             compile_typed_name(pass.type_(), pass.name()),
             compile_expression(pass.expression()),
         ),
-        Instruction::PointerAddress(address) => format!(
-            "{}={}+{};",
-            compile_typed_name(&address.type_().clone().into(), address.name()),
-            compile_expression(address.pointer()),
-            compile_expression(address.offset()),
-        ),
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",
-                compile_typed_name(
-                    &types::Pointer::new(types::Primitive::Integer8).into(),
-                    reallocate.name()
-                ),
+                compile_typed_name(&types::GENERIC_POINTER_TYPE.clone(), reallocate.name()),
                 compile_expression(reallocate.pointer()),
                 compile_expression(reallocate.size()),
             )
         }
-        Instruction::RecordAddress(address) => format!(
-            "{}=&({})->{};",
-            compile_typed_name(
-                &types::Pointer::new(address.type_().elements()[address.element_index()].clone())
-                    .into(),
-                address.name(),
-            ),
-            compile_expression(address.pointer()),
-            generate_record_element_name(address.element_index()),
-        ),
         Instruction::Store(store) => format!(
             "*{}={};",
             compile_expression(store.pointer()),
             compile_expression(store.value()),
         ),
-        Instruction::UnionAddress(address) => {
-            format!(
-                "{}=&({})->{};",
-                compile_typed_name(
-                    &types::Pointer::new(address.type_().members()[address.member_index()].clone())
-                        .into(),
-                    address.name(),
-                ),
-                compile_expression(address.pointer()),
-                generate_union_member_name(address.member_index()),
-            )
-        }
     }
 }
 
@@ -213,4 +193,17 @@ fn compile_terminal_instruction(
         }
         TerminalInstruction::Unreachable => "abort();".into(),
     }
+}
+
+fn compile_atomic_ordering(ordering: AtomicOrdering) -> String {
+    format!(
+        "memory_order_{}",
+        match ordering {
+            AtomicOrdering::Relaxed => "relaxed",
+            AtomicOrdering::Release => "release",
+            AtomicOrdering::Acquire => "acquire",
+            AtomicOrdering::AcquireRelease => "acq_rel",
+            AtomicOrdering::SequentiallyConsistent => "seq_cst",
+        }
+    )
 }
