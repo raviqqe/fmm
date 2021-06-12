@@ -4,7 +4,7 @@ use crate::{
 };
 use fmm::ir::*;
 use inkwell::values::BasicValue;
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryFrom};
 
 pub fn compile_block<'c>(
     builder: &inkwell::builder::Builder<'c>,
@@ -111,7 +111,10 @@ fn compile_instruction<'c>(
         }
         Instruction::Call(call) => {
             let value = builder.build_call(
-                compile_expression(call.function()).into_pointer_value(),
+                inkwell::values::CallableValue::try_from(
+                    compile_expression(call.function()).into_pointer_value(),
+                )
+                .unwrap(),
                 &call
                     .arguments()
                     .iter()
