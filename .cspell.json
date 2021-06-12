@@ -5,6 +5,7 @@
     "atomicrmw",
     "backends",
     "bitcast",
+    "bitcode",
     "canonicalizing",
     "cmpxchg",
     "conv",
