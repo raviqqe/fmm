@@ -91,8 +91,7 @@ fn compile_module<'c>(
         compile_heap_functions(&llvm_module, heap_configuration, context, &target_data);
 
     for declaration in module.variable_declarations() {
-        let global =
-            compile_variable_declaration(&llvm_module, declaration, context, &target_data);
+        let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
 
         variables.insert(declaration.name().into(), global.as_pointer_value().into());
     }
@@ -114,8 +113,7 @@ fn compile_module<'c>(
     }
 
     for definition in module.function_definitions() {
-        let function =
-            declare_function_definition(&llvm_module, definition, context, &target_data);
+        let function = declare_function_definition(&llvm_module, definition, context, &target_data);
 
         variables.insert(
             definition.name().into(),
