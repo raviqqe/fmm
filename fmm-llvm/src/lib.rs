@@ -88,18 +88,18 @@ fn compile_module<'c>(
     let mut variables = HashMap::new();
 
     let heap_function_set =
-        compile_heap_functions(&llvm_module, heap_configuration, &context, &target_data);
+        compile_heap_functions(&llvm_module, heap_configuration, context, &target_data);
 
     for declaration in module.variable_declarations() {
         let global =
-            compile_variable_declaration(&llvm_module, declaration, &context, &target_data);
+            compile_variable_declaration(&llvm_module, declaration, context, &target_data);
 
         variables.insert(declaration.name().into(), global.as_pointer_value().into());
     }
 
     for declaration in module.function_declarations() {
         let function =
-            compile_function_declaration(&llvm_module, declaration, &context, &target_data);
+            compile_function_declaration(&llvm_module, declaration, context, &target_data);
 
         variables.insert(
             declaration.name().into(),
@@ -108,14 +108,14 @@ fn compile_module<'c>(
     }
 
     for definition in module.variable_definitions() {
-        let global = declare_variable_definition(&llvm_module, definition, &context, &target_data);
+        let global = declare_variable_definition(&llvm_module, definition, context, &target_data);
 
         variables.insert(definition.name().into(), global.as_pointer_value().into());
     }
 
     for definition in module.function_definitions() {
         let function =
-            declare_function_definition(&llvm_module, definition, &context, &target_data);
+            declare_function_definition(&llvm_module, definition, context, &target_data);
 
         variables.insert(
             definition.name().into(),
@@ -124,7 +124,7 @@ fn compile_module<'c>(
     }
 
     for definition in module.variable_definitions() {
-        compile_variable_definition(&llvm_module, definition, &variables, &context, &target_data);
+        compile_variable_definition(&llvm_module, definition, &variables, context, &target_data);
     }
 
     for definition in module.function_definitions() {
@@ -132,7 +132,7 @@ fn compile_module<'c>(
             &llvm_module,
             definition,
             &variables,
-            &context,
+            context,
             &target_data,
             &heap_function_set,
         )?;

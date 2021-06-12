@@ -59,7 +59,7 @@ fn compile_instruction(
         }
         Instruction::AtomicLoad(load) => format!(
             "{}=({})atomic_load_explicit(({}){},{});",
-            compile_typed_name(&load.type_(), load.name()),
+            compile_typed_name(load.type_(), load.name()),
             compile_type_id(load.type_()),
             compile_atomic_pointer_type_id(load.type_(), type_ids),
             compile_expression(load.pointer()),

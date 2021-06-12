@@ -56,7 +56,7 @@ fn check_variable_definition(
     variables: &HashMap<String, Type>,
 ) -> Result<(), TypeCheckError> {
     check_equality(
-        &check_expression(definition.body(), &variables)?,
+        &check_expression(definition.body(), variables)?,
         definition.type_(),
     )
 }
@@ -260,11 +260,11 @@ fn check_expression(
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
         Expression::ArithmeticOperation(operation) => {
             check_equality(
-                &check_expression(operation.lhs(), &variables)?,
+                &check_expression(operation.lhs(), variables)?,
                 &operation.type_().into(),
             )?;
             check_equality(
-                &check_expression(operation.rhs(), &variables)?,
+                &check_expression(operation.rhs(), variables)?,
                 &operation.type_().into(),
             )?;
 
@@ -300,11 +300,11 @@ fn check_expression(
         }
         Expression::ComparisonOperation(operation) => {
             check_equality(
-                &check_expression(operation.lhs(), &variables)?,
+                &check_expression(operation.lhs(), variables)?,
                 &operation.type_().into(),
             )?;
             check_equality(
-                &check_expression(operation.rhs(), &variables)?,
+                &check_expression(operation.rhs(), variables)?,
                 &operation.type_().into(),
             )?;
 
@@ -312,12 +312,12 @@ fn check_expression(
         }
         Expression::PointerAddress(address) => {
             check_equality(
-                &check_expression(address.pointer(), &variables)?,
+                &check_expression(address.pointer(), variables)?,
                 &address.type_().clone().into(),
             )?;
 
             check_equality(
-                &check_expression(address.offset(), &variables)?,
+                &check_expression(address.offset(), variables)?,
                 &types::Primitive::PointerInteger.into(),
             )?;
 
@@ -330,14 +330,14 @@ fn check_expression(
             }
 
             for (element, type_) in record.elements().iter().zip(record.type_().elements()) {
-                check_equality(&check_expression(element, variables)?, &type_)?;
+                check_equality(&check_expression(element, variables)?, type_)?;
             }
 
             record.type_().clone().into()
         }
         Expression::RecordAddress(address) => {
             check_equality(
-                &check_expression(address.pointer(), &variables)?,
+                &check_expression(address.pointer(), variables)?,
                 &types::Pointer::new(address.type_().clone()).into(),
             )?;
 
@@ -361,7 +361,7 @@ fn check_expression(
         }
         Expression::UnionAddress(address) => {
             check_equality(
-                &check_expression(address.pointer(), &variables)?,
+                &check_expression(address.pointer(), variables)?,
                 &types::Pointer::new(address.type_().clone()).into(),
             )?;
 
