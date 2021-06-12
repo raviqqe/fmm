@@ -332,7 +332,7 @@ impl CpsTransformer {
                     let builder = InstructionBuilder::new(self.name_generator.clone());
 
                     let environment_record_type =
-                        self.get_environment_record(&environment).type_().clone();
+                        self.get_environment_record(environment).type_().clone();
                     let environment_record = pop_from_stack(
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
