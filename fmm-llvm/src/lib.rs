@@ -24,7 +24,7 @@ static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
         .into()
 });
 
-pub fn compile_to_bitcode(
+pub fn compile_to_bit_code(
     module: &Module,
     heap_configuration: &HeapConfiguration,
     target_triple: Option<&str>,
