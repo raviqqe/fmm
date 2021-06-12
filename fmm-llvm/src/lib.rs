@@ -24,7 +24,7 @@ static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
         .into()
 });
 
-pub fn compile_to_bitcode(
+pub fn compile_to_bit_code(
     module: &Module,
     heap_configuration: &HeapConfiguration,
     target_triple: Option<&str>,
@@ -34,7 +34,7 @@ pub fn compile_to_bitcode(
 
     let module = compile_module(&context, &target_machine, module, heap_configuration)?;
 
-    Ok(module.write_bitcode_to_memory().as_slice().to_vec())
+    Ok(module.write_bit_code_to_memory().as_slice().to_vec())
 }
 
 pub fn compile_to_object(
