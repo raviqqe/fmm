@@ -2,38 +2,29 @@ name: test
 on:
   - push
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s 12
+      - uses: actions/checkout@v2
+      - run: cargo build
   test:
     runs-on: ubuntu-latest
     steps:
       - run: curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s 12
       - uses: actions/checkout@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - run: cargo test
   format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -- --check
+      - run: cargo fmt -- --check
   lint:
     runs-on: ubuntu-latest
     steps:
       - run: curl -fsSL https://apt.llvm.org/llvm.sh | sudo bash -s 12
       - uses: actions/checkout@v2
-      - uses: actions-rs/clippy-check@v1
-        with:
-          args: -- -D warnings
-          token: ${{ secrets.GITHUB_TOKEN }}
-  audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - run: cargo clippy -- -D warnings
   spell-check:
     runs-on: ubuntu-latest
     steps:
