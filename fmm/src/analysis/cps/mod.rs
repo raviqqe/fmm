@@ -4,6 +4,7 @@ mod free_variables;
 mod stack;
 mod target_functions;
 
+use super::check_types;
 use crate::{ir::*, types::Type};
 use cps_transformer::*;
 use error::CpsTransformationError;
@@ -12,7 +13,11 @@ pub fn transform_to_cps(
     module: &Module,
     result_type: impl Into<Type>,
 ) -> Result<Module, CpsTransformationError> {
-    CpsTransformer::new(result_type).transform(module)
+    let module = CpsTransformer::new(result_type).transform(module)?;
+
+    check_types(&module)?;
+
+    Ok(module)
 }
 
 #[cfg(test)]
