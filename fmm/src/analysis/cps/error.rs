@@ -1,7 +1,9 @@
 use super::super::TypeCheckError;
 use crate::{build::BuildError, ir::*};
-use std::error::Error;
-use std::fmt::{self, Display, Formatter};
+use std::{
+    error::Error,
+    fmt::{self, Display, Formatter},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CpsTransformationError {
