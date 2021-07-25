@@ -69,7 +69,7 @@ fn create_target_machine(
             "",
             inkwell::OptimizationLevel::Aggressive,
             inkwell::targets::RelocMode::Default,
-            inkwell::targets::CodeModel::Medium,
+            inkwell::targets::CodeModel::Default,
         )
         .ok_or(CompileError::TargetMachineNotCreated)
 }
@@ -366,6 +366,20 @@ mod tests {
     #[test]
     fn compile_empty_module() {
         compile_module(&Module::new(vec![], vec![], vec![], vec![]));
+    }
+
+    #[test]
+    fn compile_for_aarch64() {
+        compile_to_object(
+            &Module::new(vec![], vec![], vec![], vec![]),
+            &HeapConfiguration {
+                allocate_function_name: "my_malloc".into(),
+                reallocate_function_name: "my_realloc".into(),
+                free_function_name: "my_free".into(),
+            },
+            Some("aarch64-unknown-linux-musl"),
+        )
+        .unwrap();
     }
 
     mod variable_declarations {
