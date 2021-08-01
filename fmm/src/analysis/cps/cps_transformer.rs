@@ -147,11 +147,10 @@ impl CpsTransformer {
                 if let Instruction::Call(call) = instruction {
                     if call.type_().calling_convention() == CallingConvention::Source {
                         let is_tail_call = instructions.is_empty()
-                            && match terminal_instruction {
-                                TerminalInstruction::Return(return_) => {
-                                    return_.expression() == &Variable::new(call.name()).into()
-                                }
-                                _ => false,
+                            && if let TerminalInstruction::Return(return_) = terminal_instruction {
+                                return_.expression() == &Variable::new(call.name()).into()
+                            } else {
+                                false
                             };
 
                         let environment = self.get_continuation_environment(
@@ -200,27 +199,24 @@ impl CpsTransformer {
                         ));
                     }
                 } else if let Instruction::If(if_) = instruction {
-                    let then = self.transform_if_block(
-                        if_.name(),
-                        if_.then(),
-                        local_variables,
-                        instructions,
-                        terminal_instruction,
-                    )?;
-                    let else_ = self.transform_if_block(
-                        if_.name(),
-                        if_.else_(),
-                        local_variables,
-                        instructions,
-                        terminal_instruction,
-                    )?;
-
                     return Ok((
                         vec![If::new(
                             if_.type_().clone(),
                             if_.condition().clone(),
-                            then,
-                            else_,
+                            self.transform_if_block(
+                                if_.name(),
+                                if_.then(),
+                                local_variables,
+                                instructions,
+                                terminal_instruction,
+                            )?,
+                            self.transform_if_block(
+                                if_.name(),
+                                if_.else_(),
+                                local_variables,
+                                instructions,
+                                terminal_instruction,
+                            )?,
                             self.name_generator.borrow_mut().generate(),
                         )
                         .into()],
