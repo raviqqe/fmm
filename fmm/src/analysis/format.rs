@@ -194,6 +194,21 @@ fn format_expression(expression: &Expression) -> String {
         Expression::BitCast(bit_cast) => {
             format!("(bit-cast {})", format_expression(bit_cast.expression()))
         }
+        Expression::BitwiseNotOperation(not) => {
+            format!("(bit! {})", format_expression(not.value()))
+        }
+        Expression::BitwiseOperation(operation) => {
+            format!(
+                "(bit{} {} {})",
+                match operation.operator() {
+                    BitwiseOperator::And => "&",
+                    BitwiseOperator::Or => "|",
+                    BitwiseOperator::Xor => "^",
+                },
+                format_expression(operation.lhs()),
+                format_expression(operation.rhs()),
+            )
+        }
         Expression::ComparisonOperation(operation) => format!(
             "({} {} {})",
             match operation.operator() {
@@ -207,11 +222,41 @@ fn format_expression(expression: &Expression) -> String {
             format_expression(operation.lhs()),
             format_expression(operation.rhs())
         ),
+        Expression::PointerAddress(address) => format!(
+            "(pointer-address {} {})",
+            format_expression(address.pointer()),
+            format_expression(address.offset()),
+        ),
         Expression::Primitive(primitive) => format_primitive(primitive),
+        Expression::Record(record) => {
+            format!(
+                "(record {})",
+                record
+                    .elements()
+                    .iter()
+                    .map(format_expression)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            )
+        }
+        Expression::RecordAddress(address) => format!(
+            "(record-address {} {})",
+            format_expression(address.pointer()),
+            address.element_index(),
+        ),
         Expression::SizeOf(size_of) => format!("(size-of {})", format_type(size_of.type_())),
         Expression::Undefined(_) => "undefined".into(),
+        Expression::Union(union) => format!(
+            "(union {} {})",
+            union.member_index(),
+            format_expression(union.member())
+        ),
+        Expression::UnionAddress(address) => format!(
+            "(union-address {} {})",
+            format_expression(address.pointer()),
+            address.member_index(),
+        ),
         Expression::Variable(variable) => variable.name().into(),
-        _ => todo!(),
     }
 }
 
