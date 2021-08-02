@@ -5,7 +5,7 @@ use crate::{
 
 pub fn format_module(module: &Module) -> String {
     format!(
-        "(module\n{}\n)",
+        "(module\n{})",
         module
             .function_definitions()
             .iter()
