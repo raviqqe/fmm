@@ -1,7 +1,9 @@
 use super::free_variables::collect_free_variables;
-use crate::build::NameGenerator;
-use crate::ir::*;
-use crate::types::{self, Type, VOID_TYPE};
+use crate::{
+    build::NameGenerator,
+    ir::*,
+    types::{self, Type, VOID_TYPE},
+};
 use std::collections::HashMap;
 
 struct Context {
@@ -257,8 +259,7 @@ fn get_continuation_environment(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analysis::check_types;
-    use crate::types::VOID_TYPE;
+    use crate::{analysis::check_types, types::VOID_TYPE};
 
     fn flatten_module(module: &Module) {
         check_types(&flatten(module)).unwrap();
