@@ -304,17 +304,46 @@ mod tests {
 
     #[test]
     fn format_module_with_call() {
-        insta::assert_snapshot!(
-            "{}",
-            format_module(&Module::new(
+        insta::assert_snapshot!(format_module(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "foo",
                 vec![],
+                Block::new(
+                    vec![Call::new(
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::Boolean,
+                            types::CallingConvention::Source
+                        ),
+                        Variable::new("f"),
+                        vec![Variable::new("a1").into(), Variable::new("a2").into()],
+                        "result",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
+                ),
+                types::Primitive::Boolean,
+                types::CallingConvention::Source,
+                Linkage::Internal
+            )]
+        )));
+    }
+
+    #[test]
+    fn format_module_with_multiple_calls() {
+        insta::assert_snapshot!(format_module(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "foo",
                 vec![],
-                vec![],
-                vec![FunctionDefinition::new(
-                    "foo",
-                    vec![],
-                    Block::new(
-                        vec![Call::new(
+                Block::new(
+                    vec![
+                        Call::new(
                             types::Function::new(
                                 vec![],
                                 types::Primitive::Boolean,
@@ -324,61 +353,26 @@ mod tests {
                             vec![Variable::new("a1").into(), Variable::new("a2").into()],
                             "result",
                         )
-                        .into()],
-                        Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
-                    ),
-                    types::Primitive::Boolean,
-                    types::CallingConvention::Source,
-                    Linkage::Internal
-                )]
-            ))
-        );
-    }
-
-    #[test]
-    fn format_module_with_multiple_calls() {
-        insta::assert_snapshot!(
-            "{}",
-            format_module(&Module::new(
-                vec![],
-                vec![],
-                vec![],
-                vec![FunctionDefinition::new(
-                    "foo",
-                    vec![],
-                    Block::new(
-                        vec![
-                            Call::new(
-                                types::Function::new(
-                                    vec![],
-                                    types::Primitive::Boolean,
-                                    types::CallingConvention::Source
-                                ),
-                                Variable::new("f"),
-                                vec![Variable::new("a1").into(), Variable::new("a2").into()],
-                                "result",
-                            )
-                            .into(),
-                            Call::new(
-                                types::Function::new(
-                                    vec![],
-                                    types::Primitive::Boolean,
-                                    types::CallingConvention::Source
-                                ),
-                                Variable::new("f"),
-                                vec![Variable::new("a1").into(), Variable::new("a2").into()],
-                                "result",
-                            )
-                            .into()
-                        ],
-                        Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
-                    ),
-                    types::Primitive::Boolean,
-                    types::CallingConvention::Source,
-                    Linkage::Internal
-                )]
-            ))
-        );
+                        .into(),
+                        Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::Boolean,
+                                types::CallingConvention::Source
+                            ),
+                            Variable::new("f"),
+                            vec![Variable::new("a1").into(), Variable::new("a2").into()],
+                            "result",
+                        )
+                        .into()
+                    ],
+                    Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
+                ),
+                types::Primitive::Boolean,
+                types::CallingConvention::Source,
+                Linkage::Internal
+            )]
+        )));
     }
 
     #[test]
