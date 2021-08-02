@@ -425,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn format_record_withelement() {
+    fn format_record_with_element() {
         assert_eq!(
             format_expression(
                 &Record::new(
