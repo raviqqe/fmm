@@ -130,10 +130,11 @@ fn format_instruction(instruction: &Instruction, level: usize) -> String {
                 format!("(free-heap {})", format_expression(free.pointer()),)
             }
             Instruction::If(if_) => format!(
-                "(if {}\n{}\n{})",
+                "(if {}\n{}\n{}\n{})",
                 format_expression(if_.condition()),
                 format_block(if_.then(), level + 1),
                 format_block(if_.else_(), level + 1),
+                indent(level + 1) + if_.name(),
             ),
             Instruction::Load(load) => {
                 format!(
