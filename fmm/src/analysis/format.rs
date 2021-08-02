@@ -2,7 +2,7 @@ use crate::ir::*;
 
 pub fn format(module: &Module) -> String {
     format!(
-        "(\n{}\n)",
+        "(module\n{}\n)",
         module
             .function_definitions()
             .iter()
