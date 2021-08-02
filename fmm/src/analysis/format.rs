@@ -96,7 +96,7 @@ fn format_instruction(instruction: &Instruction, level: usize) -> String {
                 format_expression(call.function()),
                 call.arguments()
                     .iter()
-                    .map(|argument| format_expression(argument))
+                    .map(format_expression)
                     .collect::<Vec<_>>()
                     .join(" "),
                 call.name(),
