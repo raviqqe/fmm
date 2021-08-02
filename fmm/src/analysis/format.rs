@@ -14,7 +14,7 @@ pub fn format(module: &Module) -> String {
 
 fn format_function_definition(definition: &FunctionDefinition, level: usize) -> String {
     format!(
-        "{indent}(func-def {} {}\n{}\n{indent})",
+        "{indent}(function {} {}\n{}\n{indent})",
         definition.name(),
         definition
             .arguments()
