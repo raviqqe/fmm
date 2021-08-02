@@ -1,5 +1,7 @@
-use crate::ir::*;
-use crate::types::{self, Type};
+use crate::{
+    ir::*,
+    types::{self, Type},
+};
 
 pub fn format(module: &Module) -> String {
     format!(
@@ -41,7 +43,7 @@ fn format_block(block: &Block, level: usize) -> String {
         if instructions.is_empty() {
             "".into()
         } else {
-            instructions.to_owned() + "\n"
+            instructions + "\n"
         },
         indent(level + 1) + &format_terminal_instruction(block.terminal_instruction()),
         indent = indent(level)
