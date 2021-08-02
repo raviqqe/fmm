@@ -7,5 +7,4 @@ expression: "format_module(&Module::new(vec![], vec![], vec![],\n               
   (function foo 
     (block
       (call f a1 a2 result)
-      (return true))
-  ))
+      (return true))))

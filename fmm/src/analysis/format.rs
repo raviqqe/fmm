@@ -9,15 +9,15 @@ pub fn format_module(module: &Module) -> String {
         module
             .function_definitions()
             .iter()
-            .map(|definition| format_function_definition(definition, 1))
+            .map(|definition| indent(&format_function_definition(definition)))
             .collect::<Vec<_>>()
             .join("\n")
     )
 }
 
-fn format_function_definition(definition: &FunctionDefinition, level: usize) -> String {
+fn format_function_definition(definition: &FunctionDefinition) -> String {
     format!(
-        "{indent}(function {} {}\n{}\n{indent})",
+        "(function {} {}\n{})",
         definition.name(),
         definition
             .arguments()
@@ -25,148 +25,145 @@ fn format_function_definition(definition: &FunctionDefinition, level: usize) -> 
             .map(|argument| argument.name())
             .collect::<Vec<_>>()
             .join(" "),
-        format_block(definition.body(), level + 1),
-        indent = indent(level)
+        indent(&format_block(definition.body())),
     )
 }
 
-fn format_block(block: &Block, level: usize) -> String {
+fn format_block(block: &Block) -> String {
     let instructions = block
         .instructions()
         .iter()
-        .map(|instruction| format_instruction(instruction, level + 1))
+        .map(|instruction| indent(&format_instruction(instruction)))
         .collect::<Vec<_>>()
         .join("\n");
 
     format!(
-        "{indent}(block\n{}{})",
+        "(block\n{}{})",
         if instructions.is_empty() {
             "".into()
         } else {
             instructions + "\n"
         },
-        indent(level + 1) + &format_terminal_instruction(block.terminal_instruction()),
-        indent = indent(level)
+        indent(&format_terminal_instruction(block.terminal_instruction())),
     )
 }
 
-fn format_instruction(instruction: &Instruction, level: usize) -> String {
-    indent(level)
-        + &match instruction {
-            Instruction::AllocateHeap(allocate) => {
-                format!(
-                    "(allocate-heap {} {})",
-                    format_expression(allocate.size()),
-                    allocate.name()
-                )
-            }
-            Instruction::AllocateStack(allocate) => format!(
-                "(allocate-stack {} {})",
-                format_type(allocate.type_()),
+fn format_instruction(instruction: &Instruction) -> String {
+    match instruction {
+        Instruction::AllocateHeap(allocate) => {
+            format!(
+                "(allocate-heap {} {})",
+                format_expression(allocate.size()),
                 allocate.name()
-            ),
-            Instruction::AtomicLoad(load) => {
-                format!(
-                    "(atomic-load {} {})",
-                    format_expression(load.pointer()),
-                    load.name()
-                )
-            }
-            Instruction::AtomicOperation(operation) => {
-                format!(
-                    "(atomic{} {} {} {})",
-                    match operation.operator() {
-                        AtomicOperator::Add => "+",
-                        AtomicOperator::Subtract => "-",
-                    },
-                    format_expression(operation.pointer()),
-                    format_expression(operation.value()),
-                    operation.name()
-                )
-            }
-            Instruction::AtomicStore(store) => {
-                format!(
-                    "(atomic-store {} {})",
-                    format_expression(store.value()),
-                    format_expression(store.pointer()),
-                )
-            }
-            Instruction::Call(call) => format!(
-                "(call {} {} {})",
-                format_expression(call.function()),
-                call.arguments()
-                    .iter()
-                    .map(format_expression)
-                    .collect::<Vec<_>>()
-                    .join(" "),
-                call.name(),
-            ),
-            Instruction::CompareAndSwap(cas) => {
-                format!(
-                    "(compare-and-swap {} {} {} {})",
-                    format_expression(cas.pointer()),
-                    format_expression(cas.old_value()),
-                    format_expression(cas.new_value()),
-                    cas.name(),
-                )
-            }
-            Instruction::DeconstructRecord(deconstruct) => {
-                format!(
-                    "(deconstruct-record {} {} {})",
-                    format_expression(deconstruct.record()),
-                    deconstruct.element_index(),
-                    deconstruct.name(),
-                )
-            }
-            Instruction::DeconstructUnion(deconstruct) => {
-                format!(
-                    "(deconstruct-union {} {} {})",
-                    format_expression(deconstruct.union()),
-                    deconstruct.member_index(),
-                    deconstruct.name(),
-                )
-            }
-            Instruction::Fence(_) => "(fence)".into(),
-            Instruction::FreeHeap(free) => {
-                format!("(free-heap {})", format_expression(free.pointer()))
-            }
-            Instruction::If(if_) => format!(
-                "(if {}\n{}\n{}\n{})",
-                format_expression(if_.condition()),
-                format_block(if_.then(), level + 1),
-                format_block(if_.else_(), level + 1),
-                indent(level + 1) + if_.name(),
-            ),
-            Instruction::Load(load) => {
-                format!(
-                    "(load {} {})",
-                    format_expression(load.pointer()),
-                    load.name()
-                )
-            }
-            Instruction::PassThrough(pass) => {
-                format!(
-                    "(pass {} {})",
-                    format_expression(pass.expression()),
-                    pass.name()
-                )
-            }
-            Instruction::ReallocateHeap(allocate) => {
-                format!(
-                    "(reallocate-heap {} {} {})",
-                    format_expression(allocate.pointer()),
-                    format_expression(allocate.size()),
-                    allocate.name()
-                )
-            }
-            Instruction::Store(store) => {
-                format!(
-                    "(store {} {})",
-                    format_expression(store.value()),
-                    format_expression(store.pointer()),
-                )
-            }
+            )
         }
+        Instruction::AllocateStack(allocate) => format!(
+            "(allocate-stack {} {})",
+            format_type(allocate.type_()),
+            allocate.name()
+        ),
+        Instruction::AtomicLoad(load) => {
+            format!(
+                "(atomic-load {} {})",
+                format_expression(load.pointer()),
+                load.name()
+            )
+        }
+        Instruction::AtomicOperation(operation) => {
+            format!(
+                "(atomic{} {} {} {})",
+                match operation.operator() {
+                    AtomicOperator::Add => "+",
+                    AtomicOperator::Subtract => "-",
+                },
+                format_expression(operation.pointer()),
+                format_expression(operation.value()),
+                operation.name()
+            )
+        }
+        Instruction::AtomicStore(store) => {
+            format!(
+                "(atomic-store {} {})",
+                format_expression(store.value()),
+                format_expression(store.pointer()),
+            )
+        }
+        Instruction::Call(call) => format!(
+            "(call {} {} {})",
+            format_expression(call.function()),
+            call.arguments()
+                .iter()
+                .map(format_expression)
+                .collect::<Vec<_>>()
+                .join(" "),
+            call.name(),
+        ),
+        Instruction::CompareAndSwap(cas) => {
+            format!(
+                "(compare-and-swap {} {} {} {})",
+                format_expression(cas.pointer()),
+                format_expression(cas.old_value()),
+                format_expression(cas.new_value()),
+                cas.name(),
+            )
+        }
+        Instruction::DeconstructRecord(deconstruct) => {
+            format!(
+                "(deconstruct-record {} {} {})",
+                format_expression(deconstruct.record()),
+                deconstruct.element_index(),
+                deconstruct.name(),
+            )
+        }
+        Instruction::DeconstructUnion(deconstruct) => {
+            format!(
+                "(deconstruct-union {} {} {})",
+                format_expression(deconstruct.union()),
+                deconstruct.member_index(),
+                deconstruct.name(),
+            )
+        }
+        Instruction::Fence(_) => "(fence)".into(),
+        Instruction::FreeHeap(free) => {
+            format!("(free-heap {})", format_expression(free.pointer()))
+        }
+        Instruction::If(if_) => format!(
+            "(if {}\n{}\n{}\n{})",
+            format_expression(if_.condition()),
+            indent(&format_block(if_.then())),
+            indent(&format_block(if_.else_())),
+            indent(if_.name()),
+        ),
+        Instruction::Load(load) => {
+            format!(
+                "(load {} {})",
+                format_expression(load.pointer()),
+                load.name()
+            )
+        }
+        Instruction::PassThrough(pass) => {
+            format!(
+                "(pass {} {})",
+                format_expression(pass.expression()),
+                pass.name()
+            )
+        }
+        Instruction::ReallocateHeap(allocate) => {
+            format!(
+                "(reallocate-heap {} {} {})",
+                format_expression(allocate.pointer()),
+                format_expression(allocate.size()),
+                allocate.name()
+            )
+        }
+        Instruction::Store(store) => {
+            format!(
+                "(store {} {})",
+                format_expression(store.value()),
+                format_expression(store.pointer()),
+            )
+        }
+    }
 }
 
 fn format_terminal_instruction(instruction: &TerminalInstruction) -> String {
@@ -301,8 +298,11 @@ fn format_type(type_: &Type) -> String {
     }
 }
 
-fn indent(level: usize) -> String {
-    "  ".repeat(level)
+fn indent(string: &str) -> String {
+    regex::Regex::new("^|\n")
+        .unwrap()
+        .replace_all(string, "${0}  ")
+        .into()
 }
 
 #[cfg(test)]
