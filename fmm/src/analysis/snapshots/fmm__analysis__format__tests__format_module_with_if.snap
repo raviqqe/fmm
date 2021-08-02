@@ -8,12 +8,9 @@ expression: "format_module(&Module::new(vec![], vec![], vec![],\n               
     (block
       (if true
         (block
-          (branch 42)
-        )
+          (branch 42))
         (block
-          (branch 42)
-        ))
-      (return x)
-    )
+          (branch 42)))
+      (return x))
   )
 )
