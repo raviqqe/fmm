@@ -233,14 +233,20 @@ fn format_expression(expression: &Expression) -> String {
         ),
         Expression::Primitive(primitive) => format_primitive(primitive),
         Expression::Record(record) => {
+            let elements = record
+                .elements()
+                .iter()
+                .map(format_expression)
+                .collect::<Vec<_>>()
+                .join(" ");
+
             format!(
-                "(record {})",
-                record
-                    .elements()
-                    .iter()
-                    .map(format_expression)
-                    .collect::<Vec<_>>()
-                    .join(" ")
+                "(record{})",
+                if elements.is_empty() {
+                    "".into()
+                } else {
+                    " ".to_owned() + &elements
+                }
             )
         }
         Expression::RecordAddress(address) => format!(
@@ -408,5 +414,13 @@ mod tests {
                 Linkage::Internal
             )],
         )));
+    }
+
+    #[test]
+    fn format_record_without_any_element() {
+        assert_eq!(
+            format_expression(&Record::new(types::Record::new(vec![]), vec![]).into()),
+            "(record)"
+        );
     }
 }
