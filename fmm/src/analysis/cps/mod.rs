@@ -14,7 +14,7 @@ pub fn transform_to_cps(
     module: &Module,
     result_type: impl Into<Type>,
 ) -> Result<Module, CpsTransformationError> {
-    // TODO let module = if_flattener::flatten(module);
+    let module = if_flattener::flatten(module);
     let module = CpsTransformer::new(result_type).transform(&module)?;
 
     check_types(&module)?;
