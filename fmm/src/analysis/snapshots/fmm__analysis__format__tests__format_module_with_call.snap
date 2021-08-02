@@ -6,6 +6,6 @@ expression: "format_module(&Module::new(vec![], vec![], vec![],\n               
 (module
   (function foo 
     (block
-      (call f a1 a2)
+      (call f a1 a2 result)
       (return true))
   ))
