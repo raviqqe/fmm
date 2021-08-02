@@ -5,12 +5,7 @@ use super::{
     target_functions::validate_target_function_definition,
 };
 use crate::{
-    analysis::{
-        convert_types,
-        expression_conversion::{
-            convert_expressions_in_instruction, convert_expressions_in_terminal_instruction,
-        },
-    },
+    analysis::convert_types,
     build::{self, BuildError, InstructionBuilder, NameGenerator},
     ir::*,
     types::{self, CallingConvention, Type},
@@ -199,24 +194,13 @@ impl CpsTransformer {
                         ));
                     }
                 } else if let Instruction::If(if_) = instruction {
+                    // If instruction is always at tail due to if flattening.
                     return Ok((
                         vec![If::new(
                             if_.type_().clone(),
                             if_.condition().clone(),
-                            self.transform_if_block(
-                                if_.name(),
-                                if_.then(),
-                                local_variables,
-                                instructions,
-                                terminal_instruction,
-                            )?,
-                            self.transform_if_block(
-                                if_.name(),
-                                if_.else_(),
-                                local_variables,
-                                instructions,
-                                terminal_instruction,
-                            )?,
+                            self.transform_block(if_.then(), local_variables)?,
+                            self.transform_block(if_.else_(), local_variables)?,
                             self.name_generator.borrow_mut().generate(),
                         )
                         .into()],
@@ -245,50 +229,6 @@ impl CpsTransformer {
                 )
             }
         })
-    }
-
-    fn transform_if_block(
-        &mut self,
-        name: &str,
-        block: &Block,
-        local_variables: &HashMap<String, Type>,
-        instructions: &[Instruction],
-        terminal_instruction: &TerminalInstruction,
-    ) -> Result<Block, BuildError> {
-        Ok(
-            if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
-                let replace_variable = |expression: &Expression| match expression {
-                    Expression::Variable(variable) => {
-                        if variable.name() == name {
-                            branch.expression().clone()
-                        } else {
-                            expression.clone()
-                        }
-                    }
-                    _ => expression.clone(),
-                };
-
-                self.transform_block(
-                    &Block::new(
-                        block
-                            .instructions()
-                            .iter()
-                            .cloned()
-                            .chain(instructions.iter().map(|instruction| {
-                                convert_expressions_in_instruction(instruction, &replace_variable)
-                            }))
-                            .collect(),
-                        convert_expressions_in_terminal_instruction(
-                            terminal_instruction,
-                            &replace_variable,
-                        ),
-                    ),
-                    local_variables,
-                )?
-            } else {
-                self.transform_block(block, local_variables)?
-            },
-        )
     }
 
     fn get_environment_record(&self, environment: &[(String, Type)]) -> Record {
