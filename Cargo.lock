@@ -105,6 +105,7 @@ dependencies = [
  "once_cell",
  "petgraph",
  "pretty_assertions",
+ "regex",
 ]
 
 [[package]]
