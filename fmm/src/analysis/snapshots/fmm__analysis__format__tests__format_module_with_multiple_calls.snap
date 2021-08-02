@@ -9,5 +9,4 @@ expression: "format_module(&Module::new(vec![], vec![], vec![],\n               
       (call f a1 a2)
       (call f a1 a2)
       (return true))
-  )
-)
+  ))

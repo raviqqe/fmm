@@ -12,5 +12,4 @@ expression: "format_module(&Module::new(vec![], vec![], vec![],\n               
         (block
           (branch 42)))
       (return x))
-  )
-)
+  ))
