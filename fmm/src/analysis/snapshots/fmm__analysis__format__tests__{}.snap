@@ -4,7 +4,7 @@ expression: "format(&Module::new(vec![], vec![], vec![],\n                    ve
 
 ---
 (module
-  (func-def foo 
+  (function foo 
     (
       (call f a1 a2)
       (return true)
