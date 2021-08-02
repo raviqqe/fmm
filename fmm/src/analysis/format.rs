@@ -39,7 +39,7 @@ fn format_block(block: &Block, level: usize) -> String {
         .join("\n");
 
     format!(
-        "{indent}(\n{}{}\n{indent})",
+        "{indent}(block\n{}{}\n{indent})",
         if instructions.is_empty() {
             "".into()
         } else {

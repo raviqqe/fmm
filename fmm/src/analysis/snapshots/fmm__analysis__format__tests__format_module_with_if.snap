@@ -1,16 +1,16 @@
 ---
 source: fmm/src/analysis/format.rs
-expression: "format(&Module::new(vec![], vec![], vec![],\n                    vec![FunctionDefinition ::\n                         new(\"f\", vec! [], Block ::\n                             new(vec!\n                                 [If ::\n                                  new(types :: Primitive :: Float64, Primitive\n                                      :: Boolean(true), Block ::\n                                      new(vec! [], Branch ::\n                                          new(types :: Primitive :: Float64,\n                                              Primitive :: Float64(42.0)),),\n                                      Block ::\n                                      new(vec! [], Branch ::\n                                          new(types :: Primitive :: Float64,\n                                              Primitive :: Float64(42.0)),),\n                                      \"x\",).into()], Return ::\n                                 new(types :: Primitive :: Float64, Variable\n                                     :: new(\"x\")),), types :: Primitive ::\n                             Float64, types :: CallingConvention :: Source,\n                             Linkage :: Internal)]))"
+expression: "format_module(&Module::new(vec![], vec![], vec![],\n                           vec![FunctionDefinition ::\n                                new(\"f\", vec! [], Block ::\n                                    new(vec!\n                                        [If ::\n                                         new(types :: Primitive :: Float64,\n                                             Primitive :: Boolean(true), Block\n                                             ::\n                                             new(vec! [], Branch ::\n                                                 new(types :: Primitive ::\n                                                     Float64, Primitive ::\n                                                     Float64(42.0)),), Block\n                                             ::\n                                             new(vec! [], Branch ::\n                                                 new(types :: Primitive ::\n                                                     Float64, Primitive ::\n                                                     Float64(42.0)),),\n                                             \"x\",).into()], Return ::\n                                        new(types :: Primitive :: Float64,\n                                            Variable :: new(\"x\")),), types ::\n                                    Primitive :: Float64, types ::\n                                    CallingConvention :: Source, Linkage ::\n                                    Internal)]))"
 
 ---
 (module
   (function f 
-    (
+    (block
       (if true
-        (
+        (block
           (branch 42)
         )
-        (
+        (block
           (branch 42)
         ))
       (return x)
