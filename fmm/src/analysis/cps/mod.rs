@@ -472,10 +472,6 @@ mod tests {
             vec![types::Primitive::Float64.into()],
             types::Primitive::Float64,
         );
-        let cps_function_type = create_cps_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
 
         test_transformation(&Module::new(
             vec![],
