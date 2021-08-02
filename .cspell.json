@@ -11,6 +11,7 @@
     "cmpxchg",
     "conv",
     "hasher",
+    "insta",
     "llvmc",
     "malloc",
     "petgraph",
