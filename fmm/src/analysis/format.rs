@@ -1,4 +1,5 @@
 use crate::ir::*;
+use crate::types::{self, Type};
 
 pub fn format(module: &Module) -> String {
     format!(
@@ -50,6 +51,44 @@ fn format_block(block: &Block, level: usize) -> String {
 fn format_instruction(instruction: &Instruction, level: usize) -> String {
     indent(level)
         + &match instruction {
+            Instruction::AllocateHeap(allocate) => {
+                format!(
+                    "(allocate-heap {} {})",
+                    format_expression(allocate.size()),
+                    allocate.name()
+                )
+            }
+            Instruction::AllocateStack(allocate) => format!(
+                "(allocate-stack {} {})",
+                format_type(allocate.type_()),
+                allocate.name()
+            ),
+            Instruction::AtomicLoad(load) => {
+                format!(
+                    "(atomic-load {} {})",
+                    format_expression(load.pointer()),
+                    load.name()
+                )
+            }
+            Instruction::AtomicOperation(operation) => {
+                format!(
+                    "(atomic{} {} {} {})",
+                    match operation.operator() {
+                        AtomicOperator::Add => "+",
+                        AtomicOperator::Subtract => "-",
+                    },
+                    format_expression(operation.pointer()),
+                    format_expression(operation.value()),
+                    operation.name()
+                )
+            }
+            Instruction::AtomicStore(store) => {
+                format!(
+                    "(atomic-store {} {})",
+                    format_expression(store.value()),
+                    format_expression(store.pointer()),
+                )
+            }
             Instruction::Call(call) => format!(
                 "(call {} {})",
                 format_expression(call.function()),
@@ -59,13 +98,70 @@ fn format_instruction(instruction: &Instruction, level: usize) -> String {
                     .collect::<Vec<_>>()
                     .join(" ")
             ),
+            Instruction::CompareAndSwap(cas) => {
+                format!(
+                    "(compare-and-swap {} {} {} {})",
+                    format_expression(cas.pointer()),
+                    format_expression(cas.old_value()),
+                    format_expression(cas.new_value()),
+                    cas.name(),
+                )
+            }
+            Instruction::DeconstructRecord(deconstruct) => {
+                format!(
+                    "(deconstruct-record {} {} {})",
+                    format_expression(deconstruct.record()),
+                    deconstruct.element_index(),
+                    deconstruct.name(),
+                )
+            }
+            Instruction::DeconstructUnion(deconstruct) => {
+                format!(
+                    "(deconstruct-union {} {} {})",
+                    format_expression(deconstruct.union()),
+                    deconstruct.member_index(),
+                    deconstruct.name(),
+                )
+            }
+            Instruction::Fence(_) => "(fence)".into(),
+            Instruction::FreeHeap(free) => {
+                format!("(free-heap {})", format_expression(free.pointer()),)
+            }
             Instruction::If(if_) => format!(
                 "(if {}\n{}\n{})",
                 format_expression(if_.condition()),
                 format_block(if_.then(), level + 1),
                 format_block(if_.else_(), level + 1),
             ),
-            _ => todo!(),
+            Instruction::Load(load) => {
+                format!(
+                    "(load {} {})",
+                    format_expression(load.pointer()),
+                    load.name()
+                )
+            }
+            Instruction::PassThrough(pass) => {
+                format!(
+                    "(pass {} {})",
+                    format_expression(pass.expression()),
+                    pass.name()
+                )
+            }
+            Instruction::ReallocateHeap(allocate) => {
+                format!(
+                    "(reallocate-heap {} {} {})",
+                    format_expression(allocate.pointer()),
+                    format_expression(allocate.size()),
+                    allocate.name()
+                )
+            }
+            Instruction::Store(store) => {
+                format!(
+                    "(store {} {})",
+                    format_expression(store.value()),
+                    format_expression(store.pointer()),
+                )
+            }
         }
 }
 
@@ -83,7 +179,7 @@ fn format_terminal_instruction(instruction: &TerminalInstruction) -> String {
 
 fn format_expression(expression: &Expression) -> String {
     match expression {
-        Expression::AlignOf(_) => "(align-of)".into(),
+        Expression::AlignOf(align_of) => format!("(align-of {})", format_type(align_of.type_())),
         Expression::ArithmeticOperation(operation) => format!(
             "({} {} {})",
             match operation.operator() {
@@ -112,7 +208,7 @@ fn format_expression(expression: &Expression) -> String {
             format_expression(operation.rhs())
         ),
         Expression::Primitive(primitive) => format_primitive(primitive),
-        Expression::SizeOf(_) => "(size-of)".into(),
+        Expression::SizeOf(size_of) => format!("(size-of {})", format_type(size_of.type_())),
         Expression::Undefined(_) => "undefined".into(),
         Expression::Variable(variable) => variable.name().into(),
         _ => todo!(),
@@ -128,6 +224,25 @@ fn format_primitive(primitive: &Primitive) -> String {
         Primitive::Integer32(number) => format!("{}", number),
         Primitive::Integer64(number) => format!("{}", number),
         Primitive::PointerInteger(number) => format!("{}", number),
+    }
+}
+
+fn format_type(type_: &Type) -> String {
+    match type_ {
+        Type::Function(_) => "function".into(),
+        Type::Primitive(primitive) => match primitive {
+            types::Primitive::Boolean => "boolean",
+            types::Primitive::Integer8 => "integer8",
+            types::Primitive::Integer32 => "integer32",
+            types::Primitive::Integer64 => "integer64",
+            types::Primitive::Float32 => "float32",
+            types::Primitive::Float64 => "float64",
+            types::Primitive::PointerInteger => "pointer-integer",
+        }
+        .into(),
+        Type::Pointer(pointer) => format!("(pointer {})", format_type(pointer.element())),
+        Type::Record(_) => "record".into(),
+        Type::Union(_) => "union".into(),
     }
 }
 
