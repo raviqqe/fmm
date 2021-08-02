@@ -1,0 +1,13 @@
+---
+source: fmm/src/analysis/format.rs
+expression: "format_module(&Module::new(vec![], vec![], vec![],\n                           vec![FunctionDefinition ::\n                                new(\"foo\", vec! [], Block ::\n                                    new(vec!\n                                        [Call ::\n                                         new(types :: Function ::\n                                             new(vec! [], types :: Primitive\n                                                 :: Boolean, types ::\n                                                 CallingConvention :: Source),\n                                             Variable :: new(\"f\"), vec!\n                                             [Variable :: new(\"a1\").into(),\n                                              Variable :: new(\"a2\").into()],\n                                             \"result\",).into(), Call ::\n                                         new(types :: Function ::\n                                             new(vec! [], types :: Primitive\n                                                 :: Boolean, types ::\n                                                 CallingConvention :: Source),\n                                             Variable :: new(\"f\"), vec!\n                                             [Variable :: new(\"a1\").into(),\n                                              Variable :: new(\"a2\").into()],\n                                             \"result\",).into()], Return ::\n                                        new(types :: Primitive :: Boolean,\n                                            Primitive :: Boolean(true))),\n                                    types :: Primitive :: Boolean, types ::\n                                    CallingConvention :: Source, Linkage ::\n                                    Internal)]))"
+
+---
+(module
+  (function foo 
+    (block
+      (call f a1 a2)
+      (call f a1 a2)
+      (return true))
+  )
+)
