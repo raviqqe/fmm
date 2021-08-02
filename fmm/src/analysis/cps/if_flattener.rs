@@ -1,7 +1,7 @@
 use super::free_variables::collect_free_variables;
 use crate::build::NameGenerator;
 use crate::ir::*;
-use crate::types::{self, Type};
+use crate::types::{self, Type, VOID_TYPE};
 use std::collections::HashMap;
 
 struct Context {
@@ -107,8 +107,7 @@ fn transform_instructions(
 
                 (
                     vec![If::new(
-                        // TODO Nullify a result type.
-                        if_.type_().clone(),
+                        VOID_TYPE.clone(),
                         if_.condition().clone(),
                         transform_if_block(
                             context,
