@@ -423,4 +423,18 @@ mod tests {
             "(record)"
         );
     }
+
+    #[test]
+    fn format_record_withelement() {
+        assert_eq!(
+            format_expression(
+                &Record::new(
+                    types::Record::new(vec![types::Primitive::Integer8.into()]),
+                    vec![Primitive::Integer8(42).into()]
+                )
+                .into()
+            ),
+            "(record 42)"
+        );
+    }
 }
