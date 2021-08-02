@@ -3,7 +3,7 @@ use crate::{
     types::{self, Type},
 };
 
-pub fn format(module: &Module) -> String {
+pub fn format_module(module: &Module) -> String {
     format!(
         "(module\n{}\n)",
         module
@@ -306,7 +306,7 @@ mod tests {
     fn format_module_with_call() {
         insta::assert_snapshot!(
             "{}",
-            format(&Module::new(
+            format_module(&Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -337,7 +337,7 @@ mod tests {
 
     #[test]
     fn format_module_with_if() {
-        insta::assert_snapshot!(format(&Module::new(
+        insta::assert_snapshot!(format_module(&Module::new(
             vec![],
             vec![],
             vec![],
