@@ -477,86 +477,35 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        pretty_assertions::assert_eq!(
-            transform_to_cps(
-                &Module::new(
-                    vec![],
-                    vec![FunctionDeclaration::new("f", function_type.clone())],
-                    vec![],
-                    vec![create_function_definition(
-                        "g",
-                        vec![],
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::Float64,
+                        Primitive::Boolean(true),
                         Block::new(
-                            vec![If::new(
-                                types::Primitive::Float64,
-                                Primitive::Boolean(true),
-                                Block::new(
-                                    vec![Call::new(
-                                        function_type,
-                                        Variable::new("f"),
-                                        vec![Primitive::Float64(42.0).into()],
-                                        "x",
-                                    )
-                                    .into()],
-                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
-                                ),
-                                Block::new(vec![], TerminalInstruction::Unreachable),
-                                "y",
+                            vec![Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
                             )
                             .into()],
-                            Return::new(types::Primitive::Float64, Variable::new("y")),
+                            Branch::new(types::Primitive::Float64, Variable::new("x")),
                         ),
-                        types::Primitive::Float64,
-                    )],
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
-                VOID_TYPE.clone()
-            ),
-            Ok(Module::new(
-                vec![],
-                vec![FunctionDeclaration::new("f", cps_function_type.clone())],
-                vec![],
-                vec![FunctionDefinition::new(
-                    "g",
-                    vec![
-                        Argument::new("_s", STACK_TYPE.clone()),
-                        Argument::new(
-                            "_k",
-                            types::Function::new(
-                                vec![STACK_TYPE.clone(), types::Primitive::Float64.into()],
-                                VOID_TYPE.clone(),
-                                CallingConvention::Tail,
-                            )
-                        ),
-                    ],
-                    Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    cps_function_type,
-                                    Variable::new("f"),
-                                    vec![
-                                        Variable::new("_s").into(),
-                                        Variable::new("_k").into(),
-                                        Primitive::Float64(42.0).into()
-                                    ],
-                                    "_result",
-                                )
-                                .into()],
-                                Return::new(VOID_TYPE.clone(), Variable::new("_result")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "_cps_0",
-                        )
-                        .into()],
-                        TerminalInstruction::Unreachable,
-                    ),
-                    VOID_TYPE.clone(),
-                    CallingConvention::Tail,
-                    Linkage::Internal,
-                )],
-            ))
-        );
+                types::Primitive::Float64,
+            )],
+        ));
     }
 }
