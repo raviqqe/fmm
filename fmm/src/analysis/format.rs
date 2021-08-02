@@ -92,13 +92,14 @@ fn format_instruction(instruction: &Instruction, level: usize) -> String {
                 )
             }
             Instruction::Call(call) => format!(
-                "(call {} {})",
+                "(call {} {} {})",
                 format_expression(call.function()),
                 call.arguments()
                     .iter()
                     .map(|argument| format_expression(argument))
                     .collect::<Vec<_>>()
-                    .join(" ")
+                    .join(" "),
+                call.name(),
             ),
             Instruction::CompareAndSwap(cas) => {
                 format!(
@@ -127,13 +128,14 @@ fn format_instruction(instruction: &Instruction, level: usize) -> String {
             }
             Instruction::Fence(_) => "(fence)".into(),
             Instruction::FreeHeap(free) => {
-                format!("(free-heap {})", format_expression(free.pointer()),)
+                format!("(free-heap {})", format_expression(free.pointer()))
             }
             Instruction::If(if_) => format!(
-                "(if {}\n{}\n{})",
+                "(if {}\n{}\n{}\n{})",
                 format_expression(if_.condition()),
                 format_block(if_.then(), level + 1),
                 format_block(if_.else_(), level + 1),
+                indent(level + 1) + if_.name(),
             ),
             Instruction::Load(load) => {
                 format!(
