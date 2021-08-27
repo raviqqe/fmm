@@ -1226,6 +1226,32 @@ mod tests {
         }
 
         #[test]
+        fn compile_unreachable_with_unreachable_function() {
+            compile_to_object(
+                &Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![create_function_definition(
+                        "f",
+                        vec![],
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        types::Primitive::PointerInteger,
+                        Linkage::External,
+                    )],
+                ),
+                &InstructionConfiguration {
+                    allocate_function_name: "my_malloc".into(),
+                    reallocate_function_name: "my_realloc".into(),
+                    free_function_name: "my_free".into(),
+                    unreachable_function_name: Some("my_unreachable".into()),
+                },
+                None,
+            )
+            .unwrap();
+        }
+
+        #[test]
         fn compile_allocate_heap() {
             compile_function_definition(create_function_definition(
                 "f",
