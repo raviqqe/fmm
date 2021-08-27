@@ -321,23 +321,14 @@ fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
 
 #[cfg(test)]
 mod tests {
+    use super::heap::DUMMY_INSTRUCTION_CONFIGURATION;
     use super::*;
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
         fmm::analysis::check_types(module).unwrap();
 
-        compile_to_object(
-            module,
-            &InstructionConfiguration {
-                allocate_function_name: "my_malloc".into(),
-                reallocate_function_name: "my_realloc".into(),
-                free_function_name: "my_free".into(),
-                unreachable_function_name: None,
-            },
-            None,
-        )
-        .unwrap();
+        compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
     }
 
     fn compile_module(module: &Module) {

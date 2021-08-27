@@ -16,7 +16,7 @@ pub struct InstructionFunctionSet<'c> {
 }
 
 #[cfg(test)]
-static DUMMY_INSTRUCTION_CONFIGURATION: Lazy<InstructionConfiguration> =
+pub static DUMMY_INSTRUCTION_CONFIGURATION: Lazy<InstructionConfiguration> =
     Lazy::new(|| InstructionConfiguration {
         allocate_function_name: "my_malloc".into(),
         reallocate_function_name: "my_realloc".into(),
