@@ -41,6 +41,7 @@ pub fn compile_block<'c>(
         &variables,
         context,
         target_data,
+        instruction_function_set,
     ))
 }
 
@@ -274,6 +275,7 @@ fn compile_terminal_instruction<'c>(
     variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
+    instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
     let compile_expression =
         |expression| compile_expression(builder, expression, variables, context, target_data);
@@ -291,7 +293,12 @@ fn compile_terminal_instruction<'c>(
             None
         }
         TerminalInstruction::Unreachable => {
-            builder.build_unreachable();
+            if let Some(function) = &instruction_function_set.unreachable_function {
+                builder.build_call(*function, &[], "");
+            } else {
+                builder.build_unreachable();
+            }
+
             None
         }
     }
