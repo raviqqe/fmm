@@ -1,7 +1,7 @@
 mod calling_convention;
 mod error;
 mod expressions;
-mod heap;
+mod instruction_configuration;
 mod instructions;
 mod types;
 mod union;
@@ -10,8 +10,8 @@ use calling_convention::*;
 pub use error::CompileError;
 use expressions::*;
 use fmm::ir::*;
-pub use heap::HeapConfiguration;
-use heap::HeapFunctionSet;
+pub use instruction_configuration::InstructionConfiguration;
+use instruction_configuration::InstructionFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -26,26 +26,26 @@ static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
 
 pub fn compile_to_bit_code(
     module: &Module,
-    heap_configuration: &HeapConfiguration,
+    instruction_configuration: &InstructionConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
     let target_machine = create_target_machine(target_triple)?;
     let context = inkwell::context::Context::create();
 
-    let module = compile_module(&context, &target_machine, module, heap_configuration)?;
+    let module = compile_module(&context, &target_machine, module, instruction_configuration)?;
 
     Ok(module.write_bitcode_to_memory().as_slice().to_vec())
 }
 
 pub fn compile_to_object(
     module: &Module,
-    heap_configuration: &HeapConfiguration,
+    instruction_configuration: &InstructionConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
     let target_machine = create_target_machine(target_triple)?;
     let context = inkwell::context::Context::create();
 
-    let module = compile_module(&context, &target_machine, module, heap_configuration)?;
+    let module = compile_module(&context, &target_machine, module, instruction_configuration)?;
 
     // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in C++?
     // https://llvm.org/docs/LangRef.html#call-instruction
@@ -78,7 +78,7 @@ fn compile_module<'c>(
     context: &'c inkwell::context::Context,
     target_machine: &inkwell::targets::TargetMachine,
     module: &Module,
-    heap_configuration: &HeapConfiguration,
+    instruction_configuration: &InstructionConfiguration,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
     let target_data = target_machine.get_target_data();
 
@@ -87,8 +87,12 @@ fn compile_module<'c>(
 
     let mut variables = HashMap::new();
 
-    let heap_function_set =
-        compile_heap_functions(&llvm_module, heap_configuration, context, &target_data);
+    let instruction_function_set = compile_heap_functions(
+        &llvm_module,
+        instruction_configuration,
+        context,
+        &target_data,
+    );
 
     for declaration in module.variable_declarations() {
         let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
@@ -132,7 +136,7 @@ fn compile_module<'c>(
             &variables,
             context,
             &target_data,
-            &heap_function_set,
+            &instruction_function_set,
         )?;
     }
 
@@ -143,29 +147,33 @@ fn compile_module<'c>(
 
 fn compile_heap_functions<'c>(
     module: &inkwell::module::Module<'c>,
-    heap_configuration: &HeapConfiguration,
+    instruction_configuration: &InstructionConfiguration,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-) -> HeapFunctionSet<'c> {
+) -> InstructionFunctionSet<'c> {
     let pointer_type = context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE);
     let pointer_integer_type = types::compile_pointer_integer(context, target_data);
 
-    HeapFunctionSet {
+    InstructionFunctionSet {
         allocate_function: module.add_function(
-            &heap_configuration.allocate_function_name,
+            &instruction_configuration.allocate_function_name,
             pointer_type.fn_type(&[pointer_integer_type.into()], false),
             None,
         ),
         reallocate_function: module.add_function(
-            &heap_configuration.reallocate_function_name,
+            &instruction_configuration.reallocate_function_name,
             pointer_type.fn_type(&[pointer_type.into(), pointer_integer_type.into()], false),
             None,
         ),
         free_function: module.add_function(
-            &heap_configuration.free_function_name,
+            &instruction_configuration.free_function_name,
             context.void_type().fn_type(&[pointer_type.into()], false),
             None,
         ),
+        unreachable_function: instruction_configuration
+            .unreachable_function_name
+            .as_ref()
+            .map(|name| module.add_function(name, context.void_type().fn_type(&[], false), None)),
     }
 }
 
@@ -266,7 +274,7 @@ fn compile_function_definition<'c>(
     variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-    heap_function_set: &HeapFunctionSet<'c>,
+    instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<(), CompileError> {
     let function = module.get_function(definition.name()).unwrap();
     let builder = context.create_builder();
@@ -295,7 +303,7 @@ fn compile_function_definition<'c>(
             .collect(),
         context,
         target_data,
-        heap_function_set,
+        instruction_function_set,
     )?;
 
     function.verify(true);
@@ -313,22 +321,13 @@ fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION, *};
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
         fmm::analysis::check_types(module).unwrap();
 
-        compile_to_object(
-            module,
-            &HeapConfiguration {
-                allocate_function_name: "my_malloc".into(),
-                reallocate_function_name: "my_realloc".into(),
-                free_function_name: "my_free".into(),
-            },
-            None,
-        )
-        .unwrap();
+        compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
     }
 
     fn compile_module(module: &Module) {
@@ -372,11 +371,7 @@ mod tests {
     fn compile_for_aarch64() {
         compile_to_object(
             &Module::new(vec![], vec![], vec![], vec![]),
-            &HeapConfiguration {
-                allocate_function_name: "my_malloc".into(),
-                reallocate_function_name: "my_realloc".into(),
-                free_function_name: "my_free".into(),
-            },
+            &DUMMY_INSTRUCTION_CONFIGURATION,
             Some("aarch64-unknown-linux-musl"),
         )
         .unwrap();
@@ -1227,6 +1222,32 @@ mod tests {
                 types::Primitive::PointerInteger,
                 Linkage::External,
             ));
+        }
+
+        #[test]
+        fn compile_unreachable_with_unreachable_function() {
+            compile_to_object(
+                &Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![create_function_definition(
+                        "f",
+                        vec![],
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        types::Primitive::PointerInteger,
+                        Linkage::External,
+                    )],
+                ),
+                &InstructionConfiguration {
+                    allocate_function_name: "my_malloc".into(),
+                    reallocate_function_name: "my_realloc".into(),
+                    free_function_name: "my_free".into(),
+                    unreachable_function_name: Some("my_unreachable".into()),
+                },
+                None,
+            )
+            .unwrap();
         }
 
         #[test]
