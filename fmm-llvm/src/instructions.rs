@@ -293,8 +293,8 @@ fn compile_terminal_instruction<'c>(
             None
         }
         TerminalInstruction::Unreachable => {
-            if let Some(function) = &instruction_function_set.unreachable_function {
-                builder.build_call(*function, &[], "");
+            if let Some(function) = instruction_function_set.unreachable_function {
+                builder.build_call(function, &[], "");
             }
 
             builder.build_unreachable();
