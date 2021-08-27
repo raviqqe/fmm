@@ -173,7 +173,7 @@ fn compile_heap_functions<'c>(
         unreachable_function: instruction_configuration
             .unreachable_function_name
             .as_ref()
-            .map(|name| module.add_function(&name, context.void_type().fn_type(&[], false), None)),
+            .map(|name| module.add_function(name, context.void_type().fn_type(&[], false), None)),
     }
 }
 
@@ -321,8 +321,7 @@ fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
 
 #[cfg(test)]
 mod tests {
-    use super::heap::DUMMY_INSTRUCTION_CONFIGURATION;
-    use super::*;
+    use super::{heap::DUMMY_INSTRUCTION_CONFIGURATION, *};
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
