@@ -1,7 +1,7 @@
 mod calling_convention;
 mod error;
 mod expressions;
-mod heap;
+mod instruction_configuration;
 mod instructions;
 mod types;
 mod union;
@@ -10,8 +10,8 @@ use calling_convention::*;
 pub use error::CompileError;
 use expressions::*;
 use fmm::ir::*;
-pub use heap::InstructionConfiguration;
-use heap::InstructionFunctionSet;
+pub use instruction_configuration::InstructionConfiguration;
+use instruction_configuration::InstructionFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -321,7 +321,7 @@ fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
 
 #[cfg(test)]
 mod tests {
-    use super::{heap::DUMMY_INSTRUCTION_CONFIGURATION, *};
+    use super::{instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION, *};
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {

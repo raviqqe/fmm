@@ -1,6 +1,6 @@
 use crate::{
     calling_convention::compile_calling_convention, error::CompileError, expressions::*,
-    heap::InstructionFunctionSet, types, union::compile_union_cast,
+    instruction_configuration::InstructionFunctionSet, types, union::compile_union_cast,
 };
 use fmm::ir::*;
 use inkwell::values::BasicValue;
