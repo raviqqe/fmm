@@ -372,12 +372,7 @@ mod tests {
     fn compile_for_aarch64() {
         compile_to_object(
             &Module::new(vec![], vec![], vec![], vec![]),
-            &InstructionConfiguration {
-                allocate_function_name: "my_malloc".into(),
-                reallocate_function_name: "my_realloc".into(),
-                free_function_name: "my_free".into(),
-                unreachable_function_name: None,
-            },
+            &DUMMY_INSTRUCTION_CONFIGURATION,
             Some("aarch64-unknown-linux-musl"),
         )
         .unwrap();
