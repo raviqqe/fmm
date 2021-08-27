@@ -1,6 +1,6 @@
 use crate::{
     calling_convention::compile_calling_convention, error::CompileError, expressions::*,
-    heap::HeapFunctionSet, types, union::compile_union_cast,
+    heap::InstructionFunctionSet, types, union::compile_union_cast,
 };
 use fmm::ir::*;
 use inkwell::values::BasicValue;
@@ -13,7 +13,7 @@ pub fn compile_block<'c>(
     variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-    heap_function_set: &HeapFunctionSet<'c>,
+    instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let mut variables = variables.clone();
 
@@ -24,7 +24,7 @@ pub fn compile_block<'c>(
             &variables,
             context,
             target_data,
-            heap_function_set,
+            instruction_function_set,
         )?;
 
         if let Some(value) = value {
@@ -50,7 +50,7 @@ fn compile_instruction<'c>(
     variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-    heap_function_set: &HeapFunctionSet<'c>,
+    instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
         |expression| compile_expression(builder, expression, variables, context, target_data);
@@ -60,7 +60,7 @@ fn compile_instruction<'c>(
         Instruction::AllocateHeap(allocate) => Some(
             builder
                 .build_call(
-                    heap_function_set.allocate_function,
+                    instruction_function_set.allocate_function,
                     &[compile_expression(allocate.size())],
                     allocate.name(),
                 )
@@ -173,7 +173,7 @@ fn compile_instruction<'c>(
         }
         Instruction::FreeHeap(free) => {
             builder.build_call(
-                heap_function_set.free_function,
+                instruction_function_set.free_function,
                 &[builder.build_bitcast(
                     compile_expression(free.pointer()),
                     context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE),
@@ -210,7 +210,7 @@ fn compile_instruction<'c>(
                     variables,
                     context,
                     target_data,
-                    heap_function_set,
+                    instruction_function_set,
                 )?;
 
                 if let Some(value) = value {
@@ -247,7 +247,7 @@ fn compile_instruction<'c>(
         )),
         Instruction::ReallocateHeap(reallocate) => builder
             .build_call(
-                heap_function_set.reallocate_function,
+                instruction_function_set.reallocate_function,
                 &[
                     compile_expression(reallocate.pointer()),
                     compile_expression(reallocate.size()),
