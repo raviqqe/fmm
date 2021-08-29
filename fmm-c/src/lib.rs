@@ -1,3 +1,4 @@
+mod error;
 mod expressions;
 mod instructions;
 mod malloc_configuration;
@@ -5,6 +6,7 @@ mod names;
 mod renaming;
 mod types;
 
+pub use error::*;
 use expressions::*;
 use fmm::{analysis::collect_types, ir::*};
 use instructions::*;
@@ -22,7 +24,12 @@ const INCLUDES: &[&str] = &[
     "#include <stdlib.h>",
 ];
 
-pub fn compile(module: &Module, malloc_configuration: Option<MallocConfiguration>) -> String {
+pub fn compile(
+    module: &Module,
+    malloc_configuration: Option<MallocConfiguration>,
+) -> Result<String, CompileError> {
+    fmm::analysis::check_types(module)?;
+
     let module = rename_names(module);
     let global_variables = module
         .variable_declarations()
@@ -38,7 +45,7 @@ pub fn compile(module: &Module, malloc_configuration: Option<MallocConfiguration
     let types = collect_types(&module);
     let type_ids = compile_type_ids(&types);
 
-    INCLUDES
+    Ok(INCLUDES
         .iter()
         .map(|&string| string.into())
         .chain(malloc_configuration.iter().flat_map(|configuration| {
@@ -105,7 +112,7 @@ pub fn compile(module: &Module, malloc_configuration: Option<MallocConfiguration
         .iter()
         .map(|string| string.as_str())
         .collect::<Vec<_>>()
-        .join("\n")
+        .join("\n"))
 }
 
 fn compile_record_type_definition(
@@ -264,8 +271,6 @@ mod tests {
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
-        fmm::analysis::check_types(module).unwrap();
-
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
         let source = compile(
@@ -274,7 +279,8 @@ mod tests {
                 malloc_function_name: "my_malloc".into(),
                 realloc_function_name: "my_realloc".into(),
             }),
-        );
+        )
+        .unwrap();
 
         println!("{}", source);
 

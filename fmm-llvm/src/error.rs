@@ -4,6 +4,7 @@ use std::error::Error;
 pub enum CompileError {
     Llvm(String),
     TargetMachineNotCreated,
+    TypeCheck(fmm::analysis::TypeCheckError),
 }
 
 impl Error for CompileError {}
@@ -17,6 +18,7 @@ impl std::fmt::Display for CompileError {
             CompileError::TargetMachineNotCreated => {
                 write!(formatter, "failed to create target machine")
             }
+            Self::TypeCheck(error) => write!(formatter, "{}", error),
         }
     }
 }
@@ -30,5 +32,11 @@ impl From<inkwell::support::LLVMString> for CompileError {
 impl From<&str> for CompileError {
     fn from(string: &str) -> Self {
         Self::Llvm(string.to_string())
+    }
+}
+
+impl From<fmm::analysis::TypeCheckError> for CompileError {
+    fn from(error: fmm::analysis::TypeCheckError) -> Self {
+        Self::TypeCheck(error)
     }
 }
