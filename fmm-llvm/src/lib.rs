@@ -80,6 +80,8 @@ fn compile_module<'c>(
     module: &Module,
     instruction_configuration: &InstructionConfiguration,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
+    fmm::analysis::check_types(&module)?;
+
     let target_data = target_machine.get_target_data();
 
     let llvm_module = context.create_module("");
@@ -325,8 +327,6 @@ mod tests {
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
-        fmm::analysis::check_types(module).unwrap();
-
         compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
     }
 
