@@ -1,7 +1,7 @@
 mod context;
 mod continuation_type_compiler;
 mod error;
-mod free_variables;
+mod free_variable_collector;
 mod function_type_transformer;
 mod if_flattener;
 mod source_function_transformer;

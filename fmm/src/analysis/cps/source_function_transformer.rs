@@ -1,7 +1,7 @@
 use super::{
     context::CpsContext,
     error::CpsTransformationError,
-    free_variables::collect_free_variables,
+    free_variable_collector,
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
 };
 use crate::{
@@ -311,7 +311,7 @@ fn get_continuation_environment(
     )]
     .into_iter()
     .chain(
-        collect_free_variables(instructions, terminal_instruction)
+        free_variable_collector::collect(instructions, terminal_instruction)
             .iter()
             .flat_map(|name| {
                 local_variables
