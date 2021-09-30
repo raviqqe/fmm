@@ -3,7 +3,8 @@ mod error;
 mod free_variables;
 mod if_flattener;
 mod stack;
-mod target_functions;
+mod target_function_compiler;
+mod utilities;
 
 use super::check_types;
 use crate::{ir::*, types::Type};
@@ -16,8 +17,11 @@ pub fn transform_to_cps(
 ) -> Result<Module, CpsTransformationError> {
     check_types(module)?;
 
+    let result_type = result_type.into();
+
     let module = if_flattener::flatten(module);
-    let module = CpsTransformer::new(result_type).transform(&module)?;
+    let module = target_function_compiler::compile(&module, &result_type)?;
+    let module = CpsTransformer::new(result_type.clone()).transform(&module)?;
 
     check_types(&module)?;
 
@@ -503,6 +507,39 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
                 types::Primitive::Float64,
+            )],
+        ));
+    }
+
+    #[test]
+    fn compile_source_function_call_in_target_function_call() {
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new(
+                "g",
+                types::Function::new(vec![], types::Primitive::Float64, CallingConvention::Source),
+            )],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![Call::new(
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::Float64,
+                            CallingConvention::Source,
+                        ),
+                        Variable::new("g"),
+                        vec![],
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                ),
+                types::Primitive::Float64,
+                CallingConvention::Target,
+                Linkage::Internal,
             )],
         ));
     }

@@ -5,6 +5,8 @@ use crate::{
 };
 use once_cell::sync::Lazy;
 
+const DEFAULT_STACK_SIZE: i64 = 64;
+
 pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
     types::Pointer::new(types::Record::new(vec![
         GENERIC_POINTER_TYPE.clone(),            // base pointer
@@ -13,6 +15,30 @@ pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
     ]))
     .into()
 });
+
+pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
+    let capacity = Primitive::PointerInteger(DEFAULT_STACK_SIZE);
+    let pointer = builder.allocate_heap(capacity);
+    let record = build::record(vec![
+        pointer.into(),
+        Primitive::PointerInteger(0).into(),
+        capacity.into(),
+    ]);
+
+    let pointer = builder.allocate_stack(record.type_().clone());
+    builder.store(record, pointer.clone());
+
+    Ok(pointer)
+}
+
+pub fn destroy_stack(
+    builder: &InstructionBuilder,
+    stack_pointer: impl Into<TypedExpression>,
+) -> Result<(), BuildError> {
+    builder.free_heap(builder.load(build::record_address(stack_pointer, 0)?)?);
+
+    Ok(())
+}
 
 pub fn push_to_stack(
     builder: &InstructionBuilder,
@@ -67,20 +93,21 @@ pub fn push_to_stack(
 pub fn pop_from_stack(
     builder: &InstructionBuilder,
     stack: impl Into<TypedExpression>,
-    type_: &Type,
+    type_: impl Into<Type>,
 ) -> Result<TypedExpression, BuildError> {
+    let type_ = type_.into();
     let stack = stack.into();
 
     builder.store(
         build::arithmetic_operation(
             ArithmeticOperator::Subtract,
             builder.load(build::record_address(stack.clone(), 1)?)?,
-            get_element_size(builder, type_)?,
+            get_element_size(builder, &type_)?,
         )?,
         build::record_address(stack.clone(), 1)?,
     );
 
-    builder.load(get_element_pointer(builder, &stack, type_)?)
+    builder.load(get_element_pointer(builder, &stack, &type_)?)
 }
 
 fn get_element_pointer(

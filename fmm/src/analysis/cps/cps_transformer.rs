@@ -2,10 +2,9 @@ use super::{
     error::CpsTransformationError,
     free_variables::collect_free_variables,
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
-    target_functions::validate_target_function_definition,
 };
 use crate::{
-    analysis::convert_types,
+    analysis::{convert_types, cps::utilities},
     build::{self, BuildError, InstructionBuilder, NameGenerator},
     ir::*,
     types::{self, CallingConvention, Type},
@@ -89,12 +88,7 @@ impl CpsTransformer {
                     definition.linkage(),
                 )
             }
-            CallingConvention::Tail => definition.clone(),
-            CallingConvention::Target => {
-                validate_target_function_definition(definition)?;
-
-                definition.clone()
-            }
+            CallingConvention::Tail | CallingConvention::Target => definition.clone(),
         })
     }
 
@@ -272,7 +266,7 @@ impl CpsTransformer {
                     let environment_record = pop_from_stack(
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
-                        &environment_record_type.clone().into(),
+                        environment_record_type.clone(),
                     )?;
 
                     builder
@@ -346,11 +340,7 @@ impl CpsTransformer {
     }
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
-        types::Function::new(
-            vec![STACK_TYPE.clone(), result_type.clone()],
-            self.result_type.clone(),
-            CallingConvention::Tail,
-        )
+        utilities::create_continuation_type(result_type, &self.result_type)
     }
 
     fn generate_continuation_name(&mut self) -> String {
