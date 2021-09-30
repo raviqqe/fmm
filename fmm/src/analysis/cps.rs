@@ -1,18 +1,18 @@
 mod context;
 mod continuation_type_compiler;
-mod cps_transformer;
 mod error;
 mod free_variables;
 mod function_type_transformer;
 mod if_flattener;
+mod source_function_transformer;
 mod stack;
 mod target_function_transformer;
 
 use self::context::CpsContext;
 use super::check_types;
 use crate::{ir::*, types::Type};
-use cps_transformer::*;
 use error::CpsTransformationError;
+use source_function_transformer::*;
 
 pub fn transform_to_cps(
     module: &Module,
@@ -24,7 +24,8 @@ pub fn transform_to_cps(
 
     let module = if_flattener::flatten(module);
     let module = target_function_transformer::transform(&context, &module)?;
-    let module = CpsTransformer::new(context.result_type().clone()).transform(&module)?;
+    let module =
+        SourceFunctionTransformer::new(context.result_type().clone()).transform(&module)?;
     let module = function_type_transformer::transform(&module, context.result_type());
 
     check_types(&module)?;

@@ -15,14 +15,14 @@ const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_NAME: &str = "_result";
 
-pub struct CpsTransformer {
+pub struct SourceFunctionTransformer {
     name_generator: Rc<RefCell<NameGenerator>>,
     continuation_index: usize,
     function_definitions: Vec<FunctionDefinition>,
     result_type: Type,
 }
 
-impl CpsTransformer {
+impl SourceFunctionTransformer {
     pub fn new(result_type: impl Into<Type>) -> Self {
         Self {
             name_generator: Rc::new(NameGenerator::new("_cps_").into()),
