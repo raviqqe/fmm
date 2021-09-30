@@ -11,7 +11,7 @@ struct Context<'a> {
     pub function_definitions: Vec<FunctionDefinition>,
 }
 
-pub fn compile(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
+pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
     let mut context = Context {
         cps: context,
         function_definitions: vec![],
@@ -24,7 +24,7 @@ pub fn compile(context: &CpsContext, module: &Module) -> Result<Module, CpsTrans
         module
             .function_definitions()
             .iter()
-            .map(|definition| compile_definition(&mut context, definition))
+            .map(|definition| transform_definition(&mut context, definition))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .chain(context.function_definitions)
@@ -32,7 +32,7 @@ pub fn compile(context: &CpsContext, module: &Module) -> Result<Module, CpsTrans
     ))
 }
 
-fn compile_definition(
+fn transform_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
 ) -> Result<FunctionDefinition, CpsTransformationError> {
@@ -41,7 +41,7 @@ fn compile_definition(
             FunctionDefinition::new(
                 definition.name(),
                 definition.arguments().to_vec(),
-                compile_block(context, definition.body())?,
+                transform_block(context, definition.body())?,
                 definition.result_type().clone(),
                 definition.calling_convention(),
                 definition.linkage(),
@@ -52,12 +52,12 @@ fn compile_definition(
     )
 }
 
-fn compile_block(context: &mut Context, block: &Block) -> Result<Block, CpsTransformationError> {
+fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsTransformationError> {
     Ok(Block::new(
         block
             .instructions()
             .iter()
-            .map(|instruction| compile_instruction(context, instruction))
+            .map(|instruction| transform_instruction(context, instruction))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .flatten()
@@ -66,14 +66,14 @@ fn compile_block(context: &mut Context, block: &Block) -> Result<Block, CpsTrans
     ))
 }
 
-fn compile_instruction(
+fn transform_instruction(
     context: &mut Context,
     instruction: &Instruction,
 ) -> Result<Vec<Instruction>, CpsTransformationError> {
     Ok(match instruction {
         Instruction::Call(call) => {
             if call.type_().calling_convention() == CallingConvention::Source {
-                compile_source_function_call(context, call)?
+                transform_source_function_call(context, call)?
             } else {
                 vec![call.clone().into()]
             }
@@ -81,8 +81,8 @@ fn compile_instruction(
         Instruction::If(if_) => vec![If::new(
             if_.type_().clone(),
             if_.condition().clone(),
-            compile_block(context, if_.then())?,
-            compile_block(context, if_.else_())?,
+            transform_block(context, if_.then())?,
+            transform_block(context, if_.else_())?,
             if_.name(),
         )
         .into()],
@@ -90,7 +90,7 @@ fn compile_instruction(
     })
 }
 
-fn compile_source_function_call(
+fn transform_source_function_call(
     context: &mut Context,
     call: &Call,
 ) -> Result<Vec<Instruction>, CpsTransformationError> {

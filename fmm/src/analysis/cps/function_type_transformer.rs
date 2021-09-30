@@ -5,16 +5,16 @@ use crate::{
     types::{self, CallingConvention, Type},
 };
 
-pub fn convert(module: &Module, continuation_result_type: &Type) -> Module {
+pub fn transform(module: &Module, continuation_result_type: &Type) -> Module {
     convert_types(module, &|type_| match type_ {
         Type::Function(function) => {
-            convert_function_type(function, continuation_result_type).into()
+            transform_function_type(function, continuation_result_type).into()
         }
         _ => type_.clone(),
     })
 }
 
-fn convert_function_type(
+fn transform_function_type(
     type_: &types::Function,
     continuation_result_type: &Type,
 ) -> types::Function {
