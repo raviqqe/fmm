@@ -28,7 +28,7 @@ pub fn compile_function<'c>(
         &function
             .arguments()
             .iter()
-            .map(|type_| compile_type(type_))
+            .map(compile_type)
             .collect::<Vec<_>>(),
         false,
     )
@@ -84,7 +84,7 @@ pub fn compile_record<'c>(
         &record
             .elements()
             .iter()
-            .map(|type_| compile_type(type_))
+            .map(compile_type)
             .collect::<Vec<_>>(),
         false,
     )

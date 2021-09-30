@@ -118,10 +118,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
         Instruction::Call(call) => Call::new(
             call.type_().clone(),
             rename_expression(call.function()),
-            call.arguments()
-                .iter()
-                .map(|argument| rename_expression(argument))
-                .collect(),
+            call.arguments().iter().map(rename_expression).collect(),
             rename(call.name()),
         )
         .into(),
@@ -247,11 +244,7 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
         .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
-            record
-                .elements()
-                .iter()
-                .map(|element| rename_expression(element))
-                .collect(),
+            record.elements().iter().map(rename_expression).collect(),
         )
         .into(),
         Expression::RecordAddress(address) => RecordAddress::new(

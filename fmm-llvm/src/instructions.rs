@@ -119,7 +119,7 @@ fn compile_instruction<'c>(
                 &call
                     .arguments()
                     .iter()
-                    .map(|argument| compile_expression(argument))
+                    .map(compile_expression)
                     .collect::<Vec<_>>(),
                 call.name(),
             );

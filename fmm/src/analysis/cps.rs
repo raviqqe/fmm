@@ -1,9 +1,11 @@
+mod continuation_type_compiler;
 mod cps_transformer;
 mod error;
 mod free_variables;
+mod function_type_converter;
 mod if_flattener;
 mod stack;
-mod target_functions;
+mod target_function_compiler;
 
 use super::check_types;
 use crate::{ir::*, types::Type};
@@ -16,8 +18,12 @@ pub fn transform_to_cps(
 ) -> Result<Module, CpsTransformationError> {
     check_types(module)?;
 
+    let result_type = result_type.into();
+
     let module = if_flattener::flatten(module);
-    let module = CpsTransformer::new(result_type).transform(&module)?;
+    let module = target_function_compiler::compile(&module, &result_type)?;
+    let module = CpsTransformer::new(result_type.clone()).transform(&module)?;
+    let module = function_type_converter::convert(&module, &result_type);
 
     check_types(&module)?;
 
@@ -124,38 +130,6 @@ mod tests {
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 types::Primitive::Float64,
-            )],
-        ));
-    }
-
-    #[test]
-    #[should_panic]
-    fn transform_call_in_function_of_target_calling_convention() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-
-        test_transformation(&Module::new(
-            vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
-            vec![],
-            vec![FunctionDefinition::new(
-                "g",
-                vec![],
-                Block::new(
-                    vec![Call::new(
-                        function_type,
-                        Variable::new("f"),
-                        vec![Primitive::Float64(42.0).into()],
-                        "x",
-                    )
-                    .into()],
-                    Return::new(types::Primitive::Float64, Variable::new("x")),
-                ),
-                types::Primitive::Float64,
-                CallingConvention::Target,
-                Linkage::Internal,
             )],
         ));
     }
@@ -505,5 +479,99 @@ mod tests {
                 types::Primitive::Float64,
             )],
         ));
+    }
+
+    mod target_function_definition {
+        use super::*;
+
+        #[test]
+        fn transform_with_no_argument() {
+            let function_type = create_function_type(vec![], types::Primitive::Float64);
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("g", function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![Call::new(function_type, Variable::new("g"), vec![], "x").into()],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    types::Primitive::Float64,
+                    CallingConvention::Target,
+                    Linkage::Internal,
+                )],
+            ));
+        }
+
+        #[test]
+        fn transform_one_argument() {
+            let function_type = create_function_type(
+                vec![types::Primitive::Float64.into()],
+                types::Primitive::Float64,
+            );
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("g", function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![Call::new(
+                            function_type,
+                            Variable::new("g"),
+                            vec![Primitive::Float64(42.0).into()],
+                            "x",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    types::Primitive::Float64,
+                    CallingConvention::Target,
+                    Linkage::Internal,
+                )],
+            ));
+        }
+
+        #[test]
+        fn transform_two_argument() {
+            let function_type = create_function_type(
+                vec![
+                    types::Primitive::Float64.into(),
+                    types::Primitive::Integer64.into(),
+                ],
+                types::Primitive::Float64,
+            );
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("g", function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    Block::new(
+                        vec![Call::new(
+                            function_type,
+                            Variable::new("g"),
+                            vec![
+                                Primitive::Float64(42.0).into(),
+                                Primitive::Integer64(42).into(),
+                            ],
+                            "x",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    types::Primitive::Float64,
+                    CallingConvention::Target,
+                    Linkage::Internal,
+                )],
+            ));
+        }
     }
 }

@@ -90,7 +90,7 @@ fn compile_instruction(
             compile_expression(call.function()),
             call.arguments()
                 .iter()
-                .map(|argument| compile_expression(argument))
+                .map(compile_expression)
                 .collect::<Vec<_>>()
                 .join(",")
         ),
