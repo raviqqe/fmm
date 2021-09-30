@@ -8,13 +8,13 @@ use crate::{
 pub fn convert(module: &Module, continuation_result_type: &Type) -> Module {
     convert_types(module, &|type_| match type_ {
         Type::Function(function) => {
-            transform_function_type(function, continuation_result_type).into()
+            convert_function_type(function, continuation_result_type).into()
         }
         _ => type_.clone(),
     })
 }
 
-fn transform_function_type(
+fn convert_function_type(
     type_: &types::Function,
     continuation_result_type: &Type,
 ) -> types::Function {
