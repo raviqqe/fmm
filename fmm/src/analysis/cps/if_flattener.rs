@@ -1,4 +1,4 @@
-use super::free_variables::collect_free_variables;
+use super::free_variable_collector;
 use crate::{
     build::NameGenerator,
     ir::*,
@@ -248,7 +248,7 @@ fn get_continuation_environment(
     terminal_instruction: &TerminalInstruction,
     local_variables: &HashMap<String, Type>,
 ) -> Vec<(String, Type)> {
-    collect_free_variables(instructions, terminal_instruction)
+    free_variable_collector::collect(instructions, terminal_instruction)
         .iter()
         .flat_map(|name| {
             local_variables

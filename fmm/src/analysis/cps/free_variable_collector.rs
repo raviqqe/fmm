@@ -1,7 +1,7 @@
 use crate::ir::*;
 use std::collections::HashSet;
 
-pub fn collect_free_variables(
+pub fn collect(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
 ) -> HashSet<String> {
@@ -21,7 +21,7 @@ pub fn collect_free_variables(
 }
 
 fn collect_from_block(block: &Block) -> HashSet<String> {
-    collect_free_variables(block.instructions(), block.terminal_instruction())
+    collect(block.instructions(), block.terminal_instruction())
 }
 
 fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {

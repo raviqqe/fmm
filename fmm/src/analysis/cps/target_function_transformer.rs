@@ -1,23 +1,20 @@
-use super::{error::CpsTransformationError, stack::STACK_TYPE};
+use super::{context::CpsContext, error::CpsTransformationError, stack::STACK_TYPE};
 use crate::{
     analysis::cps::stack,
-    build::{self, InstructionBuilder, NameGenerator, TypedExpression},
+    build::{self, InstructionBuilder, TypedExpression},
     ir::*,
     types::{self, CallingConvention, Type},
 };
-use std::{cell::RefCell, rc::Rc};
 
-struct Context {
-    pub name_generator: Rc<RefCell<NameGenerator>>,
+struct Context<'a> {
+    pub cps: &'a CpsContext,
     pub function_definitions: Vec<FunctionDefinition>,
-    pub result_type: Type,
 }
 
-pub fn compile(module: &Module, result_type: &Type) -> Result<Module, CpsTransformationError> {
+pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
     let mut context = Context {
-        name_generator: Rc::new(NameGenerator::new("_cps_").into()),
+        cps: context,
         function_definitions: vec![],
-        result_type: result_type.clone(),
     };
 
     Ok(Module::new(
@@ -27,7 +24,7 @@ pub fn compile(module: &Module, result_type: &Type) -> Result<Module, CpsTransfo
         module
             .function_definitions()
             .iter()
-            .map(|definition| compile_definition(&mut context, definition))
+            .map(|definition| transform_definition(&mut context, definition))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .chain(context.function_definitions)
@@ -35,7 +32,7 @@ pub fn compile(module: &Module, result_type: &Type) -> Result<Module, CpsTransfo
     ))
 }
 
-fn compile_definition(
+fn transform_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
 ) -> Result<FunctionDefinition, CpsTransformationError> {
@@ -44,7 +41,7 @@ fn compile_definition(
             FunctionDefinition::new(
                 definition.name(),
                 definition.arguments().to_vec(),
-                compile_block(context, definition.body())?,
+                transform_block(context, definition.body())?,
                 definition.result_type().clone(),
                 definition.calling_convention(),
                 definition.linkage(),
@@ -55,12 +52,12 @@ fn compile_definition(
     )
 }
 
-fn compile_block(context: &mut Context, block: &Block) -> Result<Block, CpsTransformationError> {
+fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsTransformationError> {
     Ok(Block::new(
         block
             .instructions()
             .iter()
-            .map(|instruction| compile_instruction(context, instruction))
+            .map(|instruction| transform_instruction(context, instruction))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .flatten()
@@ -69,14 +66,14 @@ fn compile_block(context: &mut Context, block: &Block) -> Result<Block, CpsTrans
     ))
 }
 
-fn compile_instruction(
+fn transform_instruction(
     context: &mut Context,
     instruction: &Instruction,
 ) -> Result<Vec<Instruction>, CpsTransformationError> {
     Ok(match instruction {
         Instruction::Call(call) => {
             if call.type_().calling_convention() == CallingConvention::Source {
-                compile_source_function_call(context, call)?
+                transform_source_function_call(context, call)?
             } else {
                 vec![call.clone().into()]
             }
@@ -84,8 +81,8 @@ fn compile_instruction(
         Instruction::If(if_) => vec![If::new(
             if_.type_().clone(),
             if_.condition().clone(),
-            compile_block(context, if_.then())?,
-            compile_block(context, if_.else_())?,
+            transform_block(context, if_.then())?,
+            transform_block(context, if_.else_())?,
             if_.name(),
         )
         .into()],
@@ -93,11 +90,11 @@ fn compile_instruction(
     })
 }
 
-fn compile_source_function_call(
+fn transform_source_function_call(
     context: &mut Context,
     call: &Call,
 ) -> Result<Vec<Instruction>, CpsTransformationError> {
-    let builder = InstructionBuilder::new(context.name_generator.clone());
+    let builder = InstructionBuilder::new(context.cps.name_generator());
 
     let stack_pointer = stack::create_stack(&builder)?;
     let result_pointer = builder.allocate_stack(call.type_().result().clone());
@@ -139,7 +136,7 @@ fn compile_continuation(
     context: &mut Context,
     result_type: &Type,
 ) -> Result<TypedExpression, CpsTransformationError> {
-    let name = context.name_generator.borrow_mut().generate();
+    let name = context.cps.name_generator().borrow_mut().generate();
 
     context.function_definitions.push(FunctionDefinition::new(
         &name,
@@ -148,7 +145,7 @@ fn compile_continuation(
             Argument::new("result", result_type.clone()),
         ],
         {
-            let builder = InstructionBuilder::new(context.name_generator.clone());
+            let builder = InstructionBuilder::new(context.cps.name_generator());
 
             let result_pointer = stack::pop_from_stack(
                 &builder,
@@ -160,9 +157,9 @@ fn compile_continuation(
                 result_pointer,
             );
 
-            builder.return_(Undefined::new(context.result_type.clone()))
+            builder.return_(Undefined::new(context.cps.result_type().clone()))
         },
-        context.result_type.clone(),
+        context.cps.result_type().clone(),
         CallingConvention::Tail,
         Linkage::Internal,
     ));
