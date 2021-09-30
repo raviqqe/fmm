@@ -4,7 +4,7 @@ use super::{
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
 };
 use crate::{
-    analysis::cps::utilities,
+    analysis::cps::continuation_type_compiler,
     build::{self, BuildError, InstructionBuilder, NameGenerator},
     ir::*,
     types::{self, CallingConvention, Type},
@@ -316,7 +316,7 @@ impl CpsTransformer {
     }
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
-        utilities::create_continuation_type(result_type, &self.result_type)
+        continuation_type_compiler::create_continuation_type(result_type, &self.result_type)
     }
 
     fn generate_continuation_name(&mut self) -> String {

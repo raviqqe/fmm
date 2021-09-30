@@ -1,6 +1,6 @@
 use super::stack::STACK_TYPE;
 use crate::{
-    analysis::{convert_types, cps::utilities::create_continuation_type},
+    analysis::{convert_types, cps::continuation_type_compiler::create_continuation_type},
     ir::*,
     types::{self, CallingConvention, Type},
 };
