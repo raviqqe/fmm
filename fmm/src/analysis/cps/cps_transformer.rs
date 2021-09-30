@@ -44,7 +44,7 @@ impl CpsTransformer {
                 .collect::<Vec<_>>()
                 .into_iter()
                 .chain(self.function_definitions.drain(..).map(Ok))
-                .collect::<Result<Vec<_>, _>>()?,
+                .collect::<Result<_, _>>()?,
         ))
     }
 
