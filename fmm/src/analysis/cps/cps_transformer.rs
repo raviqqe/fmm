@@ -7,7 +7,7 @@ use crate::{
     analysis::cps::continuation_type_compiler,
     build::{self, BuildError, InstructionBuilder, NameGenerator},
     ir::*,
-    types::{self, CallingConvention, Type},
+    types::{CallingConvention, Type},
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
@@ -54,7 +54,10 @@ impl CpsTransformer {
     ) -> Result<FunctionDefinition, CpsTransformationError> {
         Ok(match definition.calling_convention() {
             CallingConvention::Source => {
-                let continuation_type = self.create_continuation_type(definition.result_type());
+                let continuation_type = continuation_type_compiler::compile(
+                    definition.result_type(),
+                    &self.result_type,
+                );
 
                 FunctionDefinition::new(
                     definition.name(),
@@ -111,7 +114,7 @@ impl CpsTransformer {
                 TerminalInstruction::Branch(_) => unreachable!(),
                 TerminalInstruction::Return(return_) => (
                     vec![Call::new(
-                        self.create_continuation_type(return_.type_()),
+                        continuation_type_compiler::compile(return_.type_(), &self.result_type),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
                         vec![
                             Variable::new(STACK_ARGUMENT_NAME).into(),
@@ -313,10 +316,6 @@ impl CpsTransformer {
                 }),
         )
         .collect()
-    }
-
-    fn create_continuation_type(&self, result_type: &Type) -> types::Function {
-        continuation_type_compiler::compile(result_type, &self.result_type)
     }
 
     fn generate_continuation_name(&mut self) -> String {
