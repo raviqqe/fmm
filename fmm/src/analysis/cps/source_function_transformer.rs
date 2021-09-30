@@ -46,8 +46,8 @@ fn transform_function_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
 ) -> Result<FunctionDefinition, CpsTransformationError> {
-    Ok(match definition.calling_convention() {
-        CallingConvention::Source => {
+    Ok(
+        if definition.calling_convention() == CallingConvention::Source {
             let continuation_type = continuation_type_compiler::compile(
                 definition.result_type(),
                 context.cps.result_type(),
@@ -79,9 +79,10 @@ fn transform_function_definition(
                 CallingConvention::Tail,
                 definition.linkage(),
             )
-        }
-        CallingConvention::Tail | CallingConvention::Target => definition.clone(),
-    })
+        } else {
+            definition.clone()
+        },
+    )
 }
 
 fn transform_block(
