@@ -496,10 +496,7 @@ mod tests {
                     "f",
                     vec![],
                     Block::new(
-                        vec![
-                            Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
-                                .into(),
-                        ],
+                        vec![Call::new(function_type, Variable::new("g"), vec![], "x").into()],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
                     types::Primitive::Float64,
@@ -525,7 +522,7 @@ mod tests {
                     vec![],
                     Block::new(
                         vec![Call::new(
-                            function_type.clone(),
+                            function_type,
                             Variable::new("g"),
                             vec![Primitive::Float64(42.0).into()],
                             "x",
@@ -559,7 +556,7 @@ mod tests {
                     vec![],
                     Block::new(
                         vec![Call::new(
-                            function_type.clone(),
+                            function_type,
                             Variable::new("g"),
                             vec![
                                 Primitive::Float64(42.0).into(),

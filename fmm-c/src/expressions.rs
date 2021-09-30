@@ -63,7 +63,7 @@ pub fn compile_expression(
                 record
                     .elements()
                     .iter()
-                    .map(|expression| compile_expression(expression))
+                    .map(compile_expression)
                     .collect::<Vec<_>>()
                     .join(",")
             )

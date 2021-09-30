@@ -20,7 +20,7 @@ pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, Bui
     let capacity = Primitive::PointerInteger(DEFAULT_STACK_SIZE);
     let pointer = builder.allocate_heap(capacity);
     let record = build::record(vec![
-        pointer.into(),
+        pointer,
         Primitive::PointerInteger(0).into(),
         capacity.into(),
     ]);

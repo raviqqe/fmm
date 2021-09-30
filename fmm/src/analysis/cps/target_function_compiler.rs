@@ -1,5 +1,4 @@
-use super::error::CpsTransformationError;
-use super::stack::STACK_TYPE;
+use super::{error::CpsTransformationError, stack::STACK_TYPE};
 use crate::{
     analysis::cps::stack,
     build::{self, InstructionBuilder, NameGenerator, TypedExpression},

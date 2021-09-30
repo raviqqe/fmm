@@ -317,11 +317,7 @@ fn convert_type(type_: &Type, convert: &impl Fn(&Type) -> Type) -> Type {
 
         match type_ {
             Type::Function(function) => types::Function::new(
-                function
-                    .arguments()
-                    .iter()
-                    .map(|argument| convert(argument))
-                    .collect(),
+                function.arguments().iter().map(convert).collect(),
                 convert(function.result()),
                 function.calling_convention(),
             )
