@@ -96,15 +96,22 @@ fn transform_source_function_call(
 ) -> Result<Vec<Instruction>, CpsTransformationError> {
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-    let stack_pointer = stack::create_stack(&builder)?;
     let result_pointer = builder.allocate_stack(call.type_().result().clone());
 
-    stack::push_to_stack(&builder, stack_pointer.clone(), result_pointer.clone())?;
+    // Store a zero value of a result type in case unexpected interruptions happen.
+    // TODO Can we support blocking await in some way?
+    builder.store(
+        Undefined::new(call.type_().result().clone()),
+        result_pointer.clone(),
+    );
+
+    let stack = stack::create_stack(&builder)?;
+    stack::push_to_stack(&builder, stack.clone(), result_pointer.clone())?;
 
     builder.call(
         TypedExpression::new(call.function().clone(), call.type_().clone()),
         vec![
-            stack_pointer.clone(),
+            stack.clone(),
             compile_continuation(context, call.type_().result())?,
         ]
         .into_iter()
@@ -118,7 +125,7 @@ fn transform_source_function_call(
     )?;
     let result = builder.load(result_pointer)?;
 
-    stack::destroy_stack(&builder, stack_pointer)?;
+    stack::destroy_stack(&builder, stack)?;
 
     Ok(builder
         .into_instructions()
