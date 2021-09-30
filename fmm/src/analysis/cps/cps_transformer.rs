@@ -4,7 +4,7 @@ use super::{
     stack::{pop_from_stack, push_to_stack, STACK_TYPE},
 };
 use crate::{
-    analysis::{convert_types, cps::utilities},
+    analysis::cps::utilities,
     build::{self, BuildError, InstructionBuilder, NameGenerator},
     ir::*,
     types::{self, CallingConvention, Type},
@@ -33,24 +33,18 @@ impl CpsTransformer {
     }
 
     pub fn transform(&mut self, module: &Module) -> Result<Module, CpsTransformationError> {
-        Ok(convert_types(
-            &Module::new(
-                module.variable_declarations().to_vec(),
-                module.function_declarations().to_vec(),
-                module.variable_definitions().to_vec(),
-                module
-                    .function_definitions()
-                    .iter()
-                    .map(|definition| self.transform_function_definition(definition))
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .chain(self.function_definitions.drain(..).map(Ok))
-                    .collect::<Result<Vec<_>, _>>()?,
-            ),
-            &|type_| match type_ {
-                Type::Function(function) => self.transform_function_type(function).into(),
-                _ => type_.clone(),
-            },
+        Ok(Module::new(
+            module.variable_declarations().to_vec(),
+            module.function_declarations().to_vec(),
+            module.variable_definitions().to_vec(),
+            module
+                .function_definitions()
+                .iter()
+                .map(|definition| self.transform_function_definition(definition))
+                .collect::<Vec<_>>()
+                .into_iter()
+                .chain(self.function_definitions.drain(..).map(Ok))
+                .collect::<Result<Vec<_>, _>>()?,
         ))
     }
 
@@ -319,24 +313,6 @@ impl CpsTransformer {
                 }),
         )
         .collect()
-    }
-
-    fn transform_function_type(&self, type_: &types::Function) -> types::Function {
-        if type_.calling_convention() == CallingConvention::Source {
-            types::Function::new(
-                vec![
-                    STACK_TYPE.clone(),
-                    self.create_continuation_type(type_.result()).into(),
-                ]
-                .into_iter()
-                .chain(type_.arguments().iter().cloned())
-                .collect(),
-                self.result_type.clone(),
-                CallingConvention::Tail,
-            )
-        } else {
-            type_.clone()
-        }
     }
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {

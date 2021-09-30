@@ -1,6 +1,7 @@
 mod cps_transformer;
 mod error;
 mod free_variables;
+mod function_type_converter;
 mod if_flattener;
 mod stack;
 mod target_function_compiler;
@@ -22,6 +23,7 @@ pub fn transform_to_cps(
     let module = if_flattener::flatten(module);
     let module = target_function_compiler::compile(&module, &result_type)?;
     let module = CpsTransformer::new(result_type.clone()).transform(&module)?;
+    let module = function_type_converter::convert(&module, &result_type);
 
     check_types(&module)?;
 
