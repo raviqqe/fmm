@@ -316,7 +316,7 @@ impl CpsTransformer {
     }
 
     fn create_continuation_type(&self, result_type: &Type) -> types::Function {
-        continuation_type_compiler::create_continuation_type(result_type, &self.result_type)
+        continuation_type_compiler::compile(result_type, &self.result_type)
     }
 
     fn generate_continuation_name(&mut self) -> String {

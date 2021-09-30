@@ -1,6 +1,6 @@
 use super::stack::STACK_TYPE;
 use crate::{
-    analysis::{convert_types, cps::continuation_type_compiler::create_continuation_type},
+    analysis::{convert_types, cps::continuation_type_compiler},
     ir::*,
     types::{self, CallingConvention, Type},
 };
@@ -22,7 +22,8 @@ fn transform_function_type(
         types::Function::new(
             vec![
                 STACK_TYPE.clone(),
-                create_continuation_type(type_.result(), continuation_result_type).into(),
+                continuation_type_compiler::compile(type_.result(), continuation_result_type)
+                    .into(),
             ]
             .into_iter()
             .chain(type_.arguments().iter().cloned())
