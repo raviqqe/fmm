@@ -156,7 +156,7 @@ fn transform_instructions(
                         )?
                     };
 
-                    let builder = InstructionBuilder::new(context.cps.name_generator().clone());
+                    let builder = InstructionBuilder::new(context.cps.name_generator());
 
                     if !is_tail_call {
                         push_to_stack(
