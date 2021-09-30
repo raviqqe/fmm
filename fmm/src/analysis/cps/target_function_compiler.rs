@@ -1,23 +1,20 @@
-use super::{error::CpsTransformationError, stack::STACK_TYPE};
+use super::{context::CpsContext, error::CpsTransformationError, stack::STACK_TYPE};
 use crate::{
     analysis::cps::stack,
-    build::{self, InstructionBuilder, NameGenerator, TypedExpression},
+    build::{self, InstructionBuilder, TypedExpression},
     ir::*,
     types::{self, CallingConvention, Type},
 };
-use std::{cell::RefCell, rc::Rc};
 
-struct Context {
-    pub name_generator: Rc<RefCell<NameGenerator>>,
+struct Context<'a> {
+    pub cps: &'a CpsContext,
     pub function_definitions: Vec<FunctionDefinition>,
-    pub result_type: Type,
 }
 
-pub fn compile(module: &Module, result_type: &Type) -> Result<Module, CpsTransformationError> {
+pub fn compile(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
     let mut context = Context {
-        name_generator: Rc::new(NameGenerator::new("_cps_").into()),
+        cps: context,
         function_definitions: vec![],
-        result_type: result_type.clone(),
     };
 
     Ok(Module::new(
@@ -97,7 +94,7 @@ fn compile_source_function_call(
     context: &mut Context,
     call: &Call,
 ) -> Result<Vec<Instruction>, CpsTransformationError> {
-    let builder = InstructionBuilder::new(context.name_generator.clone());
+    let builder = InstructionBuilder::new(context.cps.name_generator().clone());
 
     let stack_pointer = stack::create_stack(&builder)?;
     let result_pointer = builder.allocate_stack(call.type_().result().clone());
@@ -139,7 +136,7 @@ fn compile_continuation(
     context: &mut Context,
     result_type: &Type,
 ) -> Result<TypedExpression, CpsTransformationError> {
-    let name = context.name_generator.borrow_mut().generate();
+    let name = context.cps.name_generator().borrow_mut().generate();
 
     context.function_definitions.push(FunctionDefinition::new(
         &name,
@@ -148,7 +145,7 @@ fn compile_continuation(
             Argument::new("result", result_type.clone()),
         ],
         {
-            let builder = InstructionBuilder::new(context.name_generator.clone());
+            let builder = InstructionBuilder::new(context.cps.name_generator().clone());
 
             let result_pointer = stack::pop_from_stack(
                 &builder,
@@ -160,9 +157,9 @@ fn compile_continuation(
                 result_pointer,
             );
 
-            builder.return_(Undefined::new(context.result_type.clone()))
+            builder.return_(Undefined::new(context.cps.result_type().clone()))
         },
-        context.result_type.clone(),
+        context.cps.result_type().clone(),
         CallingConvention::Tail,
         Linkage::Internal,
     ));
