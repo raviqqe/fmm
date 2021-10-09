@@ -326,7 +326,7 @@ fn check_expression(
         Expression::Primitive(primitive) => primitive.type_().into(),
         Expression::Record(record) => {
             if record.elements().len() != record.type_().elements().len() {
-                return Err(TypeCheckError::RecordElements(record.clone()));
+                return Err(TypeCheckError::RecordFields(record.clone()));
             }
 
             for (element, type_) in record.elements().iter().zip(record.type_().elements()) {

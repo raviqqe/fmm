@@ -10,7 +10,7 @@ pub enum TypeCheckError {
     FunctionArguments(Call),
     IndexOutOfRange,
     InvalidBranch(Branch),
-    RecordElements(Record),
+    RecordFields(Record),
     TypesNotMatched(Type, Type),
     VariableNotFound(Variable),
 }

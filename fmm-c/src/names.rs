@@ -2,7 +2,7 @@ pub fn generate_argument_name(index: usize) -> String {
     format!("a{}", index)
 }
 
-pub fn generate_record_element_name(index: usize) -> String {
+pub fn generate_record_field_name(index: usize) -> String {
     format!("e{}", index)
 }
 

@@ -117,7 +117,7 @@ fn compile_instruction(
                 deconstruct.name(),
             ),
             compile_expression(deconstruct.record()),
-            generate_record_element_name(deconstruct.element_index()),
+            generate_record_field_name(deconstruct.element_index()),
         ),
         Instruction::DeconstructUnion(deconstruct) => format!(
             "{}={}.{};",
