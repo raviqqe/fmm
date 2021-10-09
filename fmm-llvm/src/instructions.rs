@@ -148,7 +148,7 @@ fn compile_instruction<'c>(
         ),
         Instruction::DeconstructRecord(deconstruct) => builder.build_extract_value(
             compile_expression(deconstruct.record()).into_struct_value(),
-            deconstruct.element_index() as u32,
+            deconstruct.field_index() as u32,
             deconstruct.name(),
         ),
         Instruction::DeconstructUnion(deconstruct) => builder.build_extract_value(

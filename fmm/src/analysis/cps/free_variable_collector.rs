@@ -101,7 +101,7 @@ fn collect_from_expression(expression: &Expression) -> HashSet<String> {
             .flat_map(|expression| collect_from_expression(*expression))
             .collect(),
         Expression::Record(record) => record
-            .elements()
+            .fields()
             .iter()
             .flat_map(collect_from_expression)
             .collect(),

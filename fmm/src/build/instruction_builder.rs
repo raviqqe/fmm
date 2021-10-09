@@ -183,7 +183,7 @@ impl InstructionBuilder {
     pub fn deconstruct_record(
         &self,
         record: impl Into<TypedExpression>,
-        element_index: usize,
+        field_index: usize,
     ) -> Result<TypedExpression, BuildError> {
         let record = record.into();
         let type_ = record
@@ -196,11 +196,11 @@ impl InstructionBuilder {
         self.add_instruction(DeconstructRecord::new(
             type_.clone(),
             record.expression().clone(),
-            element_index,
+            field_index,
             &name,
         ));
 
-        Ok(variable(name, type_.elements()[element_index].clone()))
+        Ok(variable(name, type_.fields()[field_index].clone()))
     }
 
     pub fn deconstruct_union(

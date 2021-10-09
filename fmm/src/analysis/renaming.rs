@@ -135,7 +135,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
         Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
             deconstruct.type_().clone(),
             rename_expression(deconstruct.record()),
-            deconstruct.element_index(),
+            deconstruct.field_index(),
             rename(deconstruct.name()),
         )
         .into(),
@@ -244,13 +244,13 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
         .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
-            record.elements().iter().map(rename_expression).collect(),
+            record.fields().iter().map(rename_expression).collect(),
         )
         .into(),
         Expression::RecordAddress(address) => RecordAddress::new(
             address.type_().clone(),
             rename_expression(address.pointer()),
-            address.element_index(),
+            address.field_index(),
         )
         .into(),
         Expression::Union(union) => Union::new(

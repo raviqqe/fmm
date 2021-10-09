@@ -122,7 +122,7 @@ fn compile_record_type_definition(
     format!(
         "struct {} {{{}}};",
         type_ids[&record.clone().into()],
-        compile_record_elements(record, type_ids)
+        compile_record_fields(record, type_ids)
     )
 }
 

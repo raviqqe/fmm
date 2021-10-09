@@ -83,13 +83,13 @@ pub fn compile_union_type_id(union: &types::Union, type_ids: &HashMap<Type, Stri
     "union ".to_owned() + &type_ids[&union.clone().into()]
 }
 
-pub fn compile_record_elements(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
+pub fn compile_record_fields(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
     record
-        .elements()
+        .fields()
         .iter()
         .enumerate()
         .map(|(index, type_)| {
-            compile_typed_name(type_, &generate_record_element_name(index), type_ids) + ";"
+            compile_typed_name(type_, &generate_record_field_name(index), type_ids) + ";"
         })
         .collect::<Vec<_>>()
         .join("")

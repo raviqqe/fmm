@@ -40,9 +40,9 @@ pub fn compile_expression<'c>(
             let mut value =
                 types::compile_record(record.type_(), context, target_data).const_zero();
 
-            for (index, element) in record.elements().iter().enumerate() {
+            for (index, field) in record.fields().iter().enumerate() {
                 value = builder
-                    .build_insert_value(value, compile_expression(element), index as u32, "")
+                    .build_insert_value(value, compile_expression(field), index as u32, "")
                     .unwrap()
                     .into_struct_value();
             }
@@ -129,7 +129,7 @@ pub fn compile_constant_expression<'c>(
         Expression::Record(record) => context
             .const_struct(
                 &record
-                    .elements()
+                    .fields()
                     .iter()
                     .map(|expression| compile_expression(expression))
                     .collect::<Vec<_>>(),
@@ -371,7 +371,7 @@ fn compile_record_address<'c>(
                 context.i32_type().const_zero(),
                 context
                     .i32_type()
-                    .const_int(address.element_index() as u64, false),
+                    .const_int(address.field_index() as u64, false),
             ],
             "",
         )

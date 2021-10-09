@@ -111,7 +111,7 @@ fn format_instruction(instruction: &Instruction) -> String {
             format!(
                 "(deconstruct-record {} {} {})",
                 format_expression(deconstruct.record()),
-                deconstruct.element_index(),
+                deconstruct.field_index(),
                 deconstruct.name(),
             )
         }
@@ -230,8 +230,8 @@ fn format_expression(expression: &Expression) -> String {
         ),
         Expression::Primitive(primitive) => format_primitive(primitive),
         Expression::Record(record) => {
-            let elements = record
-                .elements()
+            let fields = record
+                .fields()
                 .iter()
                 .map(format_expression)
                 .collect::<Vec<_>>()
@@ -239,17 +239,17 @@ fn format_expression(expression: &Expression) -> String {
 
             format!(
                 "(record{})",
-                if elements.is_empty() {
+                if fields.is_empty() {
                     "".into()
                 } else {
-                    " ".to_owned() + &elements
+                    " ".to_owned() + &fields
                 }
             )
         }
         Expression::RecordAddress(address) => format!(
             "(record-address {} {})",
             format_expression(address.pointer()),
-            address.element_index(),
+            address.field_index(),
         ),
         Expression::SizeOf(size_of) => format!("(size-of {})", format_type(size_of.type_())),
         Expression::Undefined(_) => "undefined".into(),
@@ -417,7 +417,7 @@ mod tests {
     }
 
     #[test]
-    fn format_record_without_any_element() {
+    fn format_record_without_any_field() {
         assert_eq!(
             format_expression(&Record::new(types::Record::new(vec![]), vec![]).into()),
             "(record)"
@@ -425,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn format_record_with_element() {
+    fn format_record_with_field() {
         assert_eq!(
             format_expression(
                 &Record::new(

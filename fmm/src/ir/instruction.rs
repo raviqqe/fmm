@@ -57,7 +57,7 @@ impl Instruction {
             Self::Call(call) => Some(call.type_().result().clone()),
             Self::CompareAndSwap(_) => Some(types::Primitive::Boolean.into()),
             Self::DeconstructRecord(deconstruct) => {
-                Some(deconstruct.type_().elements()[deconstruct.element_index()].clone())
+                Some(deconstruct.type_().fields()[deconstruct.field_index()].clone())
             }
             Self::DeconstructUnion(deconstruct) => {
                 Some(deconstruct.type_().members()[deconstruct.member_index()].clone())

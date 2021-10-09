@@ -61,7 +61,7 @@ pub fn compile_expression(
                 "({}){{{}}}",
                 compile_record_type_id(record.type_(), type_ids),
                 record
-                    .elements()
+                    .fields()
                     .iter()
                     .map(compile_expression)
                     .collect::<Vec<_>>()
@@ -71,7 +71,7 @@ pub fn compile_expression(
         Expression::RecordAddress(address) => format!(
             "(&({})->{})",
             compile_expression(address.pointer()),
-            generate_record_element_name(address.element_index()),
+            generate_record_field_name(address.field_index()),
         ),
         Expression::SizeOf(size_of) => {
             format!("sizeof({})", compile_type_id(size_of.type_(), type_ids))
