@@ -122,7 +122,7 @@ pub fn record(fields: Vec<TypedExpression>) -> Record {
 
 pub fn record_address(
     pointer: impl Into<TypedExpression>,
-    element_index: usize,
+    field_index: usize,
 ) -> Result<RecordAddress, BuildError> {
     let pointer = pointer.into();
     let element_type = pointer
@@ -138,7 +138,7 @@ pub fn record_address(
     Ok(RecordAddress::new(
         type_,
         pointer.expression().clone(),
-        element_index,
+        field_index,
     ))
 }
 

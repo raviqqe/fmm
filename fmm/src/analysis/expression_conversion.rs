@@ -134,7 +134,7 @@ fn convert_instruction(
         Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
             deconstruct.type_().clone(),
             convert(deconstruct.record()),
-            deconstruct.element_index(),
+            deconstruct.field_index(),
             deconstruct.name(),
         )
         .into(),
@@ -246,7 +246,7 @@ fn convert_expression(
             Expression::RecordAddress(address) => RecordAddress::new(
                 address.type_().clone(),
                 convert(address.pointer()),
-                address.element_index(),
+                address.field_index(),
             )
             .into(),
             Expression::Union(union) => Union::new(

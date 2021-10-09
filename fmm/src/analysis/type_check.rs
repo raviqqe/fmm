@@ -163,7 +163,7 @@ fn check_block(
                     &deconstruct.type_().clone().into(),
                 )?;
 
-                check_record_index(deconstruct.element_index(), deconstruct.type_())?;
+                check_record_index(deconstruct.field_index(), deconstruct.type_())?;
             }
             Instruction::DeconstructUnion(deconstruct) => {
                 check_equality(
@@ -341,9 +341,9 @@ fn check_expression(
                 &types::Pointer::new(address.type_().clone()).into(),
             )?;
 
-            check_record_index(address.element_index(), address.type_())?;
+            check_record_index(address.field_index(), address.type_())?;
 
-            types::Pointer::new(address.type_().fields()[address.element_index()].clone()).into()
+            types::Pointer::new(address.type_().fields()[address.field_index()].clone()).into()
         }
         Expression::SizeOf(_) => SizeOf::RESULT_TYPE.into(),
         Expression::Undefined(undefined) => undefined.type_().clone(),

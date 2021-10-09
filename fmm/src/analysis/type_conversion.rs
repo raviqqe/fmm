@@ -152,7 +152,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
                 .unwrap()
                 .clone(),
             convert_expression(deconstruct.record()),
-            deconstruct.element_index(),
+            deconstruct.field_index(),
             deconstruct.name(),
         )
         .into(),
@@ -284,7 +284,7 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
                 .unwrap()
                 .clone(),
             convert_expression(address.pointer()),
-            address.element_index(),
+            address.field_index(),
         )
         .into(),
         Expression::SizeOf(size_of) => SizeOf::new(convert(size_of.type_())).into(),

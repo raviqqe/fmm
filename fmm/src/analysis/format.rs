@@ -111,7 +111,7 @@ fn format_instruction(instruction: &Instruction) -> String {
             format!(
                 "(deconstruct-record {} {} {})",
                 format_expression(deconstruct.record()),
-                deconstruct.element_index(),
+                deconstruct.field_index(),
                 deconstruct.name(),
             )
         }
@@ -249,7 +249,7 @@ fn format_expression(expression: &Expression) -> String {
         Expression::RecordAddress(address) => format!(
             "(record-address {} {})",
             format_expression(address.pointer()),
-            address.element_index(),
+            address.field_index(),
         ),
         Expression::SizeOf(size_of) => format!("(size-of {})", format_type(size_of.type_())),
         Expression::Undefined(_) => "undefined".into(),

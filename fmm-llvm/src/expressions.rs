@@ -371,7 +371,7 @@ fn compile_record_address<'c>(
                 context.i32_type().const_zero(),
                 context
                     .i32_type()
-                    .const_int(address.element_index() as u64, false),
+                    .const_int(address.field_index() as u64, false),
             ],
             "",
         )
