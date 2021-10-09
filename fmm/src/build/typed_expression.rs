@@ -84,7 +84,7 @@ impl From<RecordAddress> for TypedExpression {
     fn from(address: RecordAddress) -> Self {
         Self::new(
             address.clone(),
-            types::Pointer::new(address.type_().elements()[address.element_index()].clone()),
+            types::Pointer::new(address.type_().fields()[address.element_index()].clone()),
         )
     }
 }

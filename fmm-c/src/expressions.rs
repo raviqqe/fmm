@@ -61,7 +61,7 @@ pub fn compile_expression(
                 "({}){{{}}}",
                 compile_record_type_id(record.type_(), type_ids),
                 record
-                    .elements()
+                    .fields()
                     .iter()
                     .map(compile_expression)
                     .collect::<Vec<_>>()

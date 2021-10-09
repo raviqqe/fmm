@@ -82,7 +82,7 @@ pub fn compile_record<'c>(
 
     context.struct_type(
         &record
-            .elements()
+            .fields()
             .iter()
             .map(compile_type)
             .collect::<Vec<_>>(),

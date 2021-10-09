@@ -300,7 +300,7 @@ fn create_continuation(
 // The local variables should not include call results because they are
 // passed as continuation arguments.
 //
-// TODO Sort elements to omit extra stack operations.
+// TODO Sort fields to omit extra stack operations.
 fn get_continuation_environment(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,

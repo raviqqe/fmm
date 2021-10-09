@@ -240,7 +240,7 @@ fn convert_expression(
             .into(),
             Expression::Record(record) => Record::new(
                 record.type_().clone(),
-                record.elements().iter().map(convert).collect(),
+                record.fields().iter().map(convert).collect(),
             )
             .into(),
             Expression::RecordAddress(address) => RecordAddress::new(

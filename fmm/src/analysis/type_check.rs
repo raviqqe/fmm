@@ -325,11 +325,11 @@ fn check_expression(
         }
         Expression::Primitive(primitive) => primitive.type_().into(),
         Expression::Record(record) => {
-            if record.elements().len() != record.type_().elements().len() {
+            if record.fields().len() != record.type_().fields().len() {
                 return Err(TypeCheckError::RecordFields(record.clone()));
             }
 
-            for (element, type_) in record.elements().iter().zip(record.type_().elements()) {
+            for (element, type_) in record.fields().iter().zip(record.type_().fields()) {
                 check_equality(&check_expression(element, variables)?, type_)?;
             }
 
@@ -343,7 +343,7 @@ fn check_expression(
 
             check_record_index(address.element_index(), address.type_())?;
 
-            types::Pointer::new(address.type_().elements()[address.element_index()].clone()).into()
+            types::Pointer::new(address.type_().fields()[address.element_index()].clone()).into()
         }
         Expression::SizeOf(_) => SizeOf::RESULT_TYPE.into(),
         Expression::Undefined(undefined) => undefined.type_().clone(),
@@ -377,7 +377,7 @@ fn check_expression(
 }
 
 fn check_record_index(index: usize, type_: &types::Record) -> Result<(), TypeCheckError> {
-    if index < type_.elements().len() {
+    if index < type_.fields().len() {
         Ok(())
     } else {
         Err(TypeCheckError::IndexOutOfRange)

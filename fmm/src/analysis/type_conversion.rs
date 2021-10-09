@@ -275,7 +275,7 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
                 .to_record()
                 .unwrap()
                 .clone(),
-            record.elements().iter().map(convert_expression).collect(),
+            record.fields().iter().map(convert_expression).collect(),
         )
         .into(),
         Expression::RecordAddress(address) => RecordAddress::new(
@@ -324,7 +324,7 @@ fn convert_type(type_: &Type, convert: &impl Fn(&Type) -> Type) -> Type {
             .into(),
             Type::Primitive(_) => type_.clone(),
             Type::Record(record) => {
-                types::Record::new(record.elements().iter().map(convert).collect()).into()
+                types::Record::new(record.fields().iter().map(convert).collect()).into()
             }
             Type::Pointer(pointer) => types::Pointer::new(convert(pointer.element())).into(),
             Type::Union(union) => {

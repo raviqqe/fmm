@@ -244,7 +244,7 @@ fn rename_expression(expression: &Expression, rename: &impl Fn(&str) -> String) 
         .into(),
         Expression::Record(record) => Record::new(
             record.type_().clone(),
-            record.elements().iter().map(rename_expression).collect(),
+            record.fields().iter().map(rename_expression).collect(),
         )
         .into(),
         Expression::RecordAddress(address) => RecordAddress::new(

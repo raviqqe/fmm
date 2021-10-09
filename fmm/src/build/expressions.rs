@@ -105,15 +105,15 @@ pub fn pointer_address(
     ))
 }
 
-pub fn record(elements: Vec<TypedExpression>) -> Record {
+pub fn record(fields: Vec<TypedExpression>) -> Record {
     Record::new(
         types::Record::new(
-            elements
+            fields
                 .iter()
                 .map(|element| element.type_().clone())
                 .collect(),
         ),
-        elements
+        fields
             .iter()
             .map(|element| element.expression().clone())
             .collect(),

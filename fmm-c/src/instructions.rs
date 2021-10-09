@@ -113,7 +113,7 @@ fn compile_instruction(
         Instruction::DeconstructRecord(deconstruct) => format!(
             "{}={}.{};",
             compile_typed_name(
-                &deconstruct.type_().elements()[deconstruct.element_index()],
+                &deconstruct.type_().fields()[deconstruct.element_index()],
                 deconstruct.name(),
             ),
             compile_expression(deconstruct.record()),

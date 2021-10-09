@@ -85,7 +85,7 @@ pub fn compile_union_type_id(union: &types::Union, type_ids: &HashMap<Type, Stri
 
 pub fn compile_record_fields(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
     record
-        .elements()
+        .fields()
         .iter()
         .enumerate()
         .map(|(index, type_)| {

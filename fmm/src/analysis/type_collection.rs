@@ -87,7 +87,7 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
             .collect(),
         Expression::Record(record) => vec![record.type_().clone().into()]
             .into_iter()
-            .chain(record.elements().iter().flat_map(collect_from_expression))
+            .chain(record.fields().iter().flat_map(collect_from_expression))
             .collect(),
         Expression::RecordAddress(address) => vec![address.type_().clone().into()]
             .into_iter()
@@ -204,7 +204,7 @@ fn collect_child_types(type_: &Type) -> HashSet<Type> {
             .collect(),
         Type::Primitive(_) => Default::default(),
         Type::Record(record) => record
-            .elements()
+            .fields()
             .iter()
             .flat_map(collect_from_type)
             .collect(),

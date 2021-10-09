@@ -200,7 +200,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        Ok(variable(name, type_.elements()[element_index].clone()))
+        Ok(variable(name, type_.fields()[element_index].clone()))
     }
 
     pub fn deconstruct_union(
