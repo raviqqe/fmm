@@ -417,7 +417,7 @@ mod tests {
     }
 
     #[test]
-    fn format_record_without_any_element() {
+    fn format_record_without_any_field() {
         assert_eq!(
             format_expression(&Record::new(types::Record::new(vec![]), vec![]).into()),
             "(record)"
@@ -425,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn format_record_with_element() {
+    fn format_record_with_field() {
         assert_eq!(
             format_expression(
                 &Record::new(

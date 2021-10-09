@@ -40,9 +40,9 @@ pub fn compile_expression<'c>(
             let mut value =
                 types::compile_record(record.type_(), context, target_data).const_zero();
 
-            for (index, element) in record.fields().iter().enumerate() {
+            for (index, field) in record.fields().iter().enumerate() {
                 value = builder
-                    .build_insert_value(value, compile_expression(element), index as u32, "")
+                    .build_insert_value(value, compile_expression(field), index as u32, "")
                     .unwrap()
                     .into_struct_value();
             }

@@ -329,8 +329,8 @@ fn check_expression(
                 return Err(TypeCheckError::RecordFields(record.clone()));
             }
 
-            for (element, type_) in record.fields().iter().zip(record.type_().fields()) {
-                check_equality(&check_expression(element, variables)?, type_)?;
+            for (field, type_) in record.fields().iter().zip(record.type_().fields()) {
+                check_equality(&check_expression(field, variables)?, type_)?;
             }
 
             record.type_().clone().into()

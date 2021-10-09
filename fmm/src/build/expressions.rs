@@ -110,12 +110,12 @@ pub fn record(fields: Vec<TypedExpression>) -> Record {
         types::Record::new(
             fields
                 .iter()
-                .map(|element| element.type_().clone())
+                .map(|field| field.type_().clone())
                 .collect(),
         ),
         fields
             .iter()
-            .map(|element| element.expression().clone())
+            .map(|field| field.expression().clone())
             .collect(),
     )
 }
