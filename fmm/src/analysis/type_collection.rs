@@ -203,11 +203,7 @@ fn collect_child_types(type_: &Type) -> HashSet<Type> {
             .chain(function.arguments().iter().flat_map(collect_from_type))
             .collect(),
         Type::Primitive(_) => Default::default(),
-        Type::Record(record) => record
-            .fields()
-            .iter()
-            .flat_map(collect_from_type)
-            .collect(),
+        Type::Record(record) => record.fields().iter().flat_map(collect_from_type).collect(),
         Type::Pointer(pointer) => collect_from_type(pointer.element()),
         Type::Union(union) => union.members().iter().flat_map(collect_from_type).collect(),
     }

@@ -107,12 +107,7 @@ pub fn pointer_address(
 
 pub fn record(fields: Vec<TypedExpression>) -> Record {
     Record::new(
-        types::Record::new(
-            fields
-                .iter()
-                .map(|field| field.type_().clone())
-                .collect(),
-        ),
+        types::Record::new(fields.iter().map(|field| field.type_().clone()).collect()),
         fields
             .iter()
             .map(|field| field.expression().clone())

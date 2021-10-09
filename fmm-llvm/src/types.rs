@@ -81,11 +81,7 @@ pub fn compile_record<'c>(
     let compile_type = |type_| compile(type_, context, target_data);
 
     context.struct_type(
-        &record
-            .fields()
-            .iter()
-            .map(compile_type)
-            .collect::<Vec<_>>(),
+        &record.fields().iter().map(compile_type).collect::<Vec<_>>(),
         false,
     )
 }
