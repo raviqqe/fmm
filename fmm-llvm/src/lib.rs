@@ -551,6 +551,29 @@ mod tests {
                 vec![],
             ));
         }
+
+        #[test]
+        fn compile_multiple_record_type_definitions() {
+            compile_module(&Module::new(
+                vec![
+                    VariableDeclaration::new(
+                        "x",
+                        types::Record::new(vec![types::Primitive::PointerInteger.into()]),
+                    ),
+                    VariableDeclaration::new(
+                        "y",
+                        types::Record::new(vec![types::Primitive::Float64.into()]),
+                    ),
+                    VariableDeclaration::new(
+                        "z",
+                        types::Record::new(vec![types::Primitive::Boolean.into()]),
+                    ),
+                ],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
     }
 
     mod variable_definitions {

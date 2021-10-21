@@ -269,6 +269,7 @@ fn compile_linkage(linkage: Linkage) -> &'static str {
 mod tests {
     use super::*;
     use fmm::types::{self, CallingConvention, Type};
+    use pretty_assertions::assert_eq;
 
     fn compile_final_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
@@ -526,6 +527,29 @@ mod tests {
                     "x",
                     types::Union::new(vec![types::Record::new(vec![]).into()]),
                 )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_multiple_record_type_definitions() {
+            compile_module(&Module::new(
+                vec![
+                    VariableDeclaration::new(
+                        "x",
+                        types::Record::new(vec![types::Primitive::PointerInteger.into()]),
+                    ),
+                    VariableDeclaration::new(
+                        "y",
+                        types::Record::new(vec![types::Primitive::Float64.into()]),
+                    ),
+                    VariableDeclaration::new(
+                        "z",
+                        types::Record::new(vec![types::Primitive::Boolean.into()]),
+                    ),
+                ],
                 vec![],
                 vec![],
                 vec![],
