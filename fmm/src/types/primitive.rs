@@ -1,6 +1,6 @@
 // TODO Split float and integer primitive types.
 // Allow only integer types in bitwise operations.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Primitive {
     Boolean,
     Float32,
