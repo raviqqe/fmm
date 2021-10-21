@@ -282,6 +282,16 @@ mod tests {
         )
         .unwrap();
 
+        let other = compile(
+            module,
+            Some(MallocConfiguration {
+                malloc_function_name: "my_malloc".into(),
+                realloc_function_name: "my_realloc".into(),
+            }),
+        )
+        .unwrap();
+        assert_eq!(source, other);
+
         println!("{}", source);
 
         std::fs::write(&file_path, source).unwrap();
