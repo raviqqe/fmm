@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 fmm = { path = "../fmm" }
 tempfile = "3"
+
+[dev-dependencies]
+pretty_assertions = "1"

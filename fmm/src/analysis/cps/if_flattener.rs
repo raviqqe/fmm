@@ -4,7 +4,7 @@ use crate::{
     ir::*,
     types::{self, Type, VOID_TYPE},
 };
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 struct Context {
     function_definitions: Vec<FunctionDefinition>,
@@ -65,7 +65,7 @@ fn transform_block(
     context: &mut Context,
     block: &Block,
     result_type: &Type,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
 ) -> Block {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -83,7 +83,7 @@ fn transform_instructions(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     result_type: &Type,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
 ) -> (Vec<Instruction>, TerminalInstruction) {
     match instructions {
         [] => (vec![], terminal_instruction.clone()),
@@ -168,7 +168,7 @@ fn transform_if_block(
     if_name: &str,
     block: &Block,
     result_type: &Type,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
     continuation: &Expression,
     environment: &[(String, Type)],
 ) -> Block {
@@ -246,7 +246,7 @@ fn create_continuation(
 fn get_continuation_environment(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
 ) -> Vec<(String, Type)> {
     free_variable_collector::collect(instructions, terminal_instruction)
         .iter()
@@ -264,7 +264,11 @@ mod tests {
     use crate::{analysis::check_types, types::VOID_TYPE};
 
     fn flatten_module(module: &Module) {
-        check_types(&flatten(module)).unwrap();
+        let flattened = flatten(module);
+
+        check_types(&flattened).unwrap();
+
+        assert_eq!(flattened, flatten(module));
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -382,6 +386,61 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("y")),
+                ),
+                types::Primitive::Float64,
+            )],
+        ));
+    }
+
+    #[test]
+    fn flatten_if_with_large_environment() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        flatten_module(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![
+                    Argument::new("a", types::Primitive::Float64),
+                    Argument::new("b", types::Primitive::Float64),
+                ],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::Float64,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
+                            )
+                            .into()],
+                            Branch::new(types::Primitive::Float64, Variable::new("x")),
+                        ),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::Float64,
+                        ArithmeticOperation::new(
+                            types::Primitive::Float64,
+                            ArithmeticOperator::Add,
+                            ArithmeticOperation::new(
+                                types::Primitive::Float64,
+                                ArithmeticOperator::Add,
+                                Variable::new("a"),
+                                Variable::new("b"),
+                            ),
+                            Variable::new("y"),
+                        ),
+                    ),
                 ),
                 types::Primitive::Float64,
             )],

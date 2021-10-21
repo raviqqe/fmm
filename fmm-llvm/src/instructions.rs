@@ -4,13 +4,13 @@ use crate::{
 };
 use fmm::ir::*;
 use inkwell::values::BasicValue;
-use std::{collections::HashMap, convert::TryFrom};
+use std::{collections::BTreeMap, convert::TryFrom};
 
 pub fn compile_block<'c>(
     builder: &inkwell::builder::Builder<'c>,
     block: &Block,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
@@ -48,7 +48,7 @@ pub fn compile_block<'c>(
 fn compile_instruction<'c>(
     builder: &inkwell::builder::Builder<'c>,
     instruction: &Instruction,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
@@ -272,7 +272,7 @@ fn compile_terminal_instruction<'c>(
     builder: &inkwell::builder::Builder<'c>,
     instruction: &TerminalInstruction,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,

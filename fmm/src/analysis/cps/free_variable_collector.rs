@@ -1,11 +1,11 @@
 use crate::ir::*;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 pub fn collect(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-) -> HashSet<String> {
-    let mut variables = HashSet::new();
+) -> BTreeSet<String> {
+    let mut variables = BTreeSet::new();
 
     for instruction in instructions {
         variables.extend(collect_from_instruction(instruction));
@@ -20,11 +20,11 @@ pub fn collect(
     variables
 }
 
-fn collect_from_block(block: &Block) -> HashSet<String> {
+fn collect_from_block(block: &Block) -> BTreeSet<String> {
     collect(block.instructions(), block.terminal_instruction())
 }
 
-fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
+fn collect_from_instruction(instruction: &Instruction) -> BTreeSet<String> {
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
@@ -72,15 +72,15 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<String> {
     }
 }
 
-fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashSet<String> {
+fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> BTreeSet<String> {
     match instruction {
         TerminalInstruction::Branch(branch) => collect_from_expression(branch.expression()),
         TerminalInstruction::Return(return_) => collect_from_expression(return_.expression()),
-        TerminalInstruction::Unreachable => HashSet::new(),
+        TerminalInstruction::Unreachable => BTreeSet::new(),
     }
 }
 
-fn collect_from_expression(expression: &Expression) -> HashSet<String> {
+fn collect_from_expression(expression: &Expression) -> BTreeSet<String> {
     match expression {
         Expression::ArithmeticOperation(operation) => [operation.lhs(), operation.rhs()]
             .iter()

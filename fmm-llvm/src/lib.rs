@@ -14,7 +14,7 @@ pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     inkwell::targets::TargetMachine::get_default_triple()
@@ -87,7 +87,7 @@ fn compile_module<'c>(
     let llvm_module = context.create_module("");
     llvm_module.set_triple(&target_machine.get_triple());
 
-    let mut variables = HashMap::new();
+    let mut variables = BTreeMap::new();
 
     let instruction_function_set = compile_heap_functions(
         &llvm_module,
@@ -236,7 +236,7 @@ fn declare_variable_definition<'c>(
 fn compile_variable_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) {
@@ -273,7 +273,7 @@ fn declare_function_definition<'c>(
 fn compile_function_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
@@ -327,7 +327,10 @@ mod tests {
     use fmm::types::{self, CallingConvention, Type};
 
     fn compile_final_module(module: &Module) {
-        compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
+        let one = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
+        let other = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
+
+        assert_eq!(one, other);
     }
 
     fn compile_module(module: &Module) {
@@ -543,6 +546,29 @@ mod tests {
                     "x",
                     types::Union::new(vec![types::Record::new(vec![]).into()]),
                 )],
+                vec![],
+                vec![],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_multiple_record_type_definitions() {
+            compile_module(&Module::new(
+                vec![
+                    VariableDeclaration::new(
+                        "x",
+                        types::Record::new(vec![types::Primitive::PointerInteger.into()]),
+                    ),
+                    VariableDeclaration::new(
+                        "y",
+                        types::Record::new(vec![types::Primitive::Float64.into()]),
+                    ),
+                    VariableDeclaration::new(
+                        "z",
+                        types::Record::new(vec![types::Primitive::Boolean.into()]),
+                    ),
+                ],
                 vec![],
                 vec![],
                 vec![],
