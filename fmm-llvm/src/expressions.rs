@@ -2,12 +2,12 @@ use super::types;
 use crate::union::compile_union_cast;
 use fmm::ir::*;
 use inkwell::values::BasicValue;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub fn compile_expression<'c>(
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
@@ -91,7 +91,7 @@ pub fn compile_expression<'c>(
 
 pub fn compile_constant_expression<'c>(
     expression: &Expression,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {

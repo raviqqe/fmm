@@ -14,7 +14,7 @@ pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     inkwell::targets::TargetMachine::get_default_triple()
@@ -87,7 +87,7 @@ fn compile_module<'c>(
     let llvm_module = context.create_module("");
     llvm_module.set_triple(&target_machine.get_triple());
 
-    let mut variables = HashMap::new();
+    let mut variables = BTreeMap::new();
 
     let instruction_function_set = compile_heap_functions(
         &llvm_module,
@@ -236,7 +236,7 @@ fn declare_variable_definition<'c>(
 fn compile_variable_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) {
@@ -273,7 +273,7 @@ fn declare_function_definition<'c>(
 fn compile_function_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
-    variables: &HashMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,

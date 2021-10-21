@@ -1,5 +1,5 @@
 use crate::{ir::*, types::Type};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 pub fn collect_types(module: &Module) -> Vec<Type> {
     sort_types(&flat_types(
@@ -27,9 +27,9 @@ pub fn collect_types(module: &Module) -> Vec<Type> {
     ))
 }
 
-fn sort_types(types: &HashSet<Type>) -> Vec<Type> {
+fn sort_types(types: &BTreeSet<Type>) -> Vec<Type> {
     let mut graph = petgraph::graph::Graph::<&Type, ()>::new();
-    let mut indices = HashMap::<&Type, _>::new();
+    let mut indices = BTreeMap::<&Type, _>::new();
 
     for type_ in types {
         indices.insert(type_, graph.add_node(type_));
@@ -48,14 +48,14 @@ fn sort_types(types: &HashSet<Type>) -> Vec<Type> {
         .collect()
 }
 
-fn flat_types(types: &HashSet<Type>) -> HashSet<Type> {
+fn flat_types(types: &BTreeSet<Type>) -> BTreeSet<Type> {
     vec![]
         .into_iter()
         .chain(types.iter().flat_map(collect_from_type))
         .collect()
 }
 
-fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
+fn collect_from_expression(expression: &Expression) -> BTreeSet<Type> {
     match expression {
         Expression::AlignOf(align_of) => vec![align_of.type_().clone()].into_iter().collect(),
         Expression::ArithmeticOperation(operation) => vec![operation.type_().into()]
@@ -107,7 +107,7 @@ fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
     }
 }
 
-fn collect_from_block(block: &Block) -> HashSet<Type> {
+fn collect_from_block(block: &Block) -> BTreeSet<Type> {
     collect_from_instructions(block.instructions())
         .into_iter()
         .chain(collect_from_terminal_instruction(
@@ -116,8 +116,8 @@ fn collect_from_block(block: &Block) -> HashSet<Type> {
         .collect()
 }
 
-fn collect_from_instructions(instructions: &[Instruction]) -> HashSet<Type> {
-    let mut types = HashSet::new();
+fn collect_from_instructions(instructions: &[Instruction]) -> BTreeSet<Type> {
+    let mut types = BTreeSet::new();
 
     for instruction in instructions {
         types.extend(collect_from_instruction(instruction));
@@ -126,7 +126,7 @@ fn collect_from_instructions(instructions: &[Instruction]) -> HashSet<Type> {
     types
 }
 
-fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
+fn collect_from_instruction(instruction: &Instruction) -> BTreeSet<Type> {
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AllocateStack(allocate) => {
@@ -181,7 +181,7 @@ fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
     }
 }
 
-fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashSet<Type> {
+fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> BTreeSet<Type> {
     match instruction {
         TerminalInstruction::Branch(branch) => vec![branch.type_().clone()].into_iter().collect(),
         TerminalInstruction::Return(return_) => vec![return_.type_().clone()].into_iter().collect(),
@@ -189,14 +189,14 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashS
     }
 }
 
-fn collect_from_type(type_: &Type) -> HashSet<Type> {
+fn collect_from_type(type_: &Type) -> BTreeSet<Type> {
     vec![type_.clone()]
         .into_iter()
         .chain(collect_child_types(type_))
         .collect()
 }
 
-fn collect_child_types(type_: &Type) -> HashSet<Type> {
+fn collect_child_types(type_: &Type) -> BTreeSet<Type> {
     match type_ {
         Type::Function(function) => collect_from_type(function.result())
             .into_iter()
