@@ -326,8 +326,8 @@ mod tests {
     use super::{instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION, *};
     use fmm::types::{self, CallingConvention, Type};
 
-    fn compile_final_module(module: &Module) {
-        compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
+    fn compile_final_module(module: &Module) -> Vec<u8> {
+        compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap()
     }
 
     fn compile_module(module: &Module) {
