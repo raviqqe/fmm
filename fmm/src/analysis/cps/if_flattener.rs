@@ -4,7 +4,7 @@ use crate::{
     ir::*,
     types::{self, Type, VOID_TYPE},
 };
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 struct Context {
     function_definitions: Vec<FunctionDefinition>,
@@ -65,7 +65,7 @@ fn transform_block(
     context: &mut Context,
     block: &Block,
     result_type: &Type,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
 ) -> Block {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -83,7 +83,7 @@ fn transform_instructions(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     result_type: &Type,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
 ) -> (Vec<Instruction>, TerminalInstruction) {
     match instructions {
         [] => (vec![], terminal_instruction.clone()),
@@ -169,7 +169,7 @@ fn transform_if_block(
     if_name: &str,
     block: &Block,
     result_type: &Type,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
     continuation: &Expression,
     environment: &[(String, Type)],
 ) -> Block {
@@ -247,7 +247,7 @@ fn create_continuation(
 fn get_continuation_environment(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &HashMap<String, Type>,
+    local_variables: &BTreeMap<String, Type>,
 ) -> Vec<(String, Type)> {
     free_variable_collector::collect(instructions, terminal_instruction)
         .iter()
