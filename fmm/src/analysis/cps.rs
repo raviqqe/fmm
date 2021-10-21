@@ -80,7 +80,12 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
-        check_types(&transform_to_cps(module, VOID_TYPE.clone()).unwrap()).unwrap();
+        let one = transform_to_cps(module, VOID_TYPE.clone()).unwrap();
+        let other = transform_to_cps(module, VOID_TYPE.clone()).unwrap();
+
+        check_types(&one).unwrap();
+
+        assert_eq!(one, other);
     }
 
     #[test]
@@ -476,6 +481,61 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("y")),
+                ),
+                types::Primitive::Float64,
+            )],
+        ));
+    }
+
+    #[test]
+    fn transform_if_with_large_environment() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![
+                    Argument::new("a", types::Primitive::Float64),
+                    Argument::new("b", types::Primitive::Float64),
+                ],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::Float64,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
+                            )
+                            .into()],
+                            Branch::new(types::Primitive::Float64, Variable::new("x")),
+                        ),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::Float64,
+                        ArithmeticOperation::new(
+                            types::Primitive::Float64,
+                            ArithmeticOperator::Add,
+                            ArithmeticOperation::new(
+                                types::Primitive::Float64,
+                                ArithmeticOperator::Add,
+                                Variable::new("a"),
+                                Variable::new("b"),
+                            ),
+                            Variable::new("y"),
+                        ),
+                    ),
                 ),
                 types::Primitive::Float64,
             )],

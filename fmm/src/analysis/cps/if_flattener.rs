@@ -100,6 +100,7 @@ fn transform_instructions(
                         .chain(vec![(if_.name().into(), if_.type_().clone())])
                         .collect(),
                 );
+                dbg!(&environment);
                 let continuation = create_continuation(
                     context,
                     instructions,
@@ -264,7 +265,11 @@ mod tests {
     use crate::{analysis::check_types, types::VOID_TYPE};
 
     fn flatten_module(module: &Module) {
-        check_types(&flatten(module)).unwrap();
+        let flattened = flatten(module);
+
+        check_types(&flattened).unwrap();
+
+        assert_eq!(flattened, flatten(module));
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -382,6 +387,61 @@ mod tests {
                     )
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("y")),
+                ),
+                types::Primitive::Float64,
+            )],
+        ));
+    }
+
+    #[test]
+    fn flatten_if_with_large_environment() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        flatten_module(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![
+                    Argument::new("a", types::Primitive::Float64),
+                    Argument::new("b", types::Primitive::Float64),
+                ],
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::Float64,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
+                            )
+                            .into()],
+                            Branch::new(types::Primitive::Float64, Variable::new("x")),
+                        ),
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(
+                        types::Primitive::Float64,
+                        ArithmeticOperation::new(
+                            types::Primitive::Float64,
+                            ArithmeticOperator::Add,
+                            ArithmeticOperation::new(
+                                types::Primitive::Float64,
+                                ArithmeticOperator::Add,
+                                Variable::new("a"),
+                                Variable::new("b"),
+                            ),
+                            Variable::new("y"),
+                        ),
+                    ),
                 ),
                 types::Primitive::Float64,
             )],
