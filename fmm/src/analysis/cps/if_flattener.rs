@@ -100,7 +100,6 @@ fn transform_instructions(
                         .chain(vec![(if_.name().into(), if_.type_().clone())])
                         .collect(),
                 );
-                dbg!(&environment);
                 let continuation = create_continuation(
                     context,
                     instructions,
