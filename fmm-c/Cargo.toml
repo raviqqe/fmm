@@ -11,4 +11,5 @@ fmm = { path = "../fmm" }
 tempfile = "3"
 
 [dev-dependencies]
+once_cell = "1"
 pretty_assertions = "1"

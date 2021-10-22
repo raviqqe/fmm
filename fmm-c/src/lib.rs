@@ -1,7 +1,7 @@
 mod error;
 mod expressions;
+mod instruction_configuration;
 mod instructions;
-mod malloc_configuration;
 mod names;
 mod renaming;
 mod types;
@@ -9,8 +9,8 @@ mod types;
 pub use error::*;
 use expressions::*;
 use fmm::{analysis::collect_types, ir::*};
+pub use instruction_configuration::InstructionConfiguration;
 use instructions::*;
-pub use malloc_configuration::MallocConfiguration;
 use names::*;
 use renaming::rename_names;
 use std::collections::{BTreeMap, BTreeSet};
@@ -26,7 +26,7 @@ const INCLUDES: &[&str] = &[
 
 pub fn compile(
     module: &Module,
-    malloc_configuration: Option<MallocConfiguration>,
+    instruction_configuration: Option<InstructionConfiguration>,
 ) -> Result<String, CompileError> {
     fmm::analysis::check_types(module)?;
 
@@ -48,21 +48,26 @@ pub fn compile(
     Ok(INCLUDES
         .iter()
         .map(|&string| string.into())
-        .chain(malloc_configuration.iter().flat_map(|configuration| {
+        .chain(instruction_configuration.iter().flat_map(|configuration| {
             vec![
                 format!(
                     "#define malloc(size) {}(size)",
-                    &configuration.malloc_function_name
+                    &configuration.allocate_function_name
                 ),
-                format!("void* {}(size_t);", &configuration.malloc_function_name),
+                format!("void* {}(size_t);", &configuration.allocate_function_name),
                 format!(
                     "#define realloc(pointer,size) {}(pointer,size)",
-                    &configuration.realloc_function_name
+                    &configuration.reallocate_function_name
                 ),
                 format!(
                     "void* {}(void*,size_t);",
-                    &configuration.realloc_function_name
+                    &configuration.reallocate_function_name
                 ),
+                format!(
+                    "#define free(pointer) {}(pointer)",
+                    &configuration.free_function_name
+                ),
+                format!("void {}(void*);", &configuration.free_function_name),
             ]
         }))
         .chain(
@@ -268,29 +273,16 @@ fn compile_linkage(linkage: Linkage) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION;
     use fmm::types::{self, CallingConvention, Type};
     use pretty_assertions::assert_eq;
 
     fn compile_final_module(module: &Module) {
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
-        let source = compile(
-            module,
-            Some(MallocConfiguration {
-                malloc_function_name: "my_malloc".into(),
-                realloc_function_name: "my_realloc".into(),
-            }),
-        )
-        .unwrap();
+        let source = compile(module, Some(DUMMY_INSTRUCTION_CONFIGURATION.clone())).unwrap();
 
-        let other = compile(
-            module,
-            Some(MallocConfiguration {
-                malloc_function_name: "my_malloc".into(),
-                realloc_function_name: "my_realloc".into(),
-            }),
-        )
-        .unwrap();
+        let other = compile(module, Some(DUMMY_INSTRUCTION_CONFIGURATION.clone())).unwrap();
         assert_eq!(source, other);
 
         println!("{}", source);
