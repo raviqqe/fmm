@@ -28,7 +28,7 @@ pub fn compile_function<'c>(
         &function
             .arguments()
             .iter()
-            .map(compile_type)
+            .map(|type_| compile_type(type_).into())
             .collect::<Vec<_>>(),
         false,
     )
