@@ -62,7 +62,7 @@ fn compile_instruction<'c>(
             builder
                 .build_call(
                     instruction_function_set.allocate_function,
-                    &[compile_expression(allocate.size())],
+                    &[compile_expression(allocate.size()).into()],
                     allocate.name(),
                 )
                 .try_as_basic_value()
@@ -119,7 +119,7 @@ fn compile_instruction<'c>(
                 &call
                     .arguments()
                     .iter()
-                    .map(compile_expression)
+                    .map(|expression| compile_expression(expression).into())
                     .collect::<Vec<_>>(),
                 call.name(),
             );
@@ -175,11 +175,13 @@ fn compile_instruction<'c>(
         Instruction::FreeHeap(free) => {
             builder.build_call(
                 instruction_function_set.free_function,
-                &[builder.build_bitcast(
-                    compile_expression(free.pointer()),
-                    context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE),
-                    "",
-                )],
+                &[builder
+                    .build_bitcast(
+                        compile_expression(free.pointer()),
+                        context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE),
+                        "",
+                    )
+                    .into()],
                 "",
             );
 
@@ -250,8 +252,8 @@ fn compile_instruction<'c>(
             .build_call(
                 instruction_function_set.reallocate_function,
                 &[
-                    compile_expression(reallocate.pointer()),
-                    compile_expression(reallocate.size()),
+                    compile_expression(reallocate.pointer()).into(),
+                    compile_expression(reallocate.size()).into(),
                 ],
                 reallocate.name(),
             )
