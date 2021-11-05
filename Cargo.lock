@@ -101,7 +101,6 @@ checksum = "398ea4fabe40b9b0d885340a2a991a44c8a645624075ad966d21f88688e2b69e"
 name = "fmm"
 version = "0.1.0"
 dependencies = [
- "hamt",
  "insta",
  "once_cell",
  "petgraph",
@@ -139,11 +138,6 @@ dependencies = [
  "libc",
  "wasi",
 ]
-
-[[package]]
-name = "hamt"
-version = "0.3.1"
-source = "git+https://github.com/raviqqe/hamt-rs#f1c5d950984c6f9d84d37765174d7f41b818897d"
 
 [[package]]
 name = "hashbrown"
