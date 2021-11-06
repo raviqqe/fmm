@@ -37,7 +37,7 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
                 .iter()
                 .map(|definition| (definition.name().into(), definition.type_().clone().into())),
         )
-        .collect::<hamt::Map<String, Type>>();
+        .collect::<hamt::Map<_, _>>();
 
     for definition in module.variable_definitions() {
         check_variable_definition(definition, &variables)?;
@@ -66,16 +66,12 @@ fn check_function_definition(
 ) -> Result<(), TypeCheckError> {
     check_block(
         definition.body(),
-        &variables
-            .into_iter()
-            .map(|(name, type_)| (name.clone(), type_.clone()))
-            .chain(
-                definition
-                    .arguments()
-                    .iter()
-                    .map(|argument| (argument.name().into(), argument.type_().clone())),
-            )
-            .collect(),
+        &variables.extend(
+            definition
+                .arguments()
+                .iter()
+                .map(|argument| (argument.name().into(), argument.type_().clone())),
+        ),
         definition.result_type(),
         None,
     )?;
