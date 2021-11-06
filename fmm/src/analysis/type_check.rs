@@ -6,7 +6,6 @@ use crate::{
     types::{self, Type, GENERIC_POINTER_TYPE},
 };
 pub use error::*;
-use std::collections::HashMap;
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
     names::check_names(module)?;
@@ -38,7 +37,7 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
                 .iter()
                 .map(|definition| (definition.name().into(), definition.type_().clone().into())),
         )
-        .collect::<HashMap<String, Type>>();
+        .collect::<hamt::Map<String, Type>>();
 
     for definition in module.variable_definitions() {
         check_variable_definition(definition, &variables)?;
@@ -53,7 +52,7 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
 
 fn check_variable_definition(
     definition: &VariableDefinition,
-    variables: &HashMap<String, Type>,
+    variables: &hamt::Map<String, Type>,
 ) -> Result<(), TypeCheckError> {
     check_equality(
         &check_expression(definition.body(), variables)?,
@@ -63,7 +62,7 @@ fn check_variable_definition(
 
 fn check_function_definition(
     definition: &FunctionDefinition,
-    variables: &HashMap<String, Type>,
+    variables: &hamt::Map<String, Type>,
 ) -> Result<(), TypeCheckError> {
     check_block(
         definition.body(),
@@ -86,7 +85,7 @@ fn check_function_definition(
 
 fn check_block(
     block: &Block,
-    variables: &HashMap<String, Type>,
+    variables: &hamt::Map<String, Type>,
     return_type: &Type,
     branch_type: Option<&Type>,
 ) -> Result<(), TypeCheckError> {
@@ -223,7 +222,7 @@ fn check_block(
 
         if let Some(name) = instruction.name() {
             if let Some(type_) = instruction.result_type() {
-                variables.insert(name.into(), type_.clone());
+                variables = variables.insert(name.into(), type_.clone());
             }
         }
     }
@@ -254,7 +253,7 @@ fn check_block(
 
 fn check_expression(
     expression: &Expression,
-    variables: &HashMap<String, Type>,
+    variables: &hamt::Map<String, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
