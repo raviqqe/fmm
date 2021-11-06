@@ -1,9 +1,9 @@
 use super::TypeCheckError;
 use crate::ir::*;
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 pub fn check_names(module: &Module) -> Result<(), TypeCheckError> {
-    let mut names = BTreeSet::new();
+    let mut names = HashSet::new();
 
     for name in module
         .variable_declarations()

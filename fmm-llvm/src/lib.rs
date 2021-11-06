@@ -14,7 +14,6 @@ pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 use instructions::*;
 use once_cell::sync::Lazy;
-use std::collections::BTreeMap;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     inkwell::targets::TargetMachine::get_default_triple()
@@ -87,7 +86,7 @@ fn compile_module<'c>(
     let llvm_module = context.create_module("");
     llvm_module.set_triple(&target_machine.get_triple());
 
-    let mut variables = BTreeMap::new();
+    let mut variables = hamt::Map::new();
 
     let instruction_function_set = compile_heap_functions(
         &llvm_module,
@@ -99,14 +98,14 @@ fn compile_module<'c>(
     for declaration in module.variable_declarations() {
         let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
 
-        variables.insert(declaration.name().into(), global.as_pointer_value().into());
+        variables = variables.insert(declaration.name().into(), global.as_pointer_value().into());
     }
 
     for declaration in module.function_declarations() {
         let function =
             compile_function_declaration(&llvm_module, declaration, context, &target_data);
 
-        variables.insert(
+        variables = variables.insert(
             declaration.name().into(),
             function.as_global_value().as_pointer_value().into(),
         );
@@ -115,13 +114,13 @@ fn compile_module<'c>(
     for definition in module.variable_definitions() {
         let global = declare_variable_definition(&llvm_module, definition, context, &target_data);
 
-        variables.insert(definition.name().into(), global.as_pointer_value().into());
+        variables = variables.insert(definition.name().into(), global.as_pointer_value().into());
     }
 
     for definition in module.function_definitions() {
         let function = declare_function_definition(&llvm_module, definition, context, &target_data);
 
-        variables.insert(
+        variables = variables.insert(
             definition.name().into(),
             function.as_global_value().as_pointer_value().into(),
         );
@@ -236,7 +235,7 @@ fn declare_variable_definition<'c>(
 fn compile_variable_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
-    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) {
@@ -273,7 +272,7 @@ fn declare_function_definition<'c>(
 fn compile_function_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
-    variables: &BTreeMap<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
@@ -287,22 +286,18 @@ fn compile_function_definition<'c>(
         &builder,
         definition.body(),
         None,
-        &variables
-            .clone()
-            .into_iter()
-            .chain(
-                definition
-                    .arguments()
-                    .iter()
-                    .enumerate()
-                    .map(|(index, argument)| {
-                        (
-                            argument.name().into(),
-                            function.get_nth_param(index as u32).unwrap(),
-                        )
-                    }),
-            )
-            .collect(),
+        &variables.extend(
+            definition
+                .arguments()
+                .iter()
+                .enumerate()
+                .map(|(index, argument)| {
+                    (
+                        argument.name().into(),
+                        function.get_nth_param(index as u32).unwrap(),
+                    )
+                }),
+        ),
         context,
         target_data,
         instruction_function_set,
