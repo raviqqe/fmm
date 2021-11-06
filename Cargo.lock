@@ -124,6 +124,7 @@ name = "fmm-llvm"
 version = "0.1.0"
 dependencies = [
  "fmm",
+ "hamt",
  "inkwell",
  "llvm-sys",
  "once_cell",
@@ -143,7 +144,7 @@ dependencies = [
 [[package]]
 name = "hamt"
 version = "0.3.1"
-source = "git+https://github.com/raviqqe/hamt-rs#359d89849fcec8405992119377b83d6ba190d044"
+source = "git+https://github.com/raviqqe/hamt-rs#b30dd6cca326abd015035cdb37c9eb04a6f3adbb"
 
 [[package]]
 name = "hashbrown"
