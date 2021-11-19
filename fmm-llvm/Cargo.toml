@@ -10,7 +10,7 @@ edition = "2021"
 fmm = { path = "../fmm" }
 hamt = { git = "https://github.com/raviqqe/hamt-rs" }
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
-  "llvm12-0",
+  "llvm13-0",
 ] }
 llvm-sys = "130"
 once_cell = "1"
