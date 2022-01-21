@@ -1,5 +1,5 @@
 use crate::{ir::*, types::Type};
-use std::collections::{FnvHashMap, FnvHashSet};
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn collect_types(module: &Module) -> Vec<Type> {
     sort_types(&flat_types(

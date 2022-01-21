@@ -3,7 +3,7 @@ use fmm::{
     ir::*,
     types::{self, GENERIC_POINTER_TYPE},
 };
-use std::collections::{FnvHashMap, FnvHashSet};
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_block(
     block: &Block,

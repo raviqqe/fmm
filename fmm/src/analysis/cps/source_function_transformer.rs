@@ -10,7 +10,7 @@ use crate::{
     ir::*,
     types::{CallingConvention, Type},
 };
-use std::collections::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";

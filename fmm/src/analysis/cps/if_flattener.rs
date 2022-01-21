@@ -4,7 +4,7 @@ use crate::{
     ir::*,
     types::{self, Type, VOID_TYPE},
 };
-use std::collections::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 
 struct Context {
     function_definitions: Vec<FunctionDefinition>,

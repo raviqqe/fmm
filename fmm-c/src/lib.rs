@@ -13,7 +13,7 @@ pub use instruction_configuration::InstructionConfiguration;
 use instructions::*;
 use names::*;
 use renaming::rename_names;
-use std::collections::{FnvHashMap, FnvHashSet};
+use fnv::{FnvHashMap, FnvHashSet};
 use types::*;
 
 const INCLUDES: &[&str] = &[

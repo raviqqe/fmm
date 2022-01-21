@@ -1,6 +1,6 @@
 use crate::names::*;
 use fmm::types::{self, Type};
-use std::collections::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &FnvHashMap<Type, String>) -> String {
     match type_ {

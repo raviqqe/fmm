@@ -1,6 +1,6 @@
 use super::TypeCheckError;
 use crate::ir::*;
-use std::collections::HashSet;
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn check_names(module: &Module) -> Result<(), TypeCheckError> {
     let mut names = HashSet::new();

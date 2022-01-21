@@ -1,7 +1,7 @@
 use super::types::*;
 use crate::names::*;
 use fmm::{ir::*, types};
-use std::collections::{FnvHashMap, FnvHashSet};
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_expression(
     expression: &Expression,

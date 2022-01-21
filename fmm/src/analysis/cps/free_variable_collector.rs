@@ -1,5 +1,5 @@
 use crate::ir::*;
-use std::collections::FnvHashSet;
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn collect(
     instructions: &[Instruction],
