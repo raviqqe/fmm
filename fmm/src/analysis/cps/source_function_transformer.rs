@@ -69,10 +69,7 @@ fn transform_function_definition(
                         .arguments()
                         .iter()
                         .map(|argument| (argument.name().into(), argument.type_().clone()))
-                        .chain([(
-                            CONTINUATION_ARGUMENT_NAME.into(),
-                            continuation_type.into(),
-                        )])
+                        .chain([(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into())])
                         .collect(),
                 )?,
                 context.cps.result_type().clone(),

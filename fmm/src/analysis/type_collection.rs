@@ -129,9 +129,7 @@ fn collect_from_instructions(instructions: &[Instruction]) -> BTreeSet<Type> {
 fn collect_from_instruction(instruction: &Instruction) -> BTreeSet<Type> {
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
-        Instruction::AllocateStack(allocate) => {
-            [allocate.type_().clone()].into_iter().collect()
-        }
+        Instruction::AllocateStack(allocate) => [allocate.type_().clone()].into_iter().collect(),
         Instruction::AtomicLoad(load) => [load.type_().clone()].into_iter().collect(),
         Instruction::AtomicOperation(operation) => vec![operation.type_().into()]
             .into_iter()
