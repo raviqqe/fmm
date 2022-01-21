@@ -108,7 +108,7 @@ fn collect_from_expression(expression: &Expression) -> BTreeSet<String> {
         Expression::RecordAddress(address) => collect_from_expression(address.pointer()),
         Expression::Union(union) => collect_from_expression(union.member()),
         Expression::UnionAddress(address) => collect_from_expression(address.pointer()),
-        Expression::Variable(variable) => vec![variable.name().into()].into_iter().collect(),
+        Expression::Variable(variable) => [variable.name().into()].into_iter().collect(),
         Expression::AlignOf(_)
         | Expression::Primitive(_)
         | Expression::SizeOf(_)

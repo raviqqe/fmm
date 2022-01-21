@@ -15,7 +15,7 @@ pub fn compile_block(
         .instructions()
         .iter()
         .map(|instruction| compile_instruction(instruction, global_variables, type_ids))
-        .chain(vec![compile_terminal_instruction(
+        .chain([compile_terminal_instruction(
             block.terminal_instruction(),
             branch_variable_name,
             global_variables,

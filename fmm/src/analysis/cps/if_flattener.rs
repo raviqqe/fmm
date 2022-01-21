@@ -97,7 +97,7 @@ fn transform_instructions(
                     &local_variables
                         .clone()
                         .into_iter()
-                        .chain(vec![(if_.name().into(), if_.type_().clone())])
+                        .chain([(if_.name().into(), if_.type_().clone())])
                         .collect(),
                 );
                 let continuation = create_continuation(
@@ -182,7 +182,7 @@ fn transform_if_block(
                     .instructions()
                     .iter()
                     .cloned()
-                    .chain(vec![Call::new(
+                    .chain([Call::new(
                         types::Function::new(
                             environment.iter().map(|(_, type_)| type_.clone()).collect(),
                             result_type.clone(),

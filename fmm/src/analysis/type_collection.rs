@@ -57,7 +57,7 @@ fn flat_types(types: &BTreeSet<Type>) -> BTreeSet<Type> {
 
 fn collect_from_expression(expression: &Expression) -> BTreeSet<Type> {
     match expression {
-        Expression::AlignOf(align_of) => vec![align_of.type_().clone()].into_iter().collect(),
+        Expression::AlignOf(align_of) => [align_of.type_().clone()].into_iter().collect(),
         Expression::ArithmeticOperation(operation) => vec![operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.lhs()))
@@ -93,7 +93,7 @@ fn collect_from_expression(expression: &Expression) -> BTreeSet<Type> {
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
-        Expression::SizeOf(size_of) => vec![size_of.type_().clone()].into_iter().collect(),
+        Expression::SizeOf(size_of) => [size_of.type_().clone()].into_iter().collect(),
         Expression::Union(union) => vec![union.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(union.member()))
@@ -102,7 +102,7 @@ fn collect_from_expression(expression: &Expression) -> BTreeSet<Type> {
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
-        Expression::Undefined(undefined) => vec![undefined.type_().clone()].into_iter().collect(),
+        Expression::Undefined(undefined) => [undefined.type_().clone()].into_iter().collect(),
         Expression::Primitive(_) | Expression::Variable(_) => Default::default(),
     }
 }
@@ -129,22 +129,20 @@ fn collect_from_instructions(instructions: &[Instruction]) -> BTreeSet<Type> {
 fn collect_from_instruction(instruction: &Instruction) -> BTreeSet<Type> {
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
-        Instruction::AllocateStack(allocate) => {
-            vec![allocate.type_().clone()].into_iter().collect()
-        }
-        Instruction::AtomicLoad(load) => vec![load.type_().clone()].into_iter().collect(),
+        Instruction::AllocateStack(allocate) => [allocate.type_().clone()].into_iter().collect(),
+        Instruction::AtomicLoad(load) => [load.type_().clone()].into_iter().collect(),
         Instruction::AtomicOperation(operation) => vec![operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.pointer()))
             .chain(collect_from_expression(operation.value()))
             .collect(),
-        Instruction::AtomicStore(store) => vec![store.type_().clone()].into_iter().collect(),
+        Instruction::AtomicStore(store) => [store.type_().clone()].into_iter().collect(),
         Instruction::Call(call) => vec![call.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(call.function()))
             .chain(call.arguments().iter().flat_map(collect_from_expression))
             .collect(),
-        Instruction::CompareAndSwap(cas) => vec![cas.type_().clone()].into_iter().collect(),
+        Instruction::CompareAndSwap(cas) => [cas.type_().clone()].into_iter().collect(),
         Instruction::DeconstructRecord(deconstruct) => vec![deconstruct.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(deconstruct.record()))
@@ -183,8 +181,8 @@ fn collect_from_instruction(instruction: &Instruction) -> BTreeSet<Type> {
 
 fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> BTreeSet<Type> {
     match instruction {
-        TerminalInstruction::Branch(branch) => vec![branch.type_().clone()].into_iter().collect(),
-        TerminalInstruction::Return(return_) => vec![return_.type_().clone()].into_iter().collect(),
+        TerminalInstruction::Branch(branch) => [branch.type_().clone()].into_iter().collect(),
+        TerminalInstruction::Return(return_) => [return_.type_().clone()].into_iter().collect(),
         TerminalInstruction::Unreachable => Default::default(),
     }
 }
