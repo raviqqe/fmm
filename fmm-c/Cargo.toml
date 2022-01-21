@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 fmm = { path = "../fmm" }
+fnv = "1"
 tempfile = "3"
 
 [dev-dependencies]
