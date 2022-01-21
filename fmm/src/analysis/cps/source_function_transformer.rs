@@ -10,7 +10,7 @@ use crate::{
     ir::*,
     types::{CallingConvention, Type},
 };
-use std::collections::BTreeMap;
+use std::collections::FnvHashMap;
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
@@ -85,7 +85,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &Block,
-    local_variables: &BTreeMap<String, Type>,
+    local_variables: &FnvHashMap<String, Type>,
 ) -> Result<Block, BuildError> {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -101,7 +101,7 @@ fn transform_instructions(
     context: &mut Context,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &BTreeMap<String, Type>,
+    local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
     Ok(match instructions {
         [] => match terminal_instruction {
@@ -301,7 +301,7 @@ fn create_continuation(
 fn get_continuation_environment(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &BTreeMap<String, Type>,
+    local_variables: &FnvHashMap<String, Type>,
 ) -> Vec<(String, Type)> {
     vec![(
         CONTINUATION_ARGUMENT_NAME.into(),
