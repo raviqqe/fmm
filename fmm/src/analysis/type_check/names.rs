@@ -3,7 +3,7 @@ use crate::ir::*;
 use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn check_names(module: &Module) -> Result<(), TypeCheckError> {
-    let mut names = HashSet::new();
+    let mut names = FnvHashSet::default();
 
     for name in module
         .variable_declarations()

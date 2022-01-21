@@ -1,11 +1,11 @@
 use crate::ir::*;
-use fnv::{FnvHashMap, FnvHashSet};
+use fnv::FnvHashSet;
 
 pub fn collect(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
 ) -> FnvHashSet<String> {
-    let mut variables = FnvHashSet::new();
+    let mut variables = FnvHashSet::default();
 
     for instruction in instructions {
         variables.extend(collect_from_instruction(instruction));
@@ -76,7 +76,7 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHa
     match instruction {
         TerminalInstruction::Branch(branch) => collect_from_expression(branch.expression()),
         TerminalInstruction::Return(return_) => collect_from_expression(return_.expression()),
-        TerminalInstruction::Unreachable => FnvHashSet::new(),
+        TerminalInstruction::Unreachable => Default::default(),
     }
 }
 

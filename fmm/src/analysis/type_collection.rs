@@ -29,7 +29,7 @@ pub fn collect_types(module: &Module) -> Vec<Type> {
 
 fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
     let mut graph = petgraph::graph::Graph::<&Type, ()>::new();
-    let mut indices = FnvHashMap::<&Type, _>::new();
+    let mut indices = FnvHashMap::<&Type, _>::default();
 
     for type_ in types {
         indices.insert(type_, graph.add_node(type_));
@@ -117,7 +117,7 @@ fn collect_from_block(block: &Block) -> FnvHashSet<Type> {
 }
 
 fn collect_from_instructions(instructions: &[Instruction]) -> FnvHashSet<Type> {
-    let mut types = FnvHashSet::new();
+    let mut types = FnvHashSet::default();
 
     for instruction in instructions {
         types.extend(collect_from_instruction(instruction));
