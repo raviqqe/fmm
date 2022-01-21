@@ -9,11 +9,11 @@ mod types;
 pub use error::*;
 use expressions::*;
 use fmm::{analysis::collect_types, ir::*};
+use fnv::{FnvHashMap, FnvHashSet};
 pub use instruction_configuration::InstructionConfiguration;
 use instructions::*;
 use names::*;
 use renaming::rename_names;
-use fnv::{FnvHashMap, FnvHashSet};
 use types::*;
 
 const INCLUDES: &[&str] = &[

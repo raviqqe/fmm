@@ -1,6 +1,6 @@
 use crate::names::*;
 use fmm::types::{self, Type};
-use fnv::{FnvHashMap, FnvHashSet};
+use fnv::FnvHashMap;
 
 pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &FnvHashMap<Type, String>) -> String {
     match type_ {
@@ -75,7 +75,10 @@ pub fn compile_primitive_type_id(primitive: types::Primitive) -> String {
     .into()
 }
 
-pub fn compile_record_type_id(record: &types::Record, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_record_type_id(
+    record: &types::Record,
+    type_ids: &FnvHashMap<Type, String>,
+) -> String {
     "struct ".to_owned() + &type_ids[&record.clone().into()]
 }
 
@@ -83,7 +86,10 @@ pub fn compile_union_type_id(union: &types::Union, type_ids: &FnvHashMap<Type, S
     "union ".to_owned() + &type_ids[&union.clone().into()]
 }
 
-pub fn compile_record_fields(record: &types::Record, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_record_fields(
+    record: &types::Record,
+    type_ids: &FnvHashMap<Type, String>,
+) -> String {
     record
         .fields()
         .iter()
