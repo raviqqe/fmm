@@ -130,7 +130,7 @@ fn transform_source_function_call(
     Ok(builder
         .into_instructions()
         .into_iter()
-        .chain(vec![PassThrough::new(
+        .chain([PassThrough::new(
             result.type_().clone(),
             result.expression().clone(),
             call.name(),

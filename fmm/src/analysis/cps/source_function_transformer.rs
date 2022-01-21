@@ -69,7 +69,7 @@ fn transform_function_definition(
                         .arguments()
                         .iter()
                         .map(|argument| (argument.name().into(), argument.type_().clone()))
-                        .chain(vec![(
+                        .chain([(
                             CONTINUATION_ARGUMENT_NAME.into(),
                             continuation_type.into(),
                         )])
@@ -171,7 +171,7 @@ fn transform_instructions(
                         builder
                             .into_instructions()
                             .into_iter()
-                            .chain(vec![Call::new(
+                            .chain([Call::new(
                                 call.type_().clone(),
                                 call.function().clone(),
                                 vec![Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
@@ -251,7 +251,7 @@ fn create_continuation(
         &environment
             .iter()
             .cloned()
-            .chain(vec![(call.name().into(), call.type_().result().clone())])
+            .chain([(call.name().into(), call.type_().result().clone())])
             .collect(),
     )?;
 
