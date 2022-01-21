@@ -3,13 +3,13 @@ use fmm::{
     ir::*,
     types::{self, GENERIC_POINTER_TYPE},
 };
-use std::collections::{BTreeMap, BTreeSet};
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_block(
     block: &Block,
     branch_variable_name: Option<&str>,
-    global_variables: &BTreeSet<String>,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    global_variables: &FnvHashSet<String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     block
         .instructions()
@@ -28,8 +28,8 @@ pub fn compile_block(
 
 fn compile_instruction(
     instruction: &Instruction,
-    global_variables: &BTreeSet<String>,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    global_variables: &FnvHashSet<String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
         |expression| compile_expression(expression, global_variables, type_ids);
@@ -178,8 +178,8 @@ fn compile_instruction(
 fn compile_terminal_instruction(
     instruction: &TerminalInstruction,
     block_variable_name: Option<&str>,
-    global_variables: &BTreeSet<String>,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    global_variables: &FnvHashSet<String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
         |expression| compile_expression(expression, global_variables, type_ids);

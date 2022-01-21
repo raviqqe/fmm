@@ -1,8 +1,8 @@
 use crate::names::*;
 use fmm::types::{self, Type};
-use std::collections::BTreeMap;
+use fnv::FnvHashMap;
 
-pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &FnvHashMap<Type, String>) -> String {
     match type_ {
         Type::Function(function) => {
             compile_function_name(function, &format!("(*{})", name), type_ids)
@@ -19,7 +19,7 @@ pub fn compile_typed_name(type_: &Type, name: &str, type_ids: &BTreeMap<Type, St
 pub fn compile_function_name(
     function: &types::Function,
     name: &str,
-    type_ids: &BTreeMap<Type, String>,
+    type_ids: &FnvHashMap<Type, String>,
 ) -> String {
     compile_typed_name(
         function.result(),
@@ -42,7 +42,7 @@ pub fn compile_function_name(
     )
 }
 
-pub fn compile_type_id(type_: &Type, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_type_id(type_: &Type, type_ids: &FnvHashMap<Type, String>) -> String {
     match type_ {
         Type::Function(function) => compile_function_name(function, "(*)", type_ids),
         Type::Primitive(primitive) => compile_primitive_type_id(*primitive),
@@ -52,7 +52,7 @@ pub fn compile_type_id(type_: &Type, type_ids: &BTreeMap<Type, String>) -> Strin
     }
 }
 
-pub fn compile_atomic_pointer_type_id(type_: &Type, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_atomic_pointer_type_id(type_: &Type, type_ids: &FnvHashMap<Type, String>) -> String {
     match type_ {
         Type::Function(function) => compile_function_name(function, "(*_Atomic *)", type_ids),
         Type::Pointer(pointer) => compile_typed_name(pointer.element(), "_Atomic *", type_ids),
@@ -75,15 +75,21 @@ pub fn compile_primitive_type_id(primitive: types::Primitive) -> String {
     .into()
 }
 
-pub fn compile_record_type_id(record: &types::Record, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_record_type_id(
+    record: &types::Record,
+    type_ids: &FnvHashMap<Type, String>,
+) -> String {
     "struct ".to_owned() + &type_ids[&record.clone().into()]
 }
 
-pub fn compile_union_type_id(union: &types::Union, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_union_type_id(union: &types::Union, type_ids: &FnvHashMap<Type, String>) -> String {
     "union ".to_owned() + &type_ids[&union.clone().into()]
 }
 
-pub fn compile_record_fields(record: &types::Record, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_record_fields(
+    record: &types::Record,
+    type_ids: &FnvHashMap<Type, String>,
+) -> String {
     record
         .fields()
         .iter()
@@ -95,7 +101,7 @@ pub fn compile_record_fields(record: &types::Record, type_ids: &BTreeMap<Type, S
         .join("")
 }
 
-pub fn compile_union_members(union: &types::Union, type_ids: &BTreeMap<Type, String>) -> String {
+pub fn compile_union_members(union: &types::Union, type_ids: &FnvHashMap<Type, String>) -> String {
     union
         .members()
         .iter()

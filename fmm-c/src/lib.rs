@@ -9,11 +9,11 @@ mod types;
 pub use error::*;
 use expressions::*;
 use fmm::{analysis::collect_types, ir::*};
+use fnv::{FnvHashMap, FnvHashSet};
 pub use instruction_configuration::InstructionConfiguration;
 use instructions::*;
 use names::*;
 use renaming::rename_names;
-use std::collections::{BTreeMap, BTreeSet};
 use types::*;
 
 const INCLUDES: &[&str] = &[
@@ -122,7 +122,7 @@ pub fn compile(
 
 fn compile_record_type_definition(
     record: &fmm::types::Record,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     format!(
         "struct {} {{{}}};",
@@ -133,7 +133,7 @@ fn compile_record_type_definition(
 
 fn compile_union_type_definition(
     union: &fmm::types::Union,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     format!(
         "union {} {{{}}};",
@@ -144,7 +144,7 @@ fn compile_union_type_definition(
 
 fn compile_variable_declaration(
     declaration: &VariableDeclaration,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     "extern ".to_owned()
         + &compile_typed_name(declaration.type_(), declaration.name(), type_ids)
@@ -153,14 +153,14 @@ fn compile_variable_declaration(
 
 fn compile_variable_forward_declaration(
     definition: &VariableDefinition,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_variable_definition_lhs(definition, type_ids) + ";"
 }
 
 fn compile_function_declaration(
     declaration: &FunctionDeclaration,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     "extern ".to_owned()
         + &compile_function_name(declaration.type_(), declaration.name(), type_ids)
@@ -169,7 +169,7 @@ fn compile_function_declaration(
 
 fn compile_function_forward_declaration(
     definition: &FunctionDefinition,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.linkage()).to_owned()
         + &compile_function_name(definition.type_(), definition.name(), type_ids)
@@ -178,8 +178,8 @@ fn compile_function_forward_declaration(
 
 fn compile_variable_definition(
     definition: &VariableDefinition,
-    global_variables: &BTreeSet<String>,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    global_variables: &FnvHashSet<String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_variable_definition_lhs(definition, type_ids)
         + "="
@@ -189,7 +189,7 @@ fn compile_variable_definition(
 
 fn compile_variable_definition_lhs(
     definition: &VariableDefinition,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.linkage()).to_owned()
         + &compile_typed_name(
@@ -207,8 +207,8 @@ fn compile_variable_definition_lhs(
 
 fn compile_function_definition(
     definition: &FunctionDefinition,
-    global_variables: &BTreeSet<String>,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    global_variables: &FnvHashSet<String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.linkage()).to_owned()
         + &compile_typed_name(
@@ -230,7 +230,7 @@ fn compile_function_definition(
         + "\n}"
 }
 
-fn compile_type_ids(types: &[fmm::types::Type]) -> BTreeMap<fmm::types::Type, String> {
+fn compile_type_ids(types: &[fmm::types::Type]) -> FnvHashMap<fmm::types::Type, String> {
     types
         .iter()
         .filter_map(|type_| {
@@ -240,7 +240,7 @@ fn compile_type_ids(types: &[fmm::types::Type]) -> BTreeMap<fmm::types::Type, St
                 None
             }
         })
-        .collect::<BTreeSet<_>>()
+        .collect::<FnvHashSet<_>>()
         .into_iter()
         .enumerate()
         .map(|(index, record)| (record.clone().into(), generate_record_type_name(index)))
@@ -254,7 +254,7 @@ fn compile_type_ids(types: &[fmm::types::Type]) -> BTreeMap<fmm::types::Type, St
                         None
                     }
                 })
-                .collect::<BTreeSet<_>>()
+                .collect::<FnvHashSet<_>>()
                 .into_iter()
                 .enumerate()
                 .map(|(index, union)| (union.clone().into(), generate_union_type_name(index))),

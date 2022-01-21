@@ -1,12 +1,12 @@
 use super::types::*;
 use crate::names::*;
 use fmm::{ir::*, types};
-use std::collections::{BTreeMap, BTreeSet};
+use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_expression(
     expression: &Expression,
-    global_variables: &BTreeSet<String>,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    global_variables: &FnvHashSet<String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
         |expression| compile_expression(expression, global_variables, type_ids);
@@ -106,7 +106,7 @@ pub fn compile_expression(
 
 fn compile_undefined(
     undefined: &Undefined,
-    type_ids: &BTreeMap<fmm::types::Type, String>,
+    type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     match undefined.type_() {
         types::Type::Function(_) => "NULL".into(),
