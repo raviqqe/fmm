@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 fmm = { path = "../fmm" }
-hamt = { git = "https://github.com/raviqqe/hamt-rs" }
+hamt = { git = "https://github.com/raviqqe/hamt-rs", branch = "main" }
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
   "llvm13-0",
 ] }
