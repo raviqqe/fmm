@@ -10,7 +10,6 @@ use crate::{
     ir::*,
     types::{CallingConvention, Type},
 };
-use fnv::FnvHashMap;
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
@@ -85,7 +84,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &Block,
-    local_variables: &FnvHashMap<String, Type>,
+    local_variables: &hamt::Map<String, Type>,
 ) -> Result<Block, BuildError> {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -101,7 +100,7 @@ fn transform_instructions(
     context: &mut Context,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<String, Type>,
+    local_variables: &hamt::Map<String, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
     Ok(match instructions {
         [] => match terminal_instruction {
@@ -205,13 +204,12 @@ fn transform_instructions(
                 context,
                 instructions,
                 terminal_instruction,
-                &local_variables
-                    .clone()
-                    .into_iter()
-                    .chain(instruction.name().and_then(|name| {
-                        instruction.result_type().map(|type_| (name.into(), type_))
-                    }))
-                    .collect(),
+                &if let (Some(name), Some(type_)) = (instruction.name(), instruction.result_type())
+                {
+                    local_variables.insert(name.into(), type_.clone())
+                } else {
+                    local_variables.clone()
+                },
             )?;
 
             (
@@ -301,7 +299,7 @@ fn create_continuation(
 fn get_continuation_environment(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<String, Type>,
+    local_variables: &hamt::Map<String, Type>,
 ) -> Vec<(String, Type)> {
     vec![(
         CONTINUATION_ARGUMENT_NAME.into(),
