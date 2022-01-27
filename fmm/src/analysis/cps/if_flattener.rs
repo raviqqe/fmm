@@ -140,7 +140,7 @@ fn transform_instructions(
                     &if let (Some(name), Some(type_)) =
                         (instruction.name(), instruction.result_type())
                     {
-                        local_variables.insert(name.into(), type_.clone())
+                        local_variables.insert(name.into(), type_)
                     } else {
                         local_variables.clone()
                     },
