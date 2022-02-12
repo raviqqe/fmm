@@ -46,7 +46,7 @@ mod tests {
 
     fn create_cps_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(
-            vec![
+            [
                 STACK_TYPE.clone(),
                 types::Function::new(
                     vec![STACK_TYPE.clone(), result.into()],
@@ -54,8 +54,7 @@ mod tests {
                     CallingConvention::Tail,
                 )
                 .into(),
-            ]
-            .into_iter()
+            ].into_iter()
             .chain(arguments)
             .collect(),
             VOID_TYPE.clone(),

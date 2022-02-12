@@ -110,11 +110,10 @@ fn transform_source_function_call(
 
     builder.call(
         TypedExpression::new(call.function().clone(), call.type_().clone()),
-        vec![
+        [
             stack.clone(),
             compile_continuation(context, call.type_().result())?,
-        ]
-        .into_iter()
+        ].into_iter()
         .chain(
             call.arguments()
                 .iter()
