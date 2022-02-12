@@ -49,9 +49,7 @@ fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
 }
 
 fn flat_types(types: &FnvHashSet<Type>) -> FnvHashSet<Type> {
-    [].into_iter()
-        .chain(types.iter().flat_map(collect_from_type))
-        .collect()
+    types.iter().flat_map(collect_from_type).collect()
 }
 
 fn collect_from_expression(expression: &Expression) -> FnvHashSet<Type> {
