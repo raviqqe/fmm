@@ -2,7 +2,7 @@ use crate::{ir::*, types::Type};
 use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn collect_types(module: &Module) -> Vec<Type> {
-    sort_types(&flat_types(
+    sort_types(
         &module
             .variable_declarations()
             .iter()
@@ -23,8 +23,9 @@ pub fn collect_types(module: &Module) -> Vec<Type> {
                     .into_iter()
                     .chain(collect_from_block(definition.body()))
             }))
+            .flat_map(|type_| collect_from_type(&type_))
             .collect(),
-    ))
+    )
 }
 
 fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
@@ -46,10 +47,6 @@ fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
         .into_iter()
         .map(|index| graph[index].clone())
         .collect()
-}
-
-fn flat_types(types: &FnvHashSet<Type>) -> FnvHashSet<Type> {
-    types.iter().flat_map(collect_from_type).collect()
 }
 
 fn collect_from_expression(expression: &Expression) -> FnvHashSet<Type> {
