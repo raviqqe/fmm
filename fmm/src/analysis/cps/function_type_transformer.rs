@@ -24,7 +24,8 @@ fn transform_function_type(
                 STACK_TYPE.clone(),
                 continuation_type_compiler::compile(type_.result(), continuation_result_type)
                     .into(),
-            ].into_iter()
+            ]
+            .into_iter()
             .chain(type_.arguments().iter().cloned())
             .collect(),
             continuation_result_type.clone(),

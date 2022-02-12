@@ -53,7 +53,8 @@ fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<String> {
             collect_from_expression(if_.condition()),
             collect_from_block(if_.then()),
             collect_from_block(if_.else_()),
-        ].into_iter()
+        ]
+        .into_iter()
         .flatten()
         .collect(),
         Instruction::Load(load) => collect_from_expression(load.pointer()),

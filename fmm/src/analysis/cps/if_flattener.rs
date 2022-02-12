@@ -147,7 +147,8 @@ fn transform_instructions(
                 );
 
                 (
-                    [instruction.clone()].into_iter()
+                    [instruction.clone()]
+                        .into_iter()
                         .chain(instructions)
                         .collect(),
                     terminal_instruction,

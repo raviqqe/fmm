@@ -54,7 +54,8 @@ mod tests {
                     CallingConvention::Tail,
                 )
                 .into(),
-            ].into_iter()
+            ]
+            .into_iter()
             .chain(arguments)
             .collect(),
             VOID_TYPE.clone(),

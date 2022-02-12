@@ -57,7 +57,8 @@ fn transform_function_definition(
                 [
                     Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                     Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
-                ].into_iter()
+                ]
+                .into_iter()
                 .chain(definition.arguments().iter().cloned())
                 .collect(),
                 transform_block(
@@ -169,7 +170,8 @@ fn transform_instructions(
                             .chain([Call::new(
                                 call.type_().clone(),
                                 call.function().clone(),
-                                [Variable::new(STACK_ARGUMENT_NAME).into(), continuation].into_iter()
+                                [Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
+                                    .into_iter()
                                     .chain(call.arguments().iter().cloned())
                                     .collect(),
                                 RESULT_NAME,
@@ -211,7 +213,8 @@ fn transform_instructions(
             )?;
 
             (
-                [instruction.clone()].into_iter()
+                [instruction.clone()]
+                    .into_iter()
                     .chain(instructions)
                     .collect(),
                 terminal_instruction,
@@ -301,7 +304,8 @@ fn get_continuation_environment(
     [(
         CONTINUATION_ARGUMENT_NAME.into(),
         local_variables[CONTINUATION_ARGUMENT_NAME].clone(),
-    )].into_iter()
+    )]
+    .into_iter()
     .chain(
         free_variable_collector::collect(instructions, terminal_instruction)
             .iter()
