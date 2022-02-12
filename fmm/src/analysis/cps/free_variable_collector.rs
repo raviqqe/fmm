@@ -49,7 +49,7 @@ fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<String> {
         }
         Instruction::DeconstructUnion(deconstruct) => collect_from_expression(deconstruct.union()),
         Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
-        Instruction::If(if_) => vec![
+        Instruction::If(if_) => [
             collect_from_expression(if_.condition()),
             collect_from_block(if_.then()),
             collect_from_block(if_.else_()),

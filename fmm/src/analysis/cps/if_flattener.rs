@@ -147,7 +147,7 @@ fn transform_instructions(
                 );
 
                 (
-                    vec![instruction.clone()]
+                    [instruction.clone()]
                         .into_iter()
                         .chain(instructions)
                         .collect(),

@@ -49,8 +49,7 @@ fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
 }
 
 fn flat_types(types: &FnvHashSet<Type>) -> FnvHashSet<Type> {
-    vec![]
-        .into_iter()
+    [].into_iter()
         .chain(types.iter().flat_map(collect_from_type))
         .collect()
 }
@@ -58,47 +57,47 @@ fn flat_types(types: &FnvHashSet<Type>) -> FnvHashSet<Type> {
 fn collect_from_expression(expression: &Expression) -> FnvHashSet<Type> {
     match expression {
         Expression::AlignOf(align_of) => [align_of.type_().clone()].into_iter().collect(),
-        Expression::ArithmeticOperation(operation) => vec![operation.type_().into()]
+        Expression::ArithmeticOperation(operation) => [operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.lhs()))
             .chain(collect_from_expression(operation.rhs()))
             .collect(),
-        Expression::BitCast(bit_cast) => vec![bit_cast.from().clone(), bit_cast.to().clone()]
+        Expression::BitCast(bit_cast) => [bit_cast.from().clone(), bit_cast.to().clone()]
             .into_iter()
             .chain(collect_from_expression(bit_cast.expression()))
             .collect(),
-        Expression::BitwiseNotOperation(operation) => vec![operation.type_().into()]
+        Expression::BitwiseNotOperation(operation) => [operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.value()))
             .collect(),
-        Expression::BitwiseOperation(operation) => vec![operation.type_().into()]
+        Expression::BitwiseOperation(operation) => [operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.lhs()))
             .chain(collect_from_expression(operation.rhs()))
             .collect(),
-        Expression::ComparisonOperation(operation) => vec![operation.type_().into()]
+        Expression::ComparisonOperation(operation) => [operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.lhs()))
             .chain(collect_from_expression(operation.rhs()))
             .collect(),
-        Expression::PointerAddress(address) => vec![address.type_().clone().into()]
+        Expression::PointerAddress(address) => [address.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
-        Expression::Record(record) => vec![record.type_().clone().into()]
+        Expression::Record(record) => [record.type_().clone().into()]
             .into_iter()
             .chain(record.fields().iter().flat_map(collect_from_expression))
             .collect(),
-        Expression::RecordAddress(address) => vec![address.type_().clone().into()]
+        Expression::RecordAddress(address) => [address.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
         Expression::SizeOf(size_of) => [size_of.type_().clone()].into_iter().collect(),
-        Expression::Union(union) => vec![union.type_().clone().into()]
+        Expression::Union(union) => [union.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(union.member()))
             .collect(),
-        Expression::UnionAddress(address) => vec![address.type_().clone().into()]
+        Expression::UnionAddress(address) => [address.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(address.pointer()))
             .collect(),
@@ -131,47 +130,47 @@ fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<Type> {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AllocateStack(allocate) => [allocate.type_().clone()].into_iter().collect(),
         Instruction::AtomicLoad(load) => [load.type_().clone()].into_iter().collect(),
-        Instruction::AtomicOperation(operation) => vec![operation.type_().into()]
+        Instruction::AtomicOperation(operation) => [operation.type_().into()]
             .into_iter()
             .chain(collect_from_expression(operation.pointer()))
             .chain(collect_from_expression(operation.value()))
             .collect(),
         Instruction::AtomicStore(store) => [store.type_().clone()].into_iter().collect(),
-        Instruction::Call(call) => vec![call.type_().clone().into()]
+        Instruction::Call(call) => [call.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(call.function()))
             .chain(call.arguments().iter().flat_map(collect_from_expression))
             .collect(),
         Instruction::CompareAndSwap(cas) => [cas.type_().clone()].into_iter().collect(),
-        Instruction::DeconstructRecord(deconstruct) => vec![deconstruct.type_().clone().into()]
+        Instruction::DeconstructRecord(deconstruct) => [deconstruct.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(deconstruct.record()))
             .collect(),
-        Instruction::DeconstructUnion(deconstruct) => vec![deconstruct.type_().clone().into()]
+        Instruction::DeconstructUnion(deconstruct) => [deconstruct.type_().clone().into()]
             .into_iter()
             .chain(collect_from_expression(deconstruct.union()))
             .collect(),
         Instruction::Fence(_) => Default::default(),
         Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
-        Instruction::If(if_) => vec![if_.type_().clone()]
+        Instruction::If(if_) => [if_.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(if_.condition()))
             .chain(collect_from_block(if_.then()))
             .chain(collect_from_block(if_.else_()))
             .collect(),
-        Instruction::Load(load) => vec![load.type_().clone()]
+        Instruction::Load(load) => [load.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(load.pointer()))
             .collect(),
-        Instruction::PassThrough(pass) => vec![pass.type_().clone()]
+        Instruction::PassThrough(pass) => [pass.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(pass.expression()))
             .collect(),
-        Instruction::ReallocateHeap(reallocate) => vec![reallocate.pointer(), reallocate.size()]
+        Instruction::ReallocateHeap(reallocate) => [reallocate.pointer(), reallocate.size()]
             .into_iter()
             .flat_map(collect_from_expression)
             .collect(),
-        Instruction::Store(store) => vec![store.type_().clone()]
+        Instruction::Store(store) => [store.type_().clone()]
             .into_iter()
             .chain(collect_from_expression(store.value()))
             .chain(collect_from_expression(store.pointer()))
@@ -188,7 +187,7 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHa
 }
 
 fn collect_from_type(type_: &Type) -> FnvHashSet<Type> {
-    vec![type_.clone()]
+    [type_.clone()]
         .into_iter()
         .chain(collect_child_types(type_))
         .collect()

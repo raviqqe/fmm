@@ -46,8 +46,8 @@ pub fn compile_to_object(
 
     let module = compile_module(&context, &target_machine, module, instruction_configuration)?;
 
-    // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in C++?
-    // https://llvm.org/docs/LangRef.html#call-instruction
+    // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in
+    // C++? https://llvm.org/docs/LangRef.html#call-instruction
     Ok(target_machine
         .write_to_memory_buffer(&module, inkwell::targets::FileType::Object)?
         .as_slice()

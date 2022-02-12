@@ -54,7 +54,7 @@ fn transform_function_definition(
 
             FunctionDefinition::new(
                 definition.name(),
-                vec![
+                [
                     Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
                     Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
                 ]
@@ -170,7 +170,7 @@ fn transform_instructions(
                             .chain([Call::new(
                                 call.type_().clone(),
                                 call.function().clone(),
-                                vec![Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
+                                [Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
                                     .into_iter()
                                     .chain(call.arguments().iter().cloned())
                                     .collect(),
@@ -213,7 +213,7 @@ fn transform_instructions(
             )?;
 
             (
-                vec![instruction.clone()]
+                [instruction.clone()]
                     .into_iter()
                     .chain(instructions)
                     .collect(),
@@ -301,7 +301,7 @@ fn get_continuation_environment(
     terminal_instruction: &TerminalInstruction,
     local_variables: &hamt::Map<String, Type>,
 ) -> Vec<(String, Type)> {
-    vec![(
+    [(
         CONTINUATION_ARGUMENT_NAME.into(),
         local_variables[CONTINUATION_ARGUMENT_NAME].clone(),
     )]
