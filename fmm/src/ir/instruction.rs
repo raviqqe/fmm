@@ -36,9 +36,7 @@ impl Instruction {
                 types::Pointer::new(allocate.type_().clone()).into(),
             )),
             Self::AtomicLoad(load) => Some((load.name(), load.type_().clone())),
-            Self::AtomicOperation(operation) => {
-                Some((operation.name(), operation.type_().into()))
-            }
+            Self::AtomicOperation(operation) => Some((operation.name(), operation.type_().into())),
             Self::Call(call) => Some((call.name(), call.type_().result().clone())),
             Self::CompareAndSwap(cas) => Some((cas.name(), types::Primitive::Boolean.into())),
             Self::DeconstructRecord(deconstruct) => Some((
