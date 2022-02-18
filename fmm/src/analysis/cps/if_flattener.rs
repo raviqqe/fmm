@@ -1,5 +1,6 @@
 use super::free_variable_collector;
 use crate::{
+    analysis::convert_expressions_in_terminal_instruction,
     build::NameGenerator,
     ir::*,
     types::{self, Type, VOID_TYPE},
@@ -86,6 +87,37 @@ fn transform_instructions(
 ) -> (Vec<Instruction>, TerminalInstruction) {
     match instructions {
         [] => (vec![], terminal_instruction.clone()),
+        [instruction] => {
+            if let Instruction::If(if_) = instruction {
+                (
+                    vec![If::new(
+                        VOID_TYPE.clone(),
+                        if_.condition().clone(),
+                        transform_if_block_without_continuation(
+                            context,
+                            if_.name(),
+                            if_.then(),
+                            result_type,
+                            local_variables,
+                            terminal_instruction,
+                        ),
+                        transform_if_block_without_continuation(
+                            context,
+                            if_.name(),
+                            if_.else_(),
+                            result_type,
+                            local_variables,
+                            terminal_instruction,
+                        ),
+                        "",
+                    )
+                    .into()],
+                    TerminalInstruction::Unreachable,
+                )
+            } else {
+                (vec![instruction.clone()], terminal_instruction.clone())
+            }
+        }
         [instruction, ..] => {
             let instructions = &instructions[1..];
 
@@ -108,7 +140,7 @@ fn transform_instructions(
                     vec![If::new(
                         VOID_TYPE.clone(),
                         if_.condition().clone(),
-                        transform_if_block(
+                        transform_if_block_with_continuation(
                             context,
                             if_.name(),
                             if_.then(),
@@ -117,7 +149,7 @@ fn transform_instructions(
                             &continuation,
                             &environment,
                         ),
-                        transform_if_block(
+                        transform_if_block_with_continuation(
                             context,
                             if_.name(),
                             if_.else_(),
@@ -158,7 +190,42 @@ fn transform_instructions(
     }
 }
 
-fn transform_if_block(
+fn transform_if_block_without_continuation(
+    context: &mut Context,
+    if_name: &str,
+    block: &Block,
+    result_type: &Type,
+    local_variables: &hamt::Map<String, Type>,
+    terminal_instruction: &TerminalInstruction,
+) -> Block {
+    transform_block(
+        context,
+        &Block::new(
+            block.instructions().to_vec(),
+            match (block.terminal_instruction(), terminal_instruction) {
+                (_, TerminalInstruction::Branch(_)) => unreachable!(),
+                (TerminalInstruction::Return(return_), _) => return_.clone().into(),
+                (TerminalInstruction::Unreachable, _) => TerminalInstruction::Unreachable,
+                (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
+                    TerminalInstruction::Unreachable
+                }
+                (TerminalInstruction::Branch(branch), return_) => {
+                    convert_expressions_in_terminal_instruction(return_, &|expression| {
+                        if expression == &Variable::new(if_name).into() {
+                            branch.expression().clone()
+                        } else {
+                            expression.clone()
+                        }
+                    })
+                }
+            },
+        ),
+        result_type,
+        local_variables,
+    )
+}
+
+fn transform_if_block_with_continuation(
     context: &mut Context,
     if_name: &str,
     block: &Block,

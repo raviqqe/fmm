@@ -135,24 +135,11 @@ fn transform_instructions(
                         } else {
                             false
                         };
-
                     let environment = get_continuation_environment(
                         instructions,
                         terminal_instruction,
                         local_variables,
                     );
-                    let continuation = if is_tail_call {
-                        Variable::new(CONTINUATION_ARGUMENT_NAME).into()
-                    } else {
-                        create_continuation(
-                            context,
-                            call,
-                            instructions,
-                            terminal_instruction,
-                            &environment,
-                        )?
-                    };
-
                     let builder = InstructionBuilder::new(context.cps.name_generator());
 
                     if !is_tail_call {
@@ -170,10 +157,23 @@ fn transform_instructions(
                             .chain([Call::new(
                                 call.type_().clone(),
                                 call.function().clone(),
-                                [Variable::new(STACK_ARGUMENT_NAME).into(), continuation]
-                                    .into_iter()
-                                    .chain(call.arguments().iter().cloned())
-                                    .collect(),
+                                [
+                                    Variable::new(STACK_ARGUMENT_NAME).into(),
+                                    if is_tail_call {
+                                        Variable::new(CONTINUATION_ARGUMENT_NAME).into()
+                                    } else {
+                                        create_continuation(
+                                            context,
+                                            call,
+                                            instructions,
+                                            terminal_instruction,
+                                            &environment,
+                                        )?
+                                    },
+                                ]
+                                .into_iter()
+                                .chain(call.arguments().iter().cloned())
+                                .collect(),
                                 RESULT_NAME,
                             )
                             .into()])
