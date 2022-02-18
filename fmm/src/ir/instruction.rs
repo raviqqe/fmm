@@ -28,44 +28,33 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn name(&self) -> Option<&str> {
+    pub fn value(&self) -> Option<(&str, Type)> {
         match self {
-            Self::AllocateHeap(allocate) => Some(allocate.name()),
-            Self::AllocateStack(allocate) => Some(allocate.name()),
-            Self::AtomicLoad(load) => Some(load.name()),
-            Self::AtomicOperation(operation) => Some(operation.name()),
-            Self::Call(call) => Some(call.name()),
-            Self::CompareAndSwap(cas) => Some(cas.name()),
-            Self::DeconstructRecord(deconstruct) => Some(deconstruct.name()),
-            Self::DeconstructUnion(deconstruct) => Some(deconstruct.name()),
-            Self::If(if_) => Some(if_.name()),
-            Self::Load(load) => Some(load.name()),
-            Self::PassThrough(pass) => Some(pass.name()),
-            Self::ReallocateHeap(reallocate) => Some(reallocate.name()),
-            Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
-        }
-    }
-
-    pub fn result_type(&self) -> Option<Type> {
-        match self {
-            Self::AllocateHeap(_) => Some(GENERIC_POINTER_TYPE.clone()),
-            Self::AllocateStack(allocate) => {
-                Some(types::Pointer::new(allocate.type_().clone()).into())
+            Self::AllocateHeap(allocate) => Some((allocate.name(), GENERIC_POINTER_TYPE.clone())),
+            Self::AllocateStack(allocate) => Some((
+                allocate.name(),
+                types::Pointer::new(allocate.type_().clone()).into(),
+            )),
+            Self::AtomicLoad(load) => Some((load.name(), load.type_().clone())),
+            Self::AtomicOperation(operation) => {
+                Some((operation.name(), operation.type_().clone().into()))
             }
-            Self::AtomicLoad(load) => Some(load.type_().clone()),
-            Self::AtomicOperation(operation) => Some(operation.type_().into()),
-            Self::Call(call) => Some(call.type_().result().clone()),
-            Self::CompareAndSwap(_) => Some(types::Primitive::Boolean.into()),
-            Self::DeconstructRecord(deconstruct) => {
-                Some(deconstruct.type_().fields()[deconstruct.field_index()].clone())
+            Self::Call(call) => Some((call.name(), call.type_().result().clone())),
+            Self::CompareAndSwap(cas) => Some((cas.name(), types::Primitive::Boolean.into())),
+            Self::DeconstructRecord(deconstruct) => Some((
+                deconstruct.name(),
+                deconstruct.type_().fields()[deconstruct.field_index()].clone(),
+            )),
+            Self::DeconstructUnion(deconstruct) => Some((
+                deconstruct.name(),
+                deconstruct.type_().members()[deconstruct.member_index()].clone(),
+            )),
+            Self::If(if_) => Some((if_.name(), if_.type_().clone())),
+            Self::Load(load) => Some((load.name(), load.type_().clone())),
+            Self::PassThrough(pass) => Some((pass.name(), pass.type_().clone())),
+            Self::ReallocateHeap(reallocate) => {
+                Some((reallocate.name(), GENERIC_POINTER_TYPE.clone()))
             }
-            Self::DeconstructUnion(deconstruct) => {
-                Some(deconstruct.type_().members()[deconstruct.member_index()].clone())
-            }
-            Self::If(if_) => Some(if_.type_().clone()),
-            Self::Load(load) => Some(load.type_().clone()),
-            Self::PassThrough(pass) => Some(pass.type_().clone()),
-            Self::ReallocateHeap(_) => Some(GENERIC_POINTER_TYPE.clone()),
             Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
