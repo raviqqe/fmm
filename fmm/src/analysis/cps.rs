@@ -251,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn transform_if_with_branch_snapshot() {
+    fn keep_tail_call_in_if_with_branch() {
         let function_type = create_function_type(
             vec![types::Primitive::Float64.into()],
             types::Primitive::Float64,
@@ -285,6 +285,59 @@ mod tests {
                             )
                             .into()],
                             Return::new(types::Primitive::Float64, Variable::new("y")),
+                        ),
+                        types::Primitive::Float64,
+                    )],
+                ),
+                VOID_TYPE.clone()
+            )
+            .unwrap()
+        ));
+    }
+
+    #[test]
+    fn transform_return_after_if_branch() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        insta::assert_snapshot!(format_module(
+            &transform_to_cps(
+                &Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new("f", function_type.clone())],
+                    vec![],
+                    vec![create_function_definition(
+                        "g",
+                        vec![],
+                        Block::new(
+                            vec![If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![Call::new(
+                                        function_type,
+                                        Variable::new("f"),
+                                        vec![Primitive::Float64(42.0).into()],
+                                        "x",
+                                    )
+                                    .into()],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into()],
+                            Return::new(
+                                types::Primitive::Float64,
+                                ArithmeticOperation::new(
+                                    types::Primitive::Float64,
+                                    ArithmeticOperator::Add,
+                                    Variable::new("y"),
+                                    Variable::new("y")
+                                )
+                            ),
                         ),
                         types::Primitive::Float64,
                     )],

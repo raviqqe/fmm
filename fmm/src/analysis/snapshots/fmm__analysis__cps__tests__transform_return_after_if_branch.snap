@@ -1,0 +1,55 @@
+---
+source: fmm/src/analysis/cps.rs
+assertion_line: 305
+expression: "format_module(&transform_to_cps(&Module::new(vec![],\n                                             vec![FunctionDeclaration ::\n                                                  new(\"f\",\n                                                      function_type.clone())],\n                                             vec![],\n                                             vec![create_function_definition(\"g\",\n                                                                             vec!\n                                                                             [],\n                                                                             Block\n                                                                             ::\n                                                                             new(vec!\n                                                                                 [If\n                                                                                  ::\n                                                                                  new(types\n                                                                                      ::\n                                                                                      Primitive\n                                                                                      ::\n                                                                                      Float64,\n                                                                                      Primitive\n                                                                                      ::\n                                                                                      Boolean(true),\n                                                                                      Block\n                                                                                      ::\n                                                                                      new(vec!\n                                                                                          [Call\n                                                                                           ::\n                                                                                           new(function_type,\n                                                                                               Variable\n                                                                                               ::\n                                                                                               new(\"f\"),\n                                                                                               vec!\n                                                                                               [Primitive\n                                                                                                ::\n                                                                                                Float64(42.0).into()],\n                                                                                               \"x\",).into()],\n                                                                                          Branch\n                                                                                          ::\n                                                                                          new(types\n                                                                                              ::\n                                                                                              Primitive\n                                                                                              ::\n                                                                                              Float64,\n                                                                                              Variable\n                                                                                              ::\n                                                                                              new(\"x\")),),\n                                                                                      Block\n                                                                                      ::\n                                                                                      new(vec!\n                                                                                          [],\n                                                                                          TerminalInstruction\n                                                                                          ::\n                                                                                          Unreachable),\n                                                                                      \"y\",).into()],\n                                                                                 Return\n                                                                                 ::\n                                                                                 new(types\n                                                                                     ::\n                                                                                     Primitive\n                                                                                     ::\n                                                                                     Float64,\n                                                                                     ArithmeticOperation\n                                                                                     ::\n                                                                                     new(types\n                                                                                         ::\n                                                                                         Primitive\n                                                                                         ::\n                                                                                         Float64,\n                                                                                         ArithmeticOperator\n                                                                                         ::\n                                                                                         Add,\n                                                                                         Variable\n                                                                                         ::\n                                                                                         new(\"y\"),\n                                                                                         Variable\n                                                                                         ::\n                                                                                         new(\"y\"))),),\n                                                                             types\n                                                                             ::\n                                                                             Primitive\n                                                                             ::\n                                                                             Float64,)]),\n                                VOID_TYPE.clone()).unwrap())"
+
+---
+(module
+  (function g _s _k
+    (block
+      (if true
+        (block
+          (load (record-address _s 1) _k_6)
+          (if (== (size-of record) 0)
+            (block
+              (branch 0))
+            (block
+              (branch (* (+ (/ (- (size-of record) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+            _k_7)
+          (load (record-address _s 2) _k_8)
+          (if (> (+ _k_6 _k_7) _k_8)
+            (block
+              (load (record-address _s 0) _k_9)
+              (reallocate-heap _k_9 (* _k_8 2) _k_a)
+              (store _k_a (record-address _s 0))
+              (store (* _k_8 2) (record-address _s 2))
+              (branch (record)))
+            (block
+              (branch (record)))
+            _k_b)
+          (load (record-address _s 0) _k_c)
+          (load (record-address _s 1) _k_d)
+          (store (record _k) (bit-cast (pointer-address _k_c _k_d)))
+          (store (+ _k_6 _k_7) (record-address _s 1))
+          (call f _s _k_0 42 _result)
+          (return _result))
+        (block
+          (unreachable))
+        _k_e)
+      (unreachable)))
+  (function _k_0 _s x
+    (block
+      (load (record-address _s 1) _k_1)
+      (if (== (size-of record) 0)
+        (block
+          (branch 0))
+        (block
+          (branch (* (+ (/ (- (size-of record) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+        _k_2)
+      (store (- _k_1 _k_2) (record-address _s 1))
+      (load (record-address _s 0) _k_3)
+      (load (record-address _s 1) _k_4)
+      (load (bit-cast (pointer-address _k_3 _k_4)) _k_5)
+      (deconstruct-record _k_5 0 _k)
+      (call _k _s (+ x x) _result)
+      (return _result))))

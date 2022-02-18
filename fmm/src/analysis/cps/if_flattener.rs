@@ -1,5 +1,6 @@
 use super::free_variable_collector;
 use crate::{
+    analysis::convert_expressions_in_terminal_instruction,
     build::NameGenerator,
     ir::*,
     types::{self, Type, VOID_TYPE},
@@ -94,6 +95,7 @@ fn transform_instructions(
                         if_.condition().clone(),
                         transform_if_block_without_continuation(
                             context,
+                            if_.name(),
                             if_.then(),
                             result_type,
                             local_variables,
@@ -101,6 +103,7 @@ fn transform_instructions(
                         ),
                         transform_if_block_without_continuation(
                             context,
+                            if_.name(),
                             if_.else_(),
                             result_type,
                             local_variables,
@@ -186,8 +189,10 @@ fn transform_instructions(
         }
     }
 }
+
 fn transform_if_block_without_continuation(
     context: &mut Context,
+    if_name: &str,
     block: &Block,
     result_type: &Type,
     local_variables: &hamt::Map<String, Type>,
@@ -204,8 +209,14 @@ fn transform_if_block_without_continuation(
                 (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
                     TerminalInstruction::Unreachable
                 }
-                (TerminalInstruction::Branch(branch), TerminalInstruction::Return(_)) => {
-                    Return::new(branch.type_().clone(), branch.expression().clone()).into()
+                (TerminalInstruction::Branch(branch), return_) => {
+                    convert_expressions_in_terminal_instruction(return_, &|expression| {
+                        if expression == &Variable::new(if_name).into() {
+                            branch.expression().clone()
+                        } else {
+                            expression.clone()
+                        }
+                    })
                 }
             },
         ),
