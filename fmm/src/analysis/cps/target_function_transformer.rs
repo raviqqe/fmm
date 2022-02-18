@@ -123,6 +123,7 @@ fn transform_source_function_call(
         )
         .collect(),
     )?;
+    // TODO Construct a load instruction manually.
     let result = builder.load(result_pointer)?;
 
     stack::destroy_stack(&builder, stack)?;
