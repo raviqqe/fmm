@@ -169,9 +169,7 @@ fn transform_instructions(
                     instructions,
                     terminal_instruction,
                     result_type,
-                    &if let (Some(name), Some(type_)) =
-                        (instruction.name(), instruction.result_type())
-                    {
+                    &if let Some((name, type_)) = instruction.value() {
                         local_variables.insert(name.into(), type_)
                     } else {
                         local_variables.clone()

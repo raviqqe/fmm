@@ -10,7 +10,7 @@ pub fn collect(
     for instruction in instructions {
         variables.extend(collect_from_instruction(instruction));
 
-        if let Some(name) = instruction.name() {
+        if let Some((name, _)) = instruction.value() {
             variables.remove(name);
         }
     }

@@ -216,10 +216,8 @@ fn check_block(
             }
         }
 
-        if let Some(name) = instruction.name() {
-            if let Some(type_) = instruction.result_type() {
-                variables = variables.insert(name.into(), type_.clone());
-            }
+        if let Some((name, type_)) = instruction.value() {
+            variables = variables.insert(name.into(), type_.clone());
         }
     }
 
