@@ -9,47 +9,47 @@ expression: "format_module(&transform_to_cps(&Module::new(vec![],\n             
     (block
       (if true
         (block
-          (load (record-address _s 1) _k_6)
+          (load (record-address _s 1) _k_0)
           (if (== (size-of record) 0)
             (block
               (branch 0))
             (block
               (branch (* (+ (/ (- (size-of record) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
-            _k_7)
-          (load (record-address _s 2) _k_8)
-          (if (> (+ _k_6 _k_7) _k_8)
+            _k_1)
+          (load (record-address _s 2) _k_2)
+          (if (> (+ _k_0 _k_1) _k_2)
             (block
-              (load (record-address _s 0) _k_9)
-              (reallocate-heap _k_9 (* _k_8 2) _k_a)
-              (store _k_a (record-address _s 0))
-              (store (* _k_8 2) (record-address _s 2))
+              (load (record-address _s 0) _k_3)
+              (reallocate-heap _k_3 (* _k_2 2) _k_4)
+              (store _k_4 (record-address _s 0))
+              (store (* _k_2 2) (record-address _s 2))
               (branch (record)))
             (block
               (branch (record)))
-            _k_b)
-          (load (record-address _s 0) _k_c)
-          (load (record-address _s 1) _k_d)
-          (store (record _k) (bit-cast (pointer-address _k_c _k_d)))
-          (store (+ _k_6 _k_7) (record-address _s 1))
-          (call f _s _k_0 42 _result)
+            _k_5)
+          (load (record-address _s 0) _k_6)
+          (load (record-address _s 1) _k_7)
+          (store (record _k) (bit-cast (pointer-address _k_6 _k_7)))
+          (store (+ _k_0 _k_1) (record-address _s 1))
+          (call f _s _k_8 42 _result)
           (return _result))
         (block
           (unreachable))
         _k_e)
       (unreachable)))
-  (function _k_0 _s x
+  (function _k_8 _s x
     (block
-      (load (record-address _s 1) _k_1)
+      (load (record-address _s 1) _k_9)
       (if (== (size-of record) 0)
         (block
           (branch 0))
         (block
           (branch (* (+ (/ (- (size-of record) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
-        _k_2)
-      (store (- _k_1 _k_2) (record-address _s 1))
-      (load (record-address _s 0) _k_3)
-      (load (record-address _s 1) _k_4)
-      (load (bit-cast (pointer-address _k_3 _k_4)) _k_5)
-      (deconstruct-record _k_5 0 _k)
+        _k_a)
+      (store (- _k_9 _k_a) (record-address _s 1))
+      (load (record-address _s 0) _k_b)
+      (load (record-address _s 1) _k_c)
+      (load (bit-cast (pointer-address _k_b _k_c)) _k_d)
+      (deconstruct-record _k_d 0 _k)
       (call _k _s (+ x x) _result)
       (return _result))))
