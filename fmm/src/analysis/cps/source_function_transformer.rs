@@ -130,11 +130,12 @@ fn transform_instructions(
             if let Instruction::Call(call) = instruction {
                 if call.type_().calling_convention() == CallingConvention::Source {
                     let is_tail_call = instructions.is_empty()
-                        && if let TerminalInstruction::Return(return_) = terminal_instruction {
-                            return_.expression() == &Variable::new(call.name()).into()
-                        } else {
-                            false
-                        };
+                        && terminal_instruction
+                            .to_return()
+                            .map(|return_| {
+                                return_.expression() == &Variable::new(call.name()).into()
+                            })
+                            .unwrap_or_default();
                     let environment = get_continuation_environment(
                         instructions,
                         terminal_instruction,
