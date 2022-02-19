@@ -283,19 +283,6 @@ impl InstructionBuilder {
         Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
-    pub fn pass_through(&self, value: impl Into<TypedExpression>) -> TypedExpression {
-        let value = value.into();
-        let name = self.generate_name();
-
-        self.add_instruction(PassThrough::new(
-            value.type_().clone(),
-            value.expression().clone(),
-            &name,
-        ));
-
-        TypedExpression::new(Variable::new(name), value.type_().clone())
-    }
-
     pub fn store(&self, value: impl Into<TypedExpression>, pointer: impl Into<TypedExpression>) {
         let value = value.into();
         let pointer = pointer.into();
@@ -342,7 +329,7 @@ impl InstructionBuilder {
         self.instructions.into_inner()
     }
 
-    fn add_instruction(&self, instruction: impl Into<Instruction>) {
+    pub fn add_instruction(&self, instruction: impl Into<Instruction>) {
         self.instructions.borrow_mut().push(instruction.into());
     }
 

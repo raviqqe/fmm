@@ -190,12 +190,6 @@ fn check_block(
                     &types::Pointer::new(load.type_().clone()).into(),
                 )?;
             }
-            Instruction::PassThrough(pass) => {
-                check_equality(
-                    &check_expression(pass.expression(), &variables)?,
-                    pass.type_(),
-                )?;
-            }
             Instruction::ReallocateHeap(reallocate) => {
                 check_equality(
                     &check_expression(reallocate.pointer(), &variables)?,
@@ -927,29 +921,6 @@ mod tests {
                 None,
             )],
             vec![],
-        ))
-    }
-
-    #[test]
-    fn check_pass_through() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
-            vec![],
-            vec![],
-            vec![],
-            vec![create_function_definition(
-                "f",
-                vec![],
-                Block::new(
-                    vec![PassThrough::new(
-                        types::Primitive::PointerInteger,
-                        Primitive::PointerInteger(42),
-                        "x",
-                    )
-                    .into()],
-                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
-                ),
-                types::Primitive::PointerInteger,
-            )],
         ))
     }
 

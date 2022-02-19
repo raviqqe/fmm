@@ -142,10 +142,8 @@ mod tests {
 
     #[test]
     fn transform_instruction_after_call() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
+        let function_type =
+            create_function_type(vec![], types::Pointer::new(types::Primitive::Float64));
 
         test_transformation(&Module::new(
             vec![],
@@ -153,19 +151,13 @@ mod tests {
             vec![],
             vec![create_function_definition(
                 "g",
-                vec![Argument::new("x", types::Primitive::Float64)],
+                vec![],
                 Block::new(
                     vec![
-                        Call::new(
-                            function_type,
-                            Variable::new("f"),
-                            vec![Primitive::Float64(42.0).into()],
-                            "y",
-                        )
-                        .into(),
-                        PassThrough::new(types::Primitive::Float64, Variable::new("y"), "z").into(),
+                        Call::new(function_type, Variable::new("f"), vec![], "x").into(),
+                        Load::new(types::Primitive::Float64, Variable::new("x"), "y").into(),
                     ],
-                    Return::new(types::Primitive::Float64, Variable::new("z")),
+                    Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
                 types::Primitive::Float64,
             )],
@@ -506,44 +498,6 @@ mod tests {
                 )],
             ))
         );
-    }
-
-    #[test]
-    fn transform_tail_call_with_pass_through() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-        let record_type = types::Record::new(vec![types::Primitive::Float64.into()]);
-
-        test_transformation(&Module::new(
-            vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
-            vec![],
-            vec![create_function_definition(
-                "g",
-                vec![],
-                Block::new(
-                    vec![
-                        Call::new(
-                            function_type,
-                            Variable::new("f"),
-                            vec![Primitive::Float64(42.0).into()],
-                            "x",
-                        )
-                        .into(),
-                        PassThrough::new(
-                            record_type.clone(),
-                            Record::new(record_type.clone(), vec![Variable::new("x").into()]),
-                            "y",
-                        )
-                        .into(),
-                    ],
-                    Return::new(record_type.clone(), Variable::new("y")),
-                ),
-                record_type,
-            )],
-        ));
     }
 
     #[test]

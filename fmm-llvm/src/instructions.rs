@@ -242,12 +242,6 @@ fn compile_instruction<'c>(
             compile_expression(load.pointer()).into_pointer_value(),
             load.name(),
         )),
-        Instruction::PassThrough(pass) => Some(builder.build_select(
-            context.bool_type().const_int(1, false),
-            compile_expression(pass.expression()),
-            compile_expression(pass.expression()),
-            pass.name(),
-        )),
         Instruction::ReallocateHeap(reallocate) => builder
             .build_call(
                 instruction_function_set.reallocate_function,
