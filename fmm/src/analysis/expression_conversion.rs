@@ -158,12 +158,6 @@ fn convert_instruction(
         Instruction::Load(load) => {
             Load::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
         }
-        Instruction::PassThrough(pass) => PassThrough::new(
-            pass.type_().clone(),
-            convert(pass.expression()),
-            pass.name(),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert(reallocate.pointer()),
             convert(reallocate.size()),

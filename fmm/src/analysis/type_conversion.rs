@@ -182,12 +182,6 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             load.name(),
         )
         .into(),
-        Instruction::PassThrough(pass) => PassThrough::new(
-            convert(pass.type_()),
-            convert_expression(pass.expression()),
-            pass.name(),
-        )
-        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert_expression(reallocate.pointer()),
             convert_expression(reallocate.size()),

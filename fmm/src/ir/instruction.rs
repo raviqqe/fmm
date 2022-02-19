@@ -3,7 +3,7 @@ use super::{
     atomic_operation::AtomicOperation, atomic_store::AtomicStore, call::Call,
     compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
     deconstruct_union::DeconstructUnion, fence::Fence, free_heap::FreeHeap, if_::If, load::Load,
-    pass_through::PassThrough, reallocate_heap::ReallocateHeap, store::Store,
+    reallocate_heap::ReallocateHeap, store::Store,
 };
 use crate::types::{self, Type, GENERIC_POINTER_TYPE};
 
@@ -22,7 +22,6 @@ pub enum Instruction {
     FreeHeap(FreeHeap),
     If(If),
     Load(Load),
-    PassThrough(PassThrough),
     ReallocateHeap(ReallocateHeap),
     Store(Store),
 }
@@ -49,7 +48,6 @@ impl Instruction {
             )),
             Self::If(if_) => Some((if_.name(), if_.type_().clone())),
             Self::Load(load) => Some((load.name(), load.type_().clone())),
-            Self::PassThrough(pass) => Some((pass.name(), pass.type_().clone())),
             Self::ReallocateHeap(reallocate) => {
                 Some((reallocate.name(), GENERIC_POINTER_TYPE.clone()))
             }
@@ -133,12 +131,6 @@ impl From<If> for Instruction {
 impl From<Load> for Instruction {
     fn from(load: Load) -> Self {
         Self::Load(load)
-    }
-}
-
-impl From<PassThrough> for Instruction {
-    fn from(pass: PassThrough) -> Self {
-        Self::PassThrough(pass)
     }
 }
 

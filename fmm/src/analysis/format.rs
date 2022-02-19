@@ -141,13 +141,6 @@ fn format_instruction(instruction: &Instruction) -> String {
                 load.name()
             )
         }
-        Instruction::PassThrough(pass) => {
-            format!(
-                "(pass {} {})",
-                format_expression(pass.expression()),
-                pass.name()
-            )
-        }
         Instruction::ReallocateHeap(allocate) => {
             format!(
                 "(reallocate-heap {} {} {})",

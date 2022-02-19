@@ -157,10 +157,6 @@ fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<Type> {
             .into_iter()
             .chain(collect_from_expression(load.pointer()))
             .collect(),
-        Instruction::PassThrough(pass) => [pass.type_().clone()]
-            .into_iter()
-            .chain(collect_from_expression(pass.expression()))
-            .collect(),
         Instruction::ReallocateHeap(reallocate) => [reallocate.pointer(), reallocate.size()]
             .into_iter()
             .flat_map(collect_from_expression)
