@@ -38,6 +38,11 @@ It's designed to be a compiler target for high-level functional programming lang
 - Weak typing
 - No type inference
 
+## Design notes
+
+- Expressions have no side effect.
+- Instructions _can_ have side effects.
+
 ## License
 
 [Apache 2.0](LICENSE)
