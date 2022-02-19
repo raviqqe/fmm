@@ -123,21 +123,20 @@ fn transform_source_function_call(
         )
         .collect(),
     )?;
-    // TODO Construct a load instruction manually.
-    let result = builder.load(result_pointer)?;
+    builder.add_instruction(Load::new(
+        result_pointer
+            .type_()
+            .to_pointer()
+            .unwrap()
+            .element()
+            .clone(),
+        result_pointer.expression().clone(),
+        call.name(),
+    ));
 
     stack::destroy_stack(&builder, stack)?;
 
-    Ok(builder
-        .into_instructions()
-        .into_iter()
-        .chain([PassThrough::new(
-            result.type_().clone(),
-            result.expression().clone(),
-            call.name(),
-        )
-        .into()])
-        .collect())
+    Ok(builder.into_instructions())
 }
 
 fn compile_continuation(

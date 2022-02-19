@@ -342,7 +342,7 @@ impl InstructionBuilder {
         self.instructions.into_inner()
     }
 
-    fn add_instruction(&self, instruction: impl Into<Instruction>) {
+    pub fn add_instruction(&self, instruction: impl Into<Instruction>) {
         self.instructions.borrow_mut().push(instruction.into());
     }
 
