@@ -41,6 +41,7 @@ It's designed to be a compiler target for high-level functional programming lang
 ## Design notes
 
 - Expressions have no side effect.
+  - That makes them reusable in constants.
 - Instructions _can_ have side effects.
 
 ## License
