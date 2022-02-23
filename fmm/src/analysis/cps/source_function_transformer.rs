@@ -16,8 +16,8 @@ const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_NAME: &str = "_result";
 
 struct Context<'a> {
-    pub cps: &'a CpsContext,
-    pub function_definitions: Vec<FunctionDefinition>,
+    cps: &'a CpsContext,
+    function_definitions: Vec<FunctionDefinition>,
 }
 
 pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
