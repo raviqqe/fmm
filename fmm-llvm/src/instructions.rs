@@ -127,7 +127,7 @@ fn compile_instruction<'c>(
             value.set_tail_call(true);
             value.set_call_convention(compile_calling_convention(
                 call.type_().calling_convention(),
-            ));
+            )?);
 
             Some(value.try_as_basic_value().left().unwrap())
         }

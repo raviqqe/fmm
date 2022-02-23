@@ -103,7 +103,7 @@ fn compile_module<'c>(
 
     for declaration in module.function_declarations() {
         let function =
-            compile_function_declaration(&llvm_module, declaration, context, &target_data);
+            compile_function_declaration(&llvm_module, declaration, context, &target_data)?;
 
         variables = variables.insert(
             declaration.name().into(),
@@ -118,7 +118,8 @@ fn compile_module<'c>(
     }
 
     for definition in module.function_definitions() {
-        let function = declare_function_definition(&llvm_module, definition, context, &target_data);
+        let function =
+            declare_function_definition(&llvm_module, definition, context, &target_data)?;
 
         variables = variables.insert(
             definition.name().into(),
@@ -196,7 +197,7 @@ fn compile_function_declaration<'c>(
     declaration: &FunctionDeclaration,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-) -> inkwell::values::FunctionValue<'c> {
+) -> Result<inkwell::values::FunctionValue<'c>, CompileError> {
     let function = module.add_function(
         declaration.name(),
         types::compile_function(declaration.type_(), context, target_data),
@@ -205,9 +206,9 @@ fn compile_function_declaration<'c>(
 
     function.set_call_conventions(compile_calling_convention(
         declaration.type_().calling_convention(),
-    ));
+    )?);
 
-    function
+    Ok(function)
 }
 
 fn declare_variable_definition<'c>(
@@ -255,7 +256,7 @@ fn declare_function_definition<'c>(
     definition: &FunctionDefinition,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
-) -> inkwell::values::FunctionValue<'c> {
+) -> Result<inkwell::values::FunctionValue<'c>, CompileError> {
     let function = module.add_function(
         definition.name(),
         types::compile_function(definition.type_(), context, target_data),
@@ -264,9 +265,9 @@ fn declare_function_definition<'c>(
 
     function.set_call_conventions(compile_calling_convention(
         definition.type_().calling_convention(),
-    ));
+    )?);
 
-    function
+    Ok(function)
 }
 
 fn compile_function_definition<'c>(

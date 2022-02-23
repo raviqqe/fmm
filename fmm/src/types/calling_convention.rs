@@ -3,4 +3,5 @@ pub enum CallingConvention {
     Source,
     Tail,
     Target,
+    Trampoline,
 }
