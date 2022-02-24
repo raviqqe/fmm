@@ -66,7 +66,7 @@ fn rename_function_definition(
             .collect(),
         rename_block(definition.body(), rename),
         definition.result_type().clone(),
-        definition.calling_convention(),
+        definition.type_().calling_convention(),
         definition.linkage(),
     )
 }

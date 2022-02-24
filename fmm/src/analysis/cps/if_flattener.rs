@@ -53,7 +53,7 @@ fn transform_function_definition(
                     .collect(),
             ),
             definition.result_type().clone(),
-            definition.calling_convention(),
+            definition.type_().calling_convention(),
             definition.linkage(),
         )
     } else {

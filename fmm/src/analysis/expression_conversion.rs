@@ -64,7 +64,7 @@ fn convert_function_definition(
         definition.arguments().to_vec(),
         convert_block(definition.body(), convert),
         definition.result_type().clone(),
-        definition.calling_convention(),
+        definition.type_().calling_convention(),
         definition.linkage(),
     )
 }
