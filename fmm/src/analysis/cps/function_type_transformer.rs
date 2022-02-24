@@ -18,8 +18,8 @@ fn transform_function_type(
     type_: &types::Function,
     continuation_result_type: &Type,
 ) -> types::Function {
-    if type_.calling_convention() == CallingConvention::Source {
-        types::Function::new(
+    match type_.calling_convention() {
+        CallingConvention::Source => types::Function::new(
             [
                 STACK_TYPE.clone(),
                 continuation_type_compiler::compile(type_.result(), continuation_result_type)
@@ -30,8 +30,15 @@ fn transform_function_type(
             .collect(),
             continuation_result_type.clone(),
             CallingConvention::Tail,
-        )
-    } else {
-        type_.clone()
+        ),
+        CallingConvention::Trampoline => types::Function::new(
+            [STACK_TYPE.clone()]
+                .into_iter()
+                .chain(type_.arguments().iter().cloned())
+                .collect(),
+            continuation_result_type.clone(),
+            CallingConvention::Target,
+        ),
+        CallingConvention::Tail | CallingConvention::Target => type_.clone(),
     }
 }
