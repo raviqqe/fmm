@@ -22,8 +22,8 @@ pub fn transform_to_cps(
     let context = CpsContext::new(result_type.into());
 
     let module = if_flattener::flatten(module);
-    let module = source_function_transformer::transform(&context, &module)?;
     let module = native_function_transformer::transform(&context, &module)?;
+    let module = source_function_transformer::transform(&context, &module)?;
     let module = function_type_transformer::transform(&module, context.result_type());
 
     check_types(&module)?;
