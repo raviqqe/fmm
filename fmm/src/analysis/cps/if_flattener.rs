@@ -3,7 +3,7 @@ use crate::{
     analysis::convert_expressions_in_terminal_instruction,
     build::NameGenerator,
     ir::*,
-    types::{self, Type, VOID_TYPE},
+    types::{self, CallingConvention, Type, VOID_TYPE},
 };
 
 struct Context {
@@ -38,7 +38,7 @@ fn transform_function_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
 ) -> FunctionDefinition {
-    if definition.calling_convention() == types::CallingConvention::Source {
+    if definition.type_().calling_convention() == CallingConvention::Source {
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
