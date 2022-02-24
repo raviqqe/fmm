@@ -651,7 +651,7 @@ mod tests {
         }
 
         #[test]
-        fn transform_two_argument() {
+        fn transform_two_arguments() {
             let function_type = create_function_type(
                 vec![
                     types::Primitive::Float64.into(),
