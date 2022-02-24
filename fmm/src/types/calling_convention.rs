@@ -5,3 +5,9 @@ pub enum CallingConvention {
     Target,
     Trampoline,
 }
+
+impl CallingConvention {
+    pub fn is_native(self) -> bool {
+        matches!(self, Self::Tail | Self::Target)
+    }
+}

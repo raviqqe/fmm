@@ -36,20 +36,18 @@ fn transform_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
 ) -> Result<FunctionDefinition, CpsTransformationError> {
-    Ok(
-        if definition.type_().calling_convention() == CallingConvention::Target {
-            FunctionDefinition::new(
-                definition.name(),
-                definition.arguments().to_vec(),
-                transform_block(context, definition.body())?,
-                definition.result_type().clone(),
-                definition.type_().calling_convention(),
-                definition.linkage(),
-            )
-        } else {
-            definition.clone()
-        },
-    )
+    Ok(if definition.type_().calling_convention().is_native() {
+        FunctionDefinition::new(
+            definition.name(),
+            definition.arguments().to_vec(),
+            transform_block(context, definition.body())?,
+            definition.result_type().clone(),
+            definition.type_().calling_convention(),
+            definition.linkage(),
+        )
+    } else {
+        definition.clone()
+    })
 }
 
 fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsTransformationError> {

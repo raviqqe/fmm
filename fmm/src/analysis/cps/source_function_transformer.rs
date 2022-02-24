@@ -128,63 +128,67 @@ fn transform_instructions(
             let instructions = &instructions[1..];
 
             if let Instruction::Call(call) = instruction {
-                if call.type_().calling_convention() == CallingConvention::Source {
-                    let is_tail_call = instructions.is_empty()
-                        && terminal_instruction
-                            .to_return()
-                            .map(|return_| {
-                                return_.expression() == &Variable::new(call.name()).into()
-                            })
-                            .unwrap_or_default();
-                    let environment = get_continuation_environment(
-                        instructions,
-                        terminal_instruction,
-                        local_variables,
-                    );
-                    let builder = InstructionBuilder::new(context.cps.name_generator());
+                match call.type_().calling_convention() {
+                    CallingConvention::Source => {
+                        let is_tail_call = instructions.is_empty()
+                            && terminal_instruction
+                                .to_return()
+                                .map(|return_| {
+                                    return_.expression() == &Variable::new(call.name()).into()
+                                })
+                                .unwrap_or_default();
+                        let environment = get_continuation_environment(
+                            instructions,
+                            terminal_instruction,
+                            local_variables,
+                        );
+                        let builder = InstructionBuilder::new(context.cps.name_generator());
 
-                    if !is_tail_call {
-                        push_to_stack(
-                            &builder,
-                            build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
-                            get_environment_record(&environment),
-                        )?;
-                    }
+                        if !is_tail_call {
+                            push_to_stack(
+                                &builder,
+                                build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                                get_environment_record(&environment),
+                            )?;
+                        }
 
-                    return Ok((
-                        builder
-                            .into_instructions()
-                            .into_iter()
-                            .chain([Call::new(
-                                call.type_().clone(),
-                                call.function().clone(),
-                                [
-                                    Variable::new(STACK_ARGUMENT_NAME).into(),
-                                    if is_tail_call {
-                                        Variable::new(CONTINUATION_ARGUMENT_NAME).into()
-                                    } else {
-                                        create_continuation(
-                                            context,
-                                            call,
-                                            instructions,
-                                            terminal_instruction,
-                                            &environment,
-                                        )?
-                                    },
-                                ]
+                        return Ok((
+                            builder
+                                .into_instructions()
                                 .into_iter()
-                                .chain(call.arguments().iter().cloned())
+                                .chain([Call::new(
+                                    call.type_().clone(),
+                                    call.function().clone(),
+                                    [
+                                        Variable::new(STACK_ARGUMENT_NAME).into(),
+                                        if is_tail_call {
+                                            Variable::new(CONTINUATION_ARGUMENT_NAME).into()
+                                        } else {
+                                            create_continuation(
+                                                context,
+                                                call,
+                                                instructions,
+                                                terminal_instruction,
+                                                &environment,
+                                            )?
+                                        },
+                                    ]
+                                    .into_iter()
+                                    .chain(call.arguments().iter().cloned())
+                                    .collect(),
+                                    RESULT_NAME,
+                                )
+                                .into()])
                                 .collect(),
-                                RESULT_NAME,
+                            Return::new(
+                                context.cps.result_type().clone(),
+                                Variable::new(RESULT_NAME),
                             )
-                            .into()])
-                            .collect(),
-                        Return::new(
-                            context.cps.result_type().clone(),
-                            Variable::new(RESULT_NAME),
-                        )
-                        .into(),
-                    ));
+                            .into(),
+                        ));
+                    }
+                    CallingConvention::Trampoline => todo!(),
+                    CallingConvention::Tail | CallingConvention::Target => {}
                 }
             } else if let Instruction::If(if_) = instruction {
                 // If instruction is always at tail due to if flattening.
