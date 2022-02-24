@@ -4,9 +4,9 @@ mod error;
 mod free_variable_collector;
 mod function_type_transformer;
 mod if_flattener;
+mod native_function_transformer;
 mod source_function_transformer;
 mod stack;
-mod target_function_transformer;
 
 use self::context::CpsContext;
 use super::check_types;
@@ -23,7 +23,7 @@ pub fn transform_to_cps(
 
     let module = if_flattener::flatten(module);
     let module = source_function_transformer::transform(&context, &module)?;
-    let module = target_function_transformer::transform(&context, &module)?;
+    let module = native_function_transformer::transform(&context, &module)?;
     let module = function_type_transformer::transform(&module, context.result_type());
 
     check_types(&module)?;
