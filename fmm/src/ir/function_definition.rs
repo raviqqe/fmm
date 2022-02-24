@@ -59,6 +59,7 @@ impl FunctionDefinition {
         &self.type_
     }
 
+    #[deprecated]
     pub fn calling_convention(&self) -> CallingConvention {
         self.type_.calling_convention()
     }
