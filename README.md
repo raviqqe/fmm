@@ -38,6 +38,17 @@ It's designed to be a compiler target for high-level functional programming lang
 - Weak typing
 - No type inference
 
+### Calling convention compatibility table
+
+| Caller \ Callee | Target | Tail | Source (CPS) | Trampoline |
+| --------------- | ------ | ---- | ------------ | ---------- |
+| Target          | x      | x    | \*1          |            |
+| Tail            | x      | x    | \*1          |            |
+| Source (CPS)    | x      | x    | x            | x          |
+| Trampoline      | x      | x    | x            |            |
+
+- \*1: Suspension in functions is not supported.
+
 ## Design notes
 
 - Expressions have no side effect.
