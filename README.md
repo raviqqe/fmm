@@ -40,12 +40,12 @@ It's designed to be a compiler target for high-level functional programming lang
 
 ### Calling convention compatibility table
 
-| Caller \ Callee | Target | Tail | Source (CPS) | Trampoline |
-| --------------- | ------ | ---- | ------------ | ---------- |
-| Target          | x      | x    | \*1          |            |
-| Tail            | x      | x    | \*1          |            |
-| Source (CPS)    | x      | x    | x            | x          |
-| Trampoline      | x      | x    |              |            |
+| Caller \ Callee | Target (C) | Tail | Source (CPS) | Trampoline |
+| --------------- | ---------- | ---- | ------------ | ---------- |
+| Target (C)      | x          | x    | \*1          |            |
+| Tail            | x          | x    | \*1          |            |
+| Source (CPS)    | x          | x    | x            | x          |
+| Trampoline      | x          | x    |              |            |
 
 - \*1: Suspension in functions is not supported.
 
