@@ -8,7 +8,7 @@ use crate::{
     analysis::cps::continuation_type_compiler,
     build::{self, BuildError, InstructionBuilder},
     ir::*,
-    types::{CallingConvention, Type},
+    types::{self, CallingConvention, Type, VOID_TYPE},
 };
 
 const STACK_ARGUMENT_NAME: &str = "_s";
@@ -130,13 +130,7 @@ fn transform_instructions(
             if let Instruction::Call(call) = instruction {
                 match call.type_().calling_convention() {
                     CallingConvention::Source => {
-                        let is_tail_call = instructions.is_empty()
-                            && terminal_instruction
-                                .to_return()
-                                .map(|return_| {
-                                    return_.expression() == &Variable::new(call.name()).into()
-                                })
-                                .unwrap_or_default();
+                        let is_tail_call = is_tail_call(instructions, call, terminal_instruction);
                         let environment = get_continuation_environment(
                             instructions,
                             terminal_instruction,
@@ -187,7 +181,81 @@ fn transform_instructions(
                             .into(),
                         ));
                     }
-                    CallingConvention::Trampoline => todo!(),
+                    CallingConvention::Trampoline => {
+                        let stack = build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone());
+                        let environment = get_continuation_environment(
+                            instructions,
+                            terminal_instruction,
+                            local_variables,
+                        );
+                        let builder = InstructionBuilder::new(context.cps.name_generator());
+
+                        push_to_stack(
+                            &builder,
+                            stack.clone(),
+                            build::TypedExpression::new(
+                                if is_tail_call(instructions, call, terminal_instruction) {
+                                    Variable::new(CONTINUATION_ARGUMENT_NAME).into()
+                                } else {
+                                    create_continuation(
+                                        context,
+                                        call,
+                                        instructions,
+                                        terminal_instruction,
+                                        &environment,
+                                    )?
+                                },
+                                continuation_type_compiler::compile(
+                                    call.type_().result(),
+                                    context.cps.result_type(),
+                                ),
+                            ),
+                        )?;
+
+                        builder.add_instruction(Call::new(
+                            call.type_().clone(),
+                            call.function().clone(),
+                            [Variable::new(STACK_ARGUMENT_NAME).into()]
+                                .into_iter()
+                                .chain(call.arguments().iter().cloned())
+                                .collect(),
+                            "_",
+                        ));
+
+                        builder.if_(
+                            pop_from_stack(&builder, stack.clone(), types::Primitive::Boolean)?,
+                            |builder| {
+                                let value = pop_from_stack(
+                                    &builder,
+                                    stack.clone(),
+                                    call.type_().result().clone(),
+                                )?;
+                                let continuation = pop_from_stack(
+                                    &builder,
+                                    stack.clone(),
+                                    types::Function::new(
+                                        vec![STACK_TYPE.clone(), call.type_().result().clone()],
+                                        VOID_TYPE.clone(),
+                                        CallingConvention::Tail,
+                                    ),
+                                )?;
+
+                                Ok(builder.return_(
+                                    builder.call(continuation, vec![stack.clone(), value])?,
+                                ))
+                            },
+                            |builder| {
+                                Ok(builder
+                                    .return_(Undefined::new(context.cps.result_type().clone())))
+                            },
+                        )?;
+
+                        let block = builder.unreachable();
+                        return Ok((
+                            block.instructions().to_vec(),
+                            block.terminal_instruction().clone(),
+                        ));
+                    }
                     CallingConvention::Tail | CallingConvention::Target => {}
                 }
             } else if let Instruction::If(if_) = instruction {
@@ -225,6 +293,18 @@ fn transform_instructions(
             )
         }
     })
+}
+
+fn is_tail_call(
+    instructions: &[Instruction],
+    call: &Call,
+    terminal_instruction: &TerminalInstruction,
+) -> bool {
+    instructions.is_empty()
+        && terminal_instruction
+            .to_return()
+            .map(|return_| return_.expression() == &Variable::new(call.name()).into())
+            .unwrap_or_default()
 }
 
 fn get_environment_record(environment: &[(String, Type)]) -> Record {

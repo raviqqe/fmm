@@ -594,6 +594,42 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn transform_tail_trampoline_call() {
+        let function_type = types::Function::new(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+            CallingConvention::Trampoline,
+        );
+
+        insta::assert_snapshot!(format_module(
+            &transform_to_cps(
+                &Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new("f", function_type.clone())],
+                    vec![],
+                    vec![create_function_definition(
+                        "g",
+                        vec![],
+                        Block::new(
+                            vec![Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
+                            )
+                            .into()],
+                            Return::new(types::Primitive::Float64, Variable::new("x")),
+                        ),
+                        types::Primitive::Float64,
+                    )],
+                ),
+                VOID_TYPE.clone()
+            )
+            .unwrap()
+        ));
+    }
+
     mod target_function_definition {
         use super::*;
 
