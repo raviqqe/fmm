@@ -1,0 +1,73 @@
+---
+source: fmm/src/analysis/cps.rs
+assertion_line: 605
+expression: "format_module(&transform_to_cps(&Module::new(vec![],\n                                             vec![FunctionDeclaration ::\n                                                  new(\"f\",\n                                                      function_type.clone())],\n                                             vec![],\n                                             vec![create_function_definition(\"g\",\n                                                                             vec!\n                                                                             [],\n                                                                             Block\n                                                                             ::\n                                                                             new(vec!\n                                                                                 [Call\n                                                                                  ::\n                                                                                  new(function_type,\n                                                                                      Variable\n                                                                                      ::\n                                                                                      new(\"f\"),\n                                                                                      vec!\n                                                                                      [Primitive\n                                                                                       ::\n                                                                                       Float64(42.0).into()],\n                                                                                      \"x\",).into()],\n                                                                                 Return\n                                                                                 ::\n                                                                                 new(types\n                                                                                     ::\n                                                                                     Primitive\n                                                                                     ::\n                                                                                     Float64,\n                                                                                     Variable\n                                                                                     ::\n                                                                                     new(\"x\")),),\n                                                                             types\n                                                                             ::\n                                                                             Primitive\n                                                                             ::\n                                                                             Float64,)]),\n                                VOID_TYPE.clone()).unwrap())"
+
+---
+(module
+  (function g _s _k
+    (block
+      (load (record-address _s 1) _k_0)
+      (if (== (size-of function) 0)
+        (block
+          (branch 0))
+        (block
+          (branch (* (+ (/ (- (size-of function) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+        _k_1)
+      (load (record-address _s 2) _k_2)
+      (if (> (+ _k_0 _k_1) _k_2)
+        (block
+          (load (record-address _s 0) _k_3)
+          (reallocate-heap _k_3 (* _k_2 2) _k_4)
+          (store _k_4 (record-address _s 0))
+          (store (* _k_2 2) (record-address _s 2))
+          (branch (record)))
+        (block
+          (branch (record)))
+        _k_5)
+      (load (record-address _s 0) _k_6)
+      (load (record-address _s 1) _k_7)
+      (store _k (bit-cast (pointer-address _k_6 _k_7)))
+      (store (+ _k_0 _k_1) (record-address _s 1))
+      (call f _s 42 _)
+      (load (record-address _s 1) _k_8)
+      (if (== (size-of boolean) 0)
+        (block
+          (branch 0))
+        (block
+          (branch (* (+ (/ (- (size-of boolean) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+        _k_9)
+      (store (- _k_8 _k_9) (record-address _s 1))
+      (load (record-address _s 0) _k_a)
+      (load (record-address _s 1) _k_b)
+      (load (bit-cast (pointer-address _k_a _k_b)) _k_c)
+      (if _k_c
+        (block
+          (load (record-address _s 1) _k_d)
+          (if (== (size-of float64) 0)
+            (block
+              (branch 0))
+            (block
+              (branch (* (+ (/ (- (size-of float64) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+            _k_e)
+          (store (- _k_d _k_e) (record-address _s 1))
+          (load (record-address _s 0) _k_f)
+          (load (record-address _s 1) _k_10)
+          (load (bit-cast (pointer-address _k_f _k_10)) _k_11)
+          (load (record-address _s 1) _k_12)
+          (if (== (size-of function) 0)
+            (block
+              (branch 0))
+            (block
+              (branch (* (+ (/ (- (size-of function) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+            _k_13)
+          (store (- _k_12 _k_13) (record-address _s 1))
+          (load (record-address _s 0) _k_14)
+          (load (record-address _s 1) _k_15)
+          (load (bit-cast (pointer-address _k_14 _k_15)) _k_16)
+          (call _k_16 _s _k_11 _k_17)
+          (return _k_17))
+        (block
+          (return undefined))
+        _k_18)
+      (unreachable))))
