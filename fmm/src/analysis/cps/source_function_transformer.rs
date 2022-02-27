@@ -292,7 +292,7 @@ fn create_continuation(
     Ok(Variable::new(name).into())
 }
 
-// The local variables should not include call results because they are
+// Local variables should not include call results because they are
 // passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.
