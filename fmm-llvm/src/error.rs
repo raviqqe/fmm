@@ -12,10 +12,10 @@ impl Error for CompileError {}
 impl std::fmt::Display for CompileError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            CompileError::Llvm(string) => {
+            Self::Llvm(string) => {
                 write!(formatter, "{}", string)
             }
-            CompileError::TargetMachineNotCreated => {
+            Self::TargetMachineNotCreated => {
                 write!(formatter, "failed to create target machine")
             }
             Self::TypeCheck(error) => write!(formatter, "{}", error),
