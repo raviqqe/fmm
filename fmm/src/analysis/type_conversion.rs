@@ -77,7 +77,7 @@ fn convert_function_definition(
             .collect(),
         convert_block(definition.body(), convert),
         convert(definition.result_type()),
-        definition.calling_convention(),
+        definition.type_().calling_convention(),
         definition.linkage(),
     )
 }

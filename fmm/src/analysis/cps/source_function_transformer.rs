@@ -16,8 +16,8 @@ const CONTINUATION_ARGUMENT_NAME: &str = "_k";
 const RESULT_NAME: &str = "_result";
 
 struct Context<'a> {
-    pub cps: &'a CpsContext,
-    pub function_definitions: Vec<FunctionDefinition>,
+    cps: &'a CpsContext,
+    function_definitions: Vec<FunctionDefinition>,
 }
 
 pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
@@ -46,7 +46,7 @@ fn transform_function_definition(
     definition: &FunctionDefinition,
 ) -> Result<FunctionDefinition, CpsTransformationError> {
     Ok(
-        if definition.calling_convention() == CallingConvention::Source {
+        if definition.type_().calling_convention() == CallingConvention::Source {
             let continuation_type = continuation_type_compiler::compile(
                 definition.result_type(),
                 context.cps.result_type(),
@@ -292,7 +292,7 @@ fn create_continuation(
     Ok(Variable::new(name).into())
 }
 
-// The local variables should not include call results because they are
+// Local variables should not include call results because they are
 // passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.

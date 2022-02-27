@@ -7,8 +7,8 @@ use crate::{
 };
 
 struct Context<'a> {
-    pub cps: &'a CpsContext,
-    pub function_definitions: Vec<FunctionDefinition>,
+    cps: &'a CpsContext,
+    function_definitions: Vec<FunctionDefinition>,
 }
 
 pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
@@ -43,7 +43,7 @@ fn transform_definition(
                 definition.arguments().to_vec(),
                 transform_block(context, definition.body())?,
                 definition.result_type().clone(),
-                definition.calling_convention(),
+                definition.type_().calling_convention(),
                 definition.linkage(),
             )
         } else {

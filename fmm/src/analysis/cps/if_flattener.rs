@@ -38,7 +38,7 @@ fn transform_function_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
 ) -> FunctionDefinition {
-    if definition.calling_convention() == types::CallingConvention::Source {
+    if definition.type_().calling_convention() == types::CallingConvention::Source {
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
@@ -53,7 +53,7 @@ fn transform_function_definition(
                     .collect(),
             ),
             definition.result_type().clone(),
-            definition.calling_convention(),
+            definition.type_().calling_convention(),
             definition.linkage(),
         )
     } else {
