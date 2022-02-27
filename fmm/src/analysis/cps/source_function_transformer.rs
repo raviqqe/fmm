@@ -46,7 +46,7 @@ fn transform_function_definition(
     definition: &FunctionDefinition,
 ) -> Result<FunctionDefinition, CpsTransformationError> {
     Ok(
-        if definition.calling_convention() == CallingConvention::Source {
+        if definition.type_().calling_convention() == CallingConvention::Source {
             let continuation_type = continuation_type_compiler::compile(
                 definition.result_type(),
                 context.cps.result_type(),

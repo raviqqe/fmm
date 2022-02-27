@@ -59,10 +59,6 @@ impl FunctionDefinition {
         &self.type_
     }
 
-    pub fn calling_convention(&self) -> CallingConvention {
-        self.type_.calling_convention()
-    }
-
     pub fn linkage(&self) -> Linkage {
         self.linkage
     }

@@ -43,7 +43,7 @@ fn transform_definition(
                 definition.arguments().to_vec(),
                 transform_block(context, definition.body())?,
                 definition.result_type().clone(),
-                definition.calling_convention(),
+                definition.type_().calling_convention(),
                 definition.linkage(),
             )
         } else {
