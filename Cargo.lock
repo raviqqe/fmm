@@ -131,7 +131,7 @@ dependencies = [
  "fmm",
  "hamt",
  "inkwell",
- "llvm-sys",
+ "llvm-sys 140.0.0",
  "once_cell",
 ]
 
@@ -170,7 +170,7 @@ dependencies = [
  "either",
  "inkwell_internals",
  "libc",
- "llvm-sys",
+ "llvm-sys 130.0.3",
  "once_cell",
  "parking_lot",
 ]
@@ -242,7 +242,20 @@ dependencies = [
  "lazy_static",
  "libc",
  "regex",
- "semver",
+ "semver 0.11.0",
+]
+
+[[package]]
+name = "llvm-sys"
+version = "140.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7edbec78fa56ea7a1ff451683a51b8ecf79a65ca9e88a4be6c4b0a6fc300d2a6"
+dependencies = [
+ "cc",
+ "lazy_static",
+ "libc",
+ "regex",
+ "semver 1.0.7",
 ]
 
 [[package]]
@@ -402,6 +415,12 @@ checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
 dependencies = [
  "semver-parser",
 ]
+
+[[package]]
+name = "semver"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d65bd28f48be7196d222d95b9243287f48d27aca604e08497513019ff0502cc4"
 
 [[package]]
 name = "semver-parser"
