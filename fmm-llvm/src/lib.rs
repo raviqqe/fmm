@@ -266,6 +266,7 @@ fn declare_function_definition<'c>(
         definition.type_().calling_convention(),
     ));
 
+    // spell-checker: disable-next-line
     for attribute in ["willreturn", "nounwind"] {
         function.add_attribute(
             inkwell::attributes::AttributeLoc::Function,
