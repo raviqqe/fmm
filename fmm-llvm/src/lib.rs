@@ -142,7 +142,6 @@ fn compile_module<'c>(
     }
 
     llvm_module.verify()?;
-    llvm_module.print_to_stderr();
 
     Ok(llvm_module)
 }
