@@ -142,6 +142,7 @@ fn compile_module<'c>(
     }
 
     llvm_module.verify()?;
+    llvm_module.print_to_stderr();
 
     Ok(llvm_module)
 }
@@ -265,16 +266,17 @@ fn declare_function_definition<'c>(
     function.set_call_conventions(compile_calling_convention(
         definition.type_().calling_convention(),
     ));
-    function.add_attribute(
-        inkwell::attributes::AttributeLoc::Function,
-        module
-            .get_context()
-            .create_string_attribute("willreturn", ""),
-    );
-    function.add_attribute(
-        inkwell::attributes::AttributeLoc::Function,
-        module.get_context().create_string_attribute("nounwind", ""),
-    );
+
+    for attribute in ["willreturn", "nounwind"] {
+        function.add_attribute(
+            inkwell::attributes::AttributeLoc::Function,
+            module.get_context().create_enum_attribute(
+                inkwell::attributes::Attribute::get_named_enum_kind_id(attribute),
+                0,
+            ),
+        );
+    }
+
     function
         .as_global_value()
         .set_unnamed_address(inkwell::values::UnnamedAddress::Global);
