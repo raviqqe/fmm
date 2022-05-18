@@ -266,6 +266,21 @@ fn declare_function_definition<'c>(
         definition.type_().calling_convention(),
     ));
 
+    // spell-checker: disable-next-line
+    for attribute in ["willreturn", "nounwind"] {
+        function.add_attribute(
+            inkwell::attributes::AttributeLoc::Function,
+            module.get_context().create_enum_attribute(
+                inkwell::attributes::Attribute::get_named_enum_kind_id(attribute),
+                0,
+            ),
+        );
+    }
+
+    function
+        .as_global_value()
+        .set_unnamed_address(inkwell::values::UnnamedAddress::Global);
+
     function
 }
 
