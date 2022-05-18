@@ -265,6 +265,9 @@ fn declare_function_definition<'c>(
     function.set_call_conventions(compile_calling_convention(
         definition.type_().calling_convention(),
     ));
+    function
+        .as_global_value()
+        .set_unnamed_address(inkwell::values::UnnamedAddress::Global);
 
     function
 }
