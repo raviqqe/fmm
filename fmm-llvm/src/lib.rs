@@ -265,6 +265,16 @@ fn declare_function_definition<'c>(
     function.set_call_conventions(compile_calling_convention(
         definition.type_().calling_convention(),
     ));
+    function.add_attribute(
+        inkwell::attributes::AttributeLoc::Function,
+        module
+            .get_context()
+            .create_string_attribute("willreturn", ""),
+    );
+    function.add_attribute(
+        inkwell::attributes::AttributeLoc::Function,
+        module.get_context().create_string_attribute("nounwind", ""),
+    );
     function
         .as_global_value()
         .set_unnamed_address(inkwell::values::UnnamedAddress::Global);
