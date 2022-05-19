@@ -327,7 +327,7 @@ fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
     match linkage {
         fmm::ir::Linkage::External => inkwell::module::Linkage::External,
         fmm::ir::Linkage::Internal => inkwell::module::Linkage::Internal,
-        fmm::ir::Linkage::Weak => inkwell::module::Linkage::LinkOnceOdr,
+        fmm::ir::Linkage::Weak => inkwell::module::Linkage::LinkOnceODR,
     }
 }
 
