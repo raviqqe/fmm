@@ -3,36 +3,34 @@ use crate::union::compile_union_cast;
 use fmm::ir::*;
 use inkwell::values::BasicValue;
 
-pub fn compile_expression<'c>(
+pub fn compile<'c>(
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
     variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression = |expression: &Expression| {
-        compile_expression(builder, expression, variables, context, target_data)
-    };
+    let compile = |expression: &_| compile(builder, expression, variables, context, target_data);
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
         Expression::ArithmeticOperation(operation) => {
-            compile_arithmetic_operation(builder, operation, &compile_expression)
+            compile_arithmetic_operation(builder, operation, &compile)
         }
         Expression::BitCast(bit_cast) => {
-            compile_bit_cast(builder, bit_cast, context, target_data, &compile_expression)
+            compile_bit_cast(builder, bit_cast, context, target_data, &compile)
         }
         Expression::BitwiseNotOperation(operation) => {
-            compile_bitwise_not_operation(builder, operation, &compile_expression).into()
+            compile_bitwise_not_operation(builder, operation, &compile).into()
         }
         Expression::BitwiseOperation(operation) => {
-            compile_bitwise_operation(builder, operation, &compile_expression).into()
+            compile_bitwise_operation(builder, operation, &compile).into()
         }
         Expression::ComparisonOperation(operation) => {
-            compile_comparison_operation(builder, operation, &compile_expression)
+            compile_comparison_operation(builder, operation, &compile)
         }
         Expression::PointerAddress(address) => {
-            compile_pointer_address(builder, address, &compile_expression).into()
+            compile_pointer_address(builder, address, &compile).into()
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => {
@@ -41,7 +39,7 @@ pub fn compile_expression<'c>(
 
             for (index, field) in record.fields().iter().enumerate() {
                 value = builder
-                    .build_insert_value(value, compile_expression(field), index as u32, "")
+                    .build_insert_value(value, compile(field), index as u32, "")
                     .unwrap()
                     .into_struct_value();
             }
@@ -49,12 +47,12 @@ pub fn compile_expression<'c>(
             value.into()
         }
         Expression::RecordAddress(address) => {
-            compile_record_address(builder, address, context, &compile_expression).into()
+            compile_record_address(builder, address, context, &compile).into()
         }
         Expression::SizeOf(size_of) => compile_size_of(size_of, context, target_data).into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
         Expression::Union(union) => {
-            let member = compile_expression(union.member());
+            let member = compile(union.member());
 
             let value = context.const_struct(
                 &[
@@ -81,22 +79,20 @@ pub fn compile_expression<'c>(
             )
         }
         Expression::UnionAddress(address) => {
-            compile_union_address(builder, address, context, target_data, &compile_expression)
-                .into()
+            compile_union_address(builder, address, context, target_data, &compile).into()
         }
         Expression::Variable(variable) => variables[variable.name()],
     }
 }
 
-pub fn compile_constant_expression<'c>(
+pub fn compile_constant<'c>(
     expression: &Expression,
     variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression = |expression: &Expression| {
-        compile_constant_expression(expression, variables, context, target_data)
-    };
+    let compile_expression =
+        |expression: &_| compile_constant(expression, variables, context, target_data);
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),

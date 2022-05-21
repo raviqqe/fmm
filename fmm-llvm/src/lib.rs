@@ -6,11 +6,8 @@ mod instruction_configuration;
 mod type_;
 mod union;
 
-use calling_convention::*;
 pub use error::CompileError;
-use expression::*;
 use fmm::ir::*;
-use instruction::*;
 pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 use once_cell::sync::Lazy;
@@ -203,7 +200,7 @@ fn compile_function_declaration<'c>(
         None,
     );
 
-    function.set_call_conventions(compile_calling_convention(
+    function.set_call_conventions(calling_convention::compile(
         declaration.type_().calling_convention(),
     ));
 
@@ -242,7 +239,7 @@ fn compile_variable_definition<'c>(
     module
         .get_global(definition.name())
         .unwrap()
-        .set_initializer(&compile_constant_expression(
+        .set_initializer(&expression::compile_constant(
             definition.body(),
             variables,
             context,
@@ -262,7 +259,7 @@ fn declare_function_definition<'c>(
         Some(compile_linkage(definition.linkage())),
     );
 
-    function.set_call_conventions(compile_calling_convention(
+    function.set_call_conventions(calling_convention::compile(
         definition.type_().calling_convention(),
     ));
 
@@ -297,7 +294,7 @@ fn compile_function_definition<'c>(
 
     builder.position_at_end(context.append_basic_block(function, "entry"));
 
-    compile_block(
+    instruction::compile_block(
         &builder,
         definition.body(),
         None,

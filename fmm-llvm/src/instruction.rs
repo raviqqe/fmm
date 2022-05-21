@@ -1,5 +1,5 @@
 use crate::{
-    calling_convention::compile_calling_convention, error::CompileError, expression::*,
+    calling_convention, error::CompileError, expression,
     instruction_configuration::InstructionFunctionSet, type_, union::compile_union_cast,
 };
 use fmm::ir::*;
@@ -54,7 +54,7 @@ fn compile_instruction<'c>(
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
-        |expression| compile_expression(builder, expression, variables, context, target_data);
+        |expression| expression::compile(builder, expression, variables, context, target_data);
     let compile_type = |type_| type_::compile(type_, context, target_data);
 
     Ok(match instruction {
@@ -125,7 +125,7 @@ fn compile_instruction<'c>(
             );
 
             value.set_tail_call(true);
-            value.set_call_convention(compile_calling_convention(
+            value.set_call_convention(calling_convention::compile(
                 call.type_().calling_convention(),
             ));
 
@@ -274,7 +274,7 @@ fn compile_terminal_instruction<'c>(
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
     let compile_expression =
-        |expression| compile_expression(builder, expression, variables, context, target_data);
+        |expression| expression::compile(builder, expression, variables, context, target_data);
 
     match instruction {
         TerminalInstruction::Branch(branch) => {
