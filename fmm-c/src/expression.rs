@@ -1,95 +1,93 @@
-use super::types::*;
-use crate::names::*;
+use crate::{name, type_};
 use fmm::{ir::*, types};
 use fnv::{FnvHashMap, FnvHashSet};
 
-pub fn compile_expression(
+pub fn compile(
     expression: &Expression,
     global_variables: &FnvHashSet<String>,
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
-    let compile_expression =
-        |expression| compile_expression(expression, global_variables, type_ids);
+    let compile = |expression| compile(expression, global_variables, type_ids);
 
     match expression {
         Expression::AlignOf(align_of) => {
-            format!("alignof({})", compile_type_id(align_of.type_(), type_ids))
+            format!("alignof({})", type_::compile_id(align_of.type_(), type_ids))
         }
         Expression::ArithmeticOperation(operation) => format!(
             "{}{}{}",
-            compile_expression(operation.lhs()),
+            compile(operation.lhs()),
             compile_arithmetic_operator(operation.operator()),
-            compile_expression(operation.rhs()),
+            compile(operation.rhs()),
         ),
         Expression::BitCast(bit_cast) => {
             format!(
                 "__builtin_bit_cast({},({})({}))",
-                compile_type_id(bit_cast.to(), type_ids),
-                compile_type_id(bit_cast.from(), type_ids),
-                compile_expression(bit_cast.expression()),
+                type_::compile_id(bit_cast.to(), type_ids),
+                type_::compile_id(bit_cast.from(), type_ids),
+                compile(bit_cast.expression()),
             )
         }
         Expression::BitwiseNotOperation(operation) => {
-            format!("(~({}))", compile_expression(operation.value()))
+            format!("(~({}))", compile(operation.value()))
         }
         Expression::BitwiseOperation(operation) => {
             format!(
                 "(({}){}({}))",
-                compile_expression(operation.lhs()),
+                compile(operation.lhs()),
                 match operation.operator() {
                     fmm::ir::BitwiseOperator::And => "&",
                     fmm::ir::BitwiseOperator::Or => "|",
                     fmm::ir::BitwiseOperator::Xor => "^",
                 },
-                compile_expression(operation.rhs()),
+                compile(operation.rhs()),
             )
         }
         Expression::ComparisonOperation(operation) => format!(
             "{}{}{}",
-            compile_expression(operation.lhs()),
+            compile(operation.lhs()),
             compile_comparison_operator(operation.operator()),
-            compile_expression(operation.rhs()),
+            compile(operation.rhs()),
         ),
         Expression::PointerAddress(address) => format!(
             "(({})+({}))",
-            compile_expression(address.pointer()),
-            compile_expression(address.offset()),
+            compile(address.pointer()),
+            compile(address.offset()),
         ),
         Expression::Primitive(primitive) => compile_primitive(*primitive),
         Expression::Record(record) => {
             format!(
                 "({}){{{}}}",
-                compile_record_type_id(record.type_(), type_ids),
+                type_::compile_record_id(record.type_(), type_ids),
                 record
                     .fields()
                     .iter()
-                    .map(compile_expression)
+                    .map(compile)
                     .collect::<Vec<_>>()
                     .join(",")
             )
         }
         Expression::RecordAddress(address) => format!(
             "(&({})->{})",
-            compile_expression(address.pointer()),
-            generate_record_field_name(address.field_index()),
+            compile(address.pointer()),
+            name::generate_record_field_name(address.field_index()),
         ),
         Expression::SizeOf(size_of) => {
-            format!("sizeof({})", compile_type_id(size_of.type_(), type_ids))
+            format!("sizeof({})", type_::compile_id(size_of.type_(), type_ids))
         }
         Expression::Undefined(undefined) => compile_undefined(undefined, type_ids),
         Expression::Union(union) => {
             format!(
                 "({}){{.{}={}}}",
-                compile_union_type_id(union.type_(), type_ids),
-                generate_union_member_name(union.member_index()),
-                compile_expression(union.member())
+                type_::compile_union_id(union.type_(), type_ids),
+                name::generate_union_member_name(union.member_index()),
+                compile(union.member())
             )
         }
         Expression::UnionAddress(address) => {
             format!(
                 "(&({})->{})",
-                compile_expression(address.pointer()),
-                generate_union_member_name(address.member_index()),
+                compile(address.pointer()),
+                name::generate_union_member_name(address.member_index()),
             )
         }
         Expression::Variable(variable) => {
@@ -112,12 +110,14 @@ fn compile_undefined(
         types::Type::Function(_) => "NULL".into(),
         types::Type::Primitive(primitive) => compile_undefined_primitive(*primitive).into(),
         types::Type::Pointer(_) => {
-            format!("({})NULL", compile_type_id(undefined.type_(), type_ids))
+            format!("({})NULL", type_::compile_id(undefined.type_(), type_ids))
         }
         types::Type::Record(record) => {
-            format!("({}){{}}", compile_record_type_id(record, type_ids))
+            format!("({}){{}}", type_::compile_record_id(record, type_ids))
         }
-        types::Type::Union(union) => format!("({}){{}}", compile_union_type_id(union, type_ids)),
+        types::Type::Union(union) => {
+            format!("({}){{}}", type_::compile_union_id(union, type_ids))
+        }
     }
 }
 

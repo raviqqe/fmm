@@ -1,47 +1,45 @@
-use super::types;
+use super::type_;
 use crate::union::compile_union_cast;
 use fmm::ir::*;
 use inkwell::values::BasicValue;
 
-pub fn compile_expression<'c>(
+pub fn compile<'c>(
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
     variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression = |expression: &Expression| {
-        compile_expression(builder, expression, variables, context, target_data)
-    };
+    let compile = |expression: &_| compile(builder, expression, variables, context, target_data);
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
         Expression::ArithmeticOperation(operation) => {
-            compile_arithmetic_operation(builder, operation, &compile_expression)
+            compile_arithmetic_operation(builder, operation, &compile)
         }
         Expression::BitCast(bit_cast) => {
-            compile_bit_cast(builder, bit_cast, context, target_data, &compile_expression)
+            compile_bit_cast(builder, bit_cast, context, target_data, &compile)
         }
         Expression::BitwiseNotOperation(operation) => {
-            compile_bitwise_not_operation(builder, operation, &compile_expression).into()
+            compile_bitwise_not_operation(builder, operation, &compile).into()
         }
         Expression::BitwiseOperation(operation) => {
-            compile_bitwise_operation(builder, operation, &compile_expression).into()
+            compile_bitwise_operation(builder, operation, &compile).into()
         }
         Expression::ComparisonOperation(operation) => {
-            compile_comparison_operation(builder, operation, &compile_expression)
+            compile_comparison_operation(builder, operation, &compile)
         }
         Expression::PointerAddress(address) => {
-            compile_pointer_address(builder, address, &compile_expression).into()
+            compile_pointer_address(builder, address, &compile).into()
         }
         Expression::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
         Expression::Record(record) => {
             let mut value =
-                types::compile_record(record.type_(), context, target_data).const_zero();
+                type_::compile_record(record.type_(), context, target_data).const_zero();
 
             for (index, field) in record.fields().iter().enumerate() {
                 value = builder
-                    .build_insert_value(value, compile_expression(field), index as u32, "")
+                    .build_insert_value(value, compile(field), index as u32, "")
                     .unwrap()
                     .into_struct_value();
             }
@@ -49,17 +47,17 @@ pub fn compile_expression<'c>(
             value.into()
         }
         Expression::RecordAddress(address) => {
-            compile_record_address(builder, address, context, &compile_expression).into()
+            compile_record_address(builder, address, context, &compile).into()
         }
         Expression::SizeOf(size_of) => compile_size_of(size_of, context, target_data).into(),
         Expression::Undefined(undefined) => compile_undefined(undefined, context, target_data),
         Expression::Union(union) => {
-            let member = compile_expression(union.member());
+            let member = compile(union.member());
 
             let value = context.const_struct(
                 &[
                     member.get_type().const_zero(),
-                    types::compile_union_member_padding(
+                    type_::compile_union_member_padding(
                         union.type_(),
                         union.member_index(),
                         context,
@@ -77,26 +75,24 @@ pub fn compile_expression<'c>(
                     .build_insert_value(value, member, 0, "")
                     .unwrap()
                     .as_basic_value_enum(),
-                types::compile_union(union.type_(), context, target_data).into(),
+                type_::compile_union(union.type_(), context, target_data).into(),
             )
         }
         Expression::UnionAddress(address) => {
-            compile_union_address(builder, address, context, target_data, &compile_expression)
-                .into()
+            compile_union_address(builder, address, context, target_data, &compile).into()
         }
         Expression::Variable(variable) => variables[variable.name()],
     }
 }
 
-pub fn compile_constant_expression<'c>(
+pub fn compile_constant<'c>(
     expression: &Expression,
     variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    let compile_expression = |expression: &Expression| {
-        compile_constant_expression(expression, variables, context, target_data)
-    };
+    let compile_expression =
+        |expression: &_| compile_constant(expression, variables, context, target_data);
 
     match expression {
         Expression::AlignOf(align_of) => compile_align_of(align_of, context, target_data).into(),
@@ -148,7 +144,7 @@ pub fn compile_constant_expression<'c>(
             .const_struct(
                 &[
                     compile_expression(union.member()),
-                    types::compile_union_member_padding(
+                    type_::compile_union_member_padding(
                         union.type_(),
                         union.member_index(),
                         context,
@@ -178,7 +174,7 @@ fn compile_align_of<'c>(
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::IntValue<'c> {
     compile_pointer_integer(
-        target_data.get_abi_alignment(&types::compile(align_of.type_(), context, target_data))
+        target_data.get_abi_alignment(&type_::compile(align_of.type_(), context, target_data))
             as u64,
         context,
         target_data,
@@ -238,7 +234,7 @@ fn compile_bit_cast<'c>(
         compile_constant_bit_cast(builder, bit_cast, context, target_data, compile_expression)
     } else {
         let pointer =
-            builder.build_alloca(types::compile(bit_cast.from(), context, target_data), "");
+            builder.build_alloca(type_::compile(bit_cast.from(), context, target_data), "");
 
         builder.build_store(pointer, compile_expression(bit_cast.expression()));
 
@@ -246,7 +242,7 @@ fn compile_bit_cast<'c>(
             builder
                 .build_bitcast(
                     pointer,
-                    types::compile_pointer(
+                    type_::compile_pointer(
                         &fmm::types::Pointer::new(bit_cast.to().clone()),
                         context,
                         target_data,
@@ -267,14 +263,14 @@ fn compile_constant_bit_cast<'c>(
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
 ) -> inkwell::values::BasicValueEnum<'c> {
     let argument = compile_expression(bit_cast.expression());
-    let to_type = types::compile(bit_cast.to(), context, target_data);
+    let to_type = type_::compile(bit_cast.to(), context, target_data);
 
     let value = builder.build_bitcast(
         if argument.is_pointer_value() {
             builder
                 .build_ptr_to_int(
                     argument.into_pointer_value(),
-                    types::compile_pointer_integer(context, target_data),
+                    type_::compile_pointer_integer(context, target_data),
                     "",
                 )
                 .into()
@@ -282,7 +278,7 @@ fn compile_constant_bit_cast<'c>(
             argument
         },
         if to_type.is_pointer_type() {
-            types::compile_pointer_integer(context, target_data).into()
+            type_::compile_pointer_integer(context, target_data).into()
         } else {
             to_type
         },
@@ -383,7 +379,7 @@ fn compile_size_of<'c>(
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::IntValue<'c> {
     compile_pointer_integer(
-        target_data.get_store_size(&types::compile(size_of.type_(), context, target_data)) as u64,
+        target_data.get_store_size(&type_::compile(size_of.type_(), context, target_data)) as u64,
         context,
         target_data,
     )
@@ -396,20 +392,20 @@ fn compile_undefined<'c>(
 ) -> inkwell::values::BasicValueEnum<'c> {
     match undefined.type_() {
         fmm::types::Type::Function(function) => {
-            types::compile_function_pointer(function, context, target_data)
+            type_::compile_function_pointer(function, context, target_data)
                 .const_zero()
                 .into()
         }
         fmm::types::Type::Primitive(primitive) => {
             compile_undefined_primitive(*primitive, context, target_data)
         }
-        fmm::types::Type::Pointer(pointer) => types::compile_pointer(pointer, context, target_data)
+        fmm::types::Type::Pointer(pointer) => type_::compile_pointer(pointer, context, target_data)
             .const_zero()
             .into(),
-        fmm::types::Type::Record(record) => types::compile_record(record, context, target_data)
+        fmm::types::Type::Record(record) => type_::compile_record(record, context, target_data)
             .const_zero()
             .into(),
-        fmm::types::Type::Union(union) => types::compile_union(union, context, target_data)
+        fmm::types::Type::Union(union) => type_::compile_union(union, context, target_data)
             .const_zero()
             .into(),
     }
@@ -439,7 +435,7 @@ pub fn compile_pointer_integer<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::IntValue<'c> {
-    types::compile_pointer_integer(context, target_data).const_int(number, false)
+    type_::compile_pointer_integer(context, target_data).const_int(number, false)
 }
 
 fn compile_pointer_address<'c>(
@@ -462,7 +458,7 @@ fn compile_undefined_primitive<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
-    match types::compile_primitive(type_, context, target_data) {
+    match type_::compile_primitive(type_, context, target_data) {
         inkwell::types::BasicTypeEnum::FloatType(float) => float.const_zero().into(),
         inkwell::types::BasicTypeEnum::IntType(integer) => integer.const_zero().into(),
         inkwell::types::BasicTypeEnum::PointerType(pointer) => pointer.const_zero().into(),
@@ -482,13 +478,13 @@ fn compile_union_address<'c>(
             builder
                 .build_bitcast(
                     compile_expression(address.pointer()),
-                    types::compile_union_member(
+                    type_::compile_union_member(
                         address.type_(),
                         address.member_index(),
                         context,
                         target_data,
                     )
-                    .ptr_type(types::DEFAULT_ADDRESS_SPACE),
+                    .ptr_type(type_::DEFAULT_ADDRESS_SPACE),
                     "",
                 )
                 .into_pointer_value(),
