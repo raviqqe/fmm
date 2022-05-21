@@ -1,6 +1,6 @@
 use crate::{
-    calling_convention::compile_calling_convention, error::CompileError, expressions::*,
-    instruction_configuration::InstructionFunctionSet, types, union::compile_union_cast,
+    calling_convention::compile_calling_convention, error::CompileError, expression::*,
+    instruction_configuration::InstructionFunctionSet, type_, union::compile_union_cast,
 };
 use fmm::ir::*;
 use inkwell::values::BasicValue;
@@ -55,7 +55,7 @@ fn compile_instruction<'c>(
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
         |expression| compile_expression(builder, expression, variables, context, target_data);
-    let compile_type = |type_| types::compile(type_, context, target_data);
+    let compile_type = |type_| type_::compile(type_, context, target_data);
 
     Ok(match instruction {
         Instruction::AllocateHeap(allocate) => Some(
@@ -155,7 +155,7 @@ fn compile_instruction<'c>(
             compile_union_cast(
                 builder,
                 compile_expression(deconstruct.union()),
-                types::compile_union_member(
+                type_::compile_union_member(
                     deconstruct.type_(),
                     deconstruct.member_index(),
                     context,
@@ -178,7 +178,7 @@ fn compile_instruction<'c>(
                 &[builder
                     .build_bitcast(
                         compile_expression(free.pointer()),
-                        context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE),
+                        context.i8_type().ptr_type(type_::DEFAULT_ADDRESS_SPACE),
                         "",
                     )
                     .into()],

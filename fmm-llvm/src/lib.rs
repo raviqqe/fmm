@@ -1,18 +1,18 @@
 mod calling_convention;
 mod error;
-mod expressions;
+mod expression;
+mod instruction;
 mod instruction_configuration;
-mod instructions;
-mod types;
+mod type_;
 mod union;
 
 use calling_convention::*;
 pub use error::CompileError;
-use expressions::*;
+use expression::*;
 use fmm::ir::*;
+use instruction::*;
 pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
-use instructions::*;
 use once_cell::sync::Lazy;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
@@ -152,8 +152,8 @@ fn compile_heap_functions<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> InstructionFunctionSet<'c> {
-    let pointer_type = context.i8_type().ptr_type(types::DEFAULT_ADDRESS_SPACE);
-    let pointer_integer_type = types::compile_pointer_integer(context, target_data);
+    let pointer_type = context.i8_type().ptr_type(type_::DEFAULT_ADDRESS_SPACE);
+    let pointer_integer_type = type_::compile_pointer_integer(context, target_data);
 
     InstructionFunctionSet {
         allocate_function: module.add_function(
@@ -185,7 +185,7 @@ fn compile_variable_declaration<'c>(
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
     module.add_global(
-        types::compile(declaration.type_(), context, target_data),
+        type_::compile(declaration.type_(), context, target_data),
         None,
         declaration.name(),
     )
@@ -199,7 +199,7 @@ fn compile_function_declaration<'c>(
 ) -> inkwell::values::FunctionValue<'c> {
     let function = module.add_function(
         declaration.name(),
-        types::compile_function(declaration.type_(), context, target_data),
+        type_::compile_function(declaration.type_(), context, target_data),
         None,
     );
 
@@ -217,7 +217,7 @@ fn declare_variable_definition<'c>(
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
     let global = module.add_global(
-        types::compile(definition.type_(), context, target_data),
+        type_::compile(definition.type_(), context, target_data),
         None,
         definition.name(),
     );
@@ -258,7 +258,7 @@ fn declare_function_definition<'c>(
 ) -> inkwell::values::FunctionValue<'c> {
     let function = module.add_function(
         definition.name(),
-        types::compile_function(definition.type_(), context, target_data),
+        type_::compile_function(definition.type_(), context, target_data),
         Some(compile_linkage(definition.linkage())),
     );
 

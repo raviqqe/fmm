@@ -1,4 +1,4 @@
-use crate::types::DEFAULT_ADDRESS_SPACE;
+use crate::type_::DEFAULT_ADDRESS_SPACE;
 use inkwell::types::BasicType;
 
 pub fn compile_union_cast<'c>(
