@@ -1,6 +1,6 @@
 use fmm::ir::*;
 
-pub fn rename_names(module: &Module) -> Module {
+pub fn rename(module: &Module) -> Module {
     fmm::analysis::rename_names(module, |name| {
         if name.is_empty() {
             "_".into()
@@ -19,7 +19,7 @@ mod tests {
     #[test]
     fn rename_empty_name() {
         assert_eq!(
-            rename_names(&Module::new(
+            rename(&Module::new(
                 vec![VariableDeclaration::new(
                     "",
                     fmm::types::Primitive::PointerInteger
@@ -43,7 +43,7 @@ mod tests {
     #[test]
     fn rename_invalid_name() {
         assert_eq!(
-            rename_names(&Module::new(
+            rename(&Module::new(
                 vec![VariableDeclaration::new(
                     "$x",
                     fmm::types::Primitive::PointerInteger

@@ -1,8 +1,5 @@
-use crate::{expressions::*, names::*, types::*};
-use fmm::{
-    ir::*,
-    types::{self, GENERIC_POINTER_TYPE},
-};
+use crate::{expression, name, type_};
+use fmm::{ir::*, types::GENERIC_POINTER_TYPE};
 use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_block(
@@ -32,9 +29,9 @@ fn compile_instruction(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
-        |expression| compile_expression(expression, global_variables, type_ids);
-    let compile_typed_name = |type_, name| compile_typed_name(type_, name, type_ids);
-    let compile_type_id = |type_| compile_type_id(type_, type_ids);
+        |expression| expression::compile(expression, global_variables, type_ids);
+    let compile_typed_name = |type_, name| type_::compile_name(type_, name, type_ids);
+    let compile_type_id = |type_| type_::compile_id(type_, type_ids);
 
     match instruction {
         Instruction::AllocateHeap(allocate) => {
@@ -51,7 +48,7 @@ fn compile_instruction(
                 "{};{}=&{};",
                 compile_typed_name(allocate.type_(), &entity_name),
                 compile_typed_name(
-                    &types::Pointer::new(allocate.type_().clone()).into(),
+                    &fmm::types::Pointer::new(allocate.type_().clone()).into(),
                     allocate.name(),
                 ),
                 entity_name,
@@ -61,7 +58,7 @@ fn compile_instruction(
             "{}=({})atomic_load_explicit(({}){},{});",
             compile_typed_name(load.type_(), load.name()),
             compile_type_id(load.type_()),
-            compile_atomic_pointer_type_id(load.type_(), type_ids),
+            type_::compile_atomic_pointer_id(load.type_(), type_ids),
             compile_expression(load.pointer()),
             compile_atomic_ordering(load.ordering()),
         ),
@@ -72,14 +69,14 @@ fn compile_instruction(
                 AtomicOperator::Add => "add",
                 AtomicOperator::Subtract => "sub",
             },
-            compile_atomic_pointer_type_id(&operation.type_().into(), type_ids),
+            type_::compile_atomic_pointer_id(&operation.type_().into(), type_ids),
             compile_expression(operation.pointer()),
             compile_expression(operation.value()),
             compile_atomic_ordering(operation.ordering()),
         ),
         Instruction::AtomicStore(store) => format!(
             "atomic_store_explicit(({}){},{},{});",
-            compile_atomic_pointer_type_id(store.type_(), type_ids),
+            type_::compile_atomic_pointer_id(store.type_(), type_ids),
             compile_expression(store.pointer()),
             compile_expression(store.value()),
             compile_atomic_ordering(store.ordering()),
@@ -102,7 +99,7 @@ fn compile_instruction(
                 compile_typed_name(cas.type_(), &name),
                 compile_expression(cas.old_value()),
                 cas.name(),
-                compile_atomic_pointer_type_id(cas.type_(), type_ids),
+                type_::compile_atomic_pointer_id(cas.type_(), type_ids),
                 compile_expression(cas.pointer()),
                 name,
                 compile_expression(cas.new_value()),
@@ -117,7 +114,7 @@ fn compile_instruction(
                 deconstruct.name(),
             ),
             compile_expression(deconstruct.record()),
-            generate_record_field_name(deconstruct.field_index()),
+            name::generate_record_field_name(deconstruct.field_index()),
         ),
         Instruction::DeconstructUnion(deconstruct) => format!(
             "{}={}.{};",
@@ -126,7 +123,7 @@ fn compile_instruction(
                 deconstruct.name(),
             ),
             compile_expression(deconstruct.union()),
-            generate_union_member_name(deconstruct.member_index()),
+            name::generate_union_member_name(deconstruct.member_index()),
         ),
         Instruction::Fence(fence) => {
             format!(
@@ -157,7 +154,7 @@ fn compile_instruction(
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",
-                compile_typed_name(&types::GENERIC_POINTER_TYPE.clone(), reallocate.name()),
+                compile_typed_name(&fmm::types::GENERIC_POINTER_TYPE.clone(), reallocate.name()),
                 compile_expression(reallocate.pointer()),
                 compile_expression(reallocate.size()),
             )
@@ -177,7 +174,7 @@ fn compile_terminal_instruction(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
-        |expression| compile_expression(expression, global_variables, type_ids);
+        |expression| expression::compile(expression, global_variables, type_ids);
 
     match instruction {
         TerminalInstruction::Branch(branch) => block_variable_name

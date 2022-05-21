@@ -1,20 +1,15 @@
 mod error;
-mod expressions;
+mod expression;
+mod instruction;
 mod instruction_configuration;
-mod instructions;
-mod names;
+mod name;
 mod renaming;
-mod types;
+mod type_;
 
 pub use error::*;
-use expressions::*;
 use fmm::{analysis::collect_types, ir::*};
 use fnv::{FnvHashMap, FnvHashSet};
 pub use instruction_configuration::InstructionConfiguration;
-use instructions::*;
-use names::*;
-use renaming::rename_names;
-use types::*;
 
 const INCLUDES: &[&str] = &[
     "#include <stdalign.h>",
@@ -30,7 +25,7 @@ pub fn compile(
 ) -> Result<String, CompileError> {
     fmm::analysis::check_types(module)?;
 
-    let module = rename_names(module);
+    let module = renaming::rename(module);
     let global_variables = module
         .variable_declarations()
         .iter()
@@ -127,7 +122,7 @@ fn compile_record_type_definition(
     format!(
         "struct {} {{{}}};",
         type_ids[&record.clone().into()],
-        compile_record_fields(record, type_ids)
+        type_::compile_record_fields(record, type_ids)
     )
 }
 
@@ -138,7 +133,7 @@ fn compile_union_type_definition(
     format!(
         "union {} {{{}}};",
         type_ids[&union.clone().into()],
-        compile_union_members(union, type_ids)
+        type_::compile_union_members(union, type_ids)
     )
 }
 
@@ -147,7 +142,7 @@ fn compile_variable_declaration(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     "extern ".to_owned()
-        + &compile_typed_name(declaration.type_(), declaration.name(), type_ids)
+        + &type_::compile_name(declaration.type_(), declaration.name(), type_ids)
         + ";"
 }
 
@@ -163,7 +158,7 @@ fn compile_function_declaration(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     "extern ".to_owned()
-        + &compile_function_name(declaration.type_(), declaration.name(), type_ids)
+        + &type_::compile_function_name(declaration.type_(), declaration.name(), type_ids)
         + ";"
 }
 
@@ -172,7 +167,7 @@ fn compile_function_forward_declaration(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.linkage()).to_owned()
-        + &compile_function_name(definition.type_(), definition.name(), type_ids)
+        + &type_::compile_function_name(definition.type_(), definition.name(), type_ids)
         + ";"
 }
 
@@ -183,7 +178,7 @@ fn compile_variable_definition(
 ) -> String {
     compile_variable_definition_lhs(definition, type_ids)
         + "="
-        + &compile_expression(definition.body(), global_variables, type_ids)
+        + &expression::compile(definition.body(), global_variables, type_ids)
         + ";"
 }
 
@@ -192,7 +187,7 @@ fn compile_variable_definition_lhs(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.linkage()).to_owned()
-        + &compile_typed_name(
+        + &type_::compile_name(
             definition.type_(),
             &(if definition.is_mutable() {
                 ""
@@ -211,7 +206,7 @@ fn compile_function_definition(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.linkage()).to_owned()
-        + &compile_typed_name(
+        + &type_::compile_name(
             definition.result_type(),
             &format!(
                 "{}({})",
@@ -219,14 +214,18 @@ fn compile_function_definition(
                 definition
                     .arguments()
                     .iter()
-                    .map(|argument| compile_typed_name(argument.type_(), argument.name(), type_ids))
+                    .map(|argument| type_::compile_name(
+                        argument.type_(),
+                        argument.name(),
+                        type_ids
+                    ))
                     .collect::<Vec<_>>()
                     .join(",")
             ),
             type_ids,
         )
         + "{\n"
-        + &compile_block(definition.body(), None, global_variables, type_ids)
+        + &instruction::compile_block(definition.body(), None, global_variables, type_ids)
         + "\n}"
 }
 
@@ -243,7 +242,12 @@ fn compile_type_ids(types: &[fmm::types::Type]) -> FnvHashMap<fmm::types::Type, 
         .collect::<FnvHashSet<_>>()
         .into_iter()
         .enumerate()
-        .map(|(index, record)| (record.clone().into(), generate_record_type_name(index)))
+        .map(|(index, record)| {
+            (
+                record.clone().into(),
+                name::generate_record_type_name(index),
+            )
+        })
         .chain(
             types
                 .iter()
@@ -257,7 +261,9 @@ fn compile_type_ids(types: &[fmm::types::Type]) -> FnvHashMap<fmm::types::Type, 
                 .collect::<FnvHashSet<_>>()
                 .into_iter()
                 .enumerate()
-                .map(|(index, union)| (union.clone().into(), generate_union_type_name(index))),
+                .map(|(index, union)| {
+                    (union.clone().into(), name::generate_union_type_name(index))
+                }),
         )
         .collect()
 }
