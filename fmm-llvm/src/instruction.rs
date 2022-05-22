@@ -80,10 +80,14 @@ fn compile_instruction<'c>(
                 load.name(),
             );
 
-            value
-                .as_instruction_value()
-                .unwrap()
-                .set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
+            let instruction_value = value.as_instruction_value().unwrap();
+            instruction_value.set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
+            instruction_value.set_alignment(
+                type_::compile_pointer_integer(context, target_data)
+                    .get_alignment()
+                    .get_zero_extended_constant()
+                    .unwrap() as u32,
+            )?;
 
             Some(value)
         }
