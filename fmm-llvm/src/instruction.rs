@@ -82,12 +82,14 @@ fn compile_instruction<'c>(
 
             let instruction_value = value.as_instruction_value().unwrap();
             instruction_value.set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
-            instruction_value.set_alignment(
-                type_::compile_pointer_integer(context, target_data)
-                    .get_alignment()
-                    .get_zero_extended_constant()
-                    .unwrap() as u32,
-            )?;
+            // Somehow sometimes, this alignment is not properly set if not set explicitly.
+            // For example, an alignment for i64 is 4 bytes instead of 8 bytes on
+            // x86_64-unknown-linux-gnu.
+            instruction_value.set_alignment(target_data.get_abi_alignment(&type_::compile(
+                load.type_(),
+                context,
+                target_data,
+            )))?;
 
             Some(value)
         }
