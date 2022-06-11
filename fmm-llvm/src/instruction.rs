@@ -82,14 +82,7 @@ fn compile_instruction<'c>(
 
             let instruction_value = value.as_instruction_value().unwrap();
             instruction_value.set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
-            // Somehow sometimes, this alignment is not properly set if not set explicitly.
-            // For example, an alignment for i64 is 4 bytes instead of 8 bytes on
-            // x86_64-unknown-linux-gnu.
-            instruction_value.set_alignment(target_data.get_abi_alignment(&type_::compile(
-                load.type_(),
-                context,
-                target_data,
-            )))?;
+            set_alignment(context, &instruction_value, load.type_(), target_data)?;
 
             Some(value)
         }
@@ -113,6 +106,7 @@ fn compile_instruction<'c>(
             );
 
             value.set_atomic_ordering(compile_atomic_ordering(store.ordering()))?;
+            set_alignment(context, &value, store.type_(), target_data)?;
 
             None
         }
@@ -314,4 +308,16 @@ fn compile_atomic_ordering(ordering: AtomicOrdering) -> inkwell::AtomicOrdering 
         AtomicOrdering::AcquireRelease => inkwell::AtomicOrdering::AcquireRelease,
         AtomicOrdering::SequentiallyConsistent => inkwell::AtomicOrdering::SequentiallyConsistent,
     }
+}
+
+// Somehow sometimes, alignments of atomic operations are not properly set.
+// For example, an alignment for i64 is 4 bytes instead of 8 bytes on
+// x86_64-unknown-linux-gnu.
+fn set_alignment(
+    context: &inkwell::context::Context,
+    value: &inkwell::values::InstructionValue,
+    type_: &fmm::types::Type,
+    target_data: &inkwell::targets::TargetData,
+) -> Result<(), &'static str> {
+    value.set_alignment(target_data.get_abi_alignment(&type_::compile(type_, context, target_data)))
 }
