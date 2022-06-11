@@ -86,19 +86,26 @@ fn compile_instruction<'c>(
 
             Some(value)
         }
-        Instruction::AtomicOperation(operation) => Some(
-            builder
-                .build_atomicrmw(
-                    match operation.operator() {
-                        AtomicOperator::Add => inkwell::AtomicRMWBinOp::Add,
-                        AtomicOperator::Subtract => inkwell::AtomicRMWBinOp::Sub,
-                    },
-                    compile_expression(operation.pointer()).into_pointer_value(),
-                    compile_expression(operation.value()).into_int_value(),
-                    compile_atomic_ordering(operation.ordering()),
-                )?
-                .into(),
-        ),
+        Instruction::AtomicOperation(operation) => {
+            let value = builder.build_atomicrmw(
+                match operation.operator() {
+                    AtomicOperator::Add => inkwell::AtomicRMWBinOp::Add,
+                    AtomicOperator::Subtract => inkwell::AtomicRMWBinOp::Sub,
+                },
+                compile_expression(operation.pointer()).into_pointer_value(),
+                compile_expression(operation.value()).into_int_value(),
+                compile_atomic_ordering(operation.ordering()),
+            )?;
+
+            set_alignment(
+                context,
+                &value.as_instruction().unwrap(),
+                &operation.type_().into(),
+                target_data,
+            )?;
+
+            Some(value.into())
+        }
         Instruction::AtomicStore(store) => {
             let value = builder.build_store(
                 compile_expression(store.pointer()).into_pointer_value(),
