@@ -1,13 +1,13 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompareAndSwap {
     type_: Type, // pointer element type
-    pointer: Rc<Expression>,
-    old_value: Rc<Expression>,
-    new_value: Rc<Expression>,
+    pointer: Arc<Expression>,
+    old_value: Arc<Expression>,
+    new_value: Arc<Expression>,
     success_ordering: AtomicOrdering,
     failure_ordering: AtomicOrdering,
     name: String,

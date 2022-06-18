@@ -1,11 +1,11 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AtomicLoad {
     type_: Type, // pointer element type
-    pointer: Rc<Expression>,
+    pointer: Arc<Expression>,
     ordering: AtomicOrdering,
     name: String,
 }

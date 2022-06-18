@@ -1,9 +1,9 @@
 use super::type_::Type;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Pointer {
-    element: Rc<Type>,
+    element: Arc<Type>,
 }
 
 impl Pointer {

@@ -1,6 +1,6 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ArithmeticOperator {
@@ -14,8 +14,8 @@ pub enum ArithmeticOperator {
 pub struct ArithmeticOperation {
     type_: types::Primitive,
     operator: ArithmeticOperator,
-    lhs: Rc<Expression>,
-    rhs: Rc<Expression>,
+    lhs: Arc<Expression>,
+    rhs: Arc<Expression>,
 }
 
 impl ArithmeticOperation {
@@ -28,8 +28,8 @@ impl ArithmeticOperation {
         Self {
             type_,
             operator,
-            lhs: Rc::new(lhs.into()),
-            rhs: Rc::new(rhs.into()),
+            lhs: Arc::new(lhs.into()),
+            rhs: Arc::new(rhs.into()),
         }
     }
 

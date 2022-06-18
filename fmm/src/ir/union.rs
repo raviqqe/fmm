@@ -1,12 +1,12 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Union {
     type_: types::Union,
     member_index: usize,
-    member: Rc<Expression>,
+    member: Arc<Expression>,
 }
 
 impl Union {

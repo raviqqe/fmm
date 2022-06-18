@@ -1,13 +1,13 @@
 use super::{block::Block, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct If {
     type_: Type,
     condition: Expression,
-    then: Rc<Block>,
-    else_: Rc<Block>,
+    then: Arc<Block>,
+    else_: Arc<Block>,
     name: String,
 }
 

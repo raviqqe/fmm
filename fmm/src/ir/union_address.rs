@@ -1,11 +1,11 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct UnionAddress {
     type_: types::Union,
-    pointer: Rc<Expression>, // pointer to union
+    pointer: Arc<Expression>, // pointer to union
     member_index: usize,
 }
 

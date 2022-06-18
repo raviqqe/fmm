@@ -1,11 +1,11 @@
 use super::expression::Expression;
 use crate::types::Type;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Load {
     type_: Type, // pointer element type
-    pointer: Rc<Expression>,
+    pointer: Arc<Expression>,
     name: String,
 }
 

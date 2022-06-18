@@ -1,11 +1,11 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Call {
     type_: types::Function,
-    function: Rc<Expression>,
+    function: Arc<Expression>,
     arguments: Vec<Expression>,
     name: String,
 }

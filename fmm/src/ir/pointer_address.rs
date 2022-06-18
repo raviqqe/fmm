@@ -1,12 +1,12 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PointerAddress {
     type_: types::Pointer, // type of the pointer value
-    pointer: Rc<Expression>,
-    offset: Rc<Expression>,
+    pointer: Arc<Expression>,
+    offset: Arc<Expression>,
 }
 
 impl PointerAddress {

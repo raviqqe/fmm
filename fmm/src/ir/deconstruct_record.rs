@@ -1,11 +1,11 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeconstructRecord {
     type_: types::Record,
-    record: Rc<Expression>,
+    record: Arc<Expression>,
     field_index: usize,
     name: String,
 }

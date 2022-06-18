@@ -1,11 +1,11 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RecordAddress {
     type_: types::Record,
-    pointer: Rc<Expression>, // pointer to record
+    pointer: Arc<Expression>, // pointer to record
     field_index: usize,
 }
 
