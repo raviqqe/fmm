@@ -3,7 +3,7 @@ use super::{
 };
 use crate::{
     ir::*,
-    types::{self, Type, GENERIC_POINTER_TYPE, VOID_TYPE},
+    types::{self, generic_pointer_type, void_type, Type},
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -30,7 +30,7 @@ impl InstructionBuilder {
 
         self.add_instruction(AllocateHeap::new(size.into().expression().clone(), &name));
 
-        TypedExpression::new(Variable::new(name), GENERIC_POINTER_TYPE.clone())
+        TypedExpression::new(Variable::new(name), generic_pointer_type())
     }
 
     pub fn reallocate_heap(
@@ -46,7 +46,7 @@ impl InstructionBuilder {
             &name,
         ));
 
-        TypedExpression::new(Variable::new(name), GENERIC_POINTER_TYPE.clone())
+        TypedExpression::new(Variable::new(name), generic_pointer_type())
     }
 
     pub fn allocate_stack(&self, type_: impl Into<Type>) -> TypedExpression {
@@ -250,7 +250,7 @@ impl InstructionBuilder {
         } else if let Some(branch) = else_.terminal_instruction().to_branch() {
             branch.type_().clone()
         } else {
-            VOID_TYPE.clone().into()
+            void_type().into()
         };
 
         self.add_instruction(If::new(

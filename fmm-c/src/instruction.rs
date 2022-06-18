@@ -1,5 +1,5 @@
 use crate::{expression, name, type_};
-use fmm::{ir::*, types::GENERIC_POINTER_TYPE};
+use fmm::{ir::*, types::generic_pointer_type};
 use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn compile_block(
@@ -37,7 +37,7 @@ fn compile_instruction(
         Instruction::AllocateHeap(allocate) => {
             format!(
                 "{}=malloc({});",
-                compile_typed_name(&GENERIC_POINTER_TYPE, allocate.name()),
+                compile_typed_name(&generic_pointer_type(), allocate.name()),
                 compile_expression(allocate.size()),
             )
         }
@@ -154,7 +154,7 @@ fn compile_instruction(
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",
-                compile_typed_name(&fmm::types::GENERIC_POINTER_TYPE.clone(), reallocate.name()),
+                compile_typed_name(&fmm::types::generic_pointer_type(), reallocate.name()),
                 compile_expression(reallocate.pointer()),
                 compile_expression(reallocate.size()),
             )

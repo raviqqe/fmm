@@ -3,7 +3,7 @@ mod names;
 
 use crate::{
     ir::*,
-    types::{self, Type, GENERIC_POINTER_TYPE},
+    types::{self, generic_pointer_type, Type},
 };
 pub use error::*;
 
@@ -172,7 +172,7 @@ fn check_block(
             Instruction::FreeHeap(free) => {
                 check_equality(
                     &check_expression(free.pointer(), &variables)?,
-                    &GENERIC_POINTER_TYPE.clone(),
+                    &generic_pointer_type(),
                 )?;
             }
             Instruction::If(if_) => {
@@ -193,7 +193,7 @@ fn check_block(
             Instruction::ReallocateHeap(reallocate) => {
                 check_equality(
                     &check_expression(reallocate.pointer(), &variables)?,
-                    &GENERIC_POINTER_TYPE,
+                    &generic_pointer_type(),
                 )?;
 
                 check_equality(
@@ -544,9 +544,9 @@ mod tests {
                 vec![Argument::new("x", types::Primitive::PointerInteger)],
                 Block::new(
                     vec![AllocateHeap::new(Primitive::PointerInteger(42), "x").into()],
-                    Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("x")),
+                    Return::new(generic_pointer_type(), Variable::new("x")),
                 ),
-                GENERIC_POINTER_TYPE.clone(),
+                generic_pointer_type(),
             )],
         ))
     }
@@ -559,7 +559,7 @@ mod tests {
             vec![],
             vec![create_function_definition(
                 "f",
-                vec![Argument::new("x", GENERIC_POINTER_TYPE.clone())],
+                vec![Argument::new("x", generic_pointer_type())],
                 Block::new(
                     vec![ReallocateHeap::new(
                         Variable::new("x"),
@@ -567,9 +567,9 @@ mod tests {
                         "y",
                     )
                     .into()],
-                    Return::new(GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
+                    Return::new(generic_pointer_type(), Variable::new("y")),
                 ),
-                GENERIC_POINTER_TYPE.clone(),
+                generic_pointer_type(),
             )],
         ))
     }
@@ -961,7 +961,7 @@ mod tests {
             vec![],
             vec![create_function_definition(
                 "f",
-                vec![Argument::new("x", GENERIC_POINTER_TYPE.clone())],
+                vec![Argument::new("x", generic_pointer_type())],
                 Block::new(
                     vec![FreeHeap::new(Variable::new("x")).into()],
                     Return::new(

@@ -1,7 +1,7 @@
 use crate::{
     build::{self, BuildError, InstructionBuilder, TypedExpression},
     ir::*,
-    types::{self, Type, GENERIC_POINTER_TYPE},
+    types::{self, generic_pointer_type, Type},
 };
 use once_cell::unsync::Lazy;
 
@@ -10,7 +10,7 @@ const DEFAULT_STACK_SIZE: i64 = 64;
 thread_local! {
     static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
         types::Pointer::new(types::Record::new(vec![
-            GENERIC_POINTER_TYPE.clone(),            // base pointer
+            generic_pointer_type(),            // base pointer
             types::Primitive::PointerInteger.into(), // size
             types::Primitive::PointerInteger.into(), // capacity
         ]))
