@@ -82,9 +82,9 @@ pub fn push_to_stack(
             );
             builder.store(new_capacity, build::record_address(stack.clone(), 2)?);
 
-            Ok(builder.branch(VOID_VALUE.clone()))
+            Ok(builder.branch(void_value()))
         },
-        |builder| Ok(builder.branch(VOID_VALUE.clone())),
+        |builder| Ok(builder.branch(void_value())),
     )?;
 
     builder.store(
