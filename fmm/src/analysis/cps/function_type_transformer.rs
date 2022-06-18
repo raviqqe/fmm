@@ -1,4 +1,4 @@
-use super::stack::STACK_TYPE;
+use super::stack::stack_type;
 use crate::{
     analysis::{convert_types, cps::continuation_type_compiler},
     ir::*,
@@ -21,7 +21,7 @@ fn transform_function_type(
     if type_.calling_convention() == CallingConvention::Source {
         types::Function::new(
             [
-                STACK_TYPE.clone(),
+                stack_type(),
                 continuation_type_compiler::compile(type_.result(), continuation_result_type)
                     .into(),
             ]

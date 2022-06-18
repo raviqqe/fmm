@@ -2,7 +2,7 @@ use super::{
     context::CpsContext,
     error::CpsTransformationError,
     free_variable_collector,
-    stack::{pop_from_stack, push_to_stack, STACK_TYPE},
+    stack::{pop_from_stack, push_to_stack, stack_type},
 };
 use crate::{
     analysis::cps::continuation_type_compiler,
@@ -55,7 +55,7 @@ fn transform_function_definition(
             FunctionDefinition::new(
                 definition.name(),
                 [
-                    Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                    Argument::new(STACK_ARGUMENT_NAME, stack_type()),
                     Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
                 ]
                 .into_iter()
@@ -146,7 +146,7 @@ fn transform_instructions(
                     if !is_tail_call {
                         push_to_stack(
                             &builder,
-                            build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                            build::variable(STACK_ARGUMENT_NAME, stack_type()),
                             get_environment_record(&environment),
                         )?;
                     }
@@ -253,7 +253,7 @@ fn create_continuation(
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
-            Argument::new(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+            Argument::new(STACK_ARGUMENT_NAME, stack_type()),
             Argument::new(call.name(), call.type_().result().clone()),
         ],
         Block::new(
@@ -263,7 +263,7 @@ fn create_continuation(
                 let environment_record_type = get_environment_record(environment).type_().clone();
                 let environment_record = pop_from_stack(
                     &builder,
-                    build::variable(STACK_ARGUMENT_NAME, STACK_TYPE.clone()),
+                    build::variable(STACK_ARGUMENT_NAME, stack_type()),
                     environment_record_type.clone(),
                 )?;
 

@@ -3,18 +3,24 @@ use crate::{
     ir::*,
     types::{self, Type, GENERIC_POINTER_TYPE},
 };
-use once_cell::sync::Lazy;
+use once_cell::unsync::Lazy;
 
 const DEFAULT_STACK_SIZE: i64 = 64;
 
-pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
-    types::Pointer::new(types::Record::new(vec![
-        GENERIC_POINTER_TYPE.clone(),            // base pointer
-        types::Primitive::PointerInteger.into(), // size
-        types::Primitive::PointerInteger.into(), // capacity
-    ]))
-    .into()
-});
+thread_local! {
+    static stack_type: Lazy<Type> = Lazy::new(|| {
+        types::Pointer::new(types::Record::new(vec![
+            GENERIC_POINTER_TYPE.clone(),            // base pointer
+            types::Primitive::PointerInteger.into(), // size
+            types::Primitive::PointerInteger.into(), // capacity
+        ]))
+        .into()
+    });
+}
+
+pub fn stack_type() -> Type {
+    stack_type.with(|type_| &**type_).clone()
+}
 
 pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
     let capacity = Primitive::PointerInteger(DEFAULT_STACK_SIZE);
