@@ -1,11 +1,11 @@
 use crate::{ir::Expression, types::Type};
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BitCast {
     from: Type,
     to: Type,
-    expression: Arc<Expression>,
+    expression: Rc<Expression>,
 }
 
 impl BitCast {

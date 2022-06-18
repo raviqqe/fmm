@@ -1,12 +1,12 @@
 use super::expression::Expression;
 use crate::types::Type;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Store {
     type_: Type, // pointer element type
-    value: Arc<Expression>,
-    pointer: Arc<Expression>,
+    value: Rc<Expression>,
+    pointer: Rc<Expression>,
 }
 
 impl Store {

@@ -1,10 +1,10 @@
 use super::{calling_convention::CallingConvention, type_::Type};
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Function {
     arguments: Vec<Type>,
-    result: Arc<Type>,
+    result: Rc<Type>,
     calling_convention: CallingConvention,
 }
 

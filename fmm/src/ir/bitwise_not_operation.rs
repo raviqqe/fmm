@@ -1,18 +1,18 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BitwiseNotOperation {
     type_: types::Primitive,
-    value: Arc<Expression>,
+    value: Rc<Expression>,
 }
 
 impl BitwiseNotOperation {
     pub fn new(type_: types::Primitive, value: impl Into<Expression>) -> Self {
         Self {
             type_,
-            value: Arc::new(value.into()),
+            value: Rc::new(value.into()),
         }
     }
 

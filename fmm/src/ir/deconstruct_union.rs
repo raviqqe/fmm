@@ -1,11 +1,11 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct DeconstructUnion {
     type_: types::Union,
-    union: Arc<Expression>,
+    union: Rc<Expression>,
     member_index: usize,
     name: String,
 }

@@ -1,6 +1,6 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ComparisonOperator {
@@ -16,8 +16,8 @@ pub enum ComparisonOperator {
 pub struct ComparisonOperation {
     type_: types::Primitive,
     operator: ComparisonOperator,
-    lhs: Arc<Expression>,
-    rhs: Arc<Expression>,
+    lhs: Rc<Expression>,
+    rhs: Rc<Expression>,
 }
 
 impl ComparisonOperation {
@@ -32,8 +32,8 @@ impl ComparisonOperation {
         Self {
             type_,
             operator,
-            lhs: Arc::new(lhs.into()),
-            rhs: Arc::new(rhs.into()),
+            lhs: Rc::new(lhs.into()),
+            rhs: Rc::new(rhs.into()),
         }
     }
 

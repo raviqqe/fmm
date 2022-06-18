@@ -1,6 +1,6 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AtomicOperator {
@@ -12,8 +12,8 @@ pub enum AtomicOperator {
 pub struct AtomicOperation {
     type_: types::Primitive,
     operator: AtomicOperator,
-    pointer: Arc<Expression>,
-    value: Arc<Expression>,
+    pointer: Rc<Expression>,
+    value: Rc<Expression>,
     ordering: AtomicOrdering,
     name: String,
 }
