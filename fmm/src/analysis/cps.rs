@@ -36,9 +36,9 @@ mod tests {
     use super::*;
     use crate::{
         analysis::{check_types, format_module},
-        types::{self, CallingConvention, Type, VOID_TYPE},
+        types::{self, void_type, CallingConvention, Type},
     };
-    use stack::STACK_TYPE;
+    use stack::stack_type;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(arguments, result, CallingConvention::Source)
@@ -47,10 +47,10 @@ mod tests {
     fn create_cps_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(
             [
-                STACK_TYPE.clone(),
+                stack_type(),
                 types::Function::new(
-                    vec![STACK_TYPE.clone(), result.into()],
-                    VOID_TYPE.clone(),
+                    vec![stack_type(), result.into()],
+                    void_type(),
                     CallingConvention::Tail,
                 )
                 .into(),
@@ -58,7 +58,7 @@ mod tests {
             .into_iter()
             .chain(arguments)
             .collect(),
-            VOID_TYPE.clone(),
+            void_type(),
             CallingConvention::Tail,
         )
     }
@@ -80,8 +80,8 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
-        let one = transform_to_cps(module, VOID_TYPE.clone()).unwrap();
-        let other = transform_to_cps(module, VOID_TYPE.clone()).unwrap();
+        let one = transform_to_cps(module, void_type()).unwrap();
+        let other = transform_to_cps(module, void_type()).unwrap();
 
         check_types(&one).unwrap();
 
@@ -180,7 +180,7 @@ mod tests {
                 vec![],
                 Block::new(
                     vec![If::new(
-                        VOID_TYPE.clone(),
+                        void_type(),
                         Primitive::Boolean(true),
                         Block::new(
                             vec![Call::new(
@@ -281,7 +281,7 @@ mod tests {
                         types::Primitive::Float64,
                     )],
                 ),
-                VOID_TYPE.clone()
+                void_type()
             )
             .unwrap()
         ));
@@ -334,7 +334,7 @@ mod tests {
                         types::Primitive::Float64,
                     )],
                 ),
-                VOID_TYPE.clone()
+                void_type()
             )
             .unwrap()
         ));
@@ -459,7 +459,7 @@ mod tests {
                         types::Primitive::Float64,
                     )],
                 ),
-                VOID_TYPE.clone()
+                void_type()
             ),
             Ok(Module::new(
                 vec![],
@@ -468,12 +468,12 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "g",
                     vec![
-                        Argument::new("_s", STACK_TYPE.clone()),
+                        Argument::new("_s", stack_type()),
                         Argument::new(
                             "_k",
                             types::Function::new(
-                                vec![STACK_TYPE.clone(), types::Primitive::Float64.into()],
-                                VOID_TYPE.clone(),
+                                vec![stack_type(), types::Primitive::Float64.into()],
+                                void_type(),
                                 CallingConvention::Tail,
                             )
                         ),
@@ -490,9 +490,9 @@ mod tests {
                             "_result",
                         )
                         .into()],
-                        Return::new(VOID_TYPE.clone(), Variable::new("_result")),
+                        Return::new(void_type(), Variable::new("_result")),
                     ),
-                    VOID_TYPE.clone(),
+                    void_type(),
                     CallingConvention::Tail,
                     Linkage::Internal,
                 )],

@@ -3,7 +3,7 @@ use crate::{
     analysis::convert_expressions_in_terminal_instruction,
     build::NameGenerator,
     ir::*,
-    types::{self, Type, VOID_TYPE},
+    types::{self, void_type, Type},
 };
 
 struct Context {
@@ -91,7 +91,7 @@ fn transform_instructions(
             if let Instruction::If(if_) = instruction {
                 (
                     vec![If::new(
-                        VOID_TYPE.clone(),
+                        void_type(),
                         if_.condition().clone(),
                         transform_if_block_without_continuation(
                             context,
@@ -138,7 +138,7 @@ fn transform_instructions(
 
                 (
                     vec![If::new(
-                        VOID_TYPE.clone(),
+                        void_type(),
                         if_.condition().clone(),
                         transform_if_block_with_continuation(
                             context,
@@ -321,7 +321,7 @@ fn get_continuation_environment(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{analysis::check_types, types::VOID_TYPE};
+    use crate::{analysis::check_types, types::void_type};
 
     fn flatten_module(module: &Module) {
         let flattened = flatten(module);
@@ -390,7 +390,7 @@ mod tests {
                 vec![],
                 Block::new(
                     vec![If::new(
-                        VOID_TYPE.clone(),
+                        void_type(),
                         Primitive::Boolean(true),
                         Block::new(
                             vec![Call::new(

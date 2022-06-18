@@ -342,9 +342,7 @@ mod tests {
 
     fn compile_module(module: &Module) {
         compile_final_module(module);
-        compile_final_module(
-            &fmm::analysis::transform_to_cps(module, types::VOID_TYPE.clone()).unwrap(),
-        );
+        compile_final_module(&fmm::analysis::transform_to_cps(module, types::void_type()).unwrap());
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -1290,9 +1288,9 @@ mod tests {
                 vec![],
                 Block::new(
                     vec![AllocateHeap::new(Primitive::PointerInteger(42), "y").into()],
-                    Return::new(types::GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
+                    Return::new(types::generic_pointer_type(), Variable::new("y")),
                 ),
-                types::GENERIC_POINTER_TYPE.clone(),
+                types::generic_pointer_type(),
                 Linkage::External,
             ));
         }
@@ -1308,9 +1306,9 @@ mod tests {
                         ReallocateHeap::new(Variable::new("x"), Primitive::PointerInteger(42), "y")
                             .into(),
                     ],
-                    Return::new(types::GENERIC_POINTER_TYPE.clone(), Variable::new("y")),
+                    Return::new(types::generic_pointer_type(), Variable::new("y")),
                 ),
-                types::GENERIC_POINTER_TYPE.clone(),
+                types::generic_pointer_type(),
                 Linkage::External,
             ));
         }
@@ -1712,7 +1710,7 @@ mod tests {
         fn compile_free_heap() {
             compile_function_definition(create_function_definition(
                 "f",
-                vec![Argument::new("x", types::GENERIC_POINTER_TYPE.clone())],
+                vec![Argument::new("x", types::generic_pointer_type())],
                 Block::new(
                     vec![FreeHeap::new(Variable::new("x")).into()],
                     Return::new(

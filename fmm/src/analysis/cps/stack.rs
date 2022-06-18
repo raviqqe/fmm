@@ -1,20 +1,26 @@
 use crate::{
     build::{self, BuildError, InstructionBuilder, TypedExpression},
     ir::*,
-    types::{self, Type, GENERIC_POINTER_TYPE},
+    types::{self, generic_pointer_type, Type},
 };
-use once_cell::sync::Lazy;
+use once_cell::unsync::Lazy;
 
 const DEFAULT_STACK_SIZE: i64 = 64;
 
-pub static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
-    types::Pointer::new(types::Record::new(vec![
-        GENERIC_POINTER_TYPE.clone(),            // base pointer
-        types::Primitive::PointerInteger.into(), // size
-        types::Primitive::PointerInteger.into(), // capacity
-    ]))
-    .into()
-});
+thread_local! {
+    static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
+        types::Pointer::new(types::Record::new(vec![
+            generic_pointer_type(),            // base pointer
+            types::Primitive::PointerInteger.into(), // size
+            types::Primitive::PointerInteger.into(), // capacity
+        ]))
+        .into()
+    });
+}
+
+pub fn stack_type() -> Type {
+    STACK_TYPE.with(|type_| (&**type_).clone())
+}
 
 pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
     let capacity = Primitive::PointerInteger(DEFAULT_STACK_SIZE);
@@ -76,9 +82,9 @@ pub fn push_to_stack(
             );
             builder.store(new_capacity, build::record_address(stack.clone(), 2)?);
 
-            Ok(builder.branch(VOID_VALUE.clone()))
+            Ok(builder.branch(void_value()))
         },
-        |builder| Ok(builder.branch(VOID_VALUE.clone())),
+        |builder| Ok(builder.branch(void_value())),
     )?;
 
     builder.store(

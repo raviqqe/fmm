@@ -5,7 +5,7 @@ use super::{
     deconstruct_union::DeconstructUnion, fence::Fence, free_heap::FreeHeap, if_::If, load::Load,
     reallocate_heap::ReallocateHeap, store::Store,
 };
-use crate::types::{self, Type, GENERIC_POINTER_TYPE};
+use crate::types::{self, generic_pointer_type, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
@@ -29,7 +29,7 @@ pub enum Instruction {
 impl Instruction {
     pub fn value(&self) -> Option<(&str, Type)> {
         match self {
-            Self::AllocateHeap(allocate) => Some((allocate.name(), GENERIC_POINTER_TYPE.clone())),
+            Self::AllocateHeap(allocate) => Some((allocate.name(), generic_pointer_type())),
             Self::AllocateStack(allocate) => Some((
                 allocate.name(),
                 types::Pointer::new(allocate.type_().clone()).into(),
@@ -48,9 +48,7 @@ impl Instruction {
             )),
             Self::If(if_) => Some((if_.name(), if_.type_().clone())),
             Self::Load(load) => Some((load.name(), load.type_().clone())),
-            Self::ReallocateHeap(reallocate) => {
-                Some((reallocate.name(), GENERIC_POINTER_TYPE.clone()))
-            }
+            Self::ReallocateHeap(reallocate) => Some((reallocate.name(), generic_pointer_type())),
             Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
