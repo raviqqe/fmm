@@ -272,7 +272,7 @@ fn compile_linkage(linkage: Linkage) -> &'static str {
     match linkage {
         fmm::ir::Linkage::External => "",
         fmm::ir::Linkage::Internal => "static ",
-        fmm::ir::Linkage::Weak => unimplemented!("weak linkage not supported"),
+        fmm::ir::Linkage::Weak => "__attribute__ ((weak)) ",
     }
 }
 
@@ -608,7 +608,6 @@ mod tests {
         }
 
         #[test]
-        #[should_panic]
         fn compile_weak_variable() {
             compile_module(&Module::new(
                 vec![],
@@ -703,8 +702,7 @@ mod tests {
         }
 
         #[test]
-        #[should_panic]
-        fn fail_to_compile_weak_function() {
+        fn compile_weak_function() {
             compile_module(&Module::new(
                 vec![],
                 vec![],
