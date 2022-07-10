@@ -30,7 +30,6 @@ It's designed to be a compiler target for high-level functional programming lang
 - [LLVM](fmm-llvm)
 - [C](fmm-c)
   - No guarantee for tail call optimization
-  - No support for weak linkage
 
 ## Limitations
 
@@ -40,11 +39,11 @@ It's designed to be a compiler target for high-level functional programming lang
 
 ### Calling convention compatibility table
 
-| Caller \ Callee | Target (C) | Tail | Source (CPS) | 
-| --------------- | ---------- | ---- | ------------ | 
-| Target (C)      | x          | x    | \*1          | 
-| Tail            | x          | x    | \*1          | 
-| Source (CPS)    | x          | x    | x            | 
+| Caller \ Callee | Target (C) | Tail | Source (CPS) |
+| --------------- | ---------- | ---- | ------------ |
+| Target (C)      | x          | x    | \*1          |
+| Tail            | x          | x    | \*1          |
+| Source (CPS)    | x          | x    | x            |
 
 - \*1: Suspension in functions is not supported.
 
