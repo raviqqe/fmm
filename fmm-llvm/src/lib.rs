@@ -338,6 +338,10 @@ mod tests {
         let other = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
 
         assert_eq!(one, other);
+
+        for triple in ["i386-unknown-linux-gnu", "wasm32-wasi"] {
+            compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, Some(triple)).unwrap();
+        }
     }
 
     fn compile_module(module: &Module) {
