@@ -339,7 +339,13 @@ mod tests {
 
         assert_eq!(one, other);
 
-        for triple in ["i386-unknown-linux-gnu", "wasm32-wasi"] {
+        for triple in [
+            "i386-unknown-linux-gnu",
+            "x86_64-unknown-linux-gnu",
+            "x86_64-apple-macos",
+            "arm64-apple-macos",
+            "wasm32-wasi",
+        ] {
             compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, Some(triple)).unwrap();
         }
     }
