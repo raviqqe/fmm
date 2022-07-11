@@ -333,16 +333,40 @@ mod tests {
     use super::{instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION, *};
     use fmm::types::{self, CallingConvention, Type};
 
-    fn compile_final_module(module: &Module) {
+    const POINTER_64_BIT_TARGETS: &[&str] = &[
+        "x86_64-unknown-linux-gnu",
+        "x86_64-apple-macos",
+        "arm64-apple-macos",
+    ];
+    const DEFAULT_TARGETS: Lazy<Vec<&str>> = Lazy::new(|| {
+        POINTER_64_BIT_TARGETS
+            .iter()
+            .cloned()
+            .chain(["i386-unknown-linux-gnu", "wasm32-wasi"])
+            .collect()
+    });
+
+    fn compile_transformed_module(module: &Module, targets: &[&str]) {
         let one = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
         let other = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
 
         assert_eq!(one, other);
+
+        for target in targets {
+            compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, Some(target)).unwrap();
+        }
+    }
+
+    fn compile_module_with_targets(module: &Module, targets: &[&str]) {
+        compile_transformed_module(module, targets);
+        compile_transformed_module(
+            &fmm::analysis::transform_to_cps(module, types::void_type()).unwrap(),
+            targets,
+        );
     }
 
     fn compile_module(module: &Module) {
-        compile_final_module(module);
-        compile_final_module(&fmm::analysis::transform_to_cps(module, types::void_type()).unwrap());
+        compile_module_with_targets(module, &DEFAULT_TARGETS)
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -829,33 +853,36 @@ mod tests {
 
         #[test]
         fn compile_bit_cast_from_pointer() {
-            compile_module(&Module::new(
-                vec![],
-                vec![],
-                vec![
-                    VariableDefinition::new(
-                        "x",
-                        Primitive::Float64(42.0),
-                        types::Primitive::Float64,
-                        false,
-                        Linkage::External,
-                        None,
-                    ),
-                    VariableDefinition::new(
-                        "y",
-                        BitCast::new(
-                            types::Pointer::new(types::Primitive::Float64),
+            compile_module_with_targets(
+                &Module::new(
+                    vec![],
+                    vec![],
+                    vec![
+                        VariableDefinition::new(
+                            "x",
+                            Primitive::Float64(42.0),
                             types::Primitive::Float64,
-                            Variable::new("x"),
+                            false,
+                            Linkage::External,
+                            None,
                         ),
-                        types::Primitive::Float64,
-                        false,
-                        Linkage::External,
-                        None,
-                    ),
-                ],
-                vec![],
-            ));
+                        VariableDefinition::new(
+                            "y",
+                            BitCast::new(
+                                types::Pointer::new(types::Primitive::Float64),
+                                types::Primitive::Float64,
+                                Variable::new("x"),
+                            ),
+                            types::Primitive::Float64,
+                            false,
+                            Linkage::External,
+                            None,
+                        ),
+                    ],
+                    vec![],
+                ),
+                POINTER_64_BIT_TARGETS,
+            );
         }
 
         #[test]
