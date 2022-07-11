@@ -1245,6 +1245,55 @@ mod tests {
         use super::*;
 
         #[test]
+        fn compile_call() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![],
+                Block::new(
+                    vec![Call::new(
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::PointerInteger,
+                            CallingConvention::Source,
+                        ),
+                        Variable::new("f"),
+                        vec![],
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                Linkage::External,
+            ));
+        }
+
+        #[test]
+        fn compile_tail_call() {
+            compile_function_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                Block::new(
+                    vec![Call::new(
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::PointerInteger,
+                            CallingConvention::Tail,
+                        ),
+                        Variable::new("f"),
+                        vec![],
+                        "x",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                types::Primitive::PointerInteger,
+                CallingConvention::Tail,
+                Linkage::External,
+            ));
+        }
+
+        #[test]
         fn compile_unreachable() {
             compile_function_definition(create_function_definition(
                 "f",
