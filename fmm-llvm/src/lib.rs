@@ -338,13 +338,13 @@ mod tests {
         "x86_64-apple-macos",
         "arm64-apple-macos",
     ];
-    const DEFAULT_TARGETS: &[&str] = &[
-        "i386-unknown-linux-gnu",
-        "x86_64-unknown-linux-gnu",
-        "x86_64-apple-macos",
-        "arm64-apple-macos",
-        "wasm32-wasi",
-    ];
+    const DEFAULT_TARGETS: Lazy<Vec<&str>> = Lazy::new(|| {
+        POINTER_64_BIT_TARGETS
+            .iter()
+            .cloned()
+            .chain(["i386-unknown-linux-gnu", "wasm32-wasi"])
+            .collect()
+    });
 
     fn compile_transformed_module(module: &Module, targets: &[&str]) {
         let one = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
