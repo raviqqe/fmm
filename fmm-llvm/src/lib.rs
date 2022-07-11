@@ -346,7 +346,7 @@ mod tests {
         "wasm32-wasi",
     ];
 
-    fn compile_final_module(module: &Module, targets: &[&str]) {
+    fn compile_transformed_module(module: &Module, targets: &[&str]) {
         let one = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
         let other = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
 
@@ -358,8 +358,8 @@ mod tests {
     }
 
     fn compile_module_with_targets(module: &Module, targets: &[&str]) {
-        compile_final_module(module, targets);
-        compile_final_module(
+        compile_transformed_module(module, targets);
+        compile_transformed_module(
             &fmm::analysis::transform_to_cps(module, types::void_type()).unwrap(),
             targets,
         );
