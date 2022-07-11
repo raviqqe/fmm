@@ -366,7 +366,7 @@ mod tests {
     }
 
     fn compile_module(module: &Module) {
-        compile_module_with_targets(module, DEFAULT_TARGETS)
+        compile_module_with_targets(module, &DEFAULT_TARGETS)
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
