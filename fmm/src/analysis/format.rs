@@ -198,6 +198,8 @@ fn format_expression(expression: &Expression) -> String {
                     BitwiseOperator::And => "&",
                     BitwiseOperator::Or => "|",
                     BitwiseOperator::Xor => "^",
+                    BitwiseOperator::LeftShift => "<<",
+                    BitwiseOperator::RightShift => ">>",
                 },
                 format_expression(operation.lhs()),
                 format_expression(operation.rhs()),
