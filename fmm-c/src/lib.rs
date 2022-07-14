@@ -849,6 +849,50 @@ mod tests {
         }
 
         #[test]
+        fn compile_bitwise_left_shift() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperator::LeftShift,
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_bitwise_right_shift() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperator::RightShift,
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
         fn compile_bitwise_not() {
             compile_module(&Module::new(
                 vec![],
