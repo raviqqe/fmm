@@ -8,7 +8,6 @@ pub enum ArithmeticOperator {
     Subtract,
     Multiply,
     Divide,
-    Power,
 }
 
 #[derive(Clone, Debug, PartialEq)]
