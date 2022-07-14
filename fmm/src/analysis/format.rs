@@ -181,6 +181,7 @@ fn format_expression(expression: &Expression) -> String {
                 ArithmeticOperator::Subtract => "-",
                 ArithmeticOperator::Multiply => "*",
                 ArithmeticOperator::Divide => "/",
+                ArithmeticOperator::Power => "**",
             },
             format_expression(operation.lhs()),
             format_expression(operation.rhs())
