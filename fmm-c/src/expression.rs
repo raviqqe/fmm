@@ -38,6 +38,8 @@ pub fn compile(
                     fmm::ir::BitwiseOperator::And => "&",
                     fmm::ir::BitwiseOperator::Or => "|",
                     fmm::ir::BitwiseOperator::Xor => "^",
+                    fmm::ir::BitwiseOperator::LeftShift => "<<",
+                    fmm::ir::BitwiseOperator::RightShift => ">>",
                 },
                 compile(operation.rhs()),
             )

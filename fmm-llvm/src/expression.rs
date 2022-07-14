@@ -323,6 +323,8 @@ fn compile_bitwise_operation<'c>(
         fmm::ir::BitwiseOperator::And => builder.build_and(lhs, rhs, ""),
         fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
         fmm::ir::BitwiseOperator::Xor => builder.build_xor(lhs, rhs, ""),
+        fmm::ir::BitwiseOperator::LeftShift => builder.build_left_shift(lhs, rhs, ""),
+        fmm::ir::BitwiseOperator::RightShift => builder.build_right_shift(lhs, rhs, false, ""),
     }
 }
 
