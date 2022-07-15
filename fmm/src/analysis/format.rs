@@ -195,11 +195,11 @@ fn format_expression(expression: &Expression) -> String {
             format!(
                 "(bit{} {} {})",
                 match operation.operator() {
-                    BitwiseOperator::And => "&",
-                    BitwiseOperator::Or => "|",
-                    BitwiseOperator::Xor => "^",
-                    BitwiseOperator::LeftShift => "<<",
-                    BitwiseOperator::RightShift => ">>",
+                    BitwiseOperator::And => "&".into(),
+                    BitwiseOperator::Or => "|".into(),
+                    BitwiseOperator::Xor => "^".into(),
+                    BitwiseOperator::LeftShift => "<<".into(),
+                    BitwiseOperator::RightShift(signed) => format_signed(signed) + ">>",
                 },
                 format_expression(operation.lhs()),
                 format_expression(operation.rhs()),
@@ -208,12 +208,12 @@ fn format_expression(expression: &Expression) -> String {
         Expression::ComparisonOperation(operation) => format!(
             "({} {} {})",
             match operation.operator() {
-                ComparisonOperator::Equal => "==",
-                ComparisonOperator::NotEqual => "!=",
-                ComparisonOperator::LessThan => "<",
-                ComparisonOperator::LessThanOrEqual => "<=",
-                ComparisonOperator::GreaterThan => ">",
-                ComparisonOperator::GreaterThanOrEqual => ">=",
+                ComparisonOperator::Equal => "==".into(),
+                ComparisonOperator::NotEqual => "!=".into(),
+                ComparisonOperator::LessThan(signed) => format_signed(signed) + "<",
+                ComparisonOperator::LessThanOrEqual(signed) => format_signed(signed) + "<=",
+                ComparisonOperator::GreaterThan(signed) => format_signed(signed) + ">",
+                ComparisonOperator::GreaterThanOrEqual(signed) => format_signed(signed) + ">=",
             },
             format_expression(operation.lhs()),
             format_expression(operation.rhs())
@@ -291,6 +291,10 @@ fn format_type(type_: &Type) -> String {
         Type::Record(_) => "record".into(),
         Type::Union(_) => "union".into(),
     }
+}
+
+fn format_signed(signed: bool) -> String {
+    if signed { "signed " } else { "" }.into()
 }
 
 fn indent(string: &str) -> String {
@@ -438,16 +442,20 @@ mod tests {
         for (operator, string) in [
             (ComparisonOperator::Equal, "(== 1 2)"),
             (ComparisonOperator::NotEqual, "(!= 1 2)"),
+            (ComparisonOperator::LessThan(false), "(< 1 2)"),
+            (ComparisonOperator::LessThan(true), "(signed < 1 2)"),
         ] {
             assert_eq!(
                 format_expression(
-                    &Record::new(
-                        types::Record::new(vec![types::Primitive::Integer8.into()]),
-                        vec![Primitive::Integer8(42).into()]
+                    &ComparisonOperation::new(
+                        types::Primitive::PointerInteger,
+                        operator,
+                        Primitive::PointerInteger(1),
+                        Primitive::PointerInteger(2)
                     )
                     .into()
                 ),
-                "(record 42)"
+                string
             );
         }
     }
