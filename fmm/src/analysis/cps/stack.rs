@@ -64,7 +64,7 @@ pub fn push_to_stack(
 
     builder.if_(
         build::comparison_operation(
-            ComparisonOperator::GreaterThan,
+            ComparisonOperator::GreaterThan(false),
             new_size.clone(),
             capacity.clone(),
         )?,
