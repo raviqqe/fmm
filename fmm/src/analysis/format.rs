@@ -193,7 +193,7 @@ fn format_expression(expression: &Expression) -> String {
         }
         Expression::BitwiseOperation(operation) => {
             format!(
-                "(bit{} {} {})",
+                "({} {} {})",
                 match operation.operator() {
                     BitwiseOperator::And => "&".into(),
                     BitwiseOperator::Or => "|".into(),
@@ -438,12 +438,38 @@ mod tests {
     }
 
     #[test]
+    fn format_bitwise_operation() {
+        for (operator, string) in [
+            (BitwiseOperator::And, "(& 1 2)"),
+            (BitwiseOperator::Or, "(| 1 2)"),
+            (BitwiseOperator::LeftShift, "(<< 1 2)"),
+            (BitwiseOperator::RightShift(false), "(>> 1 2)"),
+            (BitwiseOperator::RightShift(true), "(signed >> 1 2)"),
+        ] {
+            assert_eq!(
+                format_expression(
+                    &BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        operator,
+                        Primitive::PointerInteger(1),
+                        Primitive::PointerInteger(2)
+                    )
+                    .into()
+                ),
+                string
+            );
+        }
+    }
+
+    #[test]
     fn format_comparison_operation() {
         for (operator, string) in [
             (ComparisonOperator::Equal, "(== 1 2)"),
             (ComparisonOperator::NotEqual, "(!= 1 2)"),
             (ComparisonOperator::LessThan(false), "(< 1 2)"),
             (ComparisonOperator::LessThan(true), "(signed < 1 2)"),
+            (ComparisonOperator::GreaterThan(false), "(> 1 2)"),
+            (ComparisonOperator::GreaterThan(true), "(signed > 1 2)"),
         ] {
             assert_eq!(
                 format_expression(
