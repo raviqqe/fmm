@@ -520,9 +520,9 @@ fn compile_float_comparison_operator(operator: ComparisonOperator) -> inkwell::F
     match operator {
         ComparisonOperator::Equal => inkwell::FloatPredicate::OEQ,
         ComparisonOperator::NotEqual => inkwell::FloatPredicate::ONE,
-        ComparisonOperator::LessThan => inkwell::FloatPredicate::OLT,
-        ComparisonOperator::LessThanOrEqual => inkwell::FloatPredicate::OLE,
-        ComparisonOperator::GreaterThan => inkwell::FloatPredicate::OGT,
-        ComparisonOperator::GreaterThanOrEqual => inkwell::FloatPredicate::OGE,
+        ComparisonOperator::LessThan(_) => inkwell::FloatPredicate::OLT,
+        ComparisonOperator::LessThanOrEqual(_) => inkwell::FloatPredicate::OLE,
+        ComparisonOperator::GreaterThan(_) => inkwell::FloatPredicate::OGT,
+        ComparisonOperator::GreaterThanOrEqual(_) => inkwell::FloatPredicate::OGE,
     }
 }

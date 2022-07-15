@@ -1138,10 +1138,14 @@ mod tests {
             for &operator in &[
                 ComparisonOperator::Equal,
                 ComparisonOperator::NotEqual,
-                ComparisonOperator::LessThan,
-                ComparisonOperator::GreaterThan,
-                ComparisonOperator::LessThanOrEqual,
-                ComparisonOperator::GreaterThanOrEqual,
+                ComparisonOperator::LessThan(false),
+                ComparisonOperator::LessThan(true),
+                ComparisonOperator::GreaterThan(false),
+                ComparisonOperator::GreaterThan(true),
+                ComparisonOperator::LessThanOrEqual(false),
+                ComparisonOperator::LessThanOrEqual(true),
+                ComparisonOperator::GreaterThanOrEqual(false),
+                ComparisonOperator::GreaterThanOrEqual(true),
             ] {
                 compile_module(&Module::new(
                     vec![],
