@@ -65,7 +65,10 @@ pub fn compile(
             let compile_maybe_signed = |operator, signed| {
                 if signed {
                     if let Some(signed_type_id) = signed_type_id {
-                        format!("((({})({})){}({}))", signed_type_id, lhs, operator, rhs)
+                        format!(
+                            "((({})({})){}(({})({})))",
+                            signed_type_id, lhs, operator, signed_type_id, rhs
+                        )
                     } else {
                         compile_unsigned(operator)
                     }
