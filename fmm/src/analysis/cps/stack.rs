@@ -10,7 +10,7 @@ const DEFAULT_STACK_SIZE: i64 = 64;
 thread_local! {
     static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
         types::Pointer::new(types::Record::new(vec![
-            generic_pointer_type(),            // base pointer
+            generic_pointer_type(), // base pointer
             types::Primitive::PointerInteger.into(), // size
             types::Primitive::PointerInteger.into(), // capacity
         ]))
