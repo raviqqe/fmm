@@ -41,49 +41,47 @@ pub fn compile(
                 fmm::ir::BitwiseOperator::Xor => compile_unsigned("^"),
                 fmm::ir::BitwiseOperator::LeftShift => compile_unsigned("<<"),
                 fmm::ir::BitwiseOperator::RightShift(signed) => {
+                    const OPERATOR: &str = ">>";
+
                     if signed {
-                        unimplemented!()
+                        if let Some(signed_type_id) =
+                            type_::compile_signed_primitive_id(operation.type_())
+                        {
+                            format!("((({})({})){}({}))", signed_type_id, lhs, OPERATOR, rhs)
+                        } else {
+                            compile_unsigned(OPERATOR)
+                        }
                     } else {
-                        compile_unsigned(">>")
+                        compile_unsigned(OPERATOR)
                     }
                 }
             }
         }
         Expression::ComparisonOperation(operation) => {
+            let signed_type_id = type_::compile_signed_primitive_id(operation.type_());
             let lhs = compile(operation.lhs());
             let rhs = compile(operation.rhs());
             let compile_unsigned = |operator| format!("(({}){}({}))", lhs, operator, rhs);
+            let compile_maybe_signed = |operator, signed| {
+                if signed {
+                    if let Some(signed_type_id) = signed_type_id {
+                        format!("((({})({})){}({}))", signed_type_id, lhs, operator, rhs)
+                    } else {
+                        compile_unsigned(operator)
+                    }
+                } else {
+                    compile_unsigned(operator)
+                }
+            };
 
             match operation.operator() {
                 ComparisonOperator::Equal => compile_unsigned("=="),
                 ComparisonOperator::NotEqual => compile_unsigned("!="),
-                ComparisonOperator::LessThan(signed) => {
-                    if signed {
-                        unimplemented!()
-                    } else {
-                        compile_unsigned("<")
-                    }
-                }
-                ComparisonOperator::LessThanOrEqual(signed) => {
-                    if signed {
-                        unimplemented!()
-                    } else {
-                        compile_unsigned("<=")
-                    }
-                }
-                ComparisonOperator::GreaterThan(signed) => {
-                    if signed {
-                        unimplemented!()
-                    } else {
-                        compile_unsigned(">")
-                    }
-                }
+                ComparisonOperator::LessThan(signed) => compile_maybe_signed("<", signed),
+                ComparisonOperator::LessThanOrEqual(signed) => compile_maybe_signed("<=", signed),
+                ComparisonOperator::GreaterThan(signed) => compile_maybe_signed(">", signed),
                 ComparisonOperator::GreaterThanOrEqual(signed) => {
-                    if signed {
-                        unimplemented!()
-                    } else {
-                        compile_unsigned(">=")
-                    }
+                    compile_maybe_signed(">=", signed)
                 }
             }
         }
