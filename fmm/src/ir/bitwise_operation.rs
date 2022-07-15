@@ -8,7 +8,7 @@ pub enum BitwiseOperator {
     Or,
     Xor,
     LeftShift,
-    RightShift,
+    RightShift(bool),
 }
 
 #[derive(Clone, Debug, PartialEq)]

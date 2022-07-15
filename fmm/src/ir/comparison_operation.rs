@@ -6,10 +6,10 @@ use std::sync::Arc;
 pub enum ComparisonOperator {
     Equal,
     NotEqual,
-    LessThan,
-    GreaterThan,
-    LessThanOrEqual,
-    GreaterThanOrEqual,
+    LessThan(bool),
+    GreaterThan(bool),
+    LessThanOrEqual(bool),
+    GreaterThanOrEqual(bool),
 }
 
 #[derive(Clone, Debug, PartialEq)]

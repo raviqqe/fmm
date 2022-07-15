@@ -324,7 +324,9 @@ fn compile_bitwise_operation<'c>(
         fmm::ir::BitwiseOperator::Or => builder.build_or(lhs, rhs, ""),
         fmm::ir::BitwiseOperator::Xor => builder.build_xor(lhs, rhs, ""),
         fmm::ir::BitwiseOperator::LeftShift => builder.build_left_shift(lhs, rhs, ""),
-        fmm::ir::BitwiseOperator::RightShift => builder.build_right_shift(lhs, rhs, false, ""),
+        fmm::ir::BitwiseOperator::RightShift(signed) => {
+            builder.build_right_shift(lhs, rhs, signed, "")
+        }
     }
 }
 
@@ -503,10 +505,14 @@ fn compile_integer_comparison_operator(operator: ComparisonOperator) -> inkwell:
     match operator {
         ComparisonOperator::Equal => inkwell::IntPredicate::EQ,
         ComparisonOperator::NotEqual => inkwell::IntPredicate::NE,
-        ComparisonOperator::LessThan => inkwell::IntPredicate::ULT,
-        ComparisonOperator::LessThanOrEqual => inkwell::IntPredicate::ULE,
-        ComparisonOperator::GreaterThan => inkwell::IntPredicate::UGT,
-        ComparisonOperator::GreaterThanOrEqual => inkwell::IntPredicate::UGE,
+        ComparisonOperator::LessThan(false) => inkwell::IntPredicate::ULT,
+        ComparisonOperator::LessThan(true) => inkwell::IntPredicate::SLT,
+        ComparisonOperator::LessThanOrEqual(false) => inkwell::IntPredicate::ULE,
+        ComparisonOperator::LessThanOrEqual(true) => inkwell::IntPredicate::SLE,
+        ComparisonOperator::GreaterThan(false) => inkwell::IntPredicate::UGT,
+        ComparisonOperator::GreaterThan(true) => inkwell::IntPredicate::SGT,
+        ComparisonOperator::GreaterThanOrEqual(false) => inkwell::IntPredicate::UGE,
+        ComparisonOperator::GreaterThanOrEqual(true) => inkwell::IntPredicate::SGE,
     }
 }
 
@@ -514,9 +520,9 @@ fn compile_float_comparison_operator(operator: ComparisonOperator) -> inkwell::F
     match operator {
         ComparisonOperator::Equal => inkwell::FloatPredicate::OEQ,
         ComparisonOperator::NotEqual => inkwell::FloatPredicate::ONE,
-        ComparisonOperator::LessThan => inkwell::FloatPredicate::OLT,
-        ComparisonOperator::LessThanOrEqual => inkwell::FloatPredicate::OLE,
-        ComparisonOperator::GreaterThan => inkwell::FloatPredicate::OGT,
-        ComparisonOperator::GreaterThanOrEqual => inkwell::FloatPredicate::OGE,
+        ComparisonOperator::LessThan(_) => inkwell::FloatPredicate::OLT,
+        ComparisonOperator::LessThanOrEqual(_) => inkwell::FloatPredicate::OLE,
+        ComparisonOperator::GreaterThan(_) => inkwell::FloatPredicate::OGT,
+        ComparisonOperator::GreaterThanOrEqual(_) => inkwell::FloatPredicate::OGE,
     }
 }

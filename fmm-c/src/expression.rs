@@ -31,25 +31,63 @@ pub fn compile(
             format!("(~({}))", compile(operation.value()))
         }
         Expression::BitwiseOperation(operation) => {
-            format!(
-                "(({}){}({}))",
-                compile(operation.lhs()),
-                match operation.operator() {
-                    fmm::ir::BitwiseOperator::And => "&",
-                    fmm::ir::BitwiseOperator::Or => "|",
-                    fmm::ir::BitwiseOperator::Xor => "^",
-                    fmm::ir::BitwiseOperator::LeftShift => "<<",
-                    fmm::ir::BitwiseOperator::RightShift => ">>",
-                },
-                compile(operation.rhs()),
-            )
+            let lhs = compile(operation.lhs());
+            let rhs = compile(operation.rhs());
+            let compile_unsigned = |operator| format!("(({}){}({}))", lhs, operator, rhs);
+
+            match operation.operator() {
+                fmm::ir::BitwiseOperator::And => compile_unsigned("&"),
+                fmm::ir::BitwiseOperator::Or => compile_unsigned("|"),
+                fmm::ir::BitwiseOperator::Xor => compile_unsigned("^"),
+                fmm::ir::BitwiseOperator::LeftShift => compile_unsigned("<<"),
+                fmm::ir::BitwiseOperator::RightShift(signed) => {
+                    const OPERATOR: &str = ">>";
+
+                    if signed {
+                        if let Some(signed_type_id) =
+                            type_::compile_signed_primitive_id(operation.type_())
+                        {
+                            format!("((({})({})){}({}))", signed_type_id, lhs, OPERATOR, rhs)
+                        } else {
+                            compile_unsigned(OPERATOR)
+                        }
+                    } else {
+                        compile_unsigned(OPERATOR)
+                    }
+                }
+            }
         }
-        Expression::ComparisonOperation(operation) => format!(
-            "{}{}{}",
-            compile(operation.lhs()),
-            compile_comparison_operator(operation.operator()),
-            compile(operation.rhs()),
-        ),
+        Expression::ComparisonOperation(operation) => {
+            let signed_type_id = type_::compile_signed_primitive_id(operation.type_());
+            let lhs = compile(operation.lhs());
+            let rhs = compile(operation.rhs());
+            let compile_unsigned = |operator| format!("(({}){}({}))", lhs, operator, rhs);
+            let compile_maybe_signed = |operator, signed| {
+                if signed {
+                    if let Some(signed_type_id) = signed_type_id {
+                        format!(
+                            "((({})({})){}(({})({})))",
+                            signed_type_id, lhs, operator, signed_type_id, rhs
+                        )
+                    } else {
+                        compile_unsigned(operator)
+                    }
+                } else {
+                    compile_unsigned(operator)
+                }
+            };
+
+            match operation.operator() {
+                ComparisonOperator::Equal => compile_unsigned("=="),
+                ComparisonOperator::NotEqual => compile_unsigned("!="),
+                ComparisonOperator::LessThan(signed) => compile_maybe_signed("<", signed),
+                ComparisonOperator::LessThanOrEqual(signed) => compile_maybe_signed("<=", signed),
+                ComparisonOperator::GreaterThan(signed) => compile_maybe_signed(">", signed),
+                ComparisonOperator::GreaterThanOrEqual(signed) => {
+                    compile_maybe_signed(">=", signed)
+                }
+            }
+        }
         Expression::PointerAddress(address) => format!(
             "(({})+({}))",
             compile(address.pointer()),
@@ -152,16 +190,5 @@ fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
         ArithmeticOperator::Subtract => "-",
         ArithmeticOperator::Multiply => "*",
         ArithmeticOperator::Divide => "/",
-    }
-}
-
-fn compile_comparison_operator(operator: ComparisonOperator) -> &'static str {
-    match operator {
-        ComparisonOperator::Equal => "==",
-        ComparisonOperator::NotEqual => "!=",
-        ComparisonOperator::LessThan => "<",
-        ComparisonOperator::LessThanOrEqual => "<=",
-        ComparisonOperator::GreaterThan => ">",
-        ComparisonOperator::GreaterThanOrEqual => ">=",
     }
 }

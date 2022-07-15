@@ -827,6 +827,28 @@ mod tests {
         }
 
         #[test]
+        fn compile_signed_bitwise_right_shift() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    BitwiseOperation::new(
+                        types::Primitive::PointerInteger,
+                        BitwiseOperator::RightShift(true),
+                        Primitive::PointerInteger(0),
+                        Primitive::PointerInteger(1),
+                    ),
+                    types::Primitive::PointerInteger,
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
         fn compile_bitwise_xor() {
             compile_module(&Module::new(
                 vec![],
@@ -879,7 +901,7 @@ mod tests {
                     "x",
                     BitwiseOperation::new(
                         types::Primitive::PointerInteger,
-                        BitwiseOperator::RightShift,
+                        BitwiseOperator::RightShift(false),
                         Primitive::PointerInteger(0),
                         Primitive::PointerInteger(1),
                     ),
@@ -946,10 +968,14 @@ mod tests {
             for &operator in &[
                 ComparisonOperator::Equal,
                 ComparisonOperator::NotEqual,
-                ComparisonOperator::LessThan,
-                ComparisonOperator::GreaterThan,
-                ComparisonOperator::LessThanOrEqual,
-                ComparisonOperator::GreaterThanOrEqual,
+                ComparisonOperator::LessThan(false),
+                ComparisonOperator::LessThan(true),
+                ComparisonOperator::GreaterThan(false),
+                ComparisonOperator::GreaterThan(true),
+                ComparisonOperator::LessThanOrEqual(false),
+                ComparisonOperator::LessThanOrEqual(true),
+                ComparisonOperator::GreaterThanOrEqual(false),
+                ComparisonOperator::GreaterThanOrEqual(true),
             ] {
                 compile_module(&Module::new(
                     vec![],

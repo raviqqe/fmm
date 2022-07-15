@@ -64,9 +64,19 @@ pub fn compile_primitive_id(primitive: types::Primitive) -> String {
         types::Primitive::Integer8 => "uint8_t",
         types::Primitive::Integer32 => "uint32_t",
         types::Primitive::Integer64 => "uint64_t",
-        types::Primitive::PointerInteger => "size_t",
+        types::Primitive::PointerInteger => "uintptr_t",
     }
     .into()
+}
+
+pub fn compile_signed_primitive_id(primitive: types::Primitive) -> Option<String> {
+    match primitive {
+        types::Primitive::Integer8 => Some("int8_t".into()),
+        types::Primitive::Integer32 => Some("int32_t".into()),
+        types::Primitive::Integer64 => Some("int64_t".into()),
+        types::Primitive::PointerInteger => Some("intptr_t".into()),
+        types::Primitive::Boolean | types::Primitive::Float32 | types::Primitive::Float64 => None,
+    }
 }
 
 pub fn compile_record_id(record: &types::Record, type_ids: &FnvHashMap<Type, String>) -> String {
