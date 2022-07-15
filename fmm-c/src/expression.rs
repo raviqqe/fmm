@@ -31,25 +31,62 @@ pub fn compile(
             format!("(~({}))", compile(operation.value()))
         }
         Expression::BitwiseOperation(operation) => {
-            format!(
-                "(({}){}({}))",
-                compile(operation.lhs()),
-                match operation.operator() {
-                    fmm::ir::BitwiseOperator::And => "&",
-                    fmm::ir::BitwiseOperator::Or => "|",
-                    fmm::ir::BitwiseOperator::Xor => "^",
-                    fmm::ir::BitwiseOperator::LeftShift => "<<",
-                    fmm::ir::BitwiseOperator::RightShift => ">>",
-                },
-                compile(operation.rhs()),
-            )
+            let lhs = compile(operation.lhs());
+            let rhs = compile(operation.rhs());
+            let compile_unsigned = |operator| format!("(({}){}({}))", lhs, operator, rhs);
+
+            match operation.operator() {
+                fmm::ir::BitwiseOperator::And => compile_unsigned("&"),
+                fmm::ir::BitwiseOperator::Or => compile_unsigned("|"),
+                fmm::ir::BitwiseOperator::Xor => compile_unsigned("^"),
+                fmm::ir::BitwiseOperator::LeftShift => compile_unsigned("<<"),
+                fmm::ir::BitwiseOperator::RightShift(signed) => {
+                    if signed {
+                        unimplemented!()
+                    } else {
+                        compile_unsigned(">>")
+                    }
+                }
+            }
         }
-        Expression::ComparisonOperation(operation) => format!(
-            "{}{}{}",
-            compile(operation.lhs()),
-            compile_comparison_operator(operation.operator()),
-            compile(operation.rhs()),
-        ),
+        Expression::ComparisonOperation(operation) => {
+            let lhs = compile(operation.lhs());
+            let rhs = compile(operation.rhs());
+            let compile_unsigned = |operator| format!("(({}){}({}))", lhs, operator, rhs);
+
+            match operation.operator() {
+                ComparisonOperator::Equal => compile_unsigned("=="),
+                ComparisonOperator::NotEqual => compile_unsigned("!="),
+                ComparisonOperator::LessThan(signed) => {
+                    if signed {
+                        unimplemented!()
+                    } else {
+                        compile_unsigned("<")
+                    }
+                }
+                ComparisonOperator::LessThanOrEqual(signed) => {
+                    if signed {
+                        unimplemented!()
+                    } else {
+                        compile_unsigned("<=")
+                    }
+                }
+                ComparisonOperator::GreaterThan(signed) => {
+                    if signed {
+                        unimplemented!()
+                    } else {
+                        compile_unsigned(">")
+                    }
+                }
+                ComparisonOperator::GreaterThanOrEqual(signed) => {
+                    if signed {
+                        unimplemented!()
+                    } else {
+                        compile_unsigned(">=")
+                    }
+                }
+            }
+        }
         Expression::PointerAddress(address) => format!(
             "(({})+({}))",
             compile(address.pointer()),
@@ -152,16 +189,5 @@ fn compile_arithmetic_operator(operator: ArithmeticOperator) -> &'static str {
         ArithmeticOperator::Subtract => "-",
         ArithmeticOperator::Multiply => "*",
         ArithmeticOperator::Divide => "/",
-    }
-}
-
-fn compile_comparison_operator(operator: ComparisonOperator) -> &'static str {
-    match operator {
-        ComparisonOperator::Equal => "==",
-        ComparisonOperator::NotEqual => "!=",
-        ComparisonOperator::LessThan => "<",
-        ComparisonOperator::LessThanOrEqual => "<=",
-        ComparisonOperator::GreaterThan => ">",
-        ComparisonOperator::GreaterThanOrEqual => ">=",
     }
 }

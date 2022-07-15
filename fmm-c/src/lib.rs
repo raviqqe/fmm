@@ -879,7 +879,7 @@ mod tests {
                     "x",
                     BitwiseOperation::new(
                         types::Primitive::PointerInteger,
-                        BitwiseOperator::RightShift,
+                        BitwiseOperator::RightShift(false),
                         Primitive::PointerInteger(0),
                         Primitive::PointerInteger(1),
                     ),
@@ -946,10 +946,10 @@ mod tests {
             for &operator in &[
                 ComparisonOperator::Equal,
                 ComparisonOperator::NotEqual,
-                ComparisonOperator::LessThan,
-                ComparisonOperator::GreaterThan,
-                ComparisonOperator::LessThanOrEqual,
-                ComparisonOperator::GreaterThanOrEqual,
+                ComparisonOperator::LessThan(false),
+                ComparisonOperator::GreaterThan(false),
+                ComparisonOperator::LessThanOrEqual(false),
+                ComparisonOperator::GreaterThanOrEqual(false),
             ] {
                 compile_module(&Module::new(
                     vec![],
