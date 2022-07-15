@@ -432,4 +432,23 @@ mod tests {
             "(record 42)"
         );
     }
+
+    #[test]
+    fn format_comparison_operation() {
+        for (operator, string) in [
+            (ComparisonOperator::Equal, "(== 1 2)"),
+            (ComparisonOperator::NotEqual, "(!= 1 2)"),
+        ] {
+            assert_eq!(
+                format_expression(
+                    &Record::new(
+                        types::Record::new(vec![types::Primitive::Integer8.into()]),
+                        vec![Primitive::Integer8(42).into()]
+                    )
+                    .into()
+                ),
+                "(record 42)"
+            );
+        }
+    }
 }
