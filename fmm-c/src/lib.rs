@@ -40,7 +40,8 @@ pub fn compile(
     let types = collect_types(&module);
     let type_ids = compile_type_ids(&types);
 
-    // TODO Refactor this if possible. This is to avoid prototype declaration mismatch with const attributes.
+    // TODO Refactor this if possible. This is to avoid prototype declaration
+    // mismatch with const attributes.
     let variable_definition_names = module
         .variable_definitions()
         .iter()
