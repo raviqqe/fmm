@@ -1,5 +1,5 @@
 mod error;
-mod names;
+mod name;
 
 use crate::{
     ir::*,
@@ -8,7 +8,7 @@ use crate::{
 pub use error::*;
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
-    names::check(module)?;
+    name::check(module)?;
 
     let variables = module
         .variable_declarations()
