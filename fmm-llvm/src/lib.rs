@@ -213,11 +213,13 @@ fn declare_variable_definition<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
-    let global = module.add_global(
-        type_::compile(definition.type_(), context, target_data),
-        None,
-        definition.name(),
-    );
+    let global = module.get_global(definition.name()).unwrap_or_else(|| {
+        module.add_global(
+            type_::compile(definition.type_(), context, target_data),
+            None,
+            definition.name(),
+        )
+    });
 
     global.set_constant(!definition.is_mutable());
     global.set_linkage(compile_linkage(definition.linkage()));
@@ -253,11 +255,13 @@ fn declare_function_definition<'c>(
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::FunctionValue<'c> {
-    let function = module.add_function(
-        definition.name(),
-        type_::compile_function(definition.type_(), context, target_data),
-        Some(compile_linkage(definition.linkage())),
-    );
+    let function = module.get_function(definition.name()).unwrap_or_else(|| {
+        module.add_function(
+            definition.name(),
+            type_::compile_function(definition.type_(), context, target_data),
+            Some(compile_linkage(definition.linkage())),
+        )
+    });
 
     function.set_call_conventions(calling_convention::compile(
         definition.type_().calling_convention(),
