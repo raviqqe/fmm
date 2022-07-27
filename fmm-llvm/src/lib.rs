@@ -76,7 +76,7 @@ fn compile_module<'c>(
     module: &Module,
     instruction_configuration: &InstructionConfiguration,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
-    fmm::analysis::check_types(module)?;
+    fmm::analysis::check(module)?;
 
     let target_data = target_machine.get_target_data();
 
