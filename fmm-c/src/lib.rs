@@ -23,7 +23,7 @@ pub fn compile(
     module: &Module,
     instruction_configuration: Option<InstructionConfiguration>,
 ) -> Result<String, CompileError> {
-    fmm::analysis::check(module)?;
+    fmm::analysis::check_types(module)?;
 
     let module = renaming::rename(module);
     let global_variables = module
