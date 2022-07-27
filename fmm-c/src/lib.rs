@@ -40,6 +40,13 @@ pub fn compile(
     let types = collect_types(&module);
     let type_ids = compile_type_ids(&types);
 
+    // TODO Refactor this if possible. This is to avoid prototype declaration mismatch with const attributes.
+    let variable_definition_names = module
+        .variable_definitions()
+        .iter()
+        .map(|definition| definition.name())
+        .collect::<FnvHashSet<_>>();
+
     Ok(INCLUDES
         .iter()
         .map(|&string| string.into())
@@ -82,6 +89,7 @@ pub fn compile(
             module
                 .variable_declarations()
                 .iter()
+                .filter(|declaration| !variable_definition_names.contains(declaration.name()))
                 .map(|declaration| compile_variable_declaration(declaration, &type_ids)),
         )
         .chain(
@@ -423,6 +431,26 @@ mod tests {
                 )],
             ));
         }
+
+        #[test]
+        fn check_variable_declaration_matching_definition() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    Primitive::PointerInteger(42),
+                    types::Primitive::PointerInteger,
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
     }
 
     mod function_declarations {
@@ -438,6 +466,29 @@ mod tests {
                 )],
                 vec![],
                 vec![],
+            ));
+        }
+
+        #[test]
+        fn check_function_declaration_matching_definition() {
+            compile_module(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "f",
+                    types::Function::new(
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        CallingConvention::Source,
+                    ),
+                )],
+                vec![],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    types::Primitive::PointerInteger,
+                    Linkage::External,
+                )],
             ));
         }
     }
