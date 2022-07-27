@@ -321,12 +321,12 @@ fn get_continuation_environment(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{analysis::check, types::void_type};
+    use crate::{analysis::check_types, types::void_type};
 
     fn flatten_module(module: &Module) {
         let flattened = flatten(module);
 
-        check(&flattened).unwrap();
+        check_types(&flattened).unwrap();
 
         assert_eq!(flattened, flatten(module));
     }
