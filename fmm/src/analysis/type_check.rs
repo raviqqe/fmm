@@ -8,7 +8,7 @@ use crate::{
 pub use error::*;
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
-    names::check_names(module)?;
+    names::check(module)?;
 
     let variables = module
         .variable_declarations()
