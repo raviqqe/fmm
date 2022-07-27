@@ -1,14 +1,18 @@
 mod error;
-mod names;
+mod name;
 
 use crate::{
     ir::*,
     types::{self, generic_pointer_type, Type},
 };
 pub use error::*;
+use fnv::FnvHashMap;
 
-pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
-    names::check_names(module)?;
+pub fn check(module: &Module) -> Result<(), TypeCheckError> {
+    name::check(module)?;
+
+    check_variable_declarations(module)?;
+    check_function_declarations(module)?;
 
     let variables = module
         .variable_declarations()
@@ -45,6 +49,38 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
 
     for definition in module.function_definitions() {
         check_function_definition(definition, &variables)?;
+    }
+
+    Ok(())
+}
+
+fn check_variable_declarations(module: &Module) -> Result<(), TypeCheckError> {
+    let variables = module
+        .variable_declarations()
+        .iter()
+        .map(|declaration| (declaration.name(), declaration.type_().clone()))
+        .collect::<FnvHashMap<_, _>>();
+
+    for definition in module.variable_definitions() {
+        if let Some(type_) = variables.get(definition.name()) {
+            check_equality(definition.type_(), type_)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
+    let functions = module
+        .function_declarations()
+        .iter()
+        .map(|declaration| (declaration.name(), declaration.type_().clone()))
+        .collect::<FnvHashMap<_, _>>();
+
+    for definition in module.function_definitions() {
+        if let Some(type_) = functions.get(definition.name()) {
+            check_equality(&definition.type_().clone().into(), &type_.clone().into())?;
+        }
     }
 
     Ok(())
@@ -414,12 +450,12 @@ mod tests {
 
     #[test]
     fn check_empty_module() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(vec![], vec![], vec![], vec![]))
+        check(&Module::new(vec![], vec![], vec![], vec![]))
     }
 
     #[test]
     fn check_variable_declaration() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![VariableDeclaration::new(
                 "x",
                 types::Primitive::PointerInteger,
@@ -448,7 +484,7 @@ mod tests {
 
     #[test]
     fn check_variable_definition() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![VariableDefinition::new(
@@ -481,7 +517,7 @@ mod tests {
 
     #[test]
     fn check_function_declaration() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![FunctionDeclaration::new(
                 "f",
@@ -514,7 +550,7 @@ mod tests {
 
     #[test]
     fn check_return() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -535,7 +571,7 @@ mod tests {
 
     #[test]
     fn check_allocate_heap() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -553,7 +589,7 @@ mod tests {
 
     #[test]
     fn check_reallocate_heap() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -578,7 +614,7 @@ mod tests {
     fn check_allocate_stack() -> Result<(), TypeCheckError> {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
 
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -596,7 +632,7 @@ mod tests {
 
     #[test]
     fn check_call() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -624,7 +660,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn fail_to_check_call_with_wrong_function_type() {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![FunctionDeclaration::new(
                 "g",
@@ -658,7 +694,7 @@ mod tests {
 
     #[test]
     fn check_if() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -689,7 +725,7 @@ mod tests {
 
     #[test]
     fn check_load() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -712,7 +748,7 @@ mod tests {
 
     #[test]
     fn check_store() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -741,7 +777,7 @@ mod tests {
 
     #[test]
     fn check_atomic_load() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -768,7 +804,7 @@ mod tests {
 
     #[test]
     fn check_atomic_store() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -800,7 +836,7 @@ mod tests {
     fn check_pointer_address() -> Result<(), TypeCheckError> {
         let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -827,7 +863,7 @@ mod tests {
     fn check_record_address() -> Result<(), TypeCheckError> {
         let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
 
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -850,7 +886,7 @@ mod tests {
     fn check_union_address() -> Result<(), TypeCheckError> {
         let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
 
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -871,7 +907,7 @@ mod tests {
 
     #[test]
     fn check_align_of() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![VariableDefinition::new(
@@ -888,7 +924,7 @@ mod tests {
 
     #[test]
     fn check_size_of() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![VariableDefinition::new(
@@ -905,7 +941,7 @@ mod tests {
 
     #[test]
     fn check_bit_cast() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![VariableDefinition::new(
@@ -926,7 +962,7 @@ mod tests {
 
     #[test]
     fn check_atomic_operation() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -955,7 +991,7 @@ mod tests {
 
     #[test]
     fn check_free_heap() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -976,7 +1012,7 @@ mod tests {
 
     #[test]
     fn check_bitwise_operation() -> Result<(), TypeCheckError> {
-        check_types(&Module::new(
+        check(&Module::new(
             vec![],
             vec![],
             vec![],
@@ -998,5 +1034,53 @@ mod tests {
                 types::Primitive::PointerInteger,
             )],
         ))
+    }
+
+    #[test]
+    fn check_variable_declaration_matching_definition() {
+        assert!(matches!(
+            check(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    Primitive::PointerInteger(42),
+                    types::Primitive::Integer64,
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            )),
+            Err(TypeCheckError::TypesNotMatched(..))
+        ));
+    }
+
+    #[test]
+    fn check_function_declaration_matching_definition() {
+        assert!(matches!(
+            check(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "f",
+                    types::Function::new(
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        CallingConvention::Source
+                    )
+                )],
+                vec![],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    types::Primitive::Integer64,
+                )],
+            )),
+            Err(TypeCheckError::TypesNotMatched(..))
+        ));
     }
 }

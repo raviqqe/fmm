@@ -9,7 +9,7 @@ mod stack;
 mod target_function_transformer;
 
 use self::context::CpsContext;
-use super::check_types;
+use super::check;
 use crate::{ir::*, types::Type};
 use error::CpsTransformationError;
 
@@ -17,7 +17,7 @@ pub fn transform_to_cps(
     module: &Module,
     result_type: impl Into<Type>,
 ) -> Result<Module, CpsTransformationError> {
-    check_types(module)?;
+    check(module)?;
 
     let context = CpsContext::new(result_type.into());
 
@@ -26,7 +26,7 @@ pub fn transform_to_cps(
     let module = target_function_transformer::transform(&context, &module)?;
     let module = function_type_transformer::transform(&module, context.result_type());
 
-    check_types(&module)?;
+    check(&module)?;
 
     Ok(module)
 }
@@ -35,7 +35,7 @@ pub fn transform_to_cps(
 mod tests {
     use super::*;
     use crate::{
-        analysis::{check_types, format_module},
+        analysis::{check, format_module},
         types::{self, void_type, CallingConvention, Type},
     };
     use stack::stack_type;
@@ -83,7 +83,7 @@ mod tests {
         let one = transform_to_cps(module, void_type()).unwrap();
         let other = transform_to_cps(module, void_type()).unwrap();
 
-        check_types(&one).unwrap();
+        check(&one).unwrap();
 
         assert_eq!(one, other);
     }

@@ -76,7 +76,7 @@ fn compile_module<'c>(
     module: &Module,
     instruction_configuration: &InstructionConfiguration,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
-    fmm::analysis::check_types(module)?;
+    fmm::analysis::check(module)?;
 
     let target_data = target_machine.get_target_data();
 
@@ -475,6 +475,26 @@ mod tests {
                 )],
             ));
         }
+
+        #[test]
+        fn check_variable_declaration_matching_definition() {
+            compile_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    Primitive::PointerInteger(42),
+                    types::Primitive::PointerInteger,
+                    false,
+                    Linkage::External,
+                    None,
+                )],
+                vec![],
+            ));
+        }
     }
 
     mod function_declarations {
@@ -490,6 +510,29 @@ mod tests {
                 )],
                 vec![],
                 vec![],
+            ));
+        }
+
+        #[test]
+        fn check_function_declaration_matching_definition() {
+            compile_module(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "f",
+                    types::Function::new(
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        CallingConvention::Source,
+                    ),
+                )],
+                vec![],
+                vec![create_function_definition(
+                    "f",
+                    vec![],
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    types::Primitive::PointerInteger,
+                    Linkage::External,
+                )],
             ));
         }
     }
