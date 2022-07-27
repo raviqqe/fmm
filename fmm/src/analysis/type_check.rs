@@ -63,7 +63,7 @@ fn check_variable_declarations(module: &Module) -> Result<(), TypeCheckError> {
 
     for definition in module.variable_definitions() {
         if let Some(type_) = variables.get(definition.name()) {
-            check_equality(definition.type_(), &type_)?;
+            check_equality(definition.type_(), type_)?;
         }
     }
 
