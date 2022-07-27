@@ -15,12 +15,12 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
         )
         .collect();
     let function_names = module
-        .variable_declarations()
+        .function_declarations()
         .iter()
         .map(|declaration| declaration.name())
         .chain(
             module
-                .variable_definitions()
+                .function_definitions()
                 .iter()
                 .map(|definition| definition.name()),
         )
@@ -49,7 +49,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
                 .function_declarations()
                 .iter()
                 .map(|declaration| declaration.name())
-                .collect::<Vec<_>>(),
+                .collect(),
         ),
         (
             &variable_names,
@@ -124,25 +124,24 @@ mod tests {
 
     #[test]
     fn check_duplicate_names_in_function_declaration() {
+        let type_ = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+
         let module = Module::new(
             vec![],
-            vec![FunctionDeclaration::new(
+            vec![FunctionDeclaration::new("f", type_.clone())],
+            vec![VariableDefinition::new(
                 "f",
-                types::Function::new(
-                    vec![],
-                    types::Primitive::PointerInteger,
-                    types::CallingConvention::Source,
-                ),
+                Undefined::new(type_.clone()),
+                type_.clone(),
+                false,
+                Linkage::External,
+                None,
             )],
             vec![],
-            vec![FunctionDefinition::new(
-                "f",
-                vec![],
-                Block::new(vec![], TerminalInstruction::Unreachable),
-                types::Primitive::PointerInteger,
-                types::CallingConvention::Source,
-                Linkage::External,
-            )],
         );
 
         assert_eq!(
