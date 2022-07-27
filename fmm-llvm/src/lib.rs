@@ -11,6 +11,7 @@ use fmm::ir::*;
 pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 use once_cell::sync::Lazy;
+use std::collections::HashSet;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     inkwell::targets::TargetMachine::get_default_triple()
@@ -92,20 +93,37 @@ fn compile_module<'c>(
         &target_data,
     );
 
-    for declaration in module.variable_declarations() {
-        let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
+    let variable_definition_names = module
+        .variable_definitions()
+        .iter()
+        .map(|definition| definition.name())
+        .collect::<HashSet<_>>();
+    let function_definition_names = module
+        .function_definitions()
+        .iter()
+        .map(|definition| definition.name())
+        .collect::<HashSet<_>>();
 
-        variables = variables.insert(declaration.name().into(), global.as_pointer_value().into());
+    for declaration in module.variable_declarations() {
+        if !variable_definition_names.contains(declaration.name()) {
+            let global =
+                compile_variable_declaration(&llvm_module, declaration, context, &target_data);
+
+            variables =
+                variables.insert(declaration.name().into(), global.as_pointer_value().into());
+        }
     }
 
     for declaration in module.function_declarations() {
-        let function =
-            compile_function_declaration(&llvm_module, declaration, context, &target_data);
+        if !function_definition_names.contains(declaration.name()) {
+            let function =
+                compile_function_declaration(&llvm_module, declaration, context, &target_data);
 
-        variables = variables.insert(
-            declaration.name().into(),
-            function.as_global_value().as_pointer_value().into(),
-        );
+            variables = variables.insert(
+                declaration.name().into(),
+                function.as_global_value().as_pointer_value().into(),
+            );
+        }
     }
 
     for definition in module.variable_definitions() {
