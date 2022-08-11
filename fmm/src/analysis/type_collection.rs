@@ -1,5 +1,5 @@
 use crate::{ir::*, types::Type};
-use fnv::{FnvHashMap, FnvHashSet};
+use hashbrown::{HashMap, HashSet};
 
 pub fn collect_types(module: &Module) -> Vec<Type> {
     sort_types(
@@ -28,9 +28,9 @@ pub fn collect_types(module: &Module) -> Vec<Type> {
     )
 }
 
-fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
+fn sort_types(types: &HashSet<Type>) -> Vec<Type> {
     let mut graph = petgraph::graph::Graph::<&Type, ()>::new();
-    let mut indices = FnvHashMap::<&Type, _>::default();
+    let mut indices = HashMap::<&Type, _>::default();
 
     for type_ in types {
         indices.insert(type_, graph.add_node(type_));
@@ -49,7 +49,7 @@ fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
         .collect()
 }
 
-fn collect_from_expression(expression: &Expression) -> FnvHashSet<Type> {
+fn collect_from_expression(expression: &Expression) -> HashSet<Type> {
     match expression {
         Expression::AlignOf(align_of) => [align_of.type_().clone()].into_iter().collect(),
         Expression::ArithmeticOperation(operation) => [operation.type_().into()]
@@ -101,7 +101,7 @@ fn collect_from_expression(expression: &Expression) -> FnvHashSet<Type> {
     }
 }
 
-fn collect_from_block(block: &Block) -> FnvHashSet<Type> {
+fn collect_from_block(block: &Block) -> HashSet<Type> {
     collect_from_instructions(block.instructions())
         .into_iter()
         .chain(collect_from_terminal_instruction(
@@ -110,8 +110,8 @@ fn collect_from_block(block: &Block) -> FnvHashSet<Type> {
         .collect()
 }
 
-fn collect_from_instructions(instructions: &[Instruction]) -> FnvHashSet<Type> {
-    let mut types = FnvHashSet::default();
+fn collect_from_instructions(instructions: &[Instruction]) -> HashSet<Type> {
+    let mut types = HashSet::default();
 
     for instruction in instructions {
         types.extend(collect_from_instruction(instruction));
@@ -120,7 +120,7 @@ fn collect_from_instructions(instructions: &[Instruction]) -> FnvHashSet<Type> {
     types
 }
 
-fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<Type> {
+fn collect_from_instruction(instruction: &Instruction) -> HashSet<Type> {
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AllocateStack(allocate) => [allocate.type_().clone()].into_iter().collect(),
@@ -169,7 +169,7 @@ fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<Type> {
     }
 }
 
-fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHashSet<Type> {
+fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> HashSet<Type> {
     match instruction {
         TerminalInstruction::Branch(branch) => [branch.type_().clone()].into_iter().collect(),
         TerminalInstruction::Return(return_) => [return_.type_().clone()].into_iter().collect(),
@@ -177,14 +177,14 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHa
     }
 }
 
-fn collect_from_type(type_: &Type) -> FnvHashSet<Type> {
+fn collect_from_type(type_: &Type) -> HashSet<Type> {
     [type_.clone()]
         .into_iter()
         .chain(collect_child_types(type_))
         .collect()
 }
 
-fn collect_child_types(type_: &Type) -> FnvHashSet<Type> {
+fn collect_child_types(type_: &Type) -> HashSet<Type> {
     match type_ {
         Type::Function(function) => collect_from_type(function.result())
             .into_iter()

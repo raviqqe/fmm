@@ -6,7 +6,7 @@ use crate::{
     types::{self, generic_pointer_type, Type},
 };
 pub use error::*;
-use fnv::FnvHashMap;
+use hashbrown::HashMap;
 
 pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
     name::check(module)?;
@@ -59,7 +59,7 @@ fn check_variable_declarations(module: &Module) -> Result<(), TypeCheckError> {
         .variable_declarations()
         .iter()
         .map(|declaration| (declaration.name(), declaration.type_().clone()))
-        .collect::<FnvHashMap<_, _>>();
+        .collect::<HashMap<_, _>>();
 
     for definition in module.variable_definitions() {
         if let Some(type_) = variables.get(definition.name()) {
@@ -75,7 +75,7 @@ fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
         .function_declarations()
         .iter()
         .map(|declaration| (declaration.name(), declaration.type_().clone()))
-        .collect::<FnvHashMap<_, _>>();
+        .collect::<HashMap<_, _>>();
 
     for definition in module.function_definitions() {
         if let Some(type_) = functions.get(definition.name()) {

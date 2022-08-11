@@ -1,6 +1,6 @@
 use super::TypeCheckError;
 use crate::ir::*;
-use fnv::FnvHashSet;
+use hashbrown::HashSet;
 
 pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     let variable_names = module
@@ -66,7 +66,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     Ok(())
 }
 
-fn check_names(existing_names: &FnvHashSet<&str>, names: &[&str]) -> Result<(), TypeCheckError> {
+fn check_names(existing_names: &HashSet<&str>, names: &[&str]) -> Result<(), TypeCheckError> {
     let mut existing_names = existing_names.clone();
 
     for name in names {
