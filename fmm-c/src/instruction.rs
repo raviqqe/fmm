@@ -1,12 +1,12 @@
 use crate::{expression, name, type_};
 use fmm::{ir::*, types::generic_pointer_type};
-use fnv::{FnvHashMap, FnvHashSet};
+use hashbrown::{HashMap, HashSet};
 
 pub fn compile_block(
     block: &Block,
     branch_variable_name: Option<&str>,
-    global_variables: &FnvHashSet<String>,
-    type_ids: &FnvHashMap<fmm::types::Type, String>,
+    global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     block
         .instructions()
@@ -25,8 +25,8 @@ pub fn compile_block(
 
 fn compile_instruction(
     instruction: &Instruction,
-    global_variables: &FnvHashSet<String>,
-    type_ids: &FnvHashMap<fmm::types::Type, String>,
+    global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
         |expression| expression::compile(expression, global_variables, type_ids);
@@ -170,8 +170,8 @@ fn compile_instruction(
 fn compile_terminal_instruction(
     instruction: &TerminalInstruction,
     block_variable_name: Option<&str>,
-    global_variables: &FnvHashSet<String>,
-    type_ids: &FnvHashMap<fmm::types::Type, String>,
+    global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     let compile_expression =
         |expression| expression::compile(expression, global_variables, type_ids);

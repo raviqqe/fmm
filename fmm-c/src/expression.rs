@@ -1,11 +1,11 @@
 use crate::{name, type_};
 use fmm::{ir::*, types};
-use fnv::{FnvHashMap, FnvHashSet};
+use hashbrown::{HashMap, HashSet};
 
 pub fn compile(
     expression: &Expression,
-    global_variables: &FnvHashSet<String>,
-    type_ids: &FnvHashMap<fmm::types::Type, String>,
+    global_variables: &HashSet<String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     let compile = |expression| compile(expression, global_variables, type_ids);
 
@@ -144,7 +144,7 @@ pub fn compile(
 
 fn compile_undefined(
     undefined: &Undefined,
-    type_ids: &FnvHashMap<fmm::types::Type, String>,
+    type_ids: &HashMap<fmm::types::Type, String>,
 ) -> String {
     match undefined.type_() {
         types::Type::Function(_) => "NULL".into(),

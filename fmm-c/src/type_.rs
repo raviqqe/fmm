@@ -1,8 +1,8 @@
 use crate::name::*;
 use fmm::types::{self, Type};
-use fnv::FnvHashMap;
+use hashbrown::HashMap;
 
-pub fn compile_name(type_: &Type, name: &str, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_name(type_: &Type, name: &str, type_ids: &HashMap<Type, String>) -> String {
     match type_ {
         Type::Function(function) => {
             compile_function_name(function, &format!("(*{})", name), type_ids)
@@ -17,7 +17,7 @@ pub fn compile_name(type_: &Type, name: &str, type_ids: &FnvHashMap<Type, String
 pub fn compile_function_name(
     function: &types::Function,
     name: &str,
-    type_ids: &FnvHashMap<Type, String>,
+    type_ids: &HashMap<Type, String>,
 ) -> String {
     compile_name(
         function.result(),
@@ -36,7 +36,7 @@ pub fn compile_function_name(
     )
 }
 
-pub fn compile_id(type_: &Type, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_id(type_: &Type, type_ids: &HashMap<Type, String>) -> String {
     match type_ {
         Type::Function(function) => compile_function_name(function, "(*)", type_ids),
         Type::Primitive(primitive) => compile_primitive_id(*primitive),
@@ -46,7 +46,7 @@ pub fn compile_id(type_: &Type, type_ids: &FnvHashMap<Type, String>) -> String {
     }
 }
 
-pub fn compile_atomic_pointer_id(type_: &Type, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_atomic_pointer_id(type_: &Type, type_ids: &HashMap<Type, String>) -> String {
     match type_ {
         Type::Function(function) => compile_function_name(function, "(*_Atomic *)", type_ids),
         Type::Pointer(pointer) => compile_name(pointer.element(), "_Atomic *", type_ids),
@@ -79,17 +79,17 @@ pub fn compile_signed_primitive_id(primitive: types::Primitive) -> Option<String
     }
 }
 
-pub fn compile_record_id(record: &types::Record, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_record_id(record: &types::Record, type_ids: &HashMap<Type, String>) -> String {
     "struct ".to_owned() + &type_ids[&record.clone().into()]
 }
 
-pub fn compile_union_id(union: &types::Union, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_union_id(union: &types::Union, type_ids: &HashMap<Type, String>) -> String {
     "union ".to_owned() + &type_ids[&union.clone().into()]
 }
 
 pub fn compile_record_fields(
     record: &types::Record,
-    type_ids: &FnvHashMap<Type, String>,
+    type_ids: &HashMap<Type, String>,
 ) -> String {
     record
         .fields()
@@ -102,7 +102,7 @@ pub fn compile_record_fields(
         .join("")
 }
 
-pub fn compile_union_members(union: &types::Union, type_ids: &FnvHashMap<Type, String>) -> String {
+pub fn compile_union_members(union: &types::Union, type_ids: &HashMap<Type, String>) -> String {
     union
         .members()
         .iter()
