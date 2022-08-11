@@ -11,6 +11,7 @@
     "cmpxchg",
     "conv",
     "hamt",
+    "hashbrown",
     "hasher",
     "insta",
     "llvmc",
