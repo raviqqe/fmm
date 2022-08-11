@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 fmm = { path = "../fmm" }
-hashbrown = { version = "0.12", features = ["raw"] }
+hashbrown = { version = "0.12", features = ["ahash-compile-time-rng"] }
 tempfile = "3"
 
 [dev-dependencies]

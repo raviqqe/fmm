@@ -38,6 +38,7 @@ mod tests {
         analysis::{check_types, format_module},
         types::{self, void_type, CallingConvention, Type},
     };
+    use pretty_assertions::assert_eq;
     use stack::stack_type;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -437,7 +438,7 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        pretty_assertions::assert_eq!(
+        assert_eq!(
             transform_to_cps(
                 &Module::new(
                     vec![],
