@@ -1,4 +1,4 @@
-use super::{argument::Argument, block::Block, linkage::Linkage};
+use super::{argument::Argument, block::Block, linkage::Linkage, FunctionDefinitionOptions};
 use crate::types::{self, CallingConvention, Type};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -8,17 +8,16 @@ pub struct FunctionDefinition {
     body: Block,
     result_type: Type,
     type_: types::Function,
-    linkage: Linkage,
+    options: FunctionDefinitionOptions,
 }
 
 impl FunctionDefinition {
     pub fn new(
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: Block,
         result_type: impl Into<Type>,
-        calling_convention: CallingConvention,
-        linkage: Linkage,
+        body: Block,
+        options: FunctionDefinitionOptions,
     ) -> Self {
         let result_type = result_type.into();
 
@@ -29,13 +28,13 @@ impl FunctionDefinition {
                     .map(|argument| argument.type_().clone())
                     .collect(),
                 result_type.clone(),
-                calling_convention,
+                options.calling_convention(),
             ),
             name: name.into(),
             arguments,
-            body,
             result_type,
-            linkage,
+            body,
+            options,
         }
     }
 
@@ -59,7 +58,15 @@ impl FunctionDefinition {
         &self.type_
     }
 
+    pub fn calling_convention(&self) -> CallingConvention {
+        self.options.calling_convention()
+    }
+
     pub fn linkage(&self) -> Linkage {
-        self.linkage
+        self.options.linkage()
+    }
+
+    pub fn named_address(&self) -> bool {
+        self.options.named_address()
     }
 }
