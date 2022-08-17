@@ -47,9 +47,7 @@ fn rename_variable_definition(
         rename(definition.name()),
         rename_expression(definition.body(), rename),
         definition.type_().clone(),
-        definition.is_mutable(),
-        definition.linkage(),
-        definition.alignment(),
+        definition.options().clone(),
     )
 }
 
@@ -64,10 +62,9 @@ fn rename_function_definition(
             .iter()
             .map(|argument| Argument::new(rename(argument.name()), argument.type_().clone()))
             .collect(),
-        rename_block(definition.body(), rename),
         definition.result_type().clone(),
-        definition.type_().calling_convention(),
-        definition.linkage(),
+        rename_block(definition.body(), rename),
+        definition.options().clone(),
     )
 }
 

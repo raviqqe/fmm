@@ -58,9 +58,7 @@ fn convert_variable_definition(
         definition.name(),
         convert_expression(definition.body(), convert),
         convert(definition.type_()),
-        definition.is_mutable(),
-        definition.linkage(),
-        definition.alignment(),
+        definition.options().clone(),
     )
 }
 
@@ -75,10 +73,9 @@ fn convert_function_definition(
             .iter()
             .map(|argument| Argument::new(argument.name(), convert(argument.type_())))
             .collect(),
-        convert_block(definition.body(), convert),
         convert(definition.result_type()),
-        definition.type_().calling_convention(),
-        definition.linkage(),
+        convert_block(definition.body(), convert),
+        definition.options().clone(),
     )
 }
 

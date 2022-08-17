@@ -3,7 +3,7 @@ use super::{
 };
 use crate::{
     ir::*,
-    types::{self, CallingConvention, Type},
+    types::{self, Type},
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -69,9 +69,7 @@ impl ModuleBuilder {
         &self,
         name: impl Into<String>,
         body: impl Into<TypedExpression>,
-        mutable: bool,
-        linkage: Linkage,
-        alignment: impl Into<Option<usize>>,
+        options: VariableDefinitionOptions,
     ) -> TypedExpression {
         let name = name.into();
         let body = body.into();
@@ -82,9 +80,7 @@ impl ModuleBuilder {
                 &name,
                 body.expression().clone(),
                 body.type_().clone(),
-                mutable,
-                linkage,
-                alignment,
+                options,
             ));
 
         TypedExpression::new(
@@ -96,15 +92,12 @@ impl ModuleBuilder {
     pub fn define_anonymous_variable(
         &self,
         body: impl Into<TypedExpression>,
-        mutable: bool,
-        alignment: impl Into<Option<usize>>,
+        options: VariableDefinitionOptions,
     ) -> TypedExpression {
         self.define_variable(
             self.generate_name(),
             body,
-            mutable,
-            Linkage::Internal,
-            alignment,
+            options.set_linkage(Linkage::Internal),
         )
     }
 
@@ -112,53 +105,40 @@ impl ModuleBuilder {
         &self,
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: impl Fn(InstructionBuilder) -> Result<Block, E>,
         result_type: impl Into<Type>,
-        calling_convention: CallingConvention,
-        linkage: Linkage,
+        body: impl Fn(InstructionBuilder) -> Result<Block, E>,
+        options: FunctionDefinitionOptions,
     ) -> Result<TypedExpression, E> {
-        let result_type = result_type.into();
         let name = name.into();
-        let body = body(InstructionBuilder::new(self.name_generator.clone()))?;
+        let function_definition = FunctionDefinition::new(
+            &name,
+            arguments.clone(),
+            result_type.into(),
+            body(InstructionBuilder::new(self.name_generator.clone()))?,
+            options,
+        );
+        let type_ = function_definition.type_().clone();
 
         self.function_definitions
             .borrow_mut()
-            .push(FunctionDefinition::new(
-                &name,
-                arguments.clone(),
-                body,
-                result_type.clone(),
-                calling_convention,
-                linkage,
-            ));
+            .push(function_definition);
 
-        Ok(TypedExpression::new(
-            Variable::new(name),
-            types::Function::new(
-                arguments
-                    .iter()
-                    .map(|argument| argument.type_().clone())
-                    .collect(),
-                result_type,
-                calling_convention,
-            ),
-        ))
+        Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
     pub fn define_anonymous_function<E>(
         &self,
         arguments: Vec<Argument>,
-        body: impl Fn(InstructionBuilder) -> Result<Block, E>,
         result_type: impl Into<Type>,
-        calling_convention: CallingConvention,
+        body: impl Fn(InstructionBuilder) -> Result<Block, E>,
+        options: FunctionDefinitionOptions,
     ) -> Result<TypedExpression, E> {
         self.define_function(
             self.generate_name(),
             arguments,
-            body,
             result_type,
-            calling_convention,
-            Linkage::Internal,
+            body,
+            options.set_linkage(Linkage::Internal),
         )
     }
 

@@ -61,6 +61,7 @@ fn transform_function_definition(
                 .into_iter()
                 .chain(definition.arguments().iter().cloned())
                 .collect(),
+                context.cps.result_type().clone(),
                 transform_block(
                     context,
                     definition.body(),
@@ -71,9 +72,10 @@ fn transform_function_definition(
                         .chain([(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into())])
                         .collect(),
                 )?,
-                context.cps.result_type().clone(),
-                CallingConvention::Tail,
-                definition.linkage(),
+                definition
+                    .options()
+                    .clone()
+                    .set_calling_convention(CallingConvention::Tail),
             )
         } else {
             definition.clone()
@@ -256,6 +258,7 @@ fn create_continuation(
             Argument::new(STACK_ARGUMENT_NAME, stack_type()),
             Argument::new(call.name(), call.type_().result().clone()),
         ],
+        context.cps.result_type().clone(),
         Block::new(
             {
                 let builder = InstructionBuilder::new(context.cps.name_generator());
@@ -284,9 +287,10 @@ fn create_continuation(
             },
             block.terminal_instruction().clone(),
         ),
-        context.cps.result_type().clone(),
-        CallingConvention::Tail,
-        Linkage::Internal,
+        FunctionDefinitionOptions::new()
+            .set_address_named(false)
+            .set_calling_convention(CallingConvention::Tail)
+            .set_linkage(Linkage::Internal),
     ));
 
     Ok(Variable::new(name).into())

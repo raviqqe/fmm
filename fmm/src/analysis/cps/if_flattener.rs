@@ -42,6 +42,7 @@ fn transform_function_definition(
         FunctionDefinition::new(
             definition.name(),
             definition.arguments().to_vec(),
+            definition.result_type().clone(),
             transform_block(
                 context,
                 definition.body(),
@@ -52,9 +53,7 @@ fn transform_function_definition(
                     .map(|argument| (argument.name().into(), argument.type_().clone()))
                     .collect(),
             ),
-            definition.result_type().clone(),
-            definition.type_().calling_convention(),
-            definition.linkage(),
+            definition.options().clone(),
         )
     } else {
         definition.clone()
@@ -294,10 +293,12 @@ fn create_continuation(
             .iter()
             .map(|(name, type_)| Argument::new(name, type_.clone()))
             .collect(),
-        block,
         result_type.clone(),
-        types::CallingConvention::Source,
-        Linkage::Internal,
+        block,
+        FunctionDefinitionOptions::new()
+            .set_address_named(false)
+            .set_calling_convention(types::CallingConvention::Source)
+            .set_linkage(Linkage::Internal),
     ));
 
     Variable::new(name)
