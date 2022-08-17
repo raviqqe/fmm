@@ -1,24 +1,25 @@
 use super::linkage::Linkage;
-use crate::types::CallingConvention;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FunctionDefinitionOptions {
-    calling_convention: CallingConvention,
+pub struct VariableDefinitionOptions {
+    alignment: Option<usize>,
     linkage: Linkage,
     address_named: bool,
+    mutable: bool,
 }
 
-impl FunctionDefinitionOptions {
+impl VariableDefinitionOptions {
     pub fn new() -> Self {
         Self {
-            calling_convention: CallingConvention::Source,
+            alignment: None,
             linkage: Linkage::External,
             address_named: false,
+            mutable: true,
         }
     }
 
-    pub fn calling_convention(&self) -> CallingConvention {
-        self.calling_convention
+    pub fn alignment(&self) -> Option<usize> {
+        self.alignment
     }
 
     pub fn linkage(&self) -> Linkage {
@@ -29,11 +30,12 @@ impl FunctionDefinitionOptions {
         self.address_named
     }
 
-    pub fn set_calling_convention(self, calling_convention: CallingConvention) -> Self {
-        Self {
-            calling_convention,
-            ..self
-        }
+    pub fn is_mutable(&self) -> bool {
+        self.mutable
+    }
+
+    pub fn set_alignment(self, alignment: Option<usize>) -> Self {
+        Self { alignment, ..self }
     }
 
     pub fn set_linkage(self, linkage: Linkage) -> Self {
@@ -45,5 +47,9 @@ impl FunctionDefinitionOptions {
             address_named,
             ..self
         }
+    }
+
+    pub fn set_mutable(self, mutable: bool) -> Self {
+        Self { mutable, ..self }
     }
 }

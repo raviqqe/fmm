@@ -1,5 +1,5 @@
-use super::{argument::Argument, block::Block, linkage::Linkage, FunctionDefinitionOptions};
-use crate::types::{self, CallingConvention, Type};
+use super::{argument::Argument, block::Block, FunctionDefinitionOptions};
+use crate::types::{self, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
@@ -58,15 +58,7 @@ impl FunctionDefinition {
         &self.type_
     }
 
-    pub fn calling_convention(&self) -> CallingConvention {
-        self.options.calling_convention()
-    }
-
-    pub fn linkage(&self) -> Linkage {
-        self.options.linkage()
-    }
-
-    pub fn named_address(&self) -> bool {
-        self.options.named_address()
+    pub fn options(&self) -> &FunctionDefinitionOptions {
+        &self.options
     }
 }

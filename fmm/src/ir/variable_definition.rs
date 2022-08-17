@@ -1,4 +1,4 @@
-use super::{expression::Expression, linkage::Linkage};
+use super::{expression::Expression, VariableDefinitionOptions};
 use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -6,9 +6,7 @@ pub struct VariableDefinition {
     name: String,
     body: Expression,
     type_: Type,
-    mutable: bool,
-    linkage: Linkage,
-    alignment: Option<usize>,
+    options: VariableDefinitionOptions,
 }
 
 impl VariableDefinition {
@@ -16,17 +14,13 @@ impl VariableDefinition {
         name: impl Into<String>,
         body: impl Into<Expression>,
         type_: impl Into<Type>,
-        mutable: bool,
-        linkage: Linkage,
-        alignment: impl Into<Option<usize>>,
+        options: VariableDefinitionOptions,
     ) -> Self {
         Self {
             name: name.into(),
             body: body.into(),
             type_: type_.into(),
-            mutable,
-            linkage,
-            alignment: alignment.into(),
+            options,
         }
     }
 
@@ -42,15 +36,7 @@ impl VariableDefinition {
         &self.type_
     }
 
-    pub fn is_mutable(&self) -> bool {
-        self.mutable
-    }
-
-    pub fn linkage(&self) -> Linkage {
-        self.linkage
-    }
-
-    pub fn alignment(&self) -> Option<usize> {
-        self.alignment
+    pub fn options(&self) -> &VariableDefinitionOptions {
+        &self.options
     }
 }

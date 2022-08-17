@@ -44,6 +44,7 @@ mod utilities;
 mod variable;
 mod variable_declaration;
 mod variable_definition;
+mod variable_definition_options;
 
 pub use align_of::*;
 pub use allocate_heap::*;
@@ -91,3 +92,4 @@ pub use utilities::*;
 pub use variable::*;
 pub use variable_declaration::*;
 pub use variable_definition::*;
+pub use variable_definition_options::*;
