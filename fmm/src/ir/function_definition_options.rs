@@ -47,3 +47,9 @@ impl FunctionDefinitionOptions {
         }
     }
 }
+
+impl Default for FunctionDefinitionOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}

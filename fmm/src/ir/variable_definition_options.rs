@@ -53,3 +53,9 @@ impl VariableDefinitionOptions {
         Self { mutable, ..self }
     }
 }
+
+impl Default for VariableDefinitionOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
