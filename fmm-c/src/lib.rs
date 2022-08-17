@@ -332,15 +332,8 @@ mod tests {
         arguments: Vec<Argument>,
         result_type: impl Into<Type>,
         body: Block,
-        linkage: Linkage,
     ) -> FunctionDefinition {
-        FunctionDefinition::new(
-            name,
-            arguments,
-            result_type,
-            body,
-            FunctionDefinitionOptions::new().set_linkage(linkage),
-        )
+        FunctionDefinition::new(name, arguments, result_type, body, Default::default())
     }
 
     fn compile_function_definition(definition: FunctionDefinition) {
@@ -427,7 +420,6 @@ mod tests {
                             Variable::new("x"),
                         ),
                     ),
-                    Linkage::Internal,
                 )],
             ));
         }
@@ -485,7 +477,6 @@ mod tests {
                     vec![],
                     types::Primitive::PointerInteger,
                     Block::new(vec![], TerminalInstruction::Unreachable),
-                    Linkage::External,
                 )],
             ));
         }
@@ -702,7 +693,6 @@ mod tests {
                             Variable::new("x"),
                         ),
                     ),
-                    Linkage::Internal,
                 )],
             ));
         }
@@ -717,7 +707,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![create_function_definition(
+                vec![FunctionDefinition::new(
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
@@ -728,7 +718,7 @@ mod tests {
                             fmm::ir::Primitive::PointerInteger(0),
                         ),
                     ),
-                    Linkage::External,
+                    FunctionDefinitionOptions::new().set_linkage(Linkage::External),
                 )],
             ));
         }
@@ -739,7 +729,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![create_function_definition(
+                vec![FunctionDefinition::new(
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
@@ -750,7 +740,7 @@ mod tests {
                             fmm::ir::Primitive::PointerInteger(0),
                         ),
                     ),
-                    Linkage::Internal,
+                    FunctionDefinitionOptions::new().set_linkage(Linkage::Internal),
                 )],
             ));
         }
@@ -761,7 +751,7 @@ mod tests {
                 vec![],
                 vec![],
                 vec![],
-                vec![create_function_definition(
+                vec![FunctionDefinition::new(
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
@@ -772,7 +762,7 @@ mod tests {
                             fmm::ir::Primitive::PointerInteger(0),
                         ),
                     ),
-                    Linkage::Weak,
+                    FunctionDefinitionOptions::new().set_linkage(Linkage::Weak),
                 )],
             ));
         }
@@ -1044,7 +1034,6 @@ mod tests {
                         RecordAddress::new(record_type, Variable::new("x"), 0),
                     ),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1068,7 +1057,6 @@ mod tests {
                             RecordAddress::new(record_type, Variable::new("x"), 0),
                         ),
                     ),
-                    Linkage::External,
                 )],
             ));
         }
@@ -1092,7 +1080,6 @@ mod tests {
                         UnionAddress::new(union_type, Variable::new("x"), 0),
                     ),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1119,7 +1106,6 @@ mod tests {
                             UnionAddress::new(union_type, Variable::new("x"), 0),
                         ),
                     ),
-                    Linkage::External,
                 )],
             ));
         }
@@ -1202,7 +1188,6 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(vec![], TerminalInstruction::Unreachable),
-                Linkage::External,
             ));
         }
 
@@ -1216,7 +1201,6 @@ mod tests {
                     vec![AllocateHeap::new(Primitive::PointerInteger(42), "y").into()],
                     Return::new(types::generic_pointer_type(), Variable::new("y")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1234,7 +1218,6 @@ mod tests {
                     ],
                     Return::new(types::generic_pointer_type(), Variable::new("y")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1251,7 +1234,6 @@ mod tests {
                         Variable::new("y"),
                     ),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1274,7 +1256,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1302,7 +1283,6 @@ mod tests {
                     .into()],
                     Return::new(function_type, Variable::new("y")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1328,7 +1308,6 @@ mod tests {
                         Primitive::PointerInteger(42),
                     ),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1359,7 +1338,6 @@ mod tests {
                         Primitive::PointerInteger(42),
                     ),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1373,7 +1351,6 @@ mod tests {
                     vec![Fence::new(AtomicOrdering::Release).into()],
                     TerminalInstruction::Unreachable,
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1406,7 +1383,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1439,7 +1415,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1466,7 +1441,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1488,7 +1462,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1510,7 +1483,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1536,7 +1508,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Boolean, Variable::new("y")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1561,7 +1532,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
-                Linkage::External,
             ));
         }
 
@@ -1593,7 +1563,6 @@ mod tests {
                         .into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                     ),
-                    Linkage::External,
                 ));
             }
         }
@@ -1611,7 +1580,6 @@ mod tests {
                         Primitive::PointerInteger(0),
                     ),
                 ),
-                Linkage::External,
             ));
         }
     }
