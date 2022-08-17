@@ -223,6 +223,9 @@ fn declare_variable_definition<'c>(
 
     global.set_constant(!definition.options().is_mutable());
     global.set_linkage(compile_linkage(definition.options().linkage()));
+    global.set_unnamed_address(compiled_address_named(
+        definition.options().is_address_named(),
+    ));
 
     if let Some(alignment) = definition.options().alignment() {
         global.set_alignment(alignment as u32);
@@ -266,6 +269,11 @@ fn declare_function_definition<'c>(
     function.set_call_conventions(calling_convention::compile(
         definition.type_().calling_convention(),
     ));
+    function
+        .as_global_value()
+        .set_unnamed_address(compiled_address_named(
+            definition.options().is_address_named(),
+        ));
 
     // spell-checker: disable-next-line
     for attribute in ["willreturn", "nounwind"] {
@@ -277,10 +285,6 @@ fn declare_function_definition<'c>(
             ),
         );
     }
-
-    function
-        .as_global_value()
-        .set_unnamed_address(inkwell::values::UnnamedAddress::Global);
 
     function
 }
@@ -329,6 +333,14 @@ fn compile_linkage(linkage: fmm::ir::Linkage) -> inkwell::module::Linkage {
         fmm::ir::Linkage::External => inkwell::module::Linkage::External,
         fmm::ir::Linkage::Internal => inkwell::module::Linkage::Internal,
         fmm::ir::Linkage::Weak => inkwell::module::Linkage::LinkOnceODR,
+    }
+}
+
+fn compiled_address_named(address_named: bool) -> inkwell::values::UnnamedAddress {
+    if address_named {
+        inkwell::values::UnnamedAddress::None
+    } else {
+        inkwell::values::UnnamedAddress::Global
     }
 }
 
@@ -728,7 +740,37 @@ mod tests {
         }
 
         #[test]
-        fn compile_reference_to_defined_variable() {
+        fn compile_variable_with_address_named() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    VariableDefinitionOptions::new().set_address_named(true),
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_variable_with_address_unnamed() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    fmm::ir::Primitive::PointerInteger(0),
+                    types::Primitive::PointerInteger,
+                    VariableDefinitionOptions::new().set_address_named(false),
+                )],
+                vec![],
+            ));
+        }
+
+        #[test]
+        fn compile_reference_to_variable() {
             compile_module(&Module::new(
                 vec![],
                 vec![],
@@ -835,6 +877,50 @@ mod tests {
                         ),
                     ),
                     Linkage::Weak,
+                )],
+            ));
+        }
+
+        #[test]
+        fn compile_function_with_address_named() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "x",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    fmm::ir::Block::new(
+                        vec![],
+                        fmm::ir::Return::new(
+                            types::Primitive::PointerInteger,
+                            fmm::ir::Primitive::PointerInteger(0),
+                        ),
+                    ),
+                    FunctionDefinitionOptions::new().set_address_named(true),
+                )],
+            ));
+        }
+
+        #[test]
+        fn compile_function_with_address_unnamed() {
+            compile_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "x",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    fmm::ir::Block::new(
+                        vec![],
+                        fmm::ir::Return::new(
+                            types::Primitive::PointerInteger,
+                            fmm::ir::Primitive::PointerInteger(0),
+                        ),
+                    ),
+                    FunctionDefinitionOptions::new().set_address_named(false),
                 )],
             ));
         }
