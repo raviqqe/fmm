@@ -41,10 +41,9 @@ fn transform_definition(
             FunctionDefinition::new(
                 definition.name(),
                 definition.arguments().to_vec(),
-                transform_block(context, definition.body())?,
                 definition.result_type().clone(),
-                definition.type_().calling_convention(),
-                definition.linkage(),
+                transform_block(context, definition.body())?,
+                definition.options().clone(),
             )
         } else {
             definition.clone()
@@ -151,6 +150,7 @@ fn compile_continuation(
             Argument::new("stack", stack_type()),
             Argument::new("result", result_type.clone()),
         ],
+        context.cps.result_type().clone(),
         {
             let builder = InstructionBuilder::new(context.cps.name_generator());
 
@@ -166,9 +166,10 @@ fn compile_continuation(
 
             builder.return_(Undefined::new(context.cps.result_type().clone()))
         },
-        context.cps.result_type().clone(),
-        CallingConvention::Tail,
-        Linkage::Internal,
+        FunctionDefinitionOptions::new()
+            .set_address_named(false)
+            .set_calling_convention(CallingConvention::Tail)
+            .set_linkage(Linkage::Internal),
     ));
 
     Ok(build::variable(name, result_type.clone()))

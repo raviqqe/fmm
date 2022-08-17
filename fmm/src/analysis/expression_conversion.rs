@@ -49,9 +49,7 @@ fn convert_variable_definition(
         definition.name(),
         convert(definition.body()),
         definition.type_().clone(),
-        definition.is_mutable(),
-        definition.linkage(),
-        definition.alignment(),
+        definition.options().clone(),
     )
 }
 
@@ -62,10 +60,9 @@ fn convert_function_definition(
     FunctionDefinition::new(
         definition.name(),
         definition.arguments().to_vec(),
-        convert_block(definition.body(), convert),
         definition.result_type().clone(),
-        definition.type_().calling_convention(),
-        definition.linkage(),
+        convert_block(definition.body(), convert),
+        definition.options().clone(),
     )
 }
 

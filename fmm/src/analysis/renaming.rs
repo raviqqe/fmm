@@ -47,9 +47,7 @@ fn rename_variable_definition(
         rename(definition.name()),
         rename_expression(definition.body(), rename),
         definition.type_().clone(),
-        definition.is_mutable(),
-        definition.linkage(),
-        definition.alignment(),
+        definition.options().clone(),
     )
 }
 
@@ -64,10 +62,9 @@ fn rename_function_definition(
             .iter()
             .map(|argument| Argument::new(rename(argument.name()), argument.type_().clone()))
             .collect(),
-        rename_block(definition.body(), rename),
         definition.result_type().clone(),
-        definition.type_().calling_convention(),
-        definition.linkage(),
+        rename_block(definition.body(), rename),
+        definition.options().clone(),
     )
 }
 
@@ -279,17 +276,10 @@ mod tests {
     fn create_function_definition(
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: Block,
         result_type: impl Into<Type>,
+        body: Block,
     ) -> FunctionDefinition {
-        FunctionDefinition::new(
-            name,
-            arguments,
-            body,
-            result_type,
-            CallingConvention::Target,
-            Linkage::Internal,
-        )
+        FunctionDefinition::new(name, arguments, result_type, body, Default::default())
     }
 
     #[test]
@@ -308,11 +298,11 @@ mod tests {
                     vec![create_function_definition(
                         "f",
                         vec![],
+                        pointer_type.clone(),
                         Block::new(
                             vec![],
                             Return::new(pointer_type.clone(), Variable::new("x"))
                         ),
-                        pointer_type.clone(),
                     )],
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -327,11 +317,8 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
-                    Block::new(
-                        vec![],
-                        Return::new(pointer_type.clone(), Variable::new("y"))
-                    ),
-                    pointer_type,
+                    pointer_type.clone(),
+                    Block::new(vec![], Return::new(pointer_type, Variable::new("y"))),
                 )]
             )
         );
@@ -350,11 +337,11 @@ mod tests {
                     vec![create_function_definition(
                         "f",
                         vec![],
+                        function_type.clone(),
                         Block::new(
                             vec![],
                             Return::new(function_type.clone(), Variable::new("x"))
                         ),
-                        function_type.clone(),
                     )],
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -366,11 +353,8 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
-                    Block::new(
-                        vec![],
-                        Return::new(function_type.clone(), Variable::new("y"))
-                    ),
-                    function_type,
+                    function_type.clone(),
+                    Block::new(vec![], Return::new(function_type, Variable::new("y"))),
                 )],
             )
         );
@@ -389,18 +373,16 @@ mod tests {
                         "x",
                         Primitive::PointerInteger(0),
                         types::Primitive::PointerInteger,
-                        false,
-                        Linkage::Internal,
-                        None,
+                        Default::default(),
                     )],
                     vec![create_function_definition(
                         "f",
                         vec![],
+                        pointer_type.clone(),
                         Block::new(
                             vec![],
                             Return::new(pointer_type.clone(), Variable::new("x"))
                         ),
-                        pointer_type.clone(),
                     )]
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -412,18 +394,13 @@ mod tests {
                     "y",
                     Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
-                    false,
-                    Linkage::Internal,
-                    None,
+                    Default::default(),
                 )],
                 vec![create_function_definition(
                     "f",
                     vec![],
-                    Block::new(
-                        vec![],
-                        Return::new(pointer_type.clone(), Variable::new("y"))
-                    ),
-                    pointer_type,
+                    pointer_type.clone(),
+                    Block::new(vec![], Return::new(pointer_type, Variable::new("y"))),
                 )]
             )
         );
@@ -442,11 +419,11 @@ mod tests {
                     vec![create_function_definition(
                         "f",
                         vec![],
+                        function_type.clone(),
                         Block::new(
                             vec![],
                             Return::new(function_type.clone(), Variable::new("f"))
                         ),
-                        function_type.clone(),
                     )]
                 ),
                 |name| if name == "f" { "g".into() } else { name.into() },
@@ -458,11 +435,8 @@ mod tests {
                 vec![create_function_definition(
                     "g",
                     vec![],
-                    Block::new(
-                        vec![],
-                        Return::new(function_type.clone(), Variable::new("g"))
-                    ),
-                    function_type,
+                    function_type.clone(),
+                    Block::new(vec![], Return::new(function_type, Variable::new("g"))),
                 )]
             )
         );
@@ -481,6 +455,7 @@ mod tests {
                     vec![create_function_definition(
                         "f",
                         vec![],
+                        types::Primitive::PointerInteger,
                         Block::new(
                             vec![
                                 Call::new(function_type.clone(), Variable::new("f"), vec![], "f")
@@ -488,7 +463,6 @@ mod tests {
                             ],
                             Return::new(types::Primitive::PointerInteger, Variable::new("f"))
                         ),
-                        types::Primitive::PointerInteger,
                     )]
                 ),
                 |name| if name == "f" { "g".into() } else { name.into() },
@@ -500,11 +474,11 @@ mod tests {
                 vec![create_function_definition(
                     "g",
                     vec![],
+                    types::Primitive::PointerInteger,
                     Block::new(
                         vec![Call::new(function_type, Variable::new("g"), vec![], "g").into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("g"))
                     ),
-                    types::Primitive::PointerInteger,
                 )]
             )
         );
@@ -521,11 +495,11 @@ mod tests {
                     vec![create_function_definition(
                         "f",
                         vec![Argument::new("x", types::Primitive::PointerInteger)],
+                        types::Primitive::PointerInteger,
                         Block::new(
                             vec![],
                             Return::new(types::Primitive::PointerInteger, Variable::new("x"))
                         ),
-                        types::Primitive::PointerInteger,
                     )]
                 ),
                 |name| if name == "x" { "y".into() } else { name.into() },
@@ -537,11 +511,11 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![Argument::new("y", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
                     Block::new(
                         vec![],
                         Return::new(types::Primitive::PointerInteger, Variable::new("y"))
                     ),
-                    types::Primitive::PointerInteger,
                 )]
             )
         );

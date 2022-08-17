@@ -100,18 +100,16 @@ mod tests {
                 FunctionDefinition::new(
                     "f",
                     vec![],
-                    Block::new(vec![], TerminalInstruction::Unreachable),
                     types::Primitive::PointerInteger,
-                    types::CallingConvention::Source,
-                    Linkage::External,
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    Default::default(),
                 ),
                 FunctionDefinition::new(
                     "f",
                     vec![],
-                    Block::new(vec![], TerminalInstruction::Unreachable),
                     types::Primitive::PointerInteger,
-                    types::CallingConvention::Source,
-                    Linkage::External,
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    Default::default(),
                 ),
             ],
         );
@@ -136,10 +134,8 @@ mod tests {
             vec![VariableDefinition::new(
                 "f",
                 Undefined::new(type_.clone()),
-                type_.clone(),
-                false,
-                Linkage::External,
-                None,
+                type_,
+                Default::default(),
             )],
             vec![],
         );
@@ -159,17 +155,14 @@ mod tests {
                 "f",
                 Primitive::PointerInteger(42),
                 types::Primitive::PointerInteger,
-                false,
-                Linkage::External,
-                None,
+                Default::default(),
             )],
             vec![FunctionDefinition::new(
                 "f",
                 vec![],
-                Block::new(vec![], TerminalInstruction::Unreachable),
                 types::Primitive::PointerInteger,
-                types::CallingConvention::Source,
-                Linkage::External,
+                Block::new(vec![], TerminalInstruction::Unreachable),
+                Default::default(),
             )],
         );
 
@@ -191,10 +184,9 @@ mod tests {
             vec![FunctionDefinition::new(
                 "f",
                 vec![],
-                Block::new(vec![], TerminalInstruction::Unreachable),
                 types::Primitive::PointerInteger,
-                types::CallingConvention::Source,
-                Linkage::External,
+                Block::new(vec![], TerminalInstruction::Unreachable),
+                Default::default(),
             )],
         );
 
@@ -216,9 +208,7 @@ mod tests {
                 "x",
                 Primitive::PointerInteger(42),
                 types::Primitive::PointerInteger,
-                false,
-                Linkage::External,
-                None,
+                Default::default(),
             )],
             vec![],
         );
@@ -242,10 +232,9 @@ mod tests {
             vec![FunctionDefinition::new(
                 "f",
                 vec![],
-                Block::new(vec![], TerminalInstruction::Unreachable),
                 types::Primitive::PointerInteger,
-                types::CallingConvention::Source,
-                Linkage::External,
+                Block::new(vec![], TerminalInstruction::Unreachable),
+                Default::default(),
             )],
         );
 

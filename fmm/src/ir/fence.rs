@@ -1,6 +1,6 @@
 use super::atomic_ordering::AtomicOrdering;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fence {
     ordering: AtomicOrdering,
 }
