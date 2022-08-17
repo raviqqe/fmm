@@ -112,7 +112,7 @@ impl ModuleBuilder {
         let name = name.into();
         let function_definition = FunctionDefinition::new(
             &name,
-            arguments.clone(),
+            arguments,
             result_type.into(),
             body(InstructionBuilder::new(self.name_generator.clone()))?,
             options,

@@ -318,6 +318,7 @@ mod tests {
             vec![FunctionDefinition::new(
                 "foo",
                 vec![],
+                types::Primitive::Boolean,
                 Block::new(
                     vec![Call::new(
                         types::Function::new(
@@ -332,9 +333,7 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
                 ),
-                types::Primitive::Boolean,
-                types::CallingConvention::Source,
-                Linkage::Internal
+                Default::default()
             )]
         )));
     }
@@ -348,6 +347,7 @@ mod tests {
             vec![FunctionDefinition::new(
                 "foo",
                 vec![],
+                types::Primitive::Boolean,
                 Block::new(
                     vec![
                         Call::new(
@@ -375,9 +375,7 @@ mod tests {
                     ],
                     Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
                 ),
-                types::Primitive::Boolean,
-                types::CallingConvention::Source,
-                Linkage::Internal
+                Default::default()
             )]
         )));
     }
@@ -391,6 +389,7 @@ mod tests {
             vec![FunctionDefinition::new(
                 "f",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![If::new(
                         types::Primitive::Float64,
@@ -408,9 +407,7 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
-                types::Primitive::Float64,
-                types::CallingConvention::Source,
-                Linkage::Internal
+                Default::default()
             )],
         )));
     }

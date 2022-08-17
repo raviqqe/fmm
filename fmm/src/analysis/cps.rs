@@ -66,17 +66,10 @@ mod tests {
     fn create_function_definition(
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: Block,
         result_type: impl Into<Type>,
+        body: Block,
     ) -> FunctionDefinition {
-        FunctionDefinition::new(
-            name,
-            arguments,
-            body,
-            result_type,
-            CallingConvention::Source,
-            Linkage::Internal,
-        )
+        FunctionDefinition::new(name, arguments, result_type, body, Default::default())
     }
 
     fn test_transformation(module: &Module) {
@@ -102,11 +95,11 @@ mod tests {
             vec![create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![],
                     Return::new(types::Primitive::Float64, Primitive::Float64(42.0)),
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -125,6 +118,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![Call::new(
                         function_type,
@@ -135,7 +129,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -152,6 +145,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![
                         Call::new(function_type, Variable::new("f"), vec![], "x").into(),
@@ -159,7 +153,6 @@ mod tests {
                     ],
                     Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -178,6 +171,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![If::new(
                         void_type(),
@@ -198,7 +192,6 @@ mod tests {
                     .into()],
                     TerminalInstruction::Unreachable,
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -217,6 +210,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![If::new(
                         types::Primitive::Float64,
@@ -237,7 +231,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -258,6 +251,7 @@ mod tests {
                     vec![create_function_definition(
                         "g",
                         vec![],
+                        types::Primitive::Float64,
                         Block::new(
                             vec![If::new(
                                 types::Primitive::Float64,
@@ -278,7 +272,6 @@ mod tests {
                             .into()],
                             Return::new(types::Primitive::Float64, Variable::new("y")),
                         ),
-                        types::Primitive::Float64,
                     )],
                 ),
                 void_type()
@@ -303,6 +296,7 @@ mod tests {
                     vec![create_function_definition(
                         "g",
                         vec![],
+                        types::Primitive::Float64,
                         Block::new(
                             vec![If::new(
                                 types::Primitive::Float64,
@@ -331,7 +325,6 @@ mod tests {
                                 )
                             ),
                         ),
-                        types::Primitive::Float64,
                     )],
                 ),
                 void_type()
@@ -354,6 +347,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![
                         Call::new(
@@ -373,7 +367,6 @@ mod tests {
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
-                types::Primitive::PointerInteger,
             )],
         ));
     }
@@ -392,6 +385,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![
                         If::new(
@@ -421,7 +415,6 @@ mod tests {
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("z")),
                 ),
-                types::Primitive::PointerInteger,
             )],
         ));
     }
@@ -446,6 +439,7 @@ mod tests {
                     vec![create_function_definition(
                         "g",
                         vec![],
+                        types::Primitive::Float64,
                         Block::new(
                             vec![Call::new(
                                 function_type,
@@ -456,7 +450,6 @@ mod tests {
                             .into()],
                             Return::new(types::Primitive::Float64, Variable::new("x")),
                         ),
-                        types::Primitive::Float64,
                     )],
                 ),
                 void_type()
@@ -478,6 +471,7 @@ mod tests {
                             )
                         ),
                     ],
+                    void_type(),
                     Block::new(
                         vec![Call::new(
                             cps_function_type,
@@ -492,9 +486,8 @@ mod tests {
                         .into()],
                         Return::new(void_type(), Variable::new("_result")),
                     ),
-                    void_type(),
-                    CallingConvention::Tail,
-                    Linkage::Internal,
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(CallingConvention::Tail)
                 )],
             ))
         );
@@ -514,6 +507,7 @@ mod tests {
             vec![create_function_definition(
                 "g",
                 vec![],
+                types::Primitive::Float64,
                 Block::new(
                     vec![If::new(
                         types::Primitive::Float64,
@@ -534,7 +528,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Float64, Variable::new("y")),
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -556,6 +549,7 @@ mod tests {
                     Argument::new("a", types::Primitive::Float64),
                     Argument::new("b", types::Primitive::Float64),
                 ],
+                types::Primitive::Float64,
                 Block::new(
                     vec![If::new(
                         types::Primitive::Float64,
@@ -589,7 +583,6 @@ mod tests {
                         ),
                     ),
                 ),
-                types::Primitive::Float64,
             )],
         ));
     }
@@ -608,13 +601,13 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![],
+                    types::Primitive::Float64,
                     Block::new(
                         vec![Call::new(function_type, Variable::new("g"), vec![], "x").into()],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
-                    types::Primitive::Float64,
-                    CallingConvention::Target,
-                    Linkage::Internal,
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(CallingConvention::Target),
                 )],
             ));
         }
@@ -633,6 +626,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![],
+                    types::Primitive::Float64,
                     Block::new(
                         vec![Call::new(
                             function_type,
@@ -643,9 +637,8 @@ mod tests {
                         .into()],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
-                    types::Primitive::Float64,
-                    CallingConvention::Target,
-                    Linkage::Internal,
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(CallingConvention::Target),
                 )],
             ));
         }
@@ -667,6 +660,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![],
+                    types::Primitive::Float64,
                     Block::new(
                         vec![Call::new(
                             function_type,
@@ -680,9 +674,8 @@ mod tests {
                         .into()],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
-                    types::Primitive::Float64,
-                    CallingConvention::Target,
-                    Linkage::Internal,
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(CallingConvention::Target),
                 )],
             ));
         }

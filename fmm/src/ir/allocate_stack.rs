@@ -1,6 +1,6 @@
 use crate::types::Type;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AllocateStack {
     type_: Type,
     name: String,
