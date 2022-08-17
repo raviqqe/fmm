@@ -11,7 +11,7 @@ pub struct FunctionDefinitionOptions {
 impl FunctionDefinitionOptions {
     pub fn new() -> Self {
         Self {
-            address_named: false,
+            address_named: true,
             calling_convention: CallingConvention::Source,
             linkage: Linkage::External,
         }
