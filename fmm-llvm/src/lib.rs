@@ -342,7 +342,7 @@ mod tests {
         "x86_64-apple-macos",
         "arm64-apple-macos",
     ];
-    const DEFAULT_TARGETS: Lazy<Vec<&str>> = Lazy::new(|| {
+    static DEFAULT_TARGETS: Lazy<Vec<&str>> = Lazy::new(|| {
         POINTER_64_BIT_TARGETS
             .iter()
             .cloned()
@@ -380,8 +380,8 @@ mod tests {
     fn create_function_definition(
         name: impl Into<String>,
         arguments: Vec<Argument>,
-        body: Block,
         result_type: impl Into<Type>,
+        body: Block,
         linkage: Linkage,
     ) -> FunctionDefinition {
         FunctionDefinition::new(
@@ -466,6 +466,7 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
+                    types::Pointer::new(types::Primitive::PointerInteger),
                     Block::new(
                         vec![],
                         Return::new(
@@ -473,7 +474,6 @@ mod tests {
                             Variable::new("x"),
                         ),
                     ),
-                    types::Pointer::new(types::Primitive::PointerInteger),
                     Linkage::External,
                 )],
             ));
@@ -530,8 +530,8 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
-                    Block::new(vec![], TerminalInstruction::Unreachable),
                     types::Primitive::PointerInteger,
+                    Block::new(vec![], TerminalInstruction::Unreachable),
                     Linkage::External,
                 )],
             ));
@@ -741,6 +741,7 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
+                    types::Pointer::new(types::Primitive::PointerInteger),
                     Block::new(
                         vec![],
                         Return::new(
@@ -748,7 +749,6 @@ mod tests {
                             Variable::new("x"),
                         ),
                     ),
-                    types::Pointer::new(types::Primitive::PointerInteger),
                     Linkage::External,
                 )],
             ));
@@ -782,6 +782,7 @@ mod tests {
                 vec![create_function_definition(
                     "x",
                     vec![],
+                    types::Primitive::PointerInteger,
                     fmm::ir::Block::new(
                         vec![],
                         fmm::ir::Return::new(
@@ -789,7 +790,6 @@ mod tests {
                             fmm::ir::Primitive::PointerInteger(0),
                         ),
                     ),
-                    types::Primitive::PointerInteger,
                     Linkage::External,
                 )],
             ));
@@ -804,6 +804,7 @@ mod tests {
                 vec![create_function_definition(
                     "x",
                     vec![],
+                    types::Primitive::PointerInteger,
                     fmm::ir::Block::new(
                         vec![],
                         fmm::ir::Return::new(
@@ -811,7 +812,6 @@ mod tests {
                             fmm::ir::Primitive::PointerInteger(0),
                         ),
                     ),
-                    types::Primitive::PointerInteger,
                     Linkage::Internal,
                 )],
             ));
@@ -826,6 +826,7 @@ mod tests {
                 vec![create_function_definition(
                     "x",
                     vec![],
+                    types::Primitive::PointerInteger,
                     fmm::ir::Block::new(
                         vec![],
                         fmm::ir::Return::new(
@@ -833,7 +834,6 @@ mod tests {
                             fmm::ir::Primitive::PointerInteger(0),
                         ),
                     ),
-                    types::Primitive::PointerInteger,
                     Linkage::Weak,
                 )],
             ));
@@ -948,18 +948,18 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                record_type.clone(),
                 Block::new(
                     vec![],
                     Return::new(
                         record_type.clone(),
                         BitCast::new(
                             types::Primitive::PointerInteger,
-                            record_type.clone(),
+                            record_type,
                             Primitive::PointerInteger(42),
                         ),
                     ),
                 ),
-                record_type,
                 Linkage::External,
             ));
         }
@@ -971,18 +971,18 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                union_type.clone(),
                 Block::new(
                     vec![],
                     Return::new(
                         union_type.clone(),
                         BitCast::new(
                             types::Primitive::PointerInteger,
-                            union_type.clone(),
+                            union_type,
                             Primitive::PointerInteger(42),
                         ),
                     ),
                 ),
-                union_type,
                 Linkage::External,
             ));
         }
@@ -1193,14 +1193,14 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Pointer::new(record_type.clone()))],
+                pointer_type.clone(),
                 Block::new(
                     vec![],
                     Return::new(
-                        pointer_type.clone(),
+                        pointer_type,
                         RecordAddress::new(record_type, Variable::new("x"), 0),
                     ),
                 ),
-                pointer_type,
                 Linkage::External,
             ));
         }
@@ -1217,14 +1217,14 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
+                    pointer_type.clone(),
                     Block::new(
                         vec![],
                         Return::new(
-                            pointer_type.clone(),
+                            pointer_type,
                             RecordAddress::new(record_type, Variable::new("x"), 0),
                         ),
                     ),
-                    pointer_type,
                     Linkage::External,
                 )],
             ));
@@ -1241,14 +1241,14 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new("x", types::Pointer::new(union_type.clone()))],
+                pointer_type.clone(),
                 Block::new(
                     vec![],
                     Return::new(
-                        pointer_type.clone(),
+                        pointer_type,
                         UnionAddress::new(union_type, Variable::new("x"), 0),
                     ),
                 ),
-                pointer_type,
                 Linkage::External,
             ));
         }
@@ -1268,14 +1268,14 @@ mod tests {
                 vec![create_function_definition(
                     "f",
                     vec![],
+                    pointer_type.clone(),
                     Block::new(
                         vec![],
                         Return::new(
-                            pointer_type.clone(),
+                            pointer_type,
                             UnionAddress::new(union_type, Variable::new("x"), 0),
                         ),
                     ),
-                    pointer_type,
                     Linkage::External,
                 )],
             ));
@@ -1357,6 +1357,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![Call::new(
                         types::Function::new(
@@ -1371,7 +1372,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1405,8 +1405,8 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
-                Block::new(vec![], TerminalInstruction::Unreachable),
                 types::Primitive::PointerInteger,
+                Block::new(vec![], TerminalInstruction::Unreachable),
                 Linkage::External,
             ));
         }
@@ -1421,8 +1421,8 @@ mod tests {
                     vec![create_function_definition(
                         "f",
                         vec![],
-                        Block::new(vec![], TerminalInstruction::Unreachable),
                         types::Primitive::PointerInteger,
+                        Block::new(vec![], TerminalInstruction::Unreachable),
                         Linkage::External,
                     )],
                 ),
@@ -1442,11 +1442,11 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::generic_pointer_type(),
                 Block::new(
                     vec![AllocateHeap::new(Primitive::PointerInteger(42), "y").into()],
                     Return::new(types::generic_pointer_type(), Variable::new("y")),
                 ),
-                types::generic_pointer_type(),
                 Linkage::External,
             ));
         }
@@ -1456,6 +1456,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::generic_pointer_type(),
                 Block::new(
                     vec![
                         AllocateHeap::new(Primitive::PointerInteger(42), "x").into(),
@@ -1464,7 +1465,6 @@ mod tests {
                     ],
                     Return::new(types::generic_pointer_type(), Variable::new("y")),
                 ),
-                types::generic_pointer_type(),
                 Linkage::External,
             ));
         }
@@ -1474,6 +1474,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Pointer::new(types::Primitive::PointerInteger),
                 Block::new(
                     vec![AllocateStack::new(types::Primitive::PointerInteger, "y").into()],
                     Return::new(
@@ -1481,7 +1482,6 @@ mod tests {
                         Variable::new("y"),
                     ),
                 ),
-                types::Pointer::new(types::Primitive::PointerInteger),
                 Linkage::External,
             ));
         }
@@ -1494,6 +1494,7 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![AtomicLoad::new(
                         types::Primitive::PointerInteger,
@@ -1504,7 +1505,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1522,6 +1522,7 @@ mod tests {
                     "x",
                     types::Pointer::new(function_type.clone()),
                 )],
+                function_type.clone(),
                 Block::new(
                     vec![AtomicLoad::new(
                         function_type.clone(),
@@ -1530,9 +1531,8 @@ mod tests {
                         "y",
                     )
                     .into()],
-                    Return::new(function_type.clone(), Variable::new("y")),
+                    Return::new(function_type, Variable::new("y")),
                 ),
-                function_type,
                 Linkage::External,
             ));
         }
@@ -1545,6 +1545,7 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![AtomicStore::new(
                         types::Primitive::PointerInteger,
@@ -1558,7 +1559,6 @@ mod tests {
                         Primitive::PointerInteger(42),
                     ),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1576,6 +1576,7 @@ mod tests {
                     "x",
                     types::Pointer::new(function_type.clone()),
                 )],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![AtomicStore::new(
                         function_type.clone(),
@@ -1589,7 +1590,6 @@ mod tests {
                         Primitive::PointerInteger(42),
                     ),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1599,11 +1599,11 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![Fence::new(AtomicOrdering::Release).into()],
                     TerminalInstruction::Unreachable,
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1613,6 +1613,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![If::new(
                         types::Primitive::PointerInteger,
@@ -1636,7 +1637,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1646,6 +1646,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![If::new(
                         types::Primitive::PointerInteger,
@@ -1669,7 +1670,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1679,6 +1679,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![If::new(
                         types::Primitive::PointerInteger,
@@ -1696,7 +1697,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1708,6 +1708,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                pointer_type.clone(),
                 Block::new(
                     vec![If::new(
                         pointer_type.clone(),
@@ -1727,9 +1728,8 @@ mod tests {
                         "x",
                     )
                     .into()],
-                    Return::new(pointer_type.clone(), Variable::new("x")),
+                    Return::new(pointer_type, Variable::new("x")),
                 ),
-                pointer_type,
                 Linkage::External,
             ));
         }
@@ -1741,6 +1741,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![DeconstructRecord::new(
                         record_type.clone(),
@@ -1751,7 +1752,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1763,6 +1763,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![DeconstructUnion::new(
                         union_type.clone(),
@@ -1773,7 +1774,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1786,6 +1786,7 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
+                types::Primitive::Boolean,
                 Block::new(
                     vec![CompareAndSwap::new(
                         types::Primitive::PointerInteger,
@@ -1799,7 +1800,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::Boolean, Variable::new("y")),
                 ),
-                types::Primitive::Boolean,
                 Linkage::External,
             ));
         }
@@ -1812,6 +1812,7 @@ mod tests {
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
                 )],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![AtomicOperation::new(
                         types::Primitive::PointerInteger,
@@ -1824,7 +1825,6 @@ mod tests {
                     .into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
@@ -1844,6 +1844,7 @@ mod tests {
                         "x",
                         types::Pointer::new(types::Primitive::PointerInteger),
                     )],
+                    types::Primitive::PointerInteger,
                     Block::new(
                         vec![AtomicOperation::new(
                             types::Primitive::PointerInteger,
@@ -1856,7 +1857,6 @@ mod tests {
                         .into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                     ),
-                    types::Primitive::PointerInteger,
                     Linkage::External,
                 ));
             }
@@ -1867,6 +1867,7 @@ mod tests {
             compile_function_definition(create_function_definition(
                 "f",
                 vec![Argument::new("x", types::generic_pointer_type())],
+                types::Primitive::PointerInteger,
                 Block::new(
                     vec![FreeHeap::new(Variable::new("x")).into()],
                     Return::new(
@@ -1874,7 +1875,6 @@ mod tests {
                         Primitive::PointerInteger(0),
                     ),
                 ),
-                types::Primitive::PointerInteger,
                 Linkage::External,
             ));
         }
