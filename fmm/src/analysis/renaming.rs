@@ -318,10 +318,7 @@ mod tests {
                     "f",
                     vec![],
                     pointer_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(pointer_type, Variable::new("y"))
-                    ),
+                    Block::new(vec![], Return::new(pointer_type, Variable::new("y"))),
                 )]
             )
         );
@@ -357,10 +354,7 @@ mod tests {
                     "f",
                     vec![],
                     function_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(function_type, Variable::new("y"))
-                    ),
+                    Block::new(vec![], Return::new(function_type, Variable::new("y"))),
                 )],
             )
         );
@@ -406,10 +400,7 @@ mod tests {
                     "f",
                     vec![],
                     pointer_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(pointer_type, Variable::new("y"))
-                    ),
+                    Block::new(vec![], Return::new(pointer_type, Variable::new("y"))),
                 )]
             )
         );
@@ -445,10 +436,7 @@ mod tests {
                     "g",
                     vec![],
                     function_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(function_type, Variable::new("g"))
-                    ),
+                    Block::new(vec![], Return::new(function_type, Variable::new("g"))),
                 )]
             )
         );
