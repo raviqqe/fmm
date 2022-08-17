@@ -11,7 +11,7 @@ pub struct VariableDefinitionOptions {
 impl VariableDefinitionOptions {
     pub fn new() -> Self {
         Self {
-            address_named: false,
+            address_named: true,
             alignment: None,
             linkage: Linkage::External,
             mutable: true,
