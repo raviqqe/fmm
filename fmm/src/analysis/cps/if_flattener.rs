@@ -298,6 +298,7 @@ fn create_continuation(
         FunctionDefinitionOptions::new()
             .set_address_named(false)
             .set_calling_convention(types::CallingConvention::Source)
+            .set_inline(true)
             .set_linkage(Linkage::Internal),
     ));
 

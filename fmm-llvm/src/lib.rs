@@ -276,7 +276,15 @@ fn declare_function_definition<'c>(
         ));
 
     // spell-checker: disable-next-line
-    for attribute in ["willreturn", "nounwind"] {
+    for attribute in
+        ["willreturn", "nounwind"]
+            .into_iter()
+            .chain(if definition.options().is_inlined() {
+                Some("alwaysinline")
+            } else {
+                None
+            })
+    {
         function.add_attribute(
             inkwell::attributes::AttributeLoc::Function,
             module.get_context().create_enum_attribute(

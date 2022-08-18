@@ -5,6 +5,7 @@ use crate::types::CallingConvention;
 pub struct FunctionDefinitionOptions {
     address_named: bool,
     calling_convention: CallingConvention,
+    inline: bool,
     linkage: Linkage,
 }
 
@@ -13,12 +14,17 @@ impl FunctionDefinitionOptions {
         Self {
             address_named: true,
             calling_convention: CallingConvention::Source,
+            inline: false,
             linkage: Linkage::External,
         }
     }
 
     pub fn calling_convention(&self) -> CallingConvention {
         self.calling_convention
+    }
+
+    pub fn is_inlined(&self) -> bool {
+        self.inline
     }
 
     pub fn is_address_named(&self) -> bool {
@@ -41,6 +47,10 @@ impl FunctionDefinitionOptions {
             calling_convention,
             ..self
         }
+    }
+
+    pub fn set_inline(self, inline: bool) -> Self {
+        Self { inline, ..self }
     }
 
     pub fn set_linkage(self, linkage: Linkage) -> Self {
