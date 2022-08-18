@@ -280,9 +280,9 @@ fn declare_function_definition<'c>(
         ["willreturn", "nounwind"]
             .into_iter()
             .chain(if definition.options().is_inlined() {
-                Some("alwaysinline")
+                vec!["inlinehint", "optsize"]
             } else {
-                None
+                vec![]
             })
     {
         function.add_attribute(
