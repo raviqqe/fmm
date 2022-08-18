@@ -275,7 +275,7 @@ fn declare_function_definition<'c>(
             definition.options().is_address_named(),
         ));
 
-    // spell-checker: disable-next-line
+    // spell-checker: disable
     for attribute in
         ["willreturn", "nounwind"]
             .into_iter()
@@ -293,6 +293,7 @@ fn declare_function_definition<'c>(
             ),
         );
     }
+    // spell-checker: enable
 
     function
 }
