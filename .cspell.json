@@ -3,6 +3,7 @@
     "aarch",
     "algo",
     "alloca",
+    "alwaysinline",
     "atomicrmw",
     "backends",
     "bitcast",
