@@ -237,7 +237,7 @@ fn declare_variable_definition<'c>(
 fn compile_variable_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
-    variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) {
@@ -292,7 +292,7 @@ fn declare_function_definition<'c>(
 fn compile_function_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
-    variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
