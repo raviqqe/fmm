@@ -19,7 +19,7 @@ impl Function {
     ) -> Self {
         Self(
             FunctionInner {
-                arguments: arguments.into(),
+                arguments,
                 result: result.into().into(),
                 calling_convention,
             }
