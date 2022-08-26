@@ -90,6 +90,6 @@ mod tests {
 
     #[test]
     fn size() {
-        assert_eq!(size_of::<Type>(), 2 * size_of::<usize>());
+        assert!(size_of::<Type>() <= 2 * size_of::<usize>());
     }
 }

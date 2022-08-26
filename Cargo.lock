@@ -295,7 +295,7 @@ dependencies = [
 [[package]]
 name = "hamt"
 version = "0.3.1"
-source = "git+https://github.com/raviqqe/hamt-rs?branch=main#723a40d7f8e2567fbf19006ec944514c329a1b84"
+source = "git+https://github.com/raviqqe/hamt-rs?branch=main#3aab04bf2f668a8005bd2ce15f32a3f471047311"
 
 [[package]]
 name = "hashbrown"
@@ -331,7 +331,7 @@ dependencies = [
 [[package]]
 name = "inkwell"
 version = "0.1.0"
-source = "git+https://github.com/TheDan64/inkwell?branch=master#40d7ba0d387819140ca85c9bbf14ccdbd199ceee"
+source = "git+https://github.com/TheDan64/inkwell?branch=master#cc07beccde71d028f50dd62b748797540034c033"
 dependencies = [
  "either",
  "inkwell_internals",
@@ -344,7 +344,7 @@ dependencies = [
 [[package]]
 name = "inkwell_internals"
 version = "0.5.0"
-source = "git+https://github.com/TheDan64/inkwell?branch=master#40d7ba0d387819140ca85c9bbf14ccdbd199ceee"
+source = "git+https://github.com/TheDan64/inkwell?branch=master#cc07beccde71d028f50dd62b748797540034c033"
 dependencies = [
  "proc-macro2",
  "quote",
