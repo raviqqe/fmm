@@ -6,7 +6,7 @@ use std::sync::Arc;
 pub struct Call {
     type_: types::Function,
     function: Arc<Expression>,
-    arguments: Vec<Expression>,
+    arguments: Arc<[Expression]>,
     name: String,
 }
 
@@ -20,7 +20,7 @@ impl Call {
         Self {
             type_,
             function: function.into().into(),
-            arguments,
+            arguments: arguments.into(),
             name: name.into(),
         }
     }
