@@ -229,7 +229,7 @@ fn get_environment_record(environment: &[(&str, Type)]) -> Record {
     build::record(
         environment
             .iter()
-            .map(|(name, type_)| build::variable(name.clone(), type_.clone()))
+            .map(|(name, type_)| build::variable(*name, type_.clone()))
             .collect(),
     )
 }
@@ -278,7 +278,7 @@ fn create_continuation(
                             environment_record_type.clone(),
                             environment_record.expression().clone(),
                             index,
-                            name.clone(),
+                            *name,
                         )
                         .into()
                     }))
