@@ -1,5 +1,4 @@
 use crate::ir::*;
-use fnv::FnvHashSet;
 
 pub fn collect<'a>(
     instructions: &'a [Instruction],
