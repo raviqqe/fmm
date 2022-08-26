@@ -82,3 +82,14 @@ impl From<Union> for Type {
         Self::Union(union)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn size() {
+        assert_eq!(size_of::<Type>(), 2 * size_of::<usize>());
+    }
+}

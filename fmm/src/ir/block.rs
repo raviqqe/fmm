@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    instructions: Arc<[Instruction]>,
+    instructions: Arc<Vec<Instruction>>,
     terminal_instruction: TerminalInstruction,
 }
 

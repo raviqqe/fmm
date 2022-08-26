@@ -2,8 +2,11 @@ use super::{calling_convention::CallingConvention, type_::Type};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Function {
-    arguments: Arc<[Type]>,
+pub struct Function(Arc<FunctionInner>);
+
+#[derive(Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+struct FunctionInner {
+    arguments: Vec<Type>,
     result: Arc<Type>,
     calling_convention: CallingConvention,
 }
@@ -14,22 +17,25 @@ impl Function {
         result: impl Into<Type>,
         calling_convention: CallingConvention,
     ) -> Self {
-        Self {
-            arguments: arguments.into(),
-            result: result.into().into(),
-            calling_convention,
-        }
+        Self(
+            FunctionInner {
+                arguments,
+                result: result.into().into(),
+                calling_convention,
+            }
+            .into(),
+        )
     }
 
     pub fn arguments(&self) -> &[Type] {
-        &self.arguments
+        &self.0.arguments
     }
 
     pub fn result(&self) -> &Type {
-        &self.result
+        &self.0.result
     }
 
     pub fn calling_convention(&self) -> CallingConvention {
-        self.calling_convention
+        self.0.calling_convention
     }
 }
