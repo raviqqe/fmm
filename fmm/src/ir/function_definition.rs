@@ -4,7 +4,7 @@ use crate::types::{self, Type};
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
     name: String,
-    arguments: Vec<Argument>,
+    arguments: Arc<[Argument]>,
     body: Block,
     result_type: Type,
     type_: types::Function,
