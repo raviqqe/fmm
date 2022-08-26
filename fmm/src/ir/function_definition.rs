@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
     name: String,
-    arguments: Arc<[Argument]>,
+    arguments: Arc<Vec<Argument>>,
     body: Block,
     result_type: Type,
     type_: types::Function,

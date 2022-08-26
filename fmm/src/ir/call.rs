@@ -6,7 +6,7 @@ use std::sync::Arc;
 pub struct Call {
     type_: types::Function,
     function: Arc<Expression>,
-    arguments: Arc<[Expression]>,
+    arguments: Arc<Vec<Expression>>,
     name: String,
 }
 

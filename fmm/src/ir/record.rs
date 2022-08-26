@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Record {
     type_: types::Record,
-    fields: Arc<[Expression]>,
+    fields: Arc<Vec<Expression>>,
 }
 
 impl Record {
