@@ -88,7 +88,7 @@ fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
 
 fn check_variable_definition(
     definition: &VariableDefinition,
-    variables: &hamt::Map<String, Type>,
+    variables: &hamt::Map<&str, Type>,
 ) -> Result<(), TypeCheckError> {
     check_equality(
         &check_expression(definition.body(), variables)?,
@@ -98,7 +98,7 @@ fn check_variable_definition(
 
 fn check_function_definition(
     definition: &FunctionDefinition,
-    variables: &hamt::Map<String, Type>,
+    variables: &hamt::Map<&str, Type>,
 ) -> Result<(), TypeCheckError> {
     check_block(
         definition.body(),
@@ -117,7 +117,7 @@ fn check_function_definition(
 
 fn check_block(
     block: &Block,
-    variables: &hamt::Map<String, Type>,
+    variables: &hamt::Map<&str, Type>,
     return_type: &Type,
     branch_type: Option<&Type>,
 ) -> Result<(), TypeCheckError> {
@@ -277,7 +277,7 @@ fn check_block(
 
 fn check_expression(
     expression: &Expression,
-    variables: &hamt::Map<String, Type>,
+    variables: &hamt::Map<&str, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),

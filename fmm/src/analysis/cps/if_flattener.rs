@@ -64,7 +64,7 @@ fn transform_block(
     context: &mut Context,
     block: &Block,
     result_type: &Type,
-    local_variables: &hamt::Map<String, Type>,
+    local_variables: &hamt::Map<&str, Type>,
 ) -> Block {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -82,7 +82,7 @@ fn transform_instructions(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     result_type: &Type,
-    local_variables: &hamt::Map<String, Type>,
+    local_variables: &hamt::Map<&str, Type>,
 ) -> (Vec<Instruction>, TerminalInstruction) {
     match instructions {
         [] => (vec![], terminal_instruction.clone()),
@@ -124,7 +124,7 @@ fn transform_instructions(
                 let environment = get_continuation_environment(
                     instructions,
                     terminal_instruction,
-                    &local_variables.insert(if_.name().into(), if_.type_().clone()),
+                    &local_variables.insert(if_.name(), if_.type_().clone()),
                 );
                 let continuation = create_continuation(
                     context,
@@ -192,7 +192,7 @@ fn transform_if_block_without_continuation(
     if_name: &str,
     block: &Block,
     result_type: &Type,
-    local_variables: &hamt::Map<String, Type>,
+    local_variables: &hamt::Map<&str, Type>,
     terminal_instruction: &TerminalInstruction,
 ) -> Block {
     transform_block(
@@ -227,9 +227,9 @@ fn transform_if_block_with_continuation(
     if_name: &str,
     block: &Block,
     result_type: &Type,
-    local_variables: &hamt::Map<String, Type>,
+    local_variables: &hamt::Map<&str, Type>,
     continuation: &Expression,
-    environment: &[(String, Type)],
+    environment: &[(&str, Type)],
 ) -> Block {
     if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
         let result_name = context.name_generator.generate();
@@ -251,10 +251,10 @@ fn transform_if_block_with_continuation(
                         environment
                             .iter()
                             .map(|(name, _)| {
-                                if name == if_name {
+                                if name == &if_name {
                                     branch.expression().clone()
                                 } else {
-                                    Variable::new(name).into()
+                                    Variable::new(*name).into()
                                 }
                             })
                             .collect(),
@@ -277,7 +277,7 @@ fn create_continuation(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     result_type: &Type,
-    environment: &[(String, Type)],
+    environment: &[(&str, Type)],
 ) -> Variable {
     let name = context.name_generator.generate();
     let block = transform_block(
@@ -291,7 +291,7 @@ fn create_continuation(
         &name,
         environment
             .iter()
-            .map(|(name, type_)| Argument::new(name, type_.clone()))
+            .map(|(name, type_)| Argument::new(*name, type_.clone()))
             .collect(),
         result_type.clone(),
         block,
@@ -304,18 +304,14 @@ fn create_continuation(
     Variable::new(name)
 }
 
-fn get_continuation_environment(
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-    local_variables: &hamt::Map<String, Type>,
-) -> Vec<(String, Type)> {
+fn get_continuation_environment<'a>(
+    instructions: &'a [Instruction],
+    terminal_instruction: &'a TerminalInstruction,
+    local_variables: &hamt::Map<&str, Type>,
+) -> Vec<(&'a str, Type)> {
     free_variable_collector::collect(instructions, terminal_instruction)
         .iter()
-        .flat_map(|name| {
-            local_variables
-                .get(name)
-                .map(|type_| (name.clone(), type_.clone()))
-        })
+        .flat_map(|&name| local_variables.get(name).map(|type_| (name, type_.clone())))
         .collect()
 }
 

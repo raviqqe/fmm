@@ -1,10 +1,10 @@
 use crate::ir::*;
 use fnv::FnvHashSet;
 
-pub fn collect(
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-) -> FnvHashSet<String> {
+pub fn collect<'a>(
+    instructions: &'a [Instruction],
+    terminal_instruction: &'a TerminalInstruction,
+) -> FnvHashSet<&'a str> {
     let mut variables = FnvHashSet::default();
 
     for instruction in instructions {
@@ -20,11 +20,11 @@ pub fn collect(
     variables
 }
 
-fn collect_from_block(block: &Block) -> FnvHashSet<String> {
+fn collect_from_block(block: &Block) -> FnvHashSet<&str> {
     collect(block.instructions(), block.terminal_instruction())
 }
 
-fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<String> {
+fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<&str> {
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
         Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
@@ -71,7 +71,7 @@ fn collect_from_instruction(instruction: &Instruction) -> FnvHashSet<String> {
     }
 }
 
-fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHashSet<String> {
+fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHashSet<&str> {
     match instruction {
         TerminalInstruction::Branch(branch) => collect_from_expression(branch.expression()),
         TerminalInstruction::Return(return_) => collect_from_expression(return_.expression()),
@@ -79,7 +79,7 @@ fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> FnvHa
     }
 }
 
-fn collect_from_expression(expression: &Expression) -> FnvHashSet<String> {
+fn collect_from_expression(expression: &Expression) -> FnvHashSet<&str> {
     match expression {
         Expression::ArithmeticOperation(operation) => [operation.lhs(), operation.rhs()]
             .iter()

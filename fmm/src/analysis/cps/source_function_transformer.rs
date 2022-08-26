@@ -86,7 +86,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &Block,
-    local_variables: &hamt::Map<String, Type>,
+    local_variables: &hamt::Map<&str, Type>,
 ) -> Result<Block, BuildError> {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -102,7 +102,7 @@ fn transform_instructions(
     context: &mut Context,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &hamt::Map<String, Type>,
+    local_variables: &hamt::Map<&str, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
     Ok(match instructions {
         [] => match terminal_instruction {
@@ -225,7 +225,7 @@ fn transform_instructions(
     })
 }
 
-fn get_environment_record(environment: &[(String, Type)]) -> Record {
+fn get_environment_record(environment: &[(&str, Type)]) -> Record {
     build::record(
         environment
             .iter()
@@ -239,7 +239,7 @@ fn create_continuation(
     call: &Call,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    environment: &[(String, Type)],
+    environment: &[(&str, Type)],
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
     let block = transform_block(
@@ -248,7 +248,7 @@ fn create_continuation(
         &environment
             .iter()
             .cloned()
-            .chain([(call.name().into(), call.type_().result().clone())])
+            .chain([(call.name(), call.type_().result().clone())])
             .collect(),
     )?;
 
@@ -278,7 +278,7 @@ fn create_continuation(
                             environment_record_type.clone(),
                             environment_record.expression().clone(),
                             index,
-                            name,
+                            name.clone(),
                         )
                         .into()
                     }))
@@ -300,24 +300,20 @@ fn create_continuation(
 // passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.
-fn get_continuation_environment(
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-    local_variables: &hamt::Map<String, Type>,
-) -> Vec<(String, Type)> {
+fn get_continuation_environment<'a>(
+    instructions: &'a [Instruction],
+    terminal_instruction: &'a TerminalInstruction,
+    local_variables: &hamt::Map<&str, Type>,
+) -> Vec<(&'a str, Type)> {
     [(
-        CONTINUATION_ARGUMENT_NAME.into(),
+        CONTINUATION_ARGUMENT_NAME,
         local_variables[CONTINUATION_ARGUMENT_NAME].clone(),
     )]
     .into_iter()
     .chain(
         free_variable_collector::collect(instructions, terminal_instruction)
             .iter()
-            .flat_map(|name| {
-                local_variables
-                    .get(name)
-                    .map(|type_| (name.clone(), type_.clone()))
-            }),
+            .flat_map(|&name| local_variables.get(name).map(|type_| (name, type_.clone()))),
     )
     .collect()
 }
