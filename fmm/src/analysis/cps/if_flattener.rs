@@ -50,7 +50,7 @@ fn transform_function_definition(
                 &definition
                     .arguments()
                     .iter()
-                    .map(|argument| (argument.name().into(), argument.type_().clone()))
+                    .map(|argument| (argument.name(), argument.type_().clone()))
                     .collect(),
             ),
             definition.options().clone(),
@@ -169,7 +169,7 @@ fn transform_instructions(
                     terminal_instruction,
                     result_type,
                     &if let Some((name, type_)) = instruction.value() {
-                        local_variables.insert(name.into(), type_)
+                        local_variables.insert(name, type_)
                     } else {
                         local_variables.clone()
                     },

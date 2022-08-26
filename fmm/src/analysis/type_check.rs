@@ -19,19 +19,19 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
         .iter()
         .map(|declaration| {
             (
-                declaration.name().into(),
+                declaration.name(),
                 types::Pointer::new(declaration.type_().clone()).into(),
             )
         })
         .chain(module.function_declarations().iter().map(|declaration| {
             (
-                declaration.name().into(),
+                declaration.name(),
                 declaration.type_().clone().into(),
             )
         }))
         .chain(module.variable_definitions().iter().map(|definition| {
             (
-                definition.name().into(),
+                definition.name(),
                 types::Pointer::new(definition.type_().clone()).into(),
             )
         }))
@@ -39,7 +39,7 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
             module
                 .function_definitions()
                 .iter()
-                .map(|definition| (definition.name().into(), definition.type_().clone().into())),
+                .map(|definition| (definition.name(), definition.type_().clone().into())),
         )
         .collect::<hamt::Map<_, _>>();
 
@@ -106,7 +106,7 @@ fn check_function_definition(
             definition
                 .arguments()
                 .iter()
-                .map(|argument| (argument.name().into(), argument.type_().clone())),
+                .map(|argument| (argument.name(), argument.type_().clone())),
         ),
         definition.result_type(),
         None,
@@ -247,7 +247,7 @@ fn check_block(
         }
 
         if let Some((name, type_)) = instruction.value() {
-            variables = variables.insert(name.into(), type_.clone());
+            variables = variables.insert(name, type_.clone());
         }
     }
 

@@ -107,7 +107,7 @@ fn collect_from_expression(expression: &Expression) -> FnvHashSet<&str> {
         Expression::RecordAddress(address) => collect_from_expression(address.pointer()),
         Expression::Union(union) => collect_from_expression(union.member()),
         Expression::UnionAddress(address) => collect_from_expression(address.pointer()),
-        Expression::Variable(variable) => [variable.name().into()].into_iter().collect(),
+        Expression::Variable(variable) => [variable.name()].into_iter().collect(),
         Expression::AlignOf(_)
         | Expression::Primitive(_)
         | Expression::SizeOf(_)

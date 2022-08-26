@@ -68,8 +68,8 @@ fn transform_function_definition(
                     &definition
                         .arguments()
                         .iter()
-                        .map(|argument| (argument.name().into(), argument.type_().clone()))
-                        .chain([(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into())])
+                        .map(|argument| (argument.name(), argument.type_().clone()))
+                        .chain([(CONTINUATION_ARGUMENT_NAME, continuation_type.into())])
                         .collect(),
                 )?,
                 definition
@@ -208,7 +208,7 @@ fn transform_instructions(
                 instructions,
                 terminal_instruction,
                 &if let Some((name, type_)) = instruction.value() {
-                    local_variables.insert(name.into(), type_)
+                    local_variables.insert(name, type_)
                 } else {
                     local_variables.clone()
                 },
