@@ -23,12 +23,12 @@ pub fn check_types(module: &Module) -> Result<(), TypeCheckError> {
                 types::Pointer::new(declaration.type_().clone()).into(),
             )
         })
-        .chain(module.function_declarations().iter().map(|declaration| {
-            (
-                declaration.name(),
-                declaration.type_().clone().into(),
-            )
-        }))
+        .chain(
+            module
+                .function_declarations()
+                .iter()
+                .map(|declaration| (declaration.name(), declaration.type_().clone().into())),
+        )
         .chain(module.variable_definitions().iter().map(|definition| {
             (
                 definition.name(),
