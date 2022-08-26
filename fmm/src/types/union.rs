@@ -1,13 +1,16 @@
 use super::type_::Type;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Union {
-    members: Vec<Type>,
+    members: Arc<[Type]>,
 }
 
 impl Union {
-    pub const fn new(members: Vec<Type>) -> Self {
-        Self { members }
+    pub fn new(members: Vec<Type>) -> Self {
+        Self {
+            members: members.into(),
+        }
     }
 
     pub fn members(&self) -> &[Type] {

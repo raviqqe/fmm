@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Function {
-    arguments: Vec<Type>,
+    arguments: Arc<[Type]>,
     result: Arc<Type>,
     calling_convention: CallingConvention,
 }
@@ -15,7 +15,7 @@ impl Function {
         calling_convention: CallingConvention,
     ) -> Self {
         Self {
-            arguments,
+            arguments: arguments.into(),
             result: result.into().into(),
             calling_convention,
         }
