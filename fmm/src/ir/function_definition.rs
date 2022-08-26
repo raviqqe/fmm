@@ -1,5 +1,6 @@
 use super::{argument::Argument, block::Block, FunctionDefinitionOptions};
 use crate::types::{self, Type};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
@@ -31,7 +32,7 @@ impl FunctionDefinition {
                 options.calling_convention(),
             ),
             name: name.into(),
-            arguments,
+            arguments: arguments.into(),
             result_type,
             body,
             options,
