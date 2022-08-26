@@ -295,7 +295,7 @@ dependencies = [
 [[package]]
 name = "hamt"
 version = "0.3.1"
-source = "git+https://github.com/raviqqe/hamt-rs?branch=main#f5d1d2e738d428240c9b29f92a7d2683da007e2d"
+source = "git+https://github.com/raviqqe/hamt-rs?branch=main#3aab04bf2f668a8005bd2ce15f32a3f471047311"
 
 [[package]]
 name = "hashbrown"
