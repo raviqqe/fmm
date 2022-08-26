@@ -6,7 +6,7 @@ use inkwell::values::BasicValue;
 pub fn compile<'c>(
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
-    variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
@@ -87,7 +87,7 @@ pub fn compile<'c>(
 
 pub fn compile_constant<'c>(
     expression: &Expression,
-    variables: &hamt::Map<String, inkwell::values::BasicValueEnum<'c>>,
+    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
     context: &'c inkwell::context::Context,
     target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::BasicValueEnum<'c> {
