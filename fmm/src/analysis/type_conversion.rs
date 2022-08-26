@@ -2,6 +2,7 @@ use crate::{
     ir::*,
     types::{self, Type},
 };
+use cached::proc_macro::cached;
 
 pub fn convert_types(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
     let convert = |type_: &Type| -> Type { convert_type(type_, convert) };
@@ -302,7 +303,8 @@ fn convert_expression(expression: &Expression, convert: &impl Fn(&Type) -> Type)
     }
 }
 
-fn convert_type(type_: &Type, convert: &impl Fn(&Type) -> Type) -> Type {
+#[cached(size = 1_000_000, key = "Type", convert = r#"{ type_.clone() }"#)]
+fn convert_type(type_: &Type, convert: &dyn Fn(&Type) -> Type) -> Type {
     convert(&{
         let convert = |type_| convert_type(type_, convert);
 
