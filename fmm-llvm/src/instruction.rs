@@ -29,7 +29,7 @@ pub fn compile_block<'c>(
 
         if let Some(value) = value {
             if let Some((name, _)) = instruction.value() {
-                variables = variables.insert(name.into(), value);
+                variables = variables.insert(name, value);
             }
         }
     }

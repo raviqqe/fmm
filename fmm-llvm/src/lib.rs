@@ -95,7 +95,7 @@ fn compile_module<'c>(
     for declaration in module.variable_declarations() {
         let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
 
-        variables = variables.insert(declaration.name().into(), global.as_pointer_value().into());
+        variables = variables.insert(declaration.name(), global.as_pointer_value().into());
     }
 
     for declaration in module.function_declarations() {
@@ -103,7 +103,7 @@ fn compile_module<'c>(
             compile_function_declaration(&llvm_module, declaration, context, &target_data);
 
         variables = variables.insert(
-            declaration.name().into(),
+            declaration.name(),
             function.as_global_value().as_pointer_value().into(),
         );
     }
@@ -111,14 +111,14 @@ fn compile_module<'c>(
     for definition in module.variable_definitions() {
         let global = declare_variable_definition(&llvm_module, definition, context, &target_data);
 
-        variables = variables.insert(definition.name().into(), global.as_pointer_value().into());
+        variables = variables.insert(definition.name(), global.as_pointer_value().into());
     }
 
     for definition in module.function_definitions() {
         let function = declare_function_definition(&llvm_module, definition, context, &target_data);
 
         variables = variables.insert(
-            definition.name().into(),
+            definition.name(),
             function.as_global_value().as_pointer_value().into(),
         );
     }
@@ -313,7 +313,7 @@ fn compile_function_definition<'c>(
                 .enumerate()
                 .map(|(index, argument)| {
                     (
-                        argument.name().into(),
+                        argument.name(),
                         function.get_nth_param(index as u32).unwrap(),
                     )
                 }),
