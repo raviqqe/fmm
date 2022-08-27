@@ -1,5 +1,5 @@
 use crate::{
-    calling_convention, error::CompileError, expression,
+    calling_convention, context::Context, error::CompileError, expression,
     instruction_configuration::InstructionFunctionSet, type_, union::compile_union_cast,
 };
 use fmm::ir::*;
@@ -7,23 +7,21 @@ use inkwell::values::BasicValue;
 use std::convert::TryFrom;
 
 pub fn compile_block<'c>(
+    context: &'c Context,
     builder: &inkwell::builder::Builder<'c>,
     block: &Block,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let mut variables = variables.clone();
 
     for instruction in block.instructions() {
         let value = compile_instruction(
+            context,
             builder,
             instruction,
             &variables,
-            context,
-            target_data,
             instruction_function_set,
         )?;
 
@@ -35,27 +33,25 @@ pub fn compile_block<'c>(
     }
 
     Ok(compile_terminal_instruction(
+        context,
         builder,
         block.terminal_instruction(),
         destination,
         &variables,
-        context,
-        target_data,
         instruction_function_set,
     ))
 }
 
 fn compile_instruction<'c>(
+    context: &'c Context,
     builder: &inkwell::builder::Builder<'c>,
     instruction: &Instruction,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
-        |expression| expression::compile(builder, expression, variables, context, target_data);
-    let compile_type = |type_| type_::compile(type_, context, target_data);
+        |expression| expression::compile(context, builder, expression, variables);
+    let compile_type = |type_| type_::compile(context, type_);
 
     Ok(match instruction {
         Instruction::AllocateHeap(allocate) => Some(
@@ -82,7 +78,7 @@ fn compile_instruction<'c>(
 
             let instruction_value = value.as_instruction_value().unwrap();
             instruction_value.set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
-            set_alignment(context, &instruction_value, load.type_(), target_data)?;
+            set_alignment(context, &instruction_value, load.type_())?;
 
             Some(value)
         }
@@ -106,7 +102,7 @@ fn compile_instruction<'c>(
             );
 
             value.set_atomic_ordering(compile_atomic_ordering(store.ordering()))?;
-            set_alignment(context, &value, store.type_(), target_data)?;
+            set_alignment(context, &value, store.type_())?;
 
             None
         }
@@ -156,10 +152,9 @@ fn compile_instruction<'c>(
                 builder,
                 compile_expression(deconstruct.union()),
                 type_::compile_union_member(
+                    context,
                     deconstruct.type_(),
                     deconstruct.member_index(),
-                    context,
-                    target_data,
                 )
                 .into(),
             )
@@ -178,7 +173,10 @@ fn compile_instruction<'c>(
                 &[builder
                     .build_bitcast(
                         compile_expression(free.pointer()),
-                        context.i8_type().ptr_type(type_::DEFAULT_ADDRESS_SPACE),
+                        context
+                            .inkwell()
+                            .i8_type()
+                            .ptr_type(type_::DEFAULT_ADDRESS_SPACE),
                         "",
                     )
                     .into()],
@@ -191,9 +189,9 @@ fn compile_instruction<'c>(
             let current = builder.get_insert_block().unwrap();
             let function = current.get_parent().unwrap();
 
-            let then = context.append_basic_block(function, "then");
-            let else_ = context.append_basic_block(function, "else");
-            let phi = context.append_basic_block(function, "phi");
+            let then = context.inkwell().append_basic_block(function, "then");
+            let else_ = context.inkwell().append_basic_block(function, "else");
+            let phi = context.inkwell().append_basic_block(function, "phi");
 
             let mut cases = vec![];
 
@@ -207,12 +205,11 @@ fn compile_instruction<'c>(
                 builder.position_at_end(*llvm_block);
 
                 let value = compile_block(
+                    context,
                     builder,
                     block,
                     Some(phi),
                     variables,
-                    context,
-                    target_data,
                     instruction_function_set,
                 )?;
 
@@ -265,16 +262,15 @@ fn compile_instruction<'c>(
 }
 
 fn compile_terminal_instruction<'c>(
+    context: &'c Context,
     builder: &inkwell::builder::Builder<'c>,
     instruction: &TerminalInstruction,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
     let compile_expression =
-        |expression| expression::compile(builder, expression, variables, context, target_data);
+        |expression| expression::compile(context, builder, expression, variables);
 
     match instruction {
         TerminalInstruction::Branch(branch) => {
@@ -314,10 +310,14 @@ fn compile_atomic_ordering(ordering: AtomicOrdering) -> inkwell::AtomicOrdering 
 // For example, an alignment for i64 is 4 bytes instead of 8 bytes on
 // x86_64-unknown-linux-gnu.
 fn set_alignment(
-    context: &inkwell::context::Context,
+    context: &Context,
     value: &inkwell::values::InstructionValue,
     type_: &fmm::types::Type,
-    target_data: &inkwell::targets::TargetData,
 ) -> Result<(), &'static str> {
-    value.set_alignment(target_data.get_abi_alignment(&type_::compile(type_, context, target_data)))
+    value.set_alignment(
+        context
+            .target_machine()
+            .get_target_data()
+            .get_abi_alignment(&type_::compile(context, type_)),
+    )
 }
