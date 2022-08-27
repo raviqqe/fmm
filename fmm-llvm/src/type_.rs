@@ -44,10 +44,10 @@ pub fn compile_pointer<'c>(
     compile(context, pointer.element()).ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
-pub fn compile_primitive(
-    context: &Context,
+pub fn compile_primitive<'c>(
+    context: &Context<'c>,
     primitive: types::Primitive,
-) -> inkwell::types::BasicTypeEnum {
+) -> inkwell::types::BasicTypeEnum<'c> {
     match primitive {
         types::Primitive::Boolean => context.inkwell().bool_type().into(),
         types::Primitive::Float32 => context.inkwell().f32_type().into(),
@@ -59,7 +59,7 @@ pub fn compile_primitive(
     }
 }
 
-pub fn compile_pointer_integer(context: &Context) -> inkwell::types::IntType {
+pub fn compile_pointer_integer<'c>(context: &Context<'c>) -> inkwell::types::IntType<'c> {
     context
         .inkwell()
         .ptr_sized_int_type(&context.target_machine().get_target_data(), None)

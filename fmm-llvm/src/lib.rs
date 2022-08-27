@@ -18,7 +18,12 @@ pub fn compile_to_bit_code(
     instruction_configuration: &InstructionConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
-    let context = Context::new(target_triple, instruction_configuration.clone())?;
+    let inkwell_context = inkwell::context::Context::create();
+    let context = Context::new(
+        &inkwell_context,
+        target_triple,
+        instruction_configuration.clone(),
+    )?;
     let module = compile_module(&context, module)?;
 
     Ok(module.write_bitcode_to_memory().as_slice().to_vec())
@@ -29,7 +34,12 @@ pub fn compile_to_object(
     instruction_configuration: &InstructionConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
-    let context = Context::new(target_triple, instruction_configuration.clone())?;
+    let inkwell_context = inkwell::context::Context::create();
+    let context = Context::new(
+        &inkwell_context,
+        target_triple,
+        instruction_configuration.clone(),
+    )?;
     let module = compile_module(&context, module)?;
 
     // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in
