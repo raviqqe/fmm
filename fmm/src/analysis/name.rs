@@ -45,7 +45,6 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
 }
 
 fn check_name<'a>(name: &'a str, names: &mut FnvHashSet<&'a str>) -> Result<(), TypeCheckError> {
-    dbg!(&names, name);
     if names.contains(name) {
         return Err(TypeCheckError::DuplicateNames(name.into()));
     }
