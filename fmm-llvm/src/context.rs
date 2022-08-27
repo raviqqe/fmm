@@ -63,11 +63,11 @@ impl<'c> Context<'c> {
             .ok_or(CompileError::TargetMachineNotCreated)
     }
 
-    fn types(&self) -> &FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>> {
+    pub fn types(&self) -> &FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>> {
         &self.types
     }
 
-    fn types_mut(&mut self) -> &mut FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>> {
+    pub fn types_mut(&mut self) -> &mut FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>> {
         &mut self.types
     }
 }

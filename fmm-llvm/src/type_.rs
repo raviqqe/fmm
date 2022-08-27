@@ -4,14 +4,22 @@ use inkwell::types::BasicType;
 
 pub const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
 
-pub fn compile<'c>(context: &'c Context, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
-    match type_ {
+pub fn compile<'c>(context: &Context<'c>, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
+    if let Some(&type_) = context.types().get(type_) {
+        return type_;
+    }
+
+    let llvm_type = match type_ {
         Type::Function(function) => compile_function_pointer(context, function).into(),
         Type::Primitive(primitive) => compile_primitive(context, *primitive),
         Type::Record(record) => compile_record(context, record).into(),
         Type::Pointer(pointer) => compile_pointer(context, pointer).into(),
         Type::Union(union) => compile_union(context, union).into(),
-    }
+    };
+
+    context.types_mut().insert(type_.clone(), llvm_type);
+
+    llvm_type
 }
 
 pub fn compile_function<'c>(
