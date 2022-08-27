@@ -215,4 +215,29 @@ mod tests {
 
         assert_eq!(check(&module), Ok(()));
     }
+
+    #[test]
+    fn allow_duplicate_names_in_variable_and_function_declarations() {
+        let module = Module::new(
+            vec![VariableDeclaration::new(
+                "f",
+                types::Primitive::PointerInteger,
+            )],
+            vec![FunctionDeclaration::new(
+                "f",
+                types::Function::new(
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    types::CallingConvention::Source,
+                ),
+            )],
+            vec![],
+            vec![],
+        );
+
+        assert_eq!(
+            check(&module),
+            Err(TypeCheckError::DuplicateNames("f".into()))
+        );
+    }
 }
