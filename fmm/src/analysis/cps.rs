@@ -481,10 +481,10 @@ mod tests {
                                 Variable::new("_k").into(),
                                 Primitive::Float64(42.0).into()
                             ],
-                            "_result",
+                            "_k_0",
                         )
                         .into()],
-                        Return::new(void_type(), Variable::new("_result")),
+                        Return::new(void_type(), Variable::new("_k_0")),
                     ),
                     FunctionDefinitionOptions::new()
                         .set_calling_convention(CallingConvention::Tail)
