@@ -17,15 +17,15 @@ fn collect_from_instructions<'a>(
     terminal_instruction: &'a TerminalInstruction,
     variables: &mut FnvHashSet<&'a str>,
 ) {
-    for instruction in instructions {
-        collect_from_instruction(instruction, variables);
+    collect_from_terminal_instruction(terminal_instruction, variables);
 
+    for instruction in instructions.iter().rev() {
         if let Some((name, _)) = instruction.value() {
             variables.remove(name);
         }
-    }
 
-    collect_from_terminal_instruction(terminal_instruction, variables);
+        collect_from_instruction(instruction, variables);
+    }
 }
 
 fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashSet<&'a str>) {
@@ -135,5 +135,66 @@ fn collect_from_expression<'a>(expression: &'a Expression, variables: &mut FnvHa
         | Expression::Primitive(_)
         | Expression::SizeOf(_)
         | Expression::Undefined(_) => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types;
+
+    #[test]
+    fn collect_nothing() {
+        assert_eq!(
+            collect(&[], &TerminalInstruction::Unreachable),
+            Default::default()
+        );
+    }
+
+    #[test]
+    fn collect_from_terminal_instruction() {
+        assert_eq!(
+            collect(
+                &[],
+                &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
+            ),
+            ["x"].into_iter().collect()
+        );
+    }
+
+    #[test]
+    fn collect_from_terminal_instruction_with_shadowed_variable() {
+        assert_eq!(
+            collect(
+                &[AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
+                &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
+            ),
+            Default::default()
+        );
+    }
+
+    #[test]
+    fn collect_from_instruction_and_terminal_instruction_with_shadowed_variable() {
+        assert_eq!(
+            collect(
+                &[Load::new(types::Primitive::PointerInteger, Variable::new("x"), "x").into()],
+                &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
+            ),
+            ["x"].into_iter().collect()
+        );
+    }
+
+    #[test]
+    fn collect_from_instructions() {
+        assert_eq!(
+            collect(
+                &[
+                    AllocateStack::new(types::Primitive::PointerInteger, "x").into(),
+                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into()
+                ],
+                &TerminalInstruction::Unreachable
+            ),
+            Default::default()
+        );
     }
 }
