@@ -2,30 +2,33 @@ use crate::{ir::*, types::Type};
 use fnv::{FnvHashMap, FnvHashSet};
 
 pub fn collect_types(module: &Module) -> Vec<Type> {
-    sort_types(
-        &module
-            .variable_declarations()
-            .iter()
-            .map(|declaration| declaration.type_().clone())
-            .chain(
-                module
-                    .function_declarations()
-                    .iter()
-                    .map(|declaration| declaration.type_().clone().into()),
-            )
-            .chain(module.variable_definitions().iter().flat_map(|definition| {
-                Some(definition.type_().clone())
-                    .into_iter()
-                    .chain(collect_from_expression(definition.body()))
-            }))
-            .chain(module.function_definitions().iter().flat_map(|definition| {
-                Some(definition.type_().clone().into())
-                    .into_iter()
-                    .chain(collect_from_block(definition.body()))
-            }))
-            .flat_map(|type_| collect_from_type(&type_))
-            .collect(),
-    )
+    let mut types = FnvHashSet::default();
+
+    for declaration in module.variable_declarations() {
+        types.insert(declaration.type_().clone());
+    }
+
+    for declaration in module.function_declarations() {
+        types.insert(declaration.type_().clone().into());
+    }
+
+    for definition in module.variable_definitions() {
+        types.insert(definition.type_().clone());
+        collect_from_expression(definition.body(), &mut types);
+    }
+
+    for definition in module.function_definitions() {
+        types.insert(definition.type_().clone().into());
+        collect_from_block(definition.body(), &mut types);
+    }
+
+    let mut all_types = FnvHashSet::default();
+
+    for type_ in types {
+        collect_from_type(&type_, &mut all_types);
+    }
+
+    sort_types(&all_types)
 }
 
 fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
@@ -37,7 +40,11 @@ fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
     }
 
     for type_ in types {
-        for child_type in collect_child_types(type_) {
+        let mut children = FnvHashSet::default();
+
+        collect_child_types(type_, &mut children);
+
+        for child_type in children {
             graph.add_edge(indices[&child_type], indices[type_], ());
         }
     }
@@ -49,148 +56,211 @@ fn sort_types(types: &FnvHashSet<Type>) -> Vec<Type> {
         .collect()
 }
 
-fn collect_from_expression(expression: &Expression) -> hamt::Set<Type> {
+fn collect_from_expression(expression: &Expression, types: &mut FnvHashSet<Type>) {
+    let mut collect_from_expression = |expression| collect_from_expression(expression, types);
+
     match expression {
-        Expression::AlignOf(align_of) => [align_of.type_().clone()].into_iter().collect(),
-        Expression::ArithmeticOperation(operation) => [operation.type_().into()]
-            .into_iter()
-            .chain(collect_from_expression(operation.lhs()))
-            .chain(collect_from_expression(operation.rhs()))
-            .collect(),
-        Expression::BitCast(bit_cast) => [bit_cast.from().clone(), bit_cast.to().clone()]
-            .into_iter()
-            .chain(collect_from_expression(bit_cast.expression()))
-            .collect(),
-        Expression::BitwiseNotOperation(operation) => [operation.type_().into()]
-            .into_iter()
-            .chain(collect_from_expression(operation.value()))
-            .collect(),
-        Expression::BitwiseOperation(operation) => [operation.type_().into()]
-            .into_iter()
-            .chain(collect_from_expression(operation.lhs()))
-            .chain(collect_from_expression(operation.rhs()))
-            .collect(),
-        Expression::ComparisonOperation(operation) => [operation.type_().into()]
-            .into_iter()
-            .chain(collect_from_expression(operation.lhs()))
-            .chain(collect_from_expression(operation.rhs()))
-            .collect(),
-        Expression::PointerAddress(address) => [address.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(address.pointer()))
-            .collect(),
-        Expression::Record(record) => [record.type_().clone().into()]
-            .into_iter()
-            .chain(record.fields().iter().flat_map(collect_from_expression))
-            .collect(),
-        Expression::RecordAddress(address) => [address.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(address.pointer()))
-            .collect(),
-        Expression::SizeOf(size_of) => [size_of.type_().clone()].into_iter().collect(),
-        Expression::Union(union) => [union.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(union.member()))
-            .collect(),
-        Expression::UnionAddress(address) => [address.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(address.pointer()))
-            .collect(),
-        Expression::Undefined(undefined) => [undefined.type_().clone()].into_iter().collect(),
-        Expression::Primitive(_) | Expression::Variable(_) => Default::default(),
+        Expression::AlignOf(align_of) => {
+            types.insert(align_of.type_().clone());
+        }
+        Expression::ArithmeticOperation(operation) => {
+            collect_from_expression(operation.lhs());
+            collect_from_expression(operation.rhs());
+
+            types.insert(operation.type_().into());
+        }
+        Expression::BitCast(bit_cast) => {
+            collect_from_expression(bit_cast.expression());
+
+            types.insert(bit_cast.from().clone());
+            types.insert(bit_cast.to().clone());
+        }
+        Expression::BitwiseNotOperation(operation) => {
+            collect_from_expression(operation.value());
+
+            types.insert(operation.type_().into());
+        }
+        Expression::BitwiseOperation(operation) => {
+            collect_from_expression(operation.lhs());
+            collect_from_expression(operation.rhs());
+
+            types.insert(operation.type_().into());
+        }
+        Expression::ComparisonOperation(operation) => {
+            collect_from_expression(operation.lhs());
+            collect_from_expression(operation.rhs());
+
+            types.insert(operation.type_().into());
+        }
+        Expression::PointerAddress(address) => {
+            collect_from_expression(address.pointer());
+
+            types.insert(address.type_().clone().into());
+        }
+        Expression::Record(record) => {
+            for field in record.fields() {
+                collect_from_expression(field)
+            }
+
+            types.insert(record.type_().clone().into());
+        }
+        Expression::RecordAddress(address) => {
+            collect_from_expression(address.pointer());
+
+            types.insert(address.type_().clone().into());
+        }
+        Expression::SizeOf(size_of) => {
+            types.insert(size_of.type_().clone());
+        }
+        Expression::Union(union) => {
+            collect_from_expression(union.member());
+
+            types.insert(union.type_().clone().into());
+        }
+        Expression::UnionAddress(address) => {
+            collect_from_expression(address.pointer());
+
+            types.insert(address.type_().clone().into());
+        }
+        Expression::Undefined(undefined) => {
+            types.insert(undefined.type_().clone());
+        }
+        Expression::Primitive(_) | Expression::Variable(_) => {}
     }
 }
 
-fn collect_from_block(block: &Block) -> hamt::Set<Type> {
-    collect_from_instructions(block.instructions())
-        .into_iter()
-        .chain(collect_from_terminal_instruction(
-            block.terminal_instruction(),
-        ))
-        .collect()
+fn collect_from_block(block: &Block, types: &mut FnvHashSet<Type>) {
+    collect_from_instructions(block.instructions(), types);
+    collect_from_terminal_instruction(block.terminal_instruction(), types);
 }
 
-fn collect_from_instructions(instructions: &[Instruction]) -> hamt::Set<Type> {
-    instructions
-        .iter()
-        .flat_map(collect_from_instruction)
-        .collect()
+fn collect_from_instructions(instructions: &[Instruction], types: &mut FnvHashSet<Type>) {
+    for instruction in instructions {
+        collect_from_instruction(instruction, types);
+    }
 }
 
-fn collect_from_instruction(instruction: &Instruction) -> hamt::Set<Type> {
+fn collect_from_instruction(instruction: &Instruction, types: &mut FnvHashSet<Type>) {
+    let mut collect_from_expression = |expression| collect_from_expression(expression, types);
+
     match instruction {
         Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
-        Instruction::AllocateStack(allocate) => [allocate.type_().clone()].into_iter().collect(),
-        Instruction::AtomicLoad(load) => [load.type_().clone()].into_iter().collect(),
-        Instruction::AtomicOperation(operation) => [operation.type_().into()]
-            .into_iter()
-            .chain(collect_from_expression(operation.pointer()))
-            .chain(collect_from_expression(operation.value()))
-            .collect(),
-        Instruction::AtomicStore(store) => [store.type_().clone()].into_iter().collect(),
-        Instruction::Call(call) => [call.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(call.function()))
-            .chain(call.arguments().iter().flat_map(collect_from_expression))
-            .collect(),
-        Instruction::CompareAndSwap(cas) => [cas.type_().clone()].into_iter().collect(),
-        Instruction::DeconstructRecord(deconstruct) => [deconstruct.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(deconstruct.record()))
-            .collect(),
-        Instruction::DeconstructUnion(deconstruct) => [deconstruct.type_().clone().into()]
-            .into_iter()
-            .chain(collect_from_expression(deconstruct.union()))
-            .collect(),
-        Instruction::Fence(_) => Default::default(),
+        Instruction::AllocateStack(allocate) => {
+            types.insert(allocate.type_().clone());
+        }
+        Instruction::AtomicLoad(load) => {
+            collect_from_expression(load.pointer());
+
+            types.insert(load.type_().clone());
+        }
+        Instruction::AtomicOperation(operation) => {
+            collect_from_expression(operation.pointer());
+            collect_from_expression(operation.value());
+
+            types.insert(operation.type_().into());
+        }
+        Instruction::AtomicStore(store) => {
+            collect_from_expression(store.value());
+            collect_from_expression(store.pointer());
+
+            types.insert(store.type_().clone());
+        }
+        Instruction::Call(call) => {
+            collect_from_expression(call.function());
+
+            for argument in call.arguments() {
+                collect_from_expression(argument);
+            }
+
+            types.insert(call.type_().clone().into());
+        }
+        Instruction::CompareAndSwap(cas) => {
+            collect_from_expression(cas.pointer());
+            collect_from_expression(cas.old_value());
+            collect_from_expression(cas.new_value());
+
+            types.insert(cas.type_().clone());
+        }
+        Instruction::DeconstructRecord(deconstruct) => {
+            collect_from_expression(deconstruct.record());
+
+            types.insert(deconstruct.type_().clone().into());
+        }
+        Instruction::DeconstructUnion(deconstruct) => {
+            collect_from_expression(deconstruct.union());
+
+            types.insert(deconstruct.type_().clone().into());
+        }
+        Instruction::Fence(_) => {}
         Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
-        Instruction::If(if_) => [if_.type_().clone()]
-            .into_iter()
-            .chain(collect_from_expression(if_.condition()))
-            .chain(collect_from_block(if_.then()))
-            .chain(collect_from_block(if_.else_()))
-            .collect(),
-        Instruction::Load(load) => [load.type_().clone()]
-            .into_iter()
-            .chain(collect_from_expression(load.pointer()))
-            .collect(),
-        Instruction::ReallocateHeap(reallocate) => [reallocate.pointer(), reallocate.size()]
-            .into_iter()
-            .flat_map(collect_from_expression)
-            .collect(),
-        Instruction::Store(store) => [store.type_().clone()]
-            .into_iter()
-            .chain(collect_from_expression(store.value()))
-            .chain(collect_from_expression(store.pointer()))
-            .collect(),
+        Instruction::If(if_) => {
+            collect_from_expression(if_.condition());
+            collect_from_block(if_.then(), types);
+            collect_from_block(if_.else_(), types);
+
+            types.insert(if_.type_().clone());
+        }
+        Instruction::Load(load) => {
+            collect_from_expression(load.pointer());
+
+            types.insert(load.type_().clone());
+        }
+        Instruction::ReallocateHeap(reallocate) => {
+            collect_from_expression(reallocate.pointer());
+            collect_from_expression(reallocate.size());
+        }
+        Instruction::Store(store) => {
+            collect_from_expression(store.value());
+            collect_from_expression(store.pointer());
+
+            types.insert(store.type_().clone());
+        }
     }
 }
 
-fn collect_from_terminal_instruction(instruction: &TerminalInstruction) -> hamt::Set<Type> {
+fn collect_from_terminal_instruction(
+    instruction: &TerminalInstruction,
+    types: &mut FnvHashSet<Type>,
+) {
     match instruction {
-        TerminalInstruction::Branch(branch) => [branch.type_().clone()].into_iter().collect(),
-        TerminalInstruction::Return(return_) => [return_.type_().clone()].into_iter().collect(),
-        TerminalInstruction::Unreachable => Default::default(),
+        TerminalInstruction::Branch(branch) => {
+            types.insert(branch.type_().clone());
+        }
+        TerminalInstruction::Return(return_) => {
+            types.insert(return_.type_().clone());
+        }
+        TerminalInstruction::Unreachable => {}
     }
 }
 
-fn collect_from_type(type_: &Type) -> hamt::Set<Type> {
-    [type_.clone()]
-        .into_iter()
-        .chain(collect_child_types(type_))
-        .collect()
+fn collect_from_type(type_: &Type, types: &mut FnvHashSet<Type>) {
+    types.insert(type_.clone());
+    collect_child_types(type_, types);
 }
 
-fn collect_child_types(type_: &Type) -> hamt::Set<Type> {
+fn collect_child_types(type_: &Type, types: &mut FnvHashSet<Type>) {
+    let mut collect_from_type = |type_| collect_from_type(type_, types);
+
     match type_ {
-        Type::Function(function) => collect_from_type(function.result())
-            .into_iter()
-            .chain(function.arguments().iter().flat_map(collect_from_type))
-            .collect(),
-        Type::Primitive(_) => Default::default(),
-        Type::Record(record) => record.fields().iter().flat_map(collect_from_type).collect(),
+        Type::Function(function) => {
+            for argument in function.arguments() {
+                collect_from_type(argument);
+            }
+
+            collect_from_type(function.result());
+        }
+        Type::Primitive(_) => {}
+        Type::Record(record) => {
+            for field in record.fields() {
+                collect_from_type(field);
+            }
+        }
         Type::Pointer(pointer) => collect_from_type(pointer.element()),
-        Type::Union(union) => union.members().iter().flat_map(collect_from_type).collect(),
+        Type::Union(union) => {
+            for member in union.members() {
+                collect_from_type(member);
+            }
+        }
     }
 }
 
