@@ -52,7 +52,7 @@ pub fn compile_to_object(
 }
 
 fn compile_module<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &Module,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
     fmm::analysis::name::check(module)?;
@@ -115,7 +115,7 @@ fn compile_module<'c>(
 }
 
 fn compile_heap_functions<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
 ) -> InstructionFunctionSet<'c> {
     let pointer_type = context
@@ -158,7 +158,7 @@ fn compile_heap_functions<'c>(
 }
 
 fn compile_variable_declaration<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     declaration: &VariableDeclaration,
 ) -> inkwell::values::GlobalValue<'c> {
@@ -170,7 +170,7 @@ fn compile_variable_declaration<'c>(
 }
 
 fn compile_function_declaration<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     declaration: &FunctionDeclaration,
 ) -> inkwell::values::FunctionValue<'c> {
@@ -188,7 +188,7 @@ fn compile_function_declaration<'c>(
 }
 
 fn declare_variable_definition<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
 ) -> inkwell::values::GlobalValue<'c> {
@@ -214,7 +214,7 @@ fn declare_variable_definition<'c>(
 }
 
 fn compile_variable_definition<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
@@ -230,7 +230,7 @@ fn compile_variable_definition<'c>(
 }
 
 fn declare_function_definition<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
 ) -> inkwell::values::FunctionValue<'c> {
@@ -266,7 +266,7 @@ fn declare_function_definition<'c>(
 }
 
 fn compile_function_definition<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,

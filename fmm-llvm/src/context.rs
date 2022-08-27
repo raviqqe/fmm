@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{CompileError, InstructionConfiguration};
 use fmm::types::Type;
 use fnv::FnvHashMap;
@@ -15,7 +17,7 @@ pub struct Context<'c> {
     inkwell: &'c inkwell::context::Context,
     target_machine: inkwell::targets::TargetMachine,
     instruction_configuration: InstructionConfiguration,
-    types: FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>>,
+    types: RefCell<FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>>>,
 }
 
 impl<'c> Context<'c> {
@@ -63,11 +65,7 @@ impl<'c> Context<'c> {
             .ok_or(CompileError::TargetMachineNotCreated)
     }
 
-    pub fn types(&self) -> &FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>> {
+    pub fn types(&self) -> &RefCell<FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>>> {
         &self.types
-    }
-
-    pub fn types_mut(&mut self) -> &mut FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>> {
-        &mut self.types
     }
 }

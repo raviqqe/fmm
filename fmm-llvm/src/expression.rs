@@ -4,7 +4,7 @@ use fmm::ir::*;
 use inkwell::values::BasicValue;
 
 pub fn compile<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
@@ -81,7 +81,7 @@ pub fn compile<'c>(
 }
 
 pub fn compile_constant<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     expression: &Expression,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
 ) -> inkwell::values::BasicValueEnum<'c> {
@@ -171,7 +171,10 @@ pub fn compile_constant<'c>(
     }
 }
 
-fn compile_align_of<'c>(context: &'c Context, align_of: &AlignOf) -> inkwell::values::IntValue<'c> {
+fn compile_align_of<'c>(
+    context: &Context<'c>,
+    align_of: &AlignOf,
+) -> inkwell::values::IntValue<'c> {
     compile_pointer_integer(
         context,
         context
@@ -222,7 +225,7 @@ fn compile_arithmetic_operation<'c>(
 }
 
 fn compile_bit_cast<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     bit_cast: &BitCast,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
@@ -253,7 +256,7 @@ fn compile_bit_cast<'c>(
 }
 
 fn compile_constant_bit_cast<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     bit_cast: &BitCast,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
@@ -354,7 +357,7 @@ fn compile_comparison_operation<'c>(
 }
 
 fn compile_record_address<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     address: &RecordAddress,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
@@ -374,7 +377,7 @@ fn compile_record_address<'c>(
     }
 }
 
-fn compile_size_of<'c>(context: &'c Context, size_of: &SizeOf) -> inkwell::values::IntValue<'c> {
+fn compile_size_of<'c>(context: &Context<'c>, size_of: &SizeOf) -> inkwell::values::IntValue<'c> {
     compile_pointer_integer(
         context,
         context
@@ -385,7 +388,7 @@ fn compile_size_of<'c>(context: &'c Context, size_of: &SizeOf) -> inkwell::value
 }
 
 fn compile_undefined<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     undefined: &Undefined,
 ) -> inkwell::values::BasicValueEnum<'c> {
     match undefined.type_() {
@@ -476,7 +479,7 @@ fn compile_undefined_primitive<'c>(
 }
 
 fn compile_union_address<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     address: &UnionAddress,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
