@@ -44,10 +44,10 @@ pub fn compile_pointer<'c>(
     compile(context, pointer.element()).ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
-pub fn compile_primitive<'c>(
-    context: &'c Context,
+pub fn compile_primitive(
+    context: &Context,
     primitive: types::Primitive,
-) -> inkwell::types::BasicTypeEnum<'c> {
+) -> inkwell::types::BasicTypeEnum {
     match primitive {
         types::Primitive::Boolean => context.inkwell().bool_type().into(),
         types::Primitive::Float32 => context.inkwell().f32_type().into(),
@@ -59,7 +59,7 @@ pub fn compile_primitive<'c>(
     }
 }
 
-pub fn compile_pointer_integer<'c>(context: &'c Context) -> inkwell::types::IntType<'c> {
+pub fn compile_pointer_integer(context: &Context) -> inkwell::types::IntType {
     context
         .inkwell()
         .ptr_sized_int_type(&context.target_machine().get_target_data(), None)
@@ -125,7 +125,7 @@ pub fn compile_union_member_padding<'c>(
     )
 }
 
-fn get_union_size<'c>(context: &'c Context, union: &types::Union) -> u64 {
+fn get_union_size(context: &Context, union: &types::Union) -> u64 {
     let target_data = context.target_machine().get_target_data();
 
     union

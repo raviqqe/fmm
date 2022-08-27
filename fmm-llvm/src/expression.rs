@@ -404,10 +404,7 @@ fn compile_undefined<'c>(
 }
 
 // TODO Is signed options for the const_int method correct?
-fn compile_primitive<'c>(
-    context: &'c Context,
-    primitive: Primitive,
-) -> inkwell::values::BasicValueEnum<'c> {
+fn compile_primitive(context: &Context, primitive: Primitive) -> inkwell::values::BasicValueEnum {
     match primitive {
         Primitive::Boolean(boolean) => context
             .inkwell()
@@ -441,10 +438,7 @@ fn compile_primitive<'c>(
     }
 }
 
-pub fn compile_pointer_integer<'c>(
-    context: &'c Context,
-    number: u64,
-) -> inkwell::values::IntValue<'c> {
+pub fn compile_pointer_integer(context: &Context, number: u64) -> inkwell::values::IntValue {
     type_::compile_pointer_integer(context).const_int(number, false)
 }
 
@@ -463,10 +457,10 @@ fn compile_pointer_address<'c>(
 }
 
 // TODO Refactor this by matching with types::Primitive directly.
-fn compile_undefined_primitive<'c>(
-    context: &'c Context,
+fn compile_undefined_primitive(
+    context: &Context,
     type_: fmm::types::Primitive,
-) -> inkwell::values::BasicValueEnum<'c> {
+) -> inkwell::values::BasicValueEnum {
     match type_::compile_primitive(context, type_) {
         inkwell::types::BasicTypeEnum::FloatType(float) => float.const_zero().into(),
         inkwell::types::BasicTypeEnum::IntType(integer) => integer.const_zero().into(),
