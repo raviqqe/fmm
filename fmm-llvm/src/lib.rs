@@ -12,15 +12,6 @@ pub use error::CompileError;
 use fmm::ir::*;
 pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
-use once_cell::sync::Lazy;
-
-static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
-    inkwell::targets::TargetMachine::get_default_triple()
-        .as_str()
-        .to_str()
-        .unwrap()
-        .into()
-});
 
 pub fn compile_to_bit_code(
     module: &Module,
@@ -50,33 +41,12 @@ pub fn compile_to_object(
         .to_vec())
 }
 
-fn create_target_machine(
-    target_triple: Option<&str>,
-) -> Result<inkwell::targets::TargetMachine, CompileError> {
-    inkwell::targets::Target::initialize_all(&inkwell::targets::InitializationConfig::default());
-    let target_triple =
-        inkwell::targets::TargetTriple::create(target_triple.unwrap_or(&DEFAULT_TARGET_TRIPLE));
-
-    inkwell::targets::Target::from_triple(&target_triple)?
-        .create_target_machine(
-            &target_triple,
-            "",
-            "",
-            inkwell::OptimizationLevel::Aggressive,
-            inkwell::targets::RelocMode::Default,
-            inkwell::targets::CodeModel::Default,
-        )
-        .ok_or(CompileError::TargetMachineNotCreated)
-}
-
 fn compile_module<'c>(
     context: &'c Context,
     module: &Module,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
     fmm::analysis::name::check(module)?;
     fmm::analysis::check_types(module)?;
-
-    let target_data = context.target_machine().get_target_data();
 
     let llvm_module = context.inkwell().create_module("");
     llvm_module.set_triple(&context.target_machine().get_triple());
@@ -86,7 +56,7 @@ fn compile_module<'c>(
     let instruction_function_set = compile_heap_functions(context, &llvm_module);
 
     for declaration in module.variable_declarations() {
-        let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
+        let global = compile_variable_declaration(context, &llvm_module, declaration);
 
         variables = variables.insert(declaration.name(), global.as_pointer_value().into());
     }
@@ -342,6 +312,7 @@ fn compiled_address_named(address_named: bool) -> inkwell::values::UnnamedAddres
 mod tests {
     use super::{instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION, *};
     use fmm::types::{self, CallingConvention, Type};
+    use once_cell::sync::Lazy;
 
     const POINTER_64_BIT_TARGETS: &[&str] = &[
         "x86_64-unknown-linux-gnu",

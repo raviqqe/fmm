@@ -59,7 +59,7 @@ pub fn compile_primitive<'c>(
     }
 }
 
-pub fn compile_pointer_integer<'c>(context: &Context) -> inkwell::types::IntType<'c> {
+pub fn compile_pointer_integer<'c>(context: &'c Context) -> inkwell::types::IntType<'c> {
     context
         .inkwell()
         .ptr_sized_int_type(&context.target_machine().get_target_data(), None)
