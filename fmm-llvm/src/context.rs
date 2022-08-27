@@ -9,19 +9,20 @@ static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
         .into()
 });
 
-pub struct Context {
-    inkwell: inkwell::context::Context,
+pub struct Context<'c> {
+    inkwell: &'c inkwell::context::Context,
     target_machine: inkwell::targets::TargetMachine,
     instruction_configuration: InstructionConfiguration,
 }
 
-impl Context {
+impl<'c> Context<'c> {
     pub fn new(
+        inkwell_context: &'c inkwell::context::Context,
         target_triple: Option<&str>,
         instruction_configuration: InstructionConfiguration,
     ) -> Result<Self, CompileError> {
         Ok(Self {
-            inkwell: inkwell::context::Context::create(),
+            inkwell: inkwell_context,
             target_machine: Self::create_target_machine(target_triple)?,
             instruction_configuration,
         })
