@@ -35,7 +35,7 @@ impl<'c> Context<'c> {
     }
 
     pub fn inkwell(&self) -> &'c inkwell::context::Context {
-        &self.inkwell
+        self.inkwell
     }
 
     pub fn target_machine(&self) -> &inkwell::targets::TargetMachine {

@@ -5,6 +5,7 @@ use inkwell::types::BasicType;
 pub const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
 
 pub fn compile<'c>(context: &Context<'c>, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
+    // We cache compiled types for optimization because there are too many of them.
     if let Some(&type_) = context.types().borrow().get(type_) {
         return type_;
     }
