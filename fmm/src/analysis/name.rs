@@ -3,39 +3,49 @@ use crate::ir::*;
 use fnv::FnvHashSet;
 
 pub fn check(module: &Module) -> Result<(), TypeCheckError> {
-    let variable_declaration_names = module
-        .variable_declarations()
+    let variable_definition_names = module
+        .variable_definitions()
         .iter()
-        .map(|declaration| declaration.name())
-        .collect();
-    let function_declaration_names = module
-        .function_declarations()
+        .map(|definition| definition.name())
+        .collect::<FnvHashSet<_>>();
+    let function_definition_names = module
+        .function_definitions()
         .iter()
-        .map(|declaration| declaration.name())
-        .collect();
+        .map(|definition| definition.name())
+        .collect::<FnvHashSet<_>>();
 
     let mut names = FnvHashSet::default();
-
-    for declaration in module.variable_declarations() {
-        check_name(declaration.name(), &mut names);
-    }
+    let mut declaration_names = FnvHashSet::default();
 
     for definition in module.variable_definitions() {
-        check_name(definition.name(), &mut names);
+        check_name(definition.name(), &mut names)?;
     }
 
-    for declaration in module.function_declarations() {
-        check_name(declaration.name(), &mut names);
+    for declaration in module.variable_declarations() {
+        if !variable_definition_names.contains(declaration.name()) {
+            check_name(declaration.name(), &mut names)?;
+        }
+
+        check_name(declaration.name(), &mut declaration_names)?;
     }
 
     for definition in module.function_definitions() {
-        check_name(definition.name(), &mut names);
+        check_name(definition.name(), &mut names)?;
+    }
+
+    for declaration in module.function_declarations() {
+        if !function_definition_names.contains(declaration.name()) {
+            check_name(declaration.name(), &mut names)?;
+        }
+
+        check_name(declaration.name(), &mut declaration_names)?;
     }
 
     Ok(())
 }
 
-fn check_name(name: &str, names: &mut FnvHashSet<&str>) -> Result<(), TypeCheckError> {
+fn check_name<'a>(name: &'a str, names: &mut FnvHashSet<&'a str>) -> Result<(), TypeCheckError> {
+    dbg!(&names, name);
     if names.contains(name) {
         return Err(TypeCheckError::DuplicateNames(name.into()));
     }
