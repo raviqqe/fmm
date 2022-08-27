@@ -13,7 +13,6 @@ use crate::{
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
-const RESULT_NAME: &str = "_result";
 
 struct Context<'a> {
     cps: &'a CpsContext,
@@ -107,23 +106,30 @@ fn transform_instructions(
     Ok(match instructions {
         [] => match terminal_instruction {
             TerminalInstruction::Branch(_) => unreachable!(),
-            TerminalInstruction::Return(return_) => (
-                vec![Call::new(
-                    continuation_type_compiler::compile(return_.type_(), context.cps.result_type()),
-                    Variable::new(CONTINUATION_ARGUMENT_NAME),
-                    vec![
-                        Variable::new(STACK_ARGUMENT_NAME).into(),
-                        return_.expression().clone(),
-                    ],
-                    RESULT_NAME,
+            TerminalInstruction::Return(return_) => {
+                let result_name = context.cps.name_generator().borrow_mut().generate();
+
+                (
+                    vec![Call::new(
+                        continuation_type_compiler::compile(
+                            return_.type_(),
+                            context.cps.result_type(),
+                        ),
+                        Variable::new(CONTINUATION_ARGUMENT_NAME),
+                        vec![
+                            Variable::new(STACK_ARGUMENT_NAME).into(),
+                            return_.expression().clone(),
+                        ],
+                        &result_name,
+                    )
+                    .into()],
+                    Return::new(
+                        context.cps.result_type().clone(),
+                        Variable::new(result_name),
+                    )
+                    .into(),
                 )
-                .into()],
-                Return::new(
-                    context.cps.result_type().clone(),
-                    Variable::new(RESULT_NAME),
-                )
-                .into(),
-            ),
+            }
             TerminalInstruction::Unreachable => (vec![], TerminalInstruction::Unreachable),
         },
         [instruction, ..] => {
@@ -153,6 +159,8 @@ fn transform_instructions(
                         )?;
                     }
 
+                    let result_name = context.cps.name_generator().borrow_mut().generate();
+
                     return Ok((
                         builder
                             .into_instructions()
@@ -177,13 +185,13 @@ fn transform_instructions(
                                 .into_iter()
                                 .chain(call.arguments().iter().cloned())
                                 .collect(),
-                                RESULT_NAME,
+                                &result_name,
                             )
                             .into()])
                             .collect(),
                         Return::new(
                             context.cps.result_type().clone(),
-                            Variable::new(RESULT_NAME),
+                            Variable::new(result_name),
                         )
                         .into(),
                     ));
