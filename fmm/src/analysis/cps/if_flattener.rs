@@ -78,12 +78,12 @@ fn transform_block(
     Block::new(instructions, terminal_instruction)
 }
 
-fn transform_instructions(
+fn transform_instructions<'a>(
     context: &mut Context,
-    instructions: &[Instruction],
+    instructions: &'a [Instruction],
     terminal_instruction: &TerminalInstruction,
     result_type: &Type,
-    local_variables: &FnvHashMap<&str, Type>,
+    local_variables: &mut FnvHashMap<&'a str, Type>,
 ) -> (Vec<Instruction>, TerminalInstruction) {
     match instructions {
         [] => (vec![], terminal_instruction.clone()),
@@ -129,7 +129,7 @@ fn transform_instructions(
                 let environment = get_continuation_environment(
                     instructions,
                     terminal_instruction,
-                    &mut local_variables,
+                    local_variables,
                 );
                 let continuation = create_continuation(
                     context,
@@ -173,7 +173,7 @@ fn transform_instructions(
                     instructions,
                     terminal_instruction,
                     result_type,
-                    &mut local_variables,
+                    local_variables,
                 );
 
                 (
@@ -285,7 +285,7 @@ fn create_continuation(
         context,
         &Block::new(instructions.to_vec(), terminal_instruction.clone()),
         result_type,
-        &environment.iter().cloned().collect(),
+        &mut environment.iter().cloned().collect(),
     );
 
     context.function_definitions.push(FunctionDefinition::new(
