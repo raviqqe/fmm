@@ -41,6 +41,53 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
         check_name(declaration.name(), &mut declaration_names)?;
     }
 
+    for definition in module.function_definitions() {
+        check_block(definition.body(), &mut names)?;
+    }
+
+    Ok(())
+}
+
+fn check_block<'a>(
+    block: &'a Block,
+    variables: &mut FnvHashSet<&'a str>,
+) -> Result<(), TypeCheckError> {
+    for instruction in block.instructions() {
+        check_instruction(instruction, variables)?;
+    }
+
+    Ok(())
+}
+
+fn check_instruction<'a>(
+    instruction: &'a Instruction,
+    names: &mut FnvHashSet<&'a str>,
+) -> Result<(), TypeCheckError> {
+    match instruction {
+        Instruction::If(if_) => {
+            check_block(if_.then(), names)?;
+            check_block(if_.else_(), names)?;
+        }
+        Instruction::AllocateHeap(_)
+        | Instruction::AllocateStack(_)
+        | Instruction::AtomicLoad(_)
+        | Instruction::AtomicOperation(_)
+        | Instruction::AtomicStore(_)
+        | Instruction::Call(_)
+        | Instruction::CompareAndSwap(_)
+        | Instruction::DeconstructRecord(_)
+        | Instruction::DeconstructUnion(_)
+        | Instruction::Fence(_)
+        | Instruction::FreeHeap(_)
+        | Instruction::Load(_)
+        | Instruction::ReallocateHeap(_)
+        | Instruction::Store(_) => {}
+    }
+
+    if let Some((name, _)) = instruction.value() {
+        check_name(name, names)?
+    }
+
     Ok(())
 }
 
@@ -238,5 +285,65 @@ mod tests {
             check(&module),
             Err(TypeCheckError::DuplicateNames("f".into()))
         );
+    }
+
+    #[test]
+    fn check_duplicate_names_in_instructions() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        AllocateStack::new(types::Primitive::PointerInteger, "x").into(),
+                        AllocateStack::new(types::Primitive::PointerInteger, "x").into(),
+                    ],
+                    TerminalInstruction::Unreachable,
+                ),
+                Default::default(),
+            )],
+        );
+
+        assert_eq!(
+            check(&module),
+            Err(TypeCheckError::DuplicateNames("x".into()))
+        );
+    }
+
+    #[test]
+    fn check_duplicate_names_in_instructions_in_different_function_definitions() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![
+                FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default(),
+                ),
+                FunctionDefinition::new(
+                    "g",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default(),
+                ),
+            ],
+        );
+
+        assert_eq!(check(&module), Ok(()));
     }
 }
