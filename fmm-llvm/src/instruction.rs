@@ -1,5 +1,5 @@
 use crate::{
-    calling_convention, error::CompileError, expression,
+    calling_convention, context::Context, error::CompileError, expression,
     instruction_configuration::InstructionFunctionSet, type_, union::compile_union_cast,
 };
 use fmm::ir::*;
@@ -7,23 +7,21 @@ use inkwell::values::BasicValue;
 use std::convert::TryFrom;
 
 pub fn compile_block<'c>(
+    context: &'c Context,
     builder: &inkwell::builder::Builder<'c>,
     block: &Block,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let mut variables = variables.clone();
 
     for instruction in block.instructions() {
         let value = compile_instruction(
+            context,
             builder,
             instruction,
             &variables,
-            context,
-            target_data,
             instruction_function_set,
         )?;
 
@@ -35,12 +33,11 @@ pub fn compile_block<'c>(
     }
 
     Ok(compile_terminal_instruction(
+        context,
         builder,
         block.terminal_instruction(),
         destination,
         &variables,
-        context,
-        target_data,
         instruction_function_set,
     ))
 }
@@ -265,16 +262,15 @@ fn compile_instruction<'c>(
 }
 
 fn compile_terminal_instruction<'c>(
+    context: &'c Context,
     builder: &inkwell::builder::Builder<'c>,
     instruction: &TerminalInstruction,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
     let compile_expression =
-        |expression| expression::compile(builder, expression, variables, context, target_data);
+        |expression| expression::compile(context, builder, expression, variables);
 
     match instruction {
         TerminalInstruction::Branch(branch) => {

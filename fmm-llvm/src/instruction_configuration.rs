@@ -1,6 +1,7 @@
 #[cfg(test)]
 use once_cell::sync::Lazy;
 
+#[derive(Clone)]
 pub struct InstructionConfiguration {
     pub allocate_function_name: String,
     pub reallocate_function_name: String,

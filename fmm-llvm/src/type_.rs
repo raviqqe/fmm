@@ -1,28 +1,24 @@
+use crate::context::Context;
 use fmm::types::{self, Type};
 use inkwell::types::BasicType;
 
 pub const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
 
-pub fn compile<'c>(
-    type_: &Type,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
-) -> inkwell::types::BasicTypeEnum<'c> {
+pub fn compile<'c>(context: &'c Context, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
     match type_ {
-        Type::Function(function) => compile_function_pointer(function, context, target_data).into(),
-        Type::Primitive(primitive) => compile_primitive(*primitive, context, target_data),
-        Type::Record(record) => compile_record(record, context, target_data).into(),
-        Type::Pointer(pointer) => compile_pointer(pointer, context, target_data).into(),
-        Type::Union(union) => compile_union(union, context, target_data).into(),
+        Type::Function(function) => compile_function_pointer(context, function).into(),
+        Type::Primitive(primitive) => compile_primitive(context, *primitive),
+        Type::Record(record) => compile_record(context, record).into(),
+        Type::Pointer(pointer) => compile_pointer(context, pointer).into(),
+        Type::Union(union) => compile_union(context, union).into(),
     }
 }
 
 pub fn compile_function<'c>(
+    context: &'c Context,
     function: &types::Function,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::FunctionType<'c> {
-    let compile_type = |type_| compile(type_, context, target_data);
+    let compile_type = |type_| compile(context, type_);
 
     compile_type(function.result()).fn_type(
         &function
@@ -35,68 +31,63 @@ pub fn compile_function<'c>(
 }
 
 pub fn compile_function_pointer<'c>(
+    context: &'c Context,
     function: &types::Function,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::PointerType<'c> {
-    compile_function(function, context, target_data).ptr_type(DEFAULT_ADDRESS_SPACE)
+    compile_function(context, function).ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
 pub fn compile_pointer<'c>(
+    context: &'c Context,
     pointer: &types::Pointer,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::PointerType<'c> {
-    compile(pointer.element(), context, target_data).ptr_type(DEFAULT_ADDRESS_SPACE)
+    compile(context, pointer.element()).ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
 pub fn compile_primitive<'c>(
+    context: &'c Context,
     primitive: types::Primitive,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::BasicTypeEnum<'c> {
     match primitive {
-        types::Primitive::Boolean => context.bool_type().into(),
-        types::Primitive::Float32 => context.f32_type().into(),
-        types::Primitive::Float64 => context.f64_type().into(),
-        types::Primitive::Integer8 => context.i8_type().into(),
-        types::Primitive::Integer32 => context.i32_type().into(),
-        types::Primitive::Integer64 => context.i64_type().into(),
-        types::Primitive::PointerInteger => compile_pointer_integer(context, target_data).into(),
+        types::Primitive::Boolean => context.inkwell().bool_type().into(),
+        types::Primitive::Float32 => context.inkwell().f32_type().into(),
+        types::Primitive::Float64 => context.inkwell().f64_type().into(),
+        types::Primitive::Integer8 => context.inkwell().i8_type().into(),
+        types::Primitive::Integer32 => context.inkwell().i32_type().into(),
+        types::Primitive::Integer64 => context.inkwell().i64_type().into(),
+        types::Primitive::PointerInteger => compile_pointer_integer(context).into(),
     }
 }
 
-pub fn compile_pointer_integer<'c>(
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
-) -> inkwell::types::IntType<'c> {
-    context.ptr_sized_int_type(target_data, None)
+pub fn compile_pointer_integer<'c>(context: &Context) -> inkwell::types::IntType<'c> {
+    context
+        .inkwell()
+        .ptr_sized_int_type(&context.target_machine().get_target_data(), None)
 }
 
 pub fn compile_record<'c>(
+    context: &'c Context,
     record: &types::Record,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::StructType<'c> {
-    let compile_type = |type_| compile(type_, context, target_data);
+    let compile_type = |type_| compile(context, type_);
 
-    context.struct_type(
+    context.inkwell().struct_type(
         &record.fields().iter().map(compile_type).collect::<Vec<_>>(),
         false,
     )
 }
 
 pub fn compile_union<'c>(
+    context: &'c Context,
     union: &types::Union,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::StructType<'c> {
-    let integer_type = context.ptr_sized_int_type(target_data, None);
+    let target_data = context.target_machine().get_target_data();
+    let integer_type = context.inkwell().ptr_sized_int_type(&target_data, None);
 
-    context.struct_type(
+    context.inkwell().struct_type(
         &[integer_type
             .array_type(get_pointer_integer_array_size(
-                get_union_size(union, context, target_data) as usize,
+                get_union_size(context, union) as usize,
                 target_data.get_store_size(&integer_type) as usize,
             ) as u32)
             .into()],
@@ -105,43 +96,42 @@ pub fn compile_union<'c>(
 }
 
 pub fn compile_union_member<'c>(
+    context: &'c Context,
     union: &types::Union,
     member_index: usize,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::StructType<'c> {
-    context.struct_type(
+    context.inkwell().struct_type(
         &[
-            compile(&union.members()[member_index], context, target_data),
-            compile_union_member_padding(union, member_index, context, target_data).into(),
+            compile(context, &union.members()[member_index]),
+            compile_union_member_padding(context, union, member_index).into(),
         ],
         false,
     )
 }
 
 pub fn compile_union_member_padding<'c>(
+    context: &'c Context,
     union: &types::Union,
     member_index: usize,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::types::ArrayType<'c> {
-    let member_type = compile(&union.members()[member_index], context, target_data);
+    let member_type = compile(context, &union.members()[member_index]);
 
-    context.i8_type().array_type(
-        (get_union_size(union, context, target_data) - target_data.get_store_size(&member_type))
-            as u32,
+    context.inkwell().i8_type().array_type(
+        (get_union_size(context, union)
+            - context
+                .target_machine()
+                .get_target_data()
+                .get_store_size(&member_type)) as u32,
     )
 }
 
-fn get_union_size<'c>(
-    union: &types::Union,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
-) -> u64 {
+fn get_union_size<'c>(context: &'c Context, union: &types::Union) -> u64 {
+    let target_data = context.target_machine().get_target_data();
+
     union
         .members()
         .iter()
-        .map(|type_| target_data.get_store_size(&compile(type_, context, target_data)))
+        .map(|type_| target_data.get_store_size(&compile(context, type_)))
         .max()
         .unwrap()
 }

@@ -1,4 +1,5 @@
 mod calling_convention;
+mod context;
 mod error;
 mod expression;
 mod instruction;
@@ -6,6 +7,7 @@ mod instruction_configuration;
 mod type_;
 mod union;
 
+use context::Context;
 pub use error::CompileError;
 use fmm::ir::*;
 pub use instruction_configuration::InstructionConfiguration;
@@ -25,10 +27,8 @@ pub fn compile_to_bit_code(
     instruction_configuration: &InstructionConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
-    let target_machine = create_target_machine(target_triple)?;
-    let context = inkwell::context::Context::create();
-
-    let module = compile_module(&context, &target_machine, module, instruction_configuration)?;
+    let context = Context::new(target_triple, instruction_configuration.clone())?;
+    let module = compile_module(&context, module)?;
 
     Ok(module.write_bitcode_to_memory().as_slice().to_vec())
 }
@@ -38,14 +38,13 @@ pub fn compile_to_object(
     instruction_configuration: &InstructionConfiguration,
     target_triple: Option<&str>,
 ) -> Result<Vec<u8>, CompileError> {
-    let target_machine = create_target_machine(target_triple)?;
-    let context = inkwell::context::Context::create();
-
-    let module = compile_module(&context, &target_machine, module, instruction_configuration)?;
+    let context = Context::new(target_triple, instruction_configuration.clone())?;
+    let module = compile_module(&context, module)?;
 
     // TODO How can I set something equivalent to llvm::GuaranteedTailCallOpt in
     // C++? https://llvm.org/docs/LangRef.html#call-instruction
-    Ok(target_machine
+    Ok(context
+        .target_machine()
         .write_to_memory_buffer(&module, inkwell::targets::FileType::Object)?
         .as_slice()
         .to_vec())
@@ -71,27 +70,20 @@ fn create_target_machine(
 }
 
 fn compile_module<'c>(
-    context: &'c inkwell::context::Context,
-    target_machine: &inkwell::targets::TargetMachine,
+    context: &'c Context,
     module: &Module,
-    instruction_configuration: &InstructionConfiguration,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
     fmm::analysis::name::check(module)?;
     fmm::analysis::check_types(module)?;
 
-    let target_data = target_machine.get_target_data();
+    let target_data = context.target_machine().get_target_data();
 
-    let llvm_module = context.create_module("");
-    llvm_module.set_triple(&target_machine.get_triple());
+    let llvm_module = context.inkwell().create_module("");
+    llvm_module.set_triple(&context.target_machine().get_triple());
 
     let mut variables = hamt::Map::new();
 
-    let instruction_function_set = compile_heap_functions(
-        &llvm_module,
-        instruction_configuration,
-        context,
-        &target_data,
-    );
+    let instruction_function_set = compile_heap_functions(context, &llvm_module);
 
     for declaration in module.variable_declarations() {
         let global = compile_variable_declaration(&llvm_module, declaration, context, &target_data);
@@ -100,8 +92,7 @@ fn compile_module<'c>(
     }
 
     for declaration in module.function_declarations() {
-        let function =
-            compile_function_declaration(&llvm_module, declaration, context, &target_data);
+        let function = compile_function_declaration(context, &llvm_module, declaration);
 
         variables = variables.insert(
             declaration.name(),
@@ -110,13 +101,13 @@ fn compile_module<'c>(
     }
 
     for definition in module.variable_definitions() {
-        let global = declare_variable_definition(&llvm_module, definition, context, &target_data);
+        let global = declare_variable_definition(context, &llvm_module, definition);
 
         variables = variables.insert(definition.name(), global.as_pointer_value().into());
     }
 
     for definition in module.function_definitions() {
-        let function = declare_function_definition(&llvm_module, definition, context, &target_data);
+        let function = declare_function_definition(context, &llvm_module, definition);
 
         variables = variables.insert(
             definition.name(),
@@ -125,16 +116,15 @@ fn compile_module<'c>(
     }
 
     for definition in module.variable_definitions() {
-        compile_variable_definition(&llvm_module, definition, &variables, context, &target_data);
+        compile_variable_definition(context, &llvm_module, definition, &variables);
     }
 
     for definition in module.function_definitions() {
         compile_function_definition(
+            context,
             &llvm_module,
             definition,
             &variables,
-            context,
-            &target_data,
             &instruction_function_set,
         )?;
     }
@@ -145,59 +135,68 @@ fn compile_module<'c>(
 }
 
 fn compile_heap_functions<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
-    instruction_configuration: &InstructionConfiguration,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> InstructionFunctionSet<'c> {
-    let pointer_type = context.i8_type().ptr_type(type_::DEFAULT_ADDRESS_SPACE);
-    let pointer_integer_type = type_::compile_pointer_integer(context, target_data);
+    let pointer_type = context
+        .inkwell()
+        .i8_type()
+        .ptr_type(type_::DEFAULT_ADDRESS_SPACE);
+    let pointer_integer_type = type_::compile_pointer_integer(context);
 
     InstructionFunctionSet {
         allocate_function: module.add_function(
-            &instruction_configuration.allocate_function_name,
+            &context.instruction_configuration().allocate_function_name,
             pointer_type.fn_type(&[pointer_integer_type.into()], false),
             None,
         ),
         reallocate_function: module.add_function(
-            &instruction_configuration.reallocate_function_name,
+            &context.instruction_configuration().reallocate_function_name,
             pointer_type.fn_type(&[pointer_type.into(), pointer_integer_type.into()], false),
             None,
         ),
         free_function: module.add_function(
-            &instruction_configuration.free_function_name,
-            context.void_type().fn_type(&[pointer_type.into()], false),
+            &context.instruction_configuration().free_function_name,
+            context
+                .inkwell()
+                .void_type()
+                .fn_type(&[pointer_type.into()], false),
             None,
         ),
-        unreachable_function: instruction_configuration
+        unreachable_function: context
+            .instruction_configuration()
             .unreachable_function_name
             .as_ref()
-            .map(|name| module.add_function(name, context.void_type().fn_type(&[], false), None)),
+            .map(|name| {
+                module.add_function(
+                    name,
+                    context.inkwell().void_type().fn_type(&[], false),
+                    None,
+                )
+            }),
     }
 }
 
 fn compile_variable_declaration<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
     declaration: &VariableDeclaration,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
     module.add_global(
-        type_::compile(declaration.type_(), context, target_data),
+        type_::compile(context, declaration.type_()),
         None,
         declaration.name(),
     )
 }
 
 fn compile_function_declaration<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
     declaration: &FunctionDeclaration,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::FunctionValue<'c> {
     let function = module.add_function(
         declaration.name(),
-        type_::compile_function(declaration.type_(), context, target_data),
+        type_::compile_function(context, declaration.type_()),
         None,
     );
 
@@ -209,14 +208,13 @@ fn compile_function_declaration<'c>(
 }
 
 fn declare_variable_definition<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::GlobalValue<'c> {
     let global = module.get_global(definition.name()).unwrap_or_else(|| {
         module.add_global(
-            type_::compile(definition.type_(), context, target_data),
+            type_::compile(context, definition.type_()),
             None,
             definition.name(),
         )
@@ -236,33 +234,30 @@ fn declare_variable_definition<'c>(
 }
 
 fn compile_variable_definition<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) {
     module
         .get_global(definition.name())
         .unwrap()
         .set_initializer(&expression::compile_constant(
+            context,
             definition.body(),
             variables,
-            context,
-            target_data,
         ));
 }
 
 fn declare_function_definition<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
 ) -> inkwell::values::FunctionValue<'c> {
     let function = module.get_function(definition.name()).unwrap_or_else(|| {
         module.add_function(
             definition.name(),
-            type_::compile_function(definition.type_(), context, target_data),
+            type_::compile_function(context, definition.type_()),
             Some(compile_linkage(definition.options().linkage())),
         )
     });
@@ -291,19 +286,19 @@ fn declare_function_definition<'c>(
 }
 
 fn compile_function_definition<'c>(
+    context: &'c Context,
     module: &inkwell::module::Module<'c>,
     definition: &FunctionDefinition,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
-    context: &'c inkwell::context::Context,
-    target_data: &inkwell::targets::TargetData,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<(), CompileError> {
     let function = module.get_function(definition.name()).unwrap();
-    let builder = context.create_builder();
+    let builder = context.inkwell().create_builder();
 
-    builder.position_at_end(context.append_basic_block(function, "entry"));
+    builder.position_at_end(context.inkwell().append_basic_block(function, "entry"));
 
     instruction::compile_block(
+        context,
         &builder,
         definition.body(),
         None,
@@ -319,8 +314,6 @@ fn compile_function_definition<'c>(
                     )
                 }),
         ),
-        context,
-        target_data,
         instruction_function_set,
     )?;
 
