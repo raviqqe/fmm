@@ -7,7 +7,7 @@ mod renaming;
 mod type_;
 
 pub use error::*;
-use fmm::{analysis::collect_types, ir::*};
+use fmm::ir::*;
 use fnv::{FnvHashMap, FnvHashSet};
 pub use instruction_configuration::InstructionConfiguration;
 
@@ -24,7 +24,7 @@ pub fn compile(
     instruction_configuration: Option<InstructionConfiguration>,
 ) -> Result<String, CompileError> {
     fmm::analysis::name::check(module)?;
-    fmm::analysis::check_types(module)?;
+    fmm::analysis::type_check::check(module)?;
 
     let module = renaming::rename(module);
     let global_variables = module
@@ -38,7 +38,7 @@ pub fn compile(
                 .map(|declaration| declaration.name().into()),
         )
         .collect();
-    let types = collect_types(&module);
+    let types = fmm::analysis::type_collection::collect(&module);
     let type_ids = compile_type_ids(&types);
 
     // TODO Refactor this if possible. This is to avoid prototype declaration
@@ -75,7 +75,7 @@ pub fn compile(
             ]
         }))
         .chain(
-            collect_types(&module)
+            fmm::analysis::type_collection::collect(&module)
                 .iter()
                 .filter_map(|type_| match type_ {
                     fmm::types::Type::Record(record) => {
@@ -321,7 +321,7 @@ mod tests {
 
     fn compile_module(module: &Module) {
         compile_final_module(module);
-        compile_final_module(&fmm::analysis::transform_to_cps(module, types::void_type()).unwrap());
+        compile_final_module(&fmm::analysis::cps::transform(module, types::void_type()).unwrap());
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {

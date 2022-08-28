@@ -1,12 +1,12 @@
 use super::stack::stack_type;
 use crate::{
-    analysis::{convert_types, cps::continuation_type_compiler},
+    analysis::{cps::continuation_type_compiler, type_conversion},
     ir::*,
     types::{self, CallingConvention, Type},
 };
 
 pub fn transform(module: &Module, continuation_result_type: &Type) -> Module {
-    convert_types(module, &|type_| match type_ {
+    type_conversion::convert(module, &|type_| match type_ {
         Type::Function(function) => {
             transform_function_type(function, continuation_result_type).into()
         }

@@ -1,6 +1,6 @@
 use crate::ir::*;
 
-pub fn rename_names(module: &Module, rename: impl Fn(&str) -> String) -> Module {
+pub fn rename(module: &Module, rename: impl Fn(&str) -> String) -> Module {
     Module::new(
         module
             .variable_declarations()
@@ -287,7 +287,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_names(
+            rename(
                 &Module::new(
                     vec![VariableDeclaration::new(
                         "x",
@@ -329,7 +329,7 @@ mod tests {
         let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_names(
+            rename(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("x", function_type.clone())],
@@ -365,7 +365,7 @@ mod tests {
         let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_names(
+            rename(
                 &Module::new(
                     vec![],
                     vec![],
@@ -411,7 +411,7 @@ mod tests {
         let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_names(
+            rename(
                 &Module::new(
                     vec![],
                     vec![],
@@ -447,7 +447,7 @@ mod tests {
         let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
         assert_eq!(
-            rename_names(
+            rename(
                 &Module::new(
                     vec![],
                     vec![],
@@ -487,7 +487,7 @@ mod tests {
     #[test]
     fn rename_arguments_in_function_definition() {
         assert_eq!(
-            rename_names(
+            rename(
                 &Module::new(
                     vec![],
                     vec![],

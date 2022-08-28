@@ -1,5 +1,4 @@
-use super::super::TypeCheckError;
-use crate::{build::BuildError, ir::*};
+use crate::{analysis::type_check::TypeCheckError, build::BuildError, ir::*};
 use std::{
     error::Error,
     fmt::{self, Display, Formatter},
