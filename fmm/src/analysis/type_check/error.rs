@@ -6,7 +6,6 @@ use std::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeCheckError {
-    DuplicateNames(String),
     FunctionArguments(Call),
     IndexOutOfRange,
     InvalidBranch(Branch),
