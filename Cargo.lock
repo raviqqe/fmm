@@ -219,6 +219,7 @@ name = "fmm-llvm"
 version = "0.1.0"
 dependencies = [
  "fmm",
+ "fnv",
  "hamt",
  "inkwell",
  "llvm-sys",

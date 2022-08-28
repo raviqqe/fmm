@@ -7,7 +7,7 @@ use inkwell::values::BasicValue;
 use std::convert::TryFrom;
 
 pub fn compile_block<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     block: &Block,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
@@ -43,7 +43,7 @@ pub fn compile_block<'c>(
 }
 
 fn compile_instruction<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     instruction: &Instruction,
     variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
@@ -262,7 +262,7 @@ fn compile_instruction<'c>(
 }
 
 fn compile_terminal_instruction<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     instruction: &TerminalInstruction,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
