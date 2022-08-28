@@ -34,8 +34,10 @@ pub fn transform(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analysis::format;
-    use crate::types::{self, void_type, CallingConvention, Type};
+    use crate::{
+        analysis::format,
+        types::{self, void_type, CallingConvention, Type},
+    };
     use stack::stack_type;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
