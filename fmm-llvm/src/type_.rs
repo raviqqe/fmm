@@ -4,18 +4,30 @@ use inkwell::types::BasicType;
 
 pub const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
 
-pub fn compile<'c>(context: &'c Context, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
-    match type_ {
+pub fn compile<'c>(context: &Context<'c>, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
+    // We cache compiled types for optimization because there are too many of them.
+    if let Some(&type_) = context.types().borrow().get(type_) {
+        return type_;
+    }
+
+    let llvm_type = match type_ {
         Type::Function(function) => compile_function_pointer(context, function).into(),
         Type::Primitive(primitive) => compile_primitive(context, *primitive),
         Type::Record(record) => compile_record(context, record).into(),
         Type::Pointer(pointer) => compile_pointer(context, pointer).into(),
         Type::Union(union) => compile_union(context, union).into(),
-    }
+    };
+
+    context
+        .types()
+        .borrow_mut()
+        .insert(type_.clone(), llvm_type);
+
+    llvm_type
 }
 
 pub fn compile_function<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     function: &types::Function,
 ) -> inkwell::types::FunctionType<'c> {
     let compile_type = |type_| compile(context, type_);
@@ -31,23 +43,23 @@ pub fn compile_function<'c>(
 }
 
 pub fn compile_function_pointer<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     function: &types::Function,
 ) -> inkwell::types::PointerType<'c> {
     compile_function(context, function).ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
 pub fn compile_pointer<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     pointer: &types::Pointer,
 ) -> inkwell::types::PointerType<'c> {
     compile(context, pointer.element()).ptr_type(DEFAULT_ADDRESS_SPACE)
 }
 
-pub fn compile_primitive(
-    context: &Context,
+pub fn compile_primitive<'c>(
+    context: &Context<'c>,
     primitive: types::Primitive,
-) -> inkwell::types::BasicTypeEnum {
+) -> inkwell::types::BasicTypeEnum<'c> {
     match primitive {
         types::Primitive::Boolean => context.inkwell().bool_type().into(),
         types::Primitive::Float32 => context.inkwell().f32_type().into(),
@@ -59,14 +71,14 @@ pub fn compile_primitive(
     }
 }
 
-pub fn compile_pointer_integer(context: &Context) -> inkwell::types::IntType {
+pub fn compile_pointer_integer<'c>(context: &Context<'c>) -> inkwell::types::IntType<'c> {
     context
         .inkwell()
         .ptr_sized_int_type(&context.target_machine().get_target_data(), None)
 }
 
 pub fn compile_record<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     record: &types::Record,
 ) -> inkwell::types::StructType<'c> {
     let compile_type = |type_| compile(context, type_);
@@ -78,7 +90,7 @@ pub fn compile_record<'c>(
 }
 
 pub fn compile_union<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     union: &types::Union,
 ) -> inkwell::types::StructType<'c> {
     let target_data = context.target_machine().get_target_data();
@@ -96,7 +108,7 @@ pub fn compile_union<'c>(
 }
 
 pub fn compile_union_member<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     union: &types::Union,
     member_index: usize,
 ) -> inkwell::types::StructType<'c> {
@@ -110,7 +122,7 @@ pub fn compile_union_member<'c>(
 }
 
 pub fn compile_union_member_padding<'c>(
-    context: &'c Context,
+    context: &Context<'c>,
     union: &types::Union,
     member_index: usize,
 ) -> inkwell::types::ArrayType<'c> {
