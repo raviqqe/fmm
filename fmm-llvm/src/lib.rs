@@ -56,7 +56,7 @@ fn compile_module<'c>(
     module: &Module,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
     fmm::analysis::name::check(module)?;
-    fmm::analysis::check_types(module)?;
+    fmm::analysis::type_check::check(module)?;
 
     let llvm_module = context.inkwell().create_module("");
     llvm_module.set_triple(&context.target_machine().get_triple());
@@ -351,7 +351,7 @@ mod tests {
     fn compile_module_with_targets(module: &Module, targets: &[&str]) {
         compile_transformed_module(module, targets);
         compile_transformed_module(
-            &fmm::analysis::transform_to_cps(module, types::void_type()).unwrap(),
+            &fmm::analysis::cps::transform(module, types::void_type()).unwrap(),
             targets,
         );
     }

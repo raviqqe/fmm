@@ -1,4 +1,4 @@
-use super::super::TypeCheckError;
+use crate::analysis::type_check::TypeCheckError;
 use crate::{build::BuildError, ir::*};
 use std::{
     error::Error,

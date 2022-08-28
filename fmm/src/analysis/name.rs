@@ -1,4 +1,4 @@
-use super::TypeCheckError;
+use crate::analysis::type_check::TypeCheckError;
 use crate::ir::*;
 use fnv::FnvHashSet;
 

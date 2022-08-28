@@ -4,7 +4,7 @@ use std::error::Error;
 pub enum CompileError {
     Llvm(String),
     TargetMachineNotCreated,
-    TypeCheck(fmm::analysis::TypeCheckError),
+    TypeCheck(fmm::analysis::type_check::TypeCheckError),
 }
 
 impl Error for CompileError {}
@@ -35,8 +35,8 @@ impl From<&str> for CompileError {
     }
 }
 
-impl From<fmm::analysis::TypeCheckError> for CompileError {
-    fn from(error: fmm::analysis::TypeCheckError) -> Self {
+impl From<fmm::analysis::type_check::TypeCheckError> for CompileError {
+    fn from(error: fmm::analysis::type_check::TypeCheckError) -> Self {
         Self::TypeCheck(error)
     }
 }

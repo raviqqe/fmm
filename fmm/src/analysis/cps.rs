@@ -9,15 +9,15 @@ mod stack;
 mod target_function_transformer;
 
 use self::context::CpsContext;
-use super::check_types;
+use super::type_check;
 use crate::{ir::*, types::Type};
 use error::CpsTransformationError;
 
-pub fn transform_to_cps(
+pub fn transform(
     module: &Module,
     result_type: impl Into<Type>,
 ) -> Result<Module, CpsTransformationError> {
-    check_types(module)?;
+    type_check::check(module)?;
 
     let context = CpsContext::new(result_type.into());
 
@@ -26,7 +26,7 @@ pub fn transform_to_cps(
     let module = target_function_transformer::transform(&context, &module)?;
     let module = function_type_transformer::transform(&module, context.result_type());
 
-    check_types(&module)?;
+    type_check::check(&module)?;
 
     Ok(module)
 }
@@ -34,10 +34,8 @@ pub fn transform_to_cps(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        analysis::{check_types, format_module},
-        types::{self, void_type, CallingConvention, Type},
-    };
+    use crate::analysis::format;
+    use crate::types::{self, void_type, CallingConvention, Type};
     use stack::stack_type;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -73,10 +71,10 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
-        let one = transform_to_cps(module, void_type()).unwrap();
-        let other = transform_to_cps(module, void_type()).unwrap();
+        let one = transform(module, void_type()).unwrap();
+        let other = transform(module, void_type()).unwrap();
 
-        check_types(&one).unwrap();
+        type_check::check(&one).unwrap();
 
         assert_eq!(one, other);
     }
@@ -242,8 +240,8 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        insta::assert_snapshot!(format_module(
-            &transform_to_cps(
+        insta::assert_snapshot!(format::format_module(
+            &transform(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("f", function_type.clone())],
@@ -287,8 +285,8 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        insta::assert_snapshot!(format_module(
-            &transform_to_cps(
+        insta::assert_snapshot!(format::format_module(
+            &transform(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("f", function_type.clone())],
@@ -431,7 +429,7 @@ mod tests {
         );
 
         pretty_assertions::assert_eq!(
-            transform_to_cps(
+            transform(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("f", function_type.clone())],

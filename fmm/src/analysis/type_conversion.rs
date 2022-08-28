@@ -4,7 +4,7 @@ use crate::{
 };
 use cached::proc_macro::cached;
 
-pub fn convert_types(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
+pub fn convert(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
     let convert = |type_: &Type| -> Type { convert_type(type_, convert) };
 
     Module::new(
