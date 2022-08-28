@@ -1,5 +1,4 @@
 mod error;
-mod name;
 
 use crate::{
     ir::*,
@@ -9,8 +8,6 @@ pub use error::*;
 use fnv::FnvHashMap;
 
 pub fn check(module: &Module) -> Result<(), TypeCheckError> {
-    name::check(module)?;
-
     check_variable_declarations(module)?;
     check_function_declarations(module)?;
 
