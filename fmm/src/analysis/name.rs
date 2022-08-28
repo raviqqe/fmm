@@ -1,8 +1,10 @@
-use crate::analysis::type_check::TypeCheckError;
+mod error;
+
+pub use self::error::NameError;
 use crate::ir::*;
 use fnv::FnvHashSet;
 
-pub fn check(module: &Module) -> Result<(), TypeCheckError> {
+pub fn check(module: &Module) -> Result<(), NameError> {
     let variable_definition_names = module
         .variable_definitions()
         .iter()
@@ -54,7 +56,7 @@ fn check_block<'a>(
     block: &'a Block,
     local_names: &mut FnvHashSet<&'a str>,
     global_names: &FnvHashSet<&'a str>,
-) -> Result<(), TypeCheckError> {
+) -> Result<(), NameError> {
     for instruction in block.instructions() {
         check_instruction(instruction, local_names, global_names)?;
     }
@@ -66,7 +68,7 @@ fn check_instruction<'a>(
     instruction: &'a Instruction,
     local_names: &mut FnvHashSet<&'a str>,
     global_names: &FnvHashSet<&'a str>,
-) -> Result<(), TypeCheckError> {
+) -> Result<(), NameError> {
     match instruction {
         Instruction::If(if_) => {
             check_block(if_.then(), local_names, global_names)?;
@@ -92,16 +94,16 @@ fn check_instruction<'a>(
         check_name(name, local_names)?;
 
         if global_names.contains(name) {
-            return Err(TypeCheckError::DuplicateNames(name.into()));
+            return Err(NameError::DuplicateNames(name.into()));
         }
     }
 
     Ok(())
 }
 
-fn check_name<'a>(name: &'a str, names: &mut FnvHashSet<&'a str>) -> Result<(), TypeCheckError> {
+fn check_name<'a>(name: &'a str, names: &mut FnvHashSet<&'a str>) -> Result<(), NameError> {
     if names.contains(name) {
-        return Err(TypeCheckError::DuplicateNames(name.into()));
+        return Err(NameError::DuplicateNames(name.into()));
     }
 
     names.insert(name);
@@ -146,10 +148,7 @@ mod tests {
                 ],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("f".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("f".into())));
         }
 
         #[test]
@@ -172,10 +171,7 @@ mod tests {
                 vec![],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("f".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("f".into())));
         }
 
         #[test]
@@ -198,10 +194,7 @@ mod tests {
                 )],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("f".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("f".into())));
         }
 
         #[test]
@@ -222,10 +215,7 @@ mod tests {
                 )],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("f".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("f".into())));
         }
 
         #[test]
@@ -292,10 +282,7 @@ mod tests {
                 vec![],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("f".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("f".into())));
         }
     }
 
@@ -323,10 +310,7 @@ mod tests {
                 )],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("x".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("x".into())));
         }
 
         #[test]
@@ -347,10 +331,7 @@ mod tests {
                 )],
             );
 
-            assert_eq!(
-                check(&module),
-                Err(TypeCheckError::DuplicateNames("f".into()))
-            );
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("f".into())));
         }
 
         #[test]
