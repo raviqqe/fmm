@@ -151,6 +151,12 @@ fn compile_instruction(
             compile_typed_name(load.type_(), load.name()),
             compile_expression(load.pointer()),
         ),
+        Instruction::MemoryCopy(copy) => format!(
+            "memcpy({},{},{});",
+            compile_expression(copy.destination()),
+            compile_expression(copy.source()),
+            compile_expression(copy.size()),
+        ),
         Instruction::ReallocateHeap(reallocate) => {
             format!(
                 "{}=realloc({},{});",

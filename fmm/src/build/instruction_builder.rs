@@ -283,14 +283,26 @@ impl InstructionBuilder {
         Ok(TypedExpression::new(Variable::new(name), type_))
     }
 
+    pub fn memory_copy(
+        &self,
+        source: impl Into<TypedExpression>,
+        destination: impl Into<TypedExpression>,
+        size: impl Into<TypedExpression>,
+    ) {
+        self.add_instruction(MemoryCopy::new(
+            source.into().expression().clone(),
+            destination.into().expression().clone(),
+            size.into().expression().clone(),
+        ));
+    }
+
     pub fn store(&self, value: impl Into<TypedExpression>, pointer: impl Into<TypedExpression>) {
         let value = value.into();
-        let pointer = pointer.into();
 
         self.add_instruction(Store::new(
             value.type_().clone(),
             value.expression().clone(),
-            pointer.expression().clone(),
+            pointer.into().expression().clone(),
         ));
     }
 

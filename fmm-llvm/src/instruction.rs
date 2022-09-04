@@ -239,6 +239,17 @@ fn compile_instruction<'c>(
             compile_expression(load.pointer()).into_pointer_value(),
             load.name(),
         )),
+        Instruction::MemoryCopy(copy) => {
+            builder.build_memcpy(
+                compile_expression(copy.destination()).into_pointer_value(),
+                1,
+                compile_expression(copy.source()).into_pointer_value(),
+                1,
+                compile_expression(copy.size()).into_int_value(),
+            )?;
+
+            None
+        }
         Instruction::ReallocateHeap(reallocate) => builder
             .build_call(
                 instruction_function_set.reallocate_function,

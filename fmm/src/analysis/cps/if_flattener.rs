@@ -1,6 +1,6 @@
 use super::free_variable_collector;
 use crate::{
-    analysis::convert_expressions_in_terminal_instruction,
+    analysis::expression_conversion,
     build::NameGenerator,
     ir::*,
     types::{self, void_type, Type},
@@ -208,13 +208,16 @@ fn transform_if_block_without_continuation(
                     TerminalInstruction::Unreachable
                 }
                 (TerminalInstruction::Branch(branch), return_) => {
-                    convert_expressions_in_terminal_instruction(return_, &|expression| {
-                        if expression == &Variable::new(if_name).into() {
-                            branch.expression().clone()
-                        } else {
-                            expression.clone()
-                        }
-                    })
+                    expression_conversion::convert_expressions_in_terminal_instruction(
+                        return_,
+                        &|expression| {
+                            if expression == &Variable::new(if_name).into() {
+                                branch.expression().clone()
+                            } else {
+                                expression.clone()
+                            }
+                        },
+                    )
                 }
             },
         ),
@@ -319,12 +322,12 @@ fn get_continuation_environment<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{analysis::check_types, types::void_type};
+    use crate::{analysis::type_check, types::void_type};
 
     fn flatten_module(module: &Module) {
         let flattened = flatten(module);
 
-        check_types(&flattened).unwrap();
+        type_check::check(&flattened).unwrap();
 
         assert_eq!(flattened, flatten(module));
     }

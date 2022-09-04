@@ -7,7 +7,7 @@ mod renaming;
 mod type_;
 
 pub use error::*;
-use fmm::{analysis::collect_types, ir::*};
+use fmm::ir::*;
 use fnv::{FnvHashMap, FnvHashSet};
 pub use instruction_configuration::InstructionConfiguration;
 
@@ -17,6 +17,7 @@ const INCLUDES: &[&str] = &[
     "#include <stdbool.h>",
     "#include <stdint.h>",
     "#include <stdlib.h>",
+    "#include <string.h>",
 ];
 
 pub fn compile(
@@ -24,7 +25,7 @@ pub fn compile(
     instruction_configuration: Option<InstructionConfiguration>,
 ) -> Result<String, CompileError> {
     fmm::analysis::name::check(module)?;
-    fmm::analysis::check_types(module)?;
+    fmm::analysis::type_check::check(module)?;
 
     let module = renaming::rename(module);
     let global_variables = module
@@ -38,7 +39,7 @@ pub fn compile(
                 .map(|declaration| declaration.name().into()),
         )
         .collect();
-    let types = collect_types(&module);
+    let types = fmm::analysis::type_collection::collect(&module);
     let type_ids = compile_type_ids(&types);
 
     // TODO Refactor this if possible. This is to avoid prototype declaration
@@ -75,7 +76,7 @@ pub fn compile(
             ]
         }))
         .chain(
-            collect_types(&module)
+            fmm::analysis::type_collection::collect(&module)
                 .iter()
                 .filter_map(|type_| match type_ {
                     fmm::types::Type::Record(record) => {
@@ -321,7 +322,7 @@ mod tests {
 
     fn compile_module(module: &Module) {
         compile_final_module(module);
-        compile_final_module(&fmm::analysis::transform_to_cps(module, types::void_type()).unwrap());
+        compile_final_module(&fmm::analysis::cps::transform(module, types::void_type()).unwrap());
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -359,7 +360,7 @@ mod tests {
         ));
     }
 
-    mod variable_declarations {
+    mod variable_declaration {
         use super::*;
 
         #[test]
@@ -444,7 +445,7 @@ mod tests {
         }
     }
 
-    mod function_declarations {
+    mod function_declaration {
         use super::*;
 
         #[test]
@@ -483,7 +484,7 @@ mod tests {
         }
     }
 
-    mod type_definitions {
+    mod type_definition {
         use super::*;
 
         #[test]
@@ -594,7 +595,7 @@ mod tests {
         }
     }
 
-    mod variable_definitions {
+    mod variable_definition {
         use super::*;
 
         #[test]
@@ -604,7 +605,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_mutable(false),
                 )],
@@ -619,7 +620,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_mutable(true),
                 )],
@@ -634,7 +635,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::External),
                 )],
@@ -649,7 +650,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Internal),
                 )],
@@ -664,7 +665,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Weak),
                 )],
@@ -679,7 +680,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Internal),
                 )],
@@ -699,7 +700,7 @@ mod tests {
         }
     }
 
-    mod function_definitions {
+    mod function_definition {
         use super::*;
 
         #[test]
@@ -712,11 +713,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::External),
@@ -734,11 +735,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::Internal),
@@ -756,11 +757,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::Weak),
@@ -769,7 +770,7 @@ mod tests {
         }
     }
 
-    mod expressions {
+    mod expression {
         use super::*;
 
         #[test]
@@ -1179,7 +1180,7 @@ mod tests {
         }
     }
 
-    mod instructions {
+    mod instruction {
         use super::*;
 
         #[test]
@@ -1580,6 +1581,47 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),
                     ),
+                ),
+            ));
+        }
+
+        #[test]
+        fn compile_load() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    ],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            ));
+        }
+
+        #[test]
+        fn compile_memory_copy() {
+            let pointer_type = types::Pointer::new(types::Primitive::Integer8);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![
+                    Argument::new("x", pointer_type.clone()),
+                    Argument::new("y", pointer_type),
+                ],
+                types::void_type(),
+                Block::new(
+                    vec![MemoryCopy::new(
+                        Variable::new("x"),
+                        Variable::new("y"),
+                        Primitive::PointerInteger(42),
+                    )
+                    .into()],
+                    Return::new(types::void_type(), void_value()),
                 ),
             ));
         }

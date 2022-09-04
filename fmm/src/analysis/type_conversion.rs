@@ -4,7 +4,7 @@ use crate::{
 };
 use cached::proc_macro::cached;
 
-pub fn convert_types(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
+pub fn convert(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
     let convert = |type_: &Type| -> Type { convert_type(type_, convert) };
 
     Module::new(
@@ -178,6 +178,12 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             convert(load.type_()),
             convert_expression(load.pointer()),
             load.name(),
+        )
+        .into(),
+        Instruction::MemoryCopy(copy) => MemoryCopy::new(
+            convert_expression(copy.source()),
+            convert_expression(copy.destination()),
+            convert_expression(copy.size()),
         )
         .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(

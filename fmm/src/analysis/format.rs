@@ -141,6 +141,14 @@ fn format_instruction(instruction: &Instruction) -> String {
                 load.name()
             )
         }
+        Instruction::MemoryCopy(copy) => {
+            format!(
+                "(memory-copy {} {} {})",
+                format_expression(copy.source()),
+                format_expression(copy.destination()),
+                format_expression(copy.size()),
+            )
+        }
         Instruction::ReallocateHeap(allocate) => {
             format!(
                 "(reallocate-heap {} {} {})",

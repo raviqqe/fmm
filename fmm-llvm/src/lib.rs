@@ -56,7 +56,7 @@ fn compile_module<'c>(
     module: &Module,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
     fmm::analysis::name::check(module)?;
-    fmm::analysis::check_types(module)?;
+    fmm::analysis::type_check::check(module)?;
 
     let llvm_module = context.inkwell().create_module("");
     llvm_module.set_triple(&context.target_machine().get_triple());
@@ -351,7 +351,7 @@ mod tests {
     fn compile_module_with_targets(module: &Module, targets: &[&str]) {
         compile_transformed_module(module, targets);
         compile_transformed_module(
-            &fmm::analysis::transform_to_cps(module, types::void_type()).unwrap(),
+            &fmm::analysis::cps::transform(module, types::void_type()).unwrap(),
             targets,
         );
     }
@@ -392,7 +392,7 @@ mod tests {
         .unwrap();
     }
 
-    mod variable_declarations {
+    mod variable_declaration {
         use super::*;
 
         #[test]
@@ -477,7 +477,7 @@ mod tests {
         }
     }
 
-    mod function_declarations {
+    mod function_declaration {
         use super::*;
 
         #[test]
@@ -516,7 +516,7 @@ mod tests {
         }
     }
 
-    mod type_definitions {
+    mod type_definition {
         use super::*;
 
         #[test]
@@ -627,7 +627,7 @@ mod tests {
         }
     }
 
-    mod variable_definitions {
+    mod variable_definition {
         use super::*;
 
         #[test]
@@ -637,7 +637,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_mutable(false),
                 )],
@@ -652,7 +652,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_mutable(true),
                 )],
@@ -667,7 +667,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::External),
                 )],
@@ -682,7 +682,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Internal),
                 )],
@@ -697,7 +697,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Weak),
                 )],
@@ -712,7 +712,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_address_named(true),
                 )],
@@ -727,7 +727,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_address_named(false),
                 )],
@@ -742,7 +742,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     Default::default(),
                 )],
@@ -768,7 +768,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::Integer8(0),
+                    Primitive::Integer8(0),
                     types::Primitive::Integer8,
                     VariableDefinitionOptions::new().set_alignment(Some(16)),
                 )],
@@ -777,7 +777,7 @@ mod tests {
         }
     }
 
-    mod function_definitions {
+    mod function_definition {
         use super::*;
 
         #[test]
@@ -790,11 +790,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::External),
@@ -812,11 +812,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::Internal),
@@ -834,11 +834,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::Weak),
@@ -856,11 +856,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_address_named(true),
@@ -878,11 +878,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_address_named(false),
@@ -891,7 +891,7 @@ mod tests {
         }
     }
 
-    mod expressions {
+    mod expression {
         use super::*;
 
         #[test]
@@ -901,7 +901,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::SizeOf::new(types::Primitive::Float64),
+                    SizeOf::new(types::Primitive::Float64),
                     types::Primitive::PointerInteger,
                     Default::default(),
                 )],
@@ -916,7 +916,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::AlignOf::new(types::Primitive::Float64),
+                    AlignOf::new(types::Primitive::Float64),
                     types::Primitive::PointerInteger,
                     Default::default(),
                 )],
@@ -1394,7 +1394,7 @@ mod tests {
         }
     }
 
-    mod instructions {
+    mod instruction {
         use super::*;
 
         #[test]
@@ -1899,6 +1899,47 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),
                     ),
+                ),
+            ));
+        }
+
+        #[test]
+        fn compile_load() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    ],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            ));
+        }
+
+        #[test]
+        fn compile_memory_copy() {
+            let pointer_type = types::Pointer::new(types::Primitive::Integer8);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![
+                    Argument::new("x", pointer_type.clone()),
+                    Argument::new("y", pointer_type),
+                ],
+                types::void_type(),
+                Block::new(
+                    vec![MemoryCopy::new(
+                        Variable::new("x"),
+                        Variable::new("y"),
+                        Primitive::PointerInteger(42),
+                    )
+                    .into()],
+                    Return::new(types::void_type(), void_value()),
                 ),
             ));
         }

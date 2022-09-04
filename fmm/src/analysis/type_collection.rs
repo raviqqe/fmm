@@ -1,7 +1,7 @@
 use crate::{ir::*, types::Type};
 use fnv::{FnvHashMap, FnvHashSet};
 
-pub fn collect_types(module: &Module) -> Vec<Type> {
+pub fn collect(module: &Module) -> Vec<Type> {
     let mut types = FnvHashSet::default();
 
     for declaration in module.variable_declarations() {
@@ -205,6 +205,11 @@ fn collect_from_instruction(instruction: &Instruction, types: &mut FnvHashSet<Ty
 
             types.insert(load.type_().clone());
         }
+        Instruction::MemoryCopy(copy) => {
+            collect_from_expression(copy.source());
+            collect_from_expression(copy.destination());
+            collect_from_expression(copy.size());
+        }
         Instruction::ReallocateHeap(reallocate) => {
             collect_from_expression(reallocate.pointer());
             collect_from_expression(reallocate.size());
@@ -272,7 +277,7 @@ mod tests {
     #[test]
     fn sort_types() {
         assert_eq!(
-            collect_types(&Module::new(
+            collect(&Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Record::new(vec![types::Record::new(vec![]).into()])
@@ -291,7 +296,7 @@ mod tests {
     #[test]
     fn collect_from_nested_function_types() {
         assert_eq!(
-            collect_types(&Module::new(
+            collect(&Module::new(
                 vec![],
                 vec![FunctionDeclaration::new(
                     "x",
