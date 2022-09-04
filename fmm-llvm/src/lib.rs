@@ -392,7 +392,7 @@ mod tests {
         .unwrap();
     }
 
-    mod variable_declarations {
+    mod variable_declaration {
         use super::*;
 
         #[test]
@@ -477,7 +477,7 @@ mod tests {
         }
     }
 
-    mod function_declarations {
+    mod function_declaration {
         use super::*;
 
         #[test]
@@ -516,7 +516,7 @@ mod tests {
         }
     }
 
-    mod type_definitions {
+    mod type_definition {
         use super::*;
 
         #[test]
@@ -627,7 +627,7 @@ mod tests {
         }
     }
 
-    mod variable_definitions {
+    mod variable_definition {
         use super::*;
 
         #[test]
@@ -777,7 +777,7 @@ mod tests {
         }
     }
 
-    mod function_definitions {
+    mod function_definition {
         use super::*;
 
         #[test]
@@ -891,7 +891,7 @@ mod tests {
         }
     }
 
-    mod expressions {
+    mod expression {
         use super::*;
 
         #[test]
