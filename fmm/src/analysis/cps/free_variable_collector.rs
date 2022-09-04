@@ -73,6 +73,11 @@ fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut Fn
             collect_from_block(if_.else_(), variables);
         }
         Instruction::Load(load) => collect_from_expression(load.pointer()),
+        Instruction::MemoryCopy(copy) => {
+            collect_from_expression(copy.source());
+            collect_from_expression(copy.destination());
+            collect_from_expression(copy.length());
+        }
         Instruction::ReallocateHeap(reallocate) => {
             collect_from_expression(reallocate.pointer());
             collect_from_expression(reallocate.size());

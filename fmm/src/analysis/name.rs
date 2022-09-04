@@ -86,6 +86,7 @@ fn check_instruction<'a>(
         | Instruction::Fence(_)
         | Instruction::FreeHeap(_)
         | Instruction::Load(_)
+        | Instruction::MemoryCopy(_)
         | Instruction::ReallocateHeap(_)
         | Instruction::Store(_) => {}
     }
