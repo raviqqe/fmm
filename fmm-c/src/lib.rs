@@ -17,6 +17,7 @@ const INCLUDES: &[&str] = &[
     "#include <stdbool.h>",
     "#include <stdint.h>",
     "#include <stdlib.h>",
+    "#include <string.h>",
 ];
 
 pub fn compile(
@@ -604,7 +605,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_mutable(false),
                 )],
@@ -619,7 +620,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_mutable(true),
                 )],
@@ -634,7 +635,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::External),
                 )],
@@ -649,7 +650,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Internal),
                 )],
@@ -664,7 +665,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Weak),
                 )],
@@ -679,7 +680,7 @@ mod tests {
                 vec![],
                 vec![VariableDefinition::new(
                     "x",
-                    fmm::ir::Primitive::PointerInteger(0),
+                    Primitive::PointerInteger(0),
                     types::Primitive::PointerInteger,
                     VariableDefinitionOptions::new().set_linkage(Linkage::Internal),
                 )],
@@ -712,11 +713,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::External),
@@ -734,11 +735,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::Internal),
@@ -756,11 +757,11 @@ mod tests {
                     "x",
                     vec![],
                     types::Primitive::PointerInteger,
-                    fmm::ir::Block::new(
+                    Block::new(
                         vec![],
-                        fmm::ir::Return::new(
+                        Return::new(
                             types::Primitive::PointerInteger,
-                            fmm::ir::Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(0),
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_linkage(Linkage::Weak),
@@ -1580,6 +1581,47 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(0),
                     ),
+                ),
+            ));
+        }
+
+        #[test]
+        fn compile_load() {
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![Argument::new(
+                    "x",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
+                    ],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            ));
+        }
+
+        #[test]
+        fn compile_memory_copy() {
+            let pointer_type = types::Pointer::new(types::Primitive::Integer8);
+
+            compile_function_definition(create_function_definition(
+                "f",
+                vec![
+                    Argument::new("x", pointer_type.clone()),
+                    Argument::new("y", pointer_type),
+                ],
+                types::void_type(),
+                Block::new(
+                    vec![MemoryCopy::new(
+                        Variable::new("x"),
+                        Variable::new("y"),
+                        Primitive::PointerInteger(42),
+                    )
+                    .into()],
+                    Return::new(types::void_type(), void_value()),
                 ),
             ));
         }
