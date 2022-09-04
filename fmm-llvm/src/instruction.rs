@@ -245,7 +245,7 @@ fn compile_instruction<'c>(
                 1,
                 compile_expression(copy.source()).into_pointer_value(),
                 1,
-                compile_expression(copy.size()).into_pointer_value(),
+                compile_expression(copy.size()).into_int_value(),
             )?;
 
             None
