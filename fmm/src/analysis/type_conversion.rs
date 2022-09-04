@@ -180,6 +180,12 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
             load.name(),
         )
         .into(),
+        Instruction::MemoryCopy(copy) => MemoryCopy::new(
+            convert_expression(copy.source()),
+            convert_expression(copy.destination()),
+            convert_expression(copy.length()),
+        )
+        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert_expression(reallocate.pointer()),
             convert_expression(reallocate.size()),
