@@ -208,7 +208,7 @@ fn collect_from_instruction(instruction: &Instruction, types: &mut FnvHashSet<Ty
         Instruction::MemoryCopy(copy) => {
             collect_from_expression(copy.source());
             collect_from_expression(copy.destination());
-            collect_from_expression(copy.length());
+            collect_from_expression(copy.size());
         }
         Instruction::ReallocateHeap(reallocate) => {
             collect_from_expression(reallocate.pointer());

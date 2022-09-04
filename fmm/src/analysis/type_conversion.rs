@@ -183,7 +183,7 @@ fn convert_instruction(instruction: &Instruction, convert: &impl Fn(&Type) -> Ty
         Instruction::MemoryCopy(copy) => MemoryCopy::new(
             convert_expression(copy.source()),
             convert_expression(copy.destination()),
-            convert_expression(copy.length()),
+            convert_expression(copy.size()),
         )
         .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(

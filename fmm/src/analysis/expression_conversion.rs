@@ -158,7 +158,7 @@ fn convert_instruction(
         Instruction::MemoryCopy(copy) => MemoryCopy::new(
             convert(copy.source()),
             convert(copy.destination()),
-            convert(copy.length()),
+            convert(copy.size()),
         )
         .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(

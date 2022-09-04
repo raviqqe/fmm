@@ -162,7 +162,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
         Instruction::MemoryCopy(copy) => MemoryCopy::new(
             rename_expression(copy.source()),
             rename_expression(copy.destination()),
-            rename_expression(copy.length()),
+            rename_expression(copy.size()),
         )
         .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(

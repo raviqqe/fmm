@@ -29,7 +29,7 @@ impl MemoryCopy {
         &self.destination
     }
 
-    pub fn length(&self) -> &Expression {
+    pub fn size(&self) -> &Expression {
         &self.length
     }
 }

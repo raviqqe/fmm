@@ -232,7 +232,7 @@ fn check_block(
                     &pointer_type,
                 )?;
                 check_equality(
-                    &check_expression(copy.length(), &variables)?,
+                    &check_expression(copy.size(), &variables)?,
                     &types::Primitive::PointerInteger.into(),
                 )?;
             }
