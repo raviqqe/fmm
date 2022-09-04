@@ -223,6 +223,19 @@ fn check_block(
                     &types::Pointer::new(load.type_().clone()).into(),
                 )?;
             }
+            Instruction::MemoryCopy(copy) => {
+                let pointer_type = types::Pointer::new(types::Primitive::Integer8).into();
+
+                check_equality(&check_expression(copy.source(), &variables)?, &pointer_type)?;
+                check_equality(
+                    &check_expression(copy.destination(), &variables)?,
+                    &pointer_type,
+                )?;
+                check_equality(
+                    &check_expression(copy.size(), &variables)?,
+                    &types::Primitive::PointerInteger.into(),
+                )?;
+            }
             Instruction::ReallocateHeap(reallocate) => {
                 check_equality(
                     &check_expression(reallocate.pointer(), &variables)?,
@@ -729,6 +742,32 @@ mod tests {
                         Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        ))
+    }
+
+    #[test]
+    fn check_memory_copy() -> Result<(), TypeCheckError> {
+        check(&Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![
+                    Argument::new("x", types::Pointer::new(types::Primitive::Integer8)),
+                    Argument::new("y", types::Pointer::new(types::Primitive::Integer8)),
+                ],
+                types::void_type(),
+                Block::new(
+                    vec![MemoryCopy::new(
+                        Variable::new("x"),
+                        Variable::new("y"),
+                        Primitive::PointerInteger(42),
+                    )
+                    .into()],
+                    Return::new(types::void_type(), void_value()),
                 ),
             )],
         ))

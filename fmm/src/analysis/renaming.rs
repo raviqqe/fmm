@@ -159,6 +159,12 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
             rename(load.name()),
         )
         .into(),
+        Instruction::MemoryCopy(copy) => MemoryCopy::new(
+            rename_expression(copy.source()),
+            rename_expression(copy.destination()),
+            rename_expression(copy.size()),
+        )
+        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             rename_expression(reallocate.pointer()),
             rename_expression(reallocate.size()),

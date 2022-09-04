@@ -3,7 +3,7 @@ use super::{
     atomic_operation::AtomicOperation, atomic_store::AtomicStore, call::Call,
     compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
     deconstruct_union::DeconstructUnion, fence::Fence, free_heap::FreeHeap, if_::If, load::Load,
-    reallocate_heap::ReallocateHeap, store::Store,
+    reallocate_heap::ReallocateHeap, store::Store, MemoryCopy,
 };
 use crate::types::{self, generic_pointer_type, Type};
 
@@ -22,6 +22,7 @@ pub enum Instruction {
     FreeHeap(FreeHeap),
     If(If),
     Load(Load),
+    MemoryCopy(MemoryCopy),
     ReallocateHeap(ReallocateHeap),
     Store(Store),
 }
@@ -48,6 +49,7 @@ impl Instruction {
             )),
             Self::If(if_) => Some((if_.name(), if_.type_().clone())),
             Self::Load(load) => Some((load.name(), load.type_().clone())),
+            Self::MemoryCopy(_) => None,
             Self::ReallocateHeap(reallocate) => Some((reallocate.name(), generic_pointer_type())),
             Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
@@ -129,6 +131,12 @@ impl From<If> for Instruction {
 impl From<Load> for Instruction {
     fn from(load: Load) -> Self {
         Self::Load(load)
+    }
+}
+
+impl From<MemoryCopy> for Instruction {
+    fn from(copy: MemoryCopy) -> Self {
+        Self::MemoryCopy(copy)
     }
 }
 

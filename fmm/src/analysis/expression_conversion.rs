@@ -155,6 +155,12 @@ fn convert_instruction(
         Instruction::Load(load) => {
             Load::new(load.type_().clone(), convert(load.pointer()), load.name()).into()
         }
+        Instruction::MemoryCopy(copy) => MemoryCopy::new(
+            convert(copy.source()),
+            convert(copy.destination()),
+            convert(copy.size()),
+        )
+        .into(),
         Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
             convert(reallocate.pointer()),
             convert(reallocate.size()),
