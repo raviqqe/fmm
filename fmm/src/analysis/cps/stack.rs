@@ -19,7 +19,7 @@ thread_local! {
 }
 
 pub fn stack_type() -> Type {
-    STACK_TYPE.with(|type_| (&**type_).clone())
+    STACK_TYPE.with(|type_| (**type_).clone())
 }
 
 pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
