@@ -6,12 +6,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
+      - uses: raviqqe/enable-homebrew
       - run: tools/setup.sh
       - run: cargo build
   test:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
+      - uses: raviqqe/enable-homebrew
       - run: tools/setup.sh
       - run: cargo test
   format:
@@ -23,6 +25,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
+      - uses: raviqqe/enable-homebrew
       - run: tools/setup.sh
       - run: cargo clippy -- -D warnings
   spell-check:
