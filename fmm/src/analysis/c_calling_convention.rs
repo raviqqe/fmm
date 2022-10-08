@@ -16,6 +16,14 @@ pub fn transform(module: &Module) -> Result<Module, TypeCheckError> {
     Ok(module)
 }
 
+fn transform_function_declaration(declaraton: &FunctionDeclaration) -> FunctionDeclaration {
+    todo!()
+}
+
+fn transform_function_definition(declaraton: &FunctionDefinition) -> FunctionDefinition {
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
