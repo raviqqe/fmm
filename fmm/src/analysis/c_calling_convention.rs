@@ -1,5 +1,5 @@
 use super::type_check::{self, TypeCheckError};
-use crate::{ir::*, types::Type};
+use crate::ir::*;
 
 pub fn transform(module: &Module) -> Result<Module, TypeCheckError> {
     type_check::check(module)?;
@@ -22,6 +22,9 @@ mod tests {
 
     #[test]
     fn transform_empty() {
-        transform(&Module::new(vec![], vec![], vec![], vec![]));
+        assert_eq!(
+            transform(&Module::new(vec![], vec![], vec![], vec![])),
+            Ok(Module::new(vec![], vec![], vec![], vec![]))
+        );
     }
 }
