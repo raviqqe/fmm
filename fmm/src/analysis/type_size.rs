@@ -15,11 +15,11 @@ pub fn calculate_size(type_: &Type, word_bytes: usize) -> usize {
             let mut size = 0;
 
             for field in record.fields() {
-                let field_size = calculate_size(field, word_bytes);
+                let alignment = calculate_alignment(field, word_bytes);
 
-                size = size.max((size as f64 / field_size as f64).ceil() as usize * field_size);
+                size = size.max((size as f64 / alignment as f64).ceil() as usize * alignment);
 
-                size += field_size;
+                size += calculate_size(field, word_bytes);
             }
 
             size
@@ -199,6 +199,44 @@ mod tests {
                     8
                 ),
                 8
+            );
+        }
+
+        #[test]
+        fn nested_record() {
+            assert_eq!(
+                calculate_size(
+                    &types::Record::new(vec![
+                        types::Record::new(vec![
+                            types::Primitive::Integer32.into(),
+                            types::Primitive::Integer8.into(),
+                        ])
+                        .into(),
+                        types::Primitive::Integer8.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                6
+            );
+        }
+
+        #[test]
+        fn nested_record_with_alignment() {
+            assert_eq!(
+                calculate_size(
+                    &types::Record::new(vec![
+                        types::Record::new(vec![
+                            types::Primitive::Integer8.into(),
+                            types::Primitive::Integer32.into(),
+                        ])
+                        .into(),
+                        types::Primitive::Integer8.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                9
             );
         }
     }
