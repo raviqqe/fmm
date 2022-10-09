@@ -53,8 +53,8 @@ fn transform_function_declaration(
 }
 
 fn transform_function_definition(
-    context: &Context,
-    definition: &FunctionDefinition,
+    _context: &Context,
+    _definition: &FunctionDefinition,
 ) -> FunctionDefinition {
     todo!()
 }
