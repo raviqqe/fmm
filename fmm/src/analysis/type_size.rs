@@ -38,6 +38,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn pointer_integer() {
+        assert_eq!(
+            calculate_size(&types::Primitive::PointerInteger.into(), 4),
+            4
+        );
+        assert_eq!(
+            calculate_size(&types::Primitive::PointerInteger.into(), 8),
+            8
+        );
+    }
+
+    #[test]
     fn empty_record() {
         assert_eq!(calculate_size(&types::Record::new(vec![]).into(), 8), 0);
     }
