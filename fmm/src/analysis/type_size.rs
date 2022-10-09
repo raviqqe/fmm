@@ -202,4 +202,98 @@ mod tests {
             );
         }
     }
+
+    mod alignment {
+        use super::*;
+
+        #[test]
+        fn primitives() {
+            for (type_, size) in [
+                (types::Primitive::Boolean, 1),
+                (types::Primitive::Integer8, 1),
+                (types::Primitive::Float32, 4),
+                (types::Primitive::Integer32, 4),
+                (types::Primitive::Float64, 8),
+                (types::Primitive::Integer64, 8),
+            ] {
+                assert_eq!(calculate_alignment(&type_.into(), 8), size);
+            }
+        }
+
+        #[test]
+        fn pointer_integer() {
+            assert_eq!(
+                calculate_alignment(&types::Primitive::PointerInteger.into(), 4),
+                4
+            );
+            assert_eq!(
+                calculate_alignment(&types::Primitive::PointerInteger.into(), 8),
+                8
+            );
+        }
+
+        #[test]
+        fn empty_record() {
+            assert_eq!(
+                calculate_alignment(&types::Record::new(vec![]).into(), 8),
+                0
+            );
+        }
+
+        #[test]
+        fn record_with_field() {
+            assert_eq!(
+                calculate_alignment(
+                    &types::Record::new(vec![types::Primitive::Integer8.into()]).into(),
+                    8
+                ),
+                1
+            );
+        }
+
+        #[test]
+        fn record_with_fields() {
+            assert_eq!(
+                calculate_alignment(
+                    &types::Record::new(vec![
+                        types::Primitive::Integer8.into(),
+                        types::Primitive::Integer8.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                1
+            );
+        }
+
+        #[test]
+        fn record_with_aligned_4_byte_field() {
+            assert_eq!(
+                calculate_alignment(
+                    &types::Record::new(vec![
+                        types::Primitive::Integer8.into(),
+                        types::Primitive::Integer32.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                4
+            );
+        }
+
+        #[test]
+        fn record_with_aligned_8_byte_field() {
+            assert_eq!(
+                calculate_alignment(
+                    &types::Record::new(vec![
+                        types::Primitive::Integer8.into(),
+                        types::Primitive::Integer64.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                8
+            );
+        }
+    }
 }
