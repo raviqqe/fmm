@@ -38,6 +38,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn primitives() {
+        for (type_, size) in [
+            (types::Primitive::Boolean, 1),
+            (types::Primitive::Integer8, 1),
+            (types::Primitive::Float32, 4),
+            (types::Primitive::Integer32, 4),
+            (types::Primitive::Float64, 8),
+            (types::Primitive::Integer64, 8),
+        ] {
+            assert_eq!(calculate_size(&type_.into(), 8), size);
+        }
+    }
+
+    #[test]
     fn pointer_integer() {
         assert_eq!(
             calculate_size(&types::Primitive::PointerInteger.into(), 4),
