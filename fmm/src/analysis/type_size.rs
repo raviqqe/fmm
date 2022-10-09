@@ -89,6 +89,21 @@ mod tests {
         }
 
         #[test]
+        fn union() {
+            assert_eq!(
+                calculate_size(
+                    &types::Union::new(vec![
+                        types::Primitive::Integer8.into(),
+                        types::Primitive::Integer32.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                4
+            );
+        }
+
+        #[test]
         fn empty_record() {
             assert_eq!(calculate_size(&types::Record::new(vec![]).into(), 8), 0);
         }
@@ -267,6 +282,21 @@ mod tests {
             assert_eq!(
                 calculate_alignment(&types::Primitive::PointerInteger.into(), 8),
                 8
+            );
+        }
+
+        #[test]
+        fn union() {
+            assert_eq!(
+                calculate_alignment(
+                    &types::Union::new(vec![
+                        types::Primitive::Integer8.into(),
+                        types::Primitive::Integer32.into()
+                    ])
+                    .into(),
+                    8
+                ),
+                4
             );
         }
 
