@@ -12,6 +12,8 @@ struct Context {
 }
 
 // TODO Implement the complete C calling convention for all targets.
+//
+// Based on: https://refspecs.linuxfoundation.org/elf/x86_64-SysV-psABI.pdf
 pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingConventionError> {
     if ![4, 8].contains(&word_bytes) {
         return Err(CCallingConventionError::WordSize(word_bytes));

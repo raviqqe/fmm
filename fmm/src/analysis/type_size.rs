@@ -1,6 +1,8 @@
 use crate::types::{self, Type};
 
-// Returns a size of a type in bytes.
+/// Returns a size of a type in bytes.
+///
+/// Based on: https://refspecs.linuxfoundation.org/elf/x86_64-SysV-psABI.pdf
 pub fn calculate_size(type_: &Type, word_bytes: usize) -> usize {
     match type_ {
         Type::Record(record) => {
