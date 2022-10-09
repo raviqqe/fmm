@@ -10,6 +10,7 @@ pub fn calculate_size(type_: &Type, word_bytes: usize) -> usize {
                 let field_size = calculate_size(field, word_bytes);
 
                 // Use field sizes as alignment.
+                // TODO Fix nested records.
                 size = size.max((size as f64 / field_size as f64).ceil() as usize * field_size);
 
                 size += field_size;
