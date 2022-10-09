@@ -1,7 +1,7 @@
 mod error;
 
 use self::error::CCallingConventionError;
-use super::type_check;
+use super::{type_check, type_size};
 use crate::{
     ir::*,
     types::{self, void_type, CallingConvention, Type},
@@ -82,7 +82,7 @@ fn transform_function_type(context: &Context, function: &types::Function) -> typ
 fn is_memory_class(context: &Context, type_: &Type) -> bool {
     match type_ {
         Type::Record(record) => {
-            type_size(context, type_) > 2 * context.word_bytes
+            type_size::calculate_size(type_, context.word_bytes) > 2 * context.word_bytes
                 || record
                     .fields()
                     .iter()
@@ -93,41 +93,6 @@ fn is_memory_class(context: &Context, type_: &Type) -> bool {
             .iter()
             .any(|type_| is_memory_class(context, type_)),
         Type::Function(_) | Type::Pointer(_) | Type::Primitive(_) => false,
-    }
-}
-
-fn type_size(context: &Context, type_: &Type) -> usize {
-    match type_ {
-        Type::Record(record) => {
-            let mut size = 0;
-
-            for field in record.fields() {
-                let field_size = type_size(context, field);
-
-                // Use field sizes as alignment.
-                size = size.max((size as f64 / field_size as f64).ceil() as usize * field_size);
-
-                size += field_size;
-            }
-
-            size
-        }
-        Type::Primitive(primitive) => match primitive {
-            types::Primitive::Boolean => 1,
-            types::Primitive::Float32 => 4,
-            types::Primitive::Float64 => 8,
-            types::Primitive::Integer8 => 1,
-            types::Primitive::Integer32 => 4,
-            types::Primitive::Integer64 => 8,
-            types::Primitive::PointerInteger => context.word_bytes,
-        },
-        Type::Union(union) => union
-            .members()
-            .iter()
-            .map(|type_| type_size(context, type_))
-            .max()
-            .unwrap_or_default(),
-        Type::Function(_) | Type::Pointer(_) => context.word_bytes,
     }
 }
 
