@@ -7,3 +7,4 @@ pub mod renaming;
 pub mod type_check;
 pub mod type_collection;
 pub mod type_conversion;
+pub mod type_size;
