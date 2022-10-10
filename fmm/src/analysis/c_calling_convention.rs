@@ -50,7 +50,10 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
         module.variable_declarations().to_vec(),
         function_declarations,
         module.variable_definitions().to_vec(),
-        function_definitions,
+        function_definitions
+            .iter()
+            .map(|definition| transform_calls_in_function_definition(definition, &changed_names))
+            .collect(),
     );
 
     type_check::check(&module)?;
@@ -77,6 +80,42 @@ fn transform_function_definition(
         Some(definition.clone())
     } else {
         None
+    }
+}
+
+fn transform_calls_in_function_definition(
+    definition: &FunctionDefinition,
+    names: &FnvHashSet<String>,
+) -> FunctionDefinition {
+    FunctionDefinition::new(
+        definition.name(),
+        definition.arguments().to_vec(),
+        definition.result_type().clone(),
+        transform_block(definition.body(), names),
+        definition.options().clone(),
+    )
+}
+
+fn transform_block(block: &Block, names: &FnvHashSet<String>) -> Block {
+    let mut instructions = vec![];
+
+    for instruction in block.instructions() {
+        instructions.extend(transform_instruction(instruction, names));
+    }
+
+    Block::new(instructions, block.terminal_instruction().clone())
+}
+
+fn transform_instruction(
+    instruction: &Instruction,
+    names: &FnvHashSet<String>,
+) -> Vec<Instruction> {
+    match instruction {
+        Instruction::Call(call) => match call.function() {
+            Expression::Variable(variable) if names.contains(variable.name()) => todo!(),
+            _ => vec![call.clone().into()],
+        },
+        _ => vec![instruction.clone()],
     }
 }
 
