@@ -112,6 +112,7 @@ fn transform_instruction(
 ) -> Vec<Instruction> {
     match instruction {
         Instruction::Call(call) => match call.function() {
+            // TODO Support complex expressions.
             Expression::Variable(variable) if names.contains(variable.name()) => todo!(),
             _ => vec![call.clone().into()],
         },
