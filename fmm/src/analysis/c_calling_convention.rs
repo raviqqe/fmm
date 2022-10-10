@@ -334,7 +334,7 @@ mod tests {
                             Call::new(
                                 types::Function::new(
                                     vec![types::Pointer::new(record_type.clone()).into()],
-                                    void_type().clone(),
+                                    void_type(),
                                     types::CallingConvention::Target
                                 ),
                                 Variable::new("f"),
@@ -343,8 +343,7 @@ mod tests {
                             )
                             .into(),
                             Load::new(record_type.clone(), Variable::new("x.p"), "x").into(),
-                            DeconstructRecord::new(record_type.clone(), Variable::new("x"), 0, "y")
-                                .into()
+                            DeconstructRecord::new(record_type, Variable::new("x"), 0, "y").into()
                         ],
                         Return::new(types::Primitive::Integer64, Variable::new("y"))
                     ),
