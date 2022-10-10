@@ -1,16 +1,13 @@
+mod context;
 mod error;
+mod function_declaration;
+mod function_definition;
+mod utilities;
 
-use self::error::CCallingConventionError;
-use super::{type_check, type_size};
-use crate::{
-    ir::*,
-    types::{self, void_type, CallingConvention, Type},
-};
+use self::{context::Context, error::CCallingConventionError};
+use super::type_check;
+use crate::{ir::*, types};
 use fnv::FnvHashMap;
-
-struct Context {
-    word_bytes: usize,
-}
 
 // TODO Implement the complete C calling convention for all targets.
 //
@@ -22,12 +19,12 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
 
     type_check::check(module)?;
 
-    let context = Context { word_bytes };
+    let context = Context::new(word_bytes);
     let mut changed_names = FnvHashMap::default();
     let mut function_declarations = vec![];
 
     for declaration in module.function_declarations() {
-        if let Some(declaration) = transform_function_declaration(&context, declaration) {
+        if let Some(declaration) = function_declaration::transform(&context, declaration) {
             changed_names.insert(declaration.name().to_owned(), declaration.type_().clone());
             function_declarations.push(declaration);
         } else {
@@ -38,7 +35,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     let mut function_definitions = vec![];
 
     for definition in module.function_definitions() {
-        if let Some(definition) = transform_function_definition(&context, definition) {
+        if let Some(definition) = function_definition::transform(&context, definition) {
             changed_names.insert(definition.name().to_owned(), definition.type_().clone());
             function_definitions.push(definition);
         } else {
@@ -52,7 +49,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
         module.variable_definitions().to_vec(),
         function_definitions
             .iter()
-            .map(|definition| transform_calls_in_function_definition(definition, &changed_names))
+            .map(|definition| transform_function_definition(definition, &changed_names))
             .collect(),
     );
 
@@ -61,65 +58,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     Ok(module)
 }
 
-fn transform_function_declaration(
-    context: &Context,
-    declaration: &FunctionDeclaration,
-) -> Option<FunctionDeclaration> {
-    transform_function_type(context, declaration.type_())
-        .map(|type_| FunctionDeclaration::new(declaration.name(), type_))
-}
-
 fn transform_function_definition(
-    context: &Context,
-    definition: &FunctionDefinition,
-) -> Option<FunctionDefinition> {
-    if definition.type_().calling_convention() == CallingConvention::Target
-        && is_memory_class(context, definition.result_type())
-    {
-        let pointer_name = format!("{}.p", definition.name());
-
-        Some(FunctionDefinition::new(
-            definition.name(),
-            definition
-                .arguments()
-                .iter()
-                .cloned()
-                .chain([Argument::new(
-                    &pointer_name,
-                    types::Pointer::new(definition.result_type().clone()),
-                )])
-                .collect(),
-            void_type(),
-            transform_block(definition.body(), definition.result_type(), &pointer_name),
-            definition.options().clone(),
-        ))
-    } else {
-        None
-    }
-}
-
-fn transform_block(block: &Block, result_type: &Type, pointer_name: &str) -> Block {
-    if let TerminalInstruction::Return(return_) = block.terminal_instruction() {
-        Block::new(
-            block
-                .instructions()
-                .iter()
-                .cloned()
-                .chain([Store::new(
-                    result_type.clone(),
-                    return_.expression().clone(),
-                    Variable::new(pointer_name),
-                )
-                .into()])
-                .collect(),
-            Return::new(void_type(), void_value()),
-        )
-    } else {
-        block.clone()
-    }
-}
-
-fn transform_calls_in_function_definition(
     definition: &FunctionDefinition,
     names: &FnvHashMap<String, types::Function>,
 ) -> FunctionDefinition {
@@ -127,12 +66,12 @@ fn transform_calls_in_function_definition(
         definition.name(),
         definition.arguments().to_vec(),
         definition.result_type().clone(),
-        transform_calls_in_block(definition.body(), names),
+        transform_block(definition.body(), names),
         definition.options().clone(),
     )
 }
 
-fn transform_calls_in_block(block: &Block, names: &FnvHashMap<String, types::Function>) -> Block {
+fn transform_block(block: &Block, names: &FnvHashMap<String, types::Function>) -> Block {
     let mut instructions = vec![];
 
     for instruction in block.instructions() {
@@ -180,49 +119,10 @@ fn transform_instruction(
     }
 }
 
-fn transform_function_type(
-    context: &Context,
-    function: &types::Function,
-) -> Option<types::Function> {
-    if function.calling_convention() == CallingConvention::Target
-        && is_memory_class(context, function.result())
-    {
-        Some(types::Function::new(
-            function
-                .arguments()
-                .iter()
-                .cloned()
-                .chain([types::Pointer::new(function.result().clone()).into()])
-                .collect(),
-            void_type(),
-            function.calling_convention(),
-        ))
-    } else {
-        None
-    }
-}
-
-// The name, "memory class" comes from the C ABI on System V.
-fn is_memory_class(context: &Context, type_: &Type) -> bool {
-    match type_ {
-        Type::Record(record) => {
-            type_size::calculate_size(type_, context.word_bytes) > 2 * context.word_bytes
-                || record
-                    .fields()
-                    .iter()
-                    .any(|type_| is_memory_class(context, type_))
-        }
-        Type::Union(union) => union
-            .members()
-            .iter()
-            .any(|type_| is_memory_class(context, type_)),
-        Type::Function(_) | Type::Pointer(_) | Type::Primitive(_) => false,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::void_type;
     use pretty_assertions::assert_eq;
 
     const WORD_BYTES: usize = 8;
