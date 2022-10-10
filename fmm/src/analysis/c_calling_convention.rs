@@ -197,86 +197,133 @@ mod tests {
         );
     }
 
-    #[test]
-    fn do_not_transform_compatible_function_declaration() {
-        let module = Module::new(
-            vec![],
-            vec![FunctionDeclaration::new(
-                "f",
-                types::Function::new(
-                    vec![],
-                    types::Record::new(vec![
-                        types::Primitive::Integer64.into(),
-                        types::Primitive::Integer64.into(),
-                    ]),
-                    types::CallingConvention::Target,
+    mod function_declaration {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn do_not_transform_compatible_function_declaration() {
+            let module = Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "f",
+                    types::Function::new(
+                        vec![],
+                        types::Record::new(vec![
+                            types::Primitive::Integer64.into(),
+                            types::Primitive::Integer64.into(),
+                        ]),
+                        types::CallingConvention::Target,
+                    ),
+                )],
+                vec![],
+                vec![],
+            );
+
+            assert_eq!(transform(&module, 8), Ok(module));
+        }
+
+        #[test]
+        fn transform_function_declaration() {
+            let result_type = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+
+            assert_eq!(
+                transform(
+                    &Module::new(
+                        vec![],
+                        vec![FunctionDeclaration::new(
+                            "f",
+                            types::Function::new(
+                                vec![],
+                                result_type.clone(),
+                                types::CallingConvention::Target,
+                            )
+                        )],
+                        vec![],
+                        vec![]
+                    ),
+                    8
                 ),
-            )],
-            vec![],
-            vec![],
-        );
-
-        assert_eq!(transform(&module, 8), Ok(module));
-    }
-
-    #[test]
-    fn transform_function_declaration() {
-        let result_type = types::Record::new(vec![
-            types::Primitive::Integer64.into(),
-            types::Primitive::Integer64.into(),
-            types::Primitive::Integer64.into(),
-        ]);
-
-        assert_eq!(
-            transform(
-                &Module::new(
+                Ok(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
                         types::Function::new(
-                            vec![],
-                            result_type.clone(),
+                            vec![types::Pointer::new(result_type).into()],
+                            void_type(),
                             types::CallingConvention::Target,
                         )
                     )],
                     vec![],
                     vec![]
+                ))
+            );
+        }
+
+        #[test]
+        fn transform_function_declaration_with_call() {
+            let record_type = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+
+            assert_eq!(
+                transform(
+                    &Module::new(
+                        vec![],
+                        vec![FunctionDeclaration::new(
+                            "f",
+                            types::Function::new(
+                                vec![],
+                                record_type.clone(),
+                                types::CallingConvention::Target,
+                            )
+                        )],
+                        vec![],
+                        vec![FunctionDefinition::new(
+                            "g",
+                            vec![],
+                            types::Primitive::Integer64,
+                            Block::new(
+                                vec![
+                                    Call::new(
+                                        types::Function::new(
+                                            vec![],
+                                            record_type.clone(),
+                                            types::CallingConvention::Target
+                                        ),
+                                        Variable::new("f"),
+                                        vec![],
+                                        "x"
+                                    )
+                                    .into(),
+                                    DeconstructRecord::new(
+                                        record_type.clone(),
+                                        Variable::new("x"),
+                                        0,
+                                        "y"
+                                    )
+                                    .into()
+                                ],
+                                Return::new(types::Primitive::Integer64, Variable::new("y"))
+                            ),
+                            Default::default()
+                        )]
+                    ),
+                    8
                 ),
-                8
-            ),
-            Ok(Module::new(
-                vec![],
-                vec![FunctionDeclaration::new(
-                    "f",
-                    types::Function::new(
-                        vec![types::Pointer::new(result_type).into()],
-                        void_type(),
-                        types::CallingConvention::Target,
-                    )
-                )],
-                vec![],
-                vec![]
-            ))
-        );
-    }
-
-    #[test]
-    fn transform_function_declaration_with_call() {
-        let record_type = types::Record::new(vec![
-            types::Primitive::Integer64.into(),
-            types::Primitive::Integer64.into(),
-            types::Primitive::Integer64.into(),
-        ]);
-
-        assert_eq!(
-            transform(
-                &Module::new(
+                Ok(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
                         types::Function::new(
-                            vec![],
-                            record_type.clone(),
+                            vec![types::Pointer::new(record_type.clone()).into()],
+                            void_type(),
                             types::CallingConvention::Target,
                         )
                     )],
@@ -287,69 +334,28 @@ mod tests {
                         types::Primitive::Integer64,
                         Block::new(
                             vec![
+                                AllocateStack::new(record_type.clone(), "x.p").into(),
                                 Call::new(
                                     types::Function::new(
-                                        vec![],
-                                        record_type.clone(),
+                                        vec![types::Pointer::new(record_type.clone()).into()],
+                                        void_type(),
                                         types::CallingConvention::Target
                                     ),
                                     Variable::new("f"),
-                                    vec![],
-                                    "x"
+                                    vec![Variable::new("x.p").into()],
+                                    "x.r"
                                 )
                                 .into(),
-                                DeconstructRecord::new(
-                                    record_type.clone(),
-                                    Variable::new("x"),
-                                    0,
-                                    "y"
-                                )
-                                .into()
+                                Load::new(record_type.clone(), Variable::new("x.p"), "x").into(),
+                                DeconstructRecord::new(record_type, Variable::new("x"), 0, "y")
+                                    .into()
                             ],
                             Return::new(types::Primitive::Integer64, Variable::new("y"))
                         ),
                         Default::default()
                     )]
-                ),
-                8
-            ),
-            Ok(Module::new(
-                vec![],
-                vec![FunctionDeclaration::new(
-                    "f",
-                    types::Function::new(
-                        vec![types::Pointer::new(record_type.clone()).into()],
-                        void_type(),
-                        types::CallingConvention::Target,
-                    )
-                )],
-                vec![],
-                vec![FunctionDefinition::new(
-                    "g",
-                    vec![],
-                    types::Primitive::Integer64,
-                    Block::new(
-                        vec![
-                            AllocateStack::new(record_type.clone(), "x.p").into(),
-                            Call::new(
-                                types::Function::new(
-                                    vec![types::Pointer::new(record_type.clone()).into()],
-                                    void_type(),
-                                    types::CallingConvention::Target
-                                ),
-                                Variable::new("f"),
-                                vec![Variable::new("x.p").into()],
-                                "x.r"
-                            )
-                            .into(),
-                            Load::new(record_type.clone(), Variable::new("x.p"), "x").into(),
-                            DeconstructRecord::new(record_type, Variable::new("x"), 0, "y").into()
-                        ],
-                        Return::new(types::Primitive::Integer64, Variable::new("y"))
-                    ),
-                    Default::default()
-                )]
-            ))
-        );
+                ))
+            );
+        }
     }
 }
