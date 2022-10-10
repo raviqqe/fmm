@@ -3,7 +3,7 @@ mod expression;
 mod instruction;
 mod instruction_configuration;
 mod name;
-mod renaming;
+mod rename;
 mod type_;
 
 pub use error::*;
@@ -27,7 +27,7 @@ pub fn compile(
     fmm::analysis::name::check(module)?;
     fmm::analysis::type_check::check(module)?;
 
-    let module = renaming::rename(module);
+    let module = rename::rename(module);
     let global_variables = module
         .variable_declarations()
         .iter()
