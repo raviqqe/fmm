@@ -1,7 +1,7 @@
 use fmm::ir::*;
 
 pub fn rename(module: &Module) -> Module {
-    fmm::analysis::renaming::rename(module, |name| {
+    fmm::analysis::rename::rename(module, |name| {
         if name.is_empty() {
             "_".into()
         } else {
