@@ -6,7 +6,7 @@ use crate::{
     ir::*,
     types::{self, void_type, CallingConvention, Type},
 };
-use fnv::FnvHashSet;
+use fnv::FnvHashMap;
 
 struct Context {
     word_bytes: usize,
@@ -23,12 +23,12 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     type_check::check(module)?;
 
     let context = Context { word_bytes };
-    let mut changed_names = FnvHashSet::default();
+    let mut changed_names = FnvHashMap::default();
     let mut function_declarations = vec![];
 
     for declaration in module.function_declarations() {
         if let Some(declaration) = transform_function_declaration(&context, declaration) {
-            changed_names.insert(declaration.name().to_owned());
+            changed_names.insert(declaration.name().to_owned(), declaration.type_().clone());
             function_declarations.push(declaration);
         } else {
             function_declarations.push(declaration.clone());
@@ -39,7 +39,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
 
     for definition in module.function_definitions() {
         if let Some(definition) = transform_function_definition(&context, definition) {
-            changed_names.insert(definition.name().to_owned());
+            changed_names.insert(definition.name().to_owned(), definition.type_().clone());
             function_definitions.push(definition);
         } else {
             function_definitions.push(definition.clone());
@@ -85,7 +85,7 @@ fn transform_function_definition(
 
 fn transform_calls_in_function_definition(
     definition: &FunctionDefinition,
-    names: &FnvHashSet<String>,
+    names: &FnvHashMap<String, types::Function>,
 ) -> FunctionDefinition {
     FunctionDefinition::new(
         definition.name(),
@@ -96,7 +96,7 @@ fn transform_calls_in_function_definition(
     )
 }
 
-fn transform_block(block: &Block, names: &FnvHashSet<String>) -> Block {
+fn transform_block(block: &Block, names: &FnvHashMap<String, types::Function>) -> Block {
     let mut instructions = vec![];
 
     for instruction in block.instructions() {
@@ -108,12 +108,36 @@ fn transform_block(block: &Block, names: &FnvHashSet<String>) -> Block {
 
 fn transform_instruction(
     instruction: &Instruction,
-    names: &FnvHashSet<String>,
+    names: &FnvHashMap<String, types::Function>,
 ) -> Vec<Instruction> {
     match instruction {
         Instruction::Call(call) => match call.function() {
             // TODO Support complex expressions.
-            Expression::Variable(variable) if names.contains(variable.name()) => todo!(),
+            Expression::Variable(variable) => {
+                if let Some(type_) = names.get(variable.name()) {
+                    let function_type = call.type_();
+                    let pointer_name = format!("{}.p", call.name());
+                    let pointer = Variable::new(&pointer_name);
+
+                    vec![
+                        AllocateStack::new(function_type.result().clone(), &pointer_name).into(),
+                        Call::new(
+                            type_.clone(),
+                            variable.clone(),
+                            call.arguments()
+                                .iter()
+                                .cloned()
+                                .chain([pointer.clone().into()])
+                                .collect(),
+                            format!("{}.r", call.name()),
+                        )
+                        .into(),
+                        Load::new(function_type.result().clone(), pointer, call.name()).into(),
+                    ]
+                } else {
+                    vec![call.clone().into()]
+                }
+            }
             _ => vec![call.clone().into()],
         },
         _ => vec![instruction.clone()],
@@ -174,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn do_not_transform_function_declaration() {
+    fn do_not_transform_compatible_function_declaration() {
         let module = Module::new(
             vec![],
             vec![FunctionDeclaration::new(
@@ -232,6 +256,100 @@ mod tests {
                 )],
                 vec![],
                 vec![]
+            ))
+        );
+    }
+
+    #[test]
+    fn transform_function_declaration_with_call() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new(
+                        "f",
+                        types::Function::new(
+                            vec![],
+                            record_type.clone(),
+                            types::CallingConvention::Target,
+                        )
+                    )],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "g",
+                        vec![],
+                        types::Primitive::Integer64,
+                        Block::new(
+                            vec![
+                                Call::new(
+                                    types::Function::new(
+                                        vec![],
+                                        record_type.clone(),
+                                        types::CallingConvention::Target
+                                    ),
+                                    Variable::new("f"),
+                                    vec![],
+                                    "x"
+                                )
+                                .into(),
+                                DeconstructRecord::new(
+                                    record_type.clone(),
+                                    Variable::new("x"),
+                                    0,
+                                    "y"
+                                )
+                                .into()
+                            ],
+                            Return::new(types::Primitive::Integer64, Variable::new("y"))
+                        ),
+                        Default::default()
+                    )]
+                ),
+                8
+            ),
+            Ok(Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "f",
+                    types::Function::new(
+                        vec![types::Pointer::new(record_type.clone()).into()],
+                        void_type(),
+                        types::CallingConvention::Target,
+                    )
+                )],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "g",
+                    vec![],
+                    types::Primitive::Integer64,
+                    Block::new(
+                        vec![
+                            AllocateStack::new(record_type.clone(), "x.p").into(),
+                            Call::new(
+                                types::Function::new(
+                                    vec![types::Pointer::new(record_type.clone()).into()],
+                                    void_type().clone(),
+                                    types::CallingConvention::Target
+                                ),
+                                Variable::new("f"),
+                                vec![Variable::new("x.p").into()],
+                                "x.r"
+                            )
+                            .into(),
+                            Load::new(record_type.clone(), Variable::new("x.p"), "x").into(),
+                            DeconstructRecord::new(record_type.clone(), Variable::new("x"), 0, "y")
+                                .into()
+                        ],
+                        Return::new(types::Primitive::Integer64, Variable::new("y"))
+                    ),
+                    Default::default()
+                )]
             ))
         );
     }
