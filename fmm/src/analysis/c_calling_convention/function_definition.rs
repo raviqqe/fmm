@@ -6,9 +6,9 @@ use crate::{
 
 pub fn transform(context: &Context, definition: &FunctionDefinition) -> FunctionDefinition {
     if definition.type_().calling_convention() == types::CallingConvention::Target {
-        let is_result_memory = type_::is_memory_class(context, definition.result_type());
-        let pointer_name = if is_result_memory {
-            Some(format!("{}.p", definition.name()))
+        let pointer_name = format!("{}.p", definition.name());
+        let result_pointer = if type_::is_memory_class(context, definition.result_type()) {
+            Some((&*pointer_name, definition.result_type()))
         } else {
             None
         };
@@ -19,20 +19,16 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
                 .arguments()
                 .iter()
                 .cloned()
-                .chain(pointer_name.as_deref().map(|name| {
+                .chain(result_pointer.map(|(name, _)| {
                     Argument::new(name, types::Pointer::new(definition.result_type().clone()))
                 }))
                 .collect(),
-            if is_result_memory {
+            if result_pointer.is_some() {
                 void_type().into()
             } else {
                 definition.result_type().clone()
             },
-            transform_block(
-                definition.body(),
-                definition.result_type(),
-                pointer_name.as_deref(),
-            ),
+            transform_block(definition.body(), result_pointer),
             definition.options().clone(),
         )
     } else {
@@ -40,25 +36,21 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
     }
 }
 
-fn transform_block(block: &Block, result_type: &Type, pointer_name: Option<&str>) -> Block {
+fn transform_block(block: &Block, result_pointer: Option<(&str, &Type)>) -> Block {
     let mut instructions = vec![];
 
     for instruction in block.instructions() {
-        instructions.push(transform_instruction(
-            instruction,
-            result_type,
-            pointer_name,
-        ));
+        instructions.push(transform_instruction(instruction, result_pointer));
     }
 
-    if let (TerminalInstruction::Return(return_), Some(pointer_name)) =
-        (block.terminal_instruction(), pointer_name)
+    if let (TerminalInstruction::Return(return_), Some((pointer_name, type_))) =
+        (block.terminal_instruction(), result_pointer)
     {
         Block::new(
             instructions
                 .into_iter()
                 .chain([Store::new(
-                    result_type.clone(),
+                    type_.clone(),
                     return_.expression().clone(),
                     Variable::new(pointer_name),
                 )
@@ -73,15 +65,14 @@ fn transform_block(block: &Block, result_type: &Type, pointer_name: Option<&str>
 
 fn transform_instruction(
     instruction: &Instruction,
-    result_type: &Type,
-    pointer_name: Option<&str>,
+    result_pointer: Option<(&str, &Type)>,
 ) -> Instruction {
     match instruction {
         Instruction::If(if_) => If::new(
             if_.type_().clone(),
             if_.condition().clone(),
-            transform_block(if_.then(), result_type, pointer_name),
-            transform_block(if_.else_(), result_type, pointer_name),
+            transform_block(if_.then(), result_pointer),
+            transform_block(if_.else_(), result_pointer),
             if_.name(),
         )
         .into(),
