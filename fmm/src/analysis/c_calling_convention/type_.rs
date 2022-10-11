@@ -4,6 +4,14 @@ use crate::{
     types::{self, void_type, Type},
 };
 
+pub fn transform(context: &Context, type_: &Type) -> Type {
+    if is_memory_class(context, type_) {
+        types::Pointer::new(type_.clone()).into()
+    } else {
+        type_.clone()
+    }
+}
+
 pub fn transform_function(context: &Context, function: &types::Function) -> types::Function {
     if function.calling_convention() == types::CallingConvention::Target {
         let is_result_memory = is_memory_class(context, function.result());
@@ -28,14 +36,6 @@ pub fn transform_function(context: &Context, function: &types::Function) -> type
         )
     } else {
         function.clone()
-    }
-}
-
-pub fn transform(context: &Context, type_: &Type) -> Type {
-    if is_memory_class(context, type_) {
-        types::Pointer::new(type_.clone()).into()
-    } else {
-        type_.clone()
     }
 }
 
