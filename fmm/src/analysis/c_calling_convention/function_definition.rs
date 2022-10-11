@@ -31,6 +31,16 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Option<F
 }
 
 fn transform_block(block: &Block, result_type: &Type, pointer_name: &str) -> Block {
+    let mut instructions = vec![];
+
+    for instruction in block.instructions() {
+        instructions.push(transform_instruction(
+            instruction,
+            result_type,
+            pointer_name,
+        ));
+    }
+
     if let TerminalInstruction::Return(return_) = block.terminal_instruction() {
         Block::new(
             block
@@ -47,6 +57,159 @@ fn transform_block(block: &Block, result_type: &Type, pointer_name: &str) -> Blo
             Return::new(void_type(), void_value()),
         )
     } else {
-        block.clone()
+        Block::new(instructions, block.terminal_instruction().clone())
+    }
+}
+
+fn transform_instruction(
+    instruction: &Instruction,
+    result_type: &Type,
+    pointer_name: &str,
+) -> Instruction {
+    match instruction {
+        Instruction::If(if_) => If::new(
+            if_.type_().clone(),
+            if_.condition().clone(),
+            transform_block(if_.then(), result_type, pointer_name),
+            transform_block(if_.else_(), result_type, pointer_name),
+            if_.name(),
+        )
+        .into(),
+        _ => instruction.clone(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    const WORD_BYTES: usize = 8;
+
+    #[test]
+    fn transform_return() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    record_type.clone(),
+                    Block::new(
+                        vec![],
+                        Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            Some(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "f.p",
+                    types::Pointer::new(record_type.clone())
+                )],
+                void_type(),
+                Block::new(
+                    vec![Store::new(
+                        record_type.clone(),
+                        Undefined::new(record_type),
+                        Variable::new("f.p")
+                    )
+                    .into()],
+                    Return::new(void_type(), void_value()),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            ))
+        );
+    }
+
+    #[test]
+    fn transform_if() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    record_type.clone(),
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            "x"
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            Some(FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "f.p",
+                    types::Pointer::new(record_type.clone())
+                )],
+                void_type(),
+                Block::new(
+                    vec![If::new(
+                        void_type(),
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Store::new(
+                                record_type.clone(),
+                                Undefined::new(record_type.clone()),
+                                Variable::new("f.p")
+                            )
+                            .into()],
+                            Return::new(void_type(), void_value()),
+                        ),
+                        Block::new(
+                            vec![Store::new(
+                                record_type.clone(),
+                                Undefined::new(record_type.clone()),
+                                Variable::new("f.p")
+                            )
+                            .into()],
+                            Return::new(void_type(), void_value()),
+                        ),
+                        "x"
+                    )
+                    .into(),],
+                    TerminalInstruction::Unreachable
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            ))
+        );
     }
 }
