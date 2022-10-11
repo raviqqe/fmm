@@ -20,14 +20,15 @@ pub fn transform_function_definition(
 }
 
 fn transform_block(context: &Context, block: &Block) -> Result<Block, CCallingConventionError> {
-    let mut instructions = vec![];
-
-    for instruction in block.instructions() {
-        instructions.extend(transform_instruction(context, instruction)?);
-    }
-
     Ok(Block::new(
-        instructions,
+        block
+            .instructions()
+            .iter()
+            .map(|instruction| transform_instruction(context, instruction))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect(),
         block.terminal_instruction().clone(),
     ))
 }
@@ -77,4 +78,79 @@ fn transform_instruction(
         }
         _ => vec![instruction.clone()],
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::void_type;
+    use pretty_assertions::assert_eq;
+
+    const WORD_BYTES: usize = 8;
+
+    #[test]
+    fn transform() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform_function_definition(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Integer64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    record_type.clone(),
+                                    types::CallingConvention::Target,
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "x",
+                            )
+                            .into(),
+                            DeconstructRecord::new(record_type.clone(), Variable::new("x"), 0, "y")
+                                .into(),
+                        ],
+                        Return::new(types::Primitive::Integer64, Variable::new("y")),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            Ok(FunctionDefinition::new(
+                "f",
+                vec![],
+                types::Primitive::Integer64,
+                Block::new(
+                    vec![
+                        AllocateStack::new(record_type.clone(), "x_c_0").into(),
+                        Call::new(
+                            types::Function::new(
+                                vec![types::Pointer::new(record_type.clone()).into()],
+                                void_type(),
+                                types::CallingConvention::Target
+                            ),
+                            Variable::new("f"),
+                            vec![Variable::new("x_c_0").into()],
+                            "x_c_1"
+                        )
+                        .into(),
+                        Load::new(record_type.clone(), Variable::new("x_c_0"), "x").into(),
+                        DeconstructRecord::new(record_type, Variable::new("x"), 0, "y").into(),
+                    ],
+                    Return::new(types::Primitive::Integer64, Variable::new("y")),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            ))
+        );
+    }
 }
