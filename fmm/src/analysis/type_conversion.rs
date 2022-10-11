@@ -355,3 +355,86 @@ fn convert_type(
         converted_type
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn convert_empty() {
+        let module = Module::new(vec![], vec![], vec![], vec![]);
+
+        assert_eq!(
+            convert(&module, &|_| types::Primitive::PointerInteger.into()),
+            module
+        );
+    }
+
+    #[test]
+    fn convert_variable_declaration() {
+        assert_eq!(
+            convert(
+                &Module::new(
+                    vec![VariableDeclaration::new("x", types::Primitive::Integer32)],
+                    vec![],
+                    vec![],
+                    vec![],
+                ),
+                &|type_| match type_ {
+                    Type::Primitive(types::Primitive::Integer32) =>
+                        types::Primitive::PointerInteger.into(),
+                    _ => type_.clone(),
+                }
+            ),
+            Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger
+                )],
+                vec![],
+                vec![],
+                vec![],
+            )
+        );
+    }
+
+    #[test]
+    fn convert_function_declaration() {
+        assert_eq!(
+            convert(
+                &Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new(
+                        "f",
+                        types::Function::new(
+                            vec![],
+                            types::Primitive::Integer32,
+                            types::CallingConvention::Target,
+                        ),
+                    )],
+                    vec![],
+                    vec![],
+                ),
+                &|type_| match type_ {
+                    Type::Primitive(types::Primitive::Integer32) =>
+                        types::Primitive::PointerInteger.into(),
+                    _ => type_.clone(),
+                }
+            ),
+            Module::new(
+                vec![],
+                vec![FunctionDeclaration::new(
+                    "f",
+                    types::Function::new(
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        types::CallingConvention::Target,
+                    ),
+                )],
+                vec![],
+                vec![],
+            )
+        );
+    }
+}
