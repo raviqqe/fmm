@@ -474,7 +474,7 @@ mod tests {
                                 .into(),
                                 Call::new(
                                     types::Function::new(
-                                        vec![types::Pointer::new(record_type.clone()).into()],
+                                        vec![types::Pointer::new(record_type).into()],
                                         types::Primitive::Integer64,
                                         types::CallingConvention::Target,
                                     ),
