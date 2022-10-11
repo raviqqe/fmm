@@ -5,21 +5,37 @@ use crate::{
 };
 
 pub fn transform_function(context: &Context, function: &types::Function) -> types::Function {
-    if function.calling_convention() == types::CallingConvention::Target
-        && is_memory_class(context, function.result())
-    {
+    if function.calling_convention() == types::CallingConvention::Target {
+        let is_result_memory = is_memory_class(context, function.result());
+
         types::Function::new(
             function
                 .arguments()
                 .iter()
-                .cloned()
-                .chain([types::Pointer::new(function.result().clone()).into()])
+                .map(|type_| transform_type(context, type_))
+                .chain(if is_result_memory {
+                    Some(transform_type(context, function.result()).into())
+                } else {
+                    None
+                })
                 .collect(),
-            void_type(),
+            if is_result_memory {
+                void_type().into()
+            } else {
+                function.result().clone()
+            },
             function.calling_convention(),
         )
     } else {
         function.clone()
+    }
+}
+
+fn transform_type(context: &Context, type_: &Type) -> Type {
+    if is_memory_class(context, type_) {
+        types::Pointer::new(type_.clone()).into()
+    } else {
+        type_.clone()
     }
 }
 
@@ -49,6 +65,7 @@ mod tests {
 
     mod function {
         use super::*;
+        use pretty_assertions::assert_eq;
 
         #[test]
         fn transform_function_of_source_calling_convention() {
@@ -77,6 +94,49 @@ mod tests {
             assert_eq!(
                 transform_function(&Context::new(WORD_BYTES), &function),
                 function
+            );
+        }
+
+        #[test]
+        fn transform_function_argument() {
+            let record = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+            let function = types::Function::new(
+                vec![record.clone().into()],
+                void_type(),
+                types::CallingConvention::Target,
+            );
+
+            assert_eq!(
+                transform_function(&Context::new(WORD_BYTES), &function),
+                types::Function::new(
+                    vec![types::Pointer::new(record).into()],
+                    void_type(),
+                    types::CallingConvention::Target
+                )
+            );
+        }
+
+        #[test]
+        fn transform_function_result() {
+            let record = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+            let function =
+                types::Function::new(vec![], record.clone(), types::CallingConvention::Target);
+
+            assert_eq!(
+                transform_function(&Context::new(WORD_BYTES), &function),
+                types::Function::new(
+                    vec![types::Pointer::new(record).into()],
+                    void_type(),
+                    types::CallingConvention::Target
+                )
             );
         }
     }
