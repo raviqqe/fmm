@@ -56,7 +56,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
         function_definitions
             .iter()
             .map(|definition| transform_function_definition(&context, definition))
-            .collect(),
+            .collect::<Result<_, _>>()?,
     );
 
     type_check::check(&module)?;
@@ -67,28 +67,34 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
 fn transform_function_definition(
     context: &Context,
     definition: &FunctionDefinition,
-) -> FunctionDefinition {
-    FunctionDefinition::new(
+) -> Result<FunctionDefinition, CCallingConventionError> {
+    Ok(FunctionDefinition::new(
         definition.name(),
         definition.arguments().to_vec(),
         definition.result_type().clone(),
-        transform_block(context, definition.body()),
+        transform_block(context, definition.body())?,
         definition.options().clone(),
-    )
+    ))
 }
 
-fn transform_block(context: &Context, block: &Block) -> Block {
+fn transform_block(context: &Context, block: &Block) -> Result<Block, CCallingConventionError> {
     let mut instructions = vec![];
 
     for instruction in block.instructions() {
-        instructions.extend(transform_instruction(context, instruction));
+        instructions.extend(transform_instruction(context, instruction)?);
     }
 
-    Block::new(instructions, block.terminal_instruction().clone())
+    Ok(Block::new(
+        instructions,
+        block.terminal_instruction().clone(),
+    ))
 }
 
-fn transform_instruction(context: &Context, instruction: &Instruction) -> Vec<Instruction> {
-    match instruction {
+fn transform_instruction(
+    context: &Context,
+    instruction: &Instruction,
+) -> Result<Vec<Instruction>, CCallingConventionError> {
+    Ok(match instruction {
         Instruction::Call(call)
             if call.type_().calling_convention() == types::CallingConvention::Target =>
         {
@@ -101,22 +107,20 @@ fn transform_instruction(context: &Context, instruction: &Instruction) -> Vec<In
                     let function_type = call.type_();
                     let pointer = builder.allocate_stack(function_type.result().clone());
 
-                    builder
-                        .call(
-                            build::variable(
-                                variable.name(),
-                                function_type::transform(context, function_type).unwrap(),
-                            ),
-                            call.arguments()
-                                .iter()
-                                .zip(function_type.arguments())
-                                .map(|(argument, type_)| {
-                                    TypedExpression::new(argument.clone(), type_.clone())
-                                })
-                                .chain([pointer.clone().into()])
-                                .collect(),
-                        )
-                        .unwrap();
+                    builder.call(
+                        build::variable(
+                            variable.name(),
+                            function_type::transform(context, function_type).unwrap(),
+                        ),
+                        call.arguments()
+                            .iter()
+                            .zip(function_type.arguments())
+                            .map(|(argument, type_)| {
+                                TypedExpression::new(argument.clone(), type_.clone())
+                            })
+                            .chain([pointer.clone().into()])
+                            .collect(),
+                    )?;
 
                     builder.add_instruction(Load::new(
                         function_type.result().clone(),
@@ -130,7 +134,7 @@ fn transform_instruction(context: &Context, instruction: &Instruction) -> Vec<In
             }
         }
         _ => vec![instruction.clone()],
-    }
+    })
 }
 
 #[cfg(test)]
