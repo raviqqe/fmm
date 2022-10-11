@@ -1,6 +1,6 @@
 use super::{context::Context, error::CCallingConventionError, type_};
 use crate::{
-    build::{self, InstructionBuilder, NameGenerator, TypedExpression},
+    build::{InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
     types,
 };
@@ -129,7 +129,7 @@ mod tests {
                                 types::Primitive::Integer64,
                                 types::CallingConvention::Target,
                             ),
-                            Variable::new("f"),
+                            Variable::new("g"),
                             vec![Undefined::new(record_type.clone()).into()],
                             "x",
                         )
@@ -159,7 +159,7 @@ mod tests {
                                 types::Primitive::Integer64,
                                 types::CallingConvention::Target,
                             ),
-                            Variable::new("f"),
+                            Variable::new("g"),
                             vec![Variable::new("x_c_0").into()],
                             "x",
                         )

@@ -458,5 +458,92 @@ mod tests {
                 ))
             );
         }
+
+        #[test]
+        fn transform_argument_in_call_in_function_definition() {
+            let record_type = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+
+            assert_eq!(
+                transform_module(&Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new(
+                        "g",
+                        types::Function::new(
+                            vec![record_type.clone().into()],
+                            types::Primitive::Integer64,
+                            types::CallingConvention::Target,
+                        ),
+                    )],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![],
+                        types::Primitive::Integer64,
+                        Block::new(
+                            vec![Call::new(
+                                types::Function::new(
+                                    vec![record_type.clone().into()],
+                                    types::Primitive::Integer64,
+                                    types::CallingConvention::Target,
+                                ),
+                                Variable::new("g"),
+                                vec![Undefined::new(record_type.clone()).into()],
+                                "x",
+                            )
+                            .into()],
+                            Return::new(types::Primitive::Integer64, Variable::new("x")),
+                        ),
+                        FunctionDefinitionOptions::new()
+                            .set_calling_convention(types::CallingConvention::Target),
+                    )],
+                )),
+                Ok(Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new(
+                        "g",
+                        types::Function::new(
+                            vec![types::Pointer::new(record_type.clone()).into()],
+                            types::Primitive::Integer64,
+                            types::CallingConvention::Target,
+                        ),
+                    )],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![],
+                        types::Primitive::Integer64,
+                        Block::new(
+                            vec![
+                                AllocateStack::new(record_type.clone(), "x_c_0").into(),
+                                Store::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone()),
+                                    Variable::new("x_c_0")
+                                )
+                                .into(),
+                                Call::new(
+                                    types::Function::new(
+                                        vec![types::Pointer::new(record_type.clone()).into()],
+                                        types::Primitive::Integer64,
+                                        types::CallingConvention::Target,
+                                    ),
+                                    Variable::new("g"),
+                                    vec![Variable::new("x_c_0").into()],
+                                    "x",
+                                )
+                                .into()
+                            ],
+                            Return::new(types::Primitive::Integer64, Variable::new("x")),
+                        ),
+                        FunctionDefinitionOptions::new()
+                            .set_calling_convention(types::CallingConvention::Target),
+                    )],
+                ))
+            );
+        }
     }
 }
