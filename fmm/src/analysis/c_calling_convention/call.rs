@@ -41,66 +41,59 @@ fn transform_instruction(
         Instruction::Call(call)
             if call.type_().calling_convention() == types::CallingConvention::Target =>
         {
-            match call.function() {
-                // TODO Support complex expressions.
-                Expression::Variable(variable) => {
-                    let builder = InstructionBuilder::new(Rc::new(
-                        NameGenerator::new(format!("{}_c_", call.name())).into(),
-                    ));
-                    let original_function_type = call.type_();
-                    let function_type = type_::transform_function(context, original_function_type);
-                    let function = build::variable(variable.name(), function_type.clone());
+            let builder = InstructionBuilder::new(Rc::new(
+                NameGenerator::new(format!("{}_c_", call.name())).into(),
+            ));
+            let original_function_type = call.type_();
+            let function_type = type_::transform_function(context, original_function_type);
+            let function = TypedExpression::new(call.function().clone(), function_type.clone());
 
-                    let mut arguments = vec![];
+            let mut arguments = vec![];
 
-                    for (argument, type_) in call
-                        .arguments()
-                        .iter()
-                        .zip(original_function_type.arguments())
-                    {
-                        let argument = TypedExpression::new(argument.clone(), type_.clone());
+            for (argument, type_) in call
+                .arguments()
+                .iter()
+                .zip(original_function_type.arguments())
+            {
+                let argument = TypedExpression::new(argument.clone(), type_.clone());
 
-                        if type_::is_memory_class(context, type_) {
-                            let pointer = builder.allocate_stack(type_.clone());
+                if type_::is_memory_class(context, type_) {
+                    let pointer = builder.allocate_stack(type_.clone());
 
-                            builder.store(argument, pointer.clone());
+                    builder.store(argument, pointer.clone());
 
-                            arguments.push(pointer);
-                        } else {
-                            arguments.push(argument);
-                        }
-                    }
-
-                    if type_::is_memory_class(context, original_function_type.result()) {
-                        let pointer =
-                            builder.allocate_stack(original_function_type.result().clone());
-
-                        builder.call(
-                            function,
-                            arguments.into_iter().chain([pointer.clone()]).collect(),
-                        )?;
-
-                        builder.add_instruction(Load::new(
-                            original_function_type.result().clone(),
-                            pointer.expression().clone(),
-                            call.name(),
-                        ));
-                    } else {
-                        builder.add_instruction(Call::new(
-                            function_type,
-                            function.expression().clone(),
-                            arguments
-                                .into_iter()
-                                .map(|argument| argument.expression().clone())
-                                .collect(),
-                            call.name(),
-                        ));
-                    }
-
-                    builder.into_instructions()
+                    arguments.push(pointer);
+                } else {
+                    arguments.push(argument);
                 }
-                _ => vec![call.clone().into()],
             }
+
+            if type_::is_memory_class(context, original_function_type.result()) {
+                let pointer = builder.allocate_stack(original_function_type.result().clone());
+
+                builder.call(
+                    function,
+                    arguments.into_iter().chain([pointer.clone()]).collect(),
+                )?;
+
+                builder.add_instruction(Load::new(
+                    original_function_type.result().clone(),
+                    pointer.expression().clone(),
+                    call.name(),
+                ));
+            } else {
+                builder.add_instruction(Call::new(
+                    function_type,
+                    function.expression().clone(),
+                    arguments
+                        .into_iter()
+                        .map(|argument| argument.expression().clone())
+                        .collect(),
+                    call.name(),
+                ));
+            }
+
+            builder.into_instructions()
         }
         _ => vec![instruction.clone()],
     })
