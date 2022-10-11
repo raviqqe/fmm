@@ -7,7 +7,6 @@ authors = ["Yota Toyama <raviqqe@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-cached = "0.39.0"
 fnv = "1"
 hamt = { git = "https://github.com/raviqqe/hamt-rs", branch = "main" }
 once_cell = "1"
