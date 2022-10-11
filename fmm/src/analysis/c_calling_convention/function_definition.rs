@@ -1,0 +1,287 @@
+use super::{context::Context, type_};
+use crate::{
+    ir::*,
+    types::{self, void_type, Type},
+};
+
+fn pointer_name(name: &str) -> String {
+    format!("{}_c_pointer", name)
+}
+
+pub fn transform(context: &Context, definition: &FunctionDefinition) -> FunctionDefinition {
+    if definition.type_().calling_convention() == types::CallingConvention::Target {
+        let result_pointer_name = pointer_name(definition.name());
+        let result_pointer = if type_::is_memory_class(context, definition.result_type()) {
+            Some((&*result_pointer_name, definition.result_type()))
+        } else {
+            None
+        };
+
+        FunctionDefinition::new(
+            definition.name(),
+            definition
+                .arguments()
+                .iter()
+                .map(|argument| {
+                    Argument::new(
+                        pointer_name(argument.name()),
+                        type_::transform(context, argument.type_()),
+                    )
+                })
+                .chain(result_pointer.map(|(name, _)| {
+                    Argument::new(name, types::Pointer::new(definition.result_type().clone()))
+                }))
+                .collect(),
+            if result_pointer.is_some() {
+                void_type().into()
+            } else {
+                definition.result_type().clone()
+            },
+            {
+                let block = transform_block(definition.body(), result_pointer);
+
+                Block::new(
+                    definition
+                        .arguments()
+                        .iter()
+                        .flat_map(|argument| {
+                            if type_::is_memory_class(context, argument.type_()) {
+                                Some(
+                                    Load::new(
+                                        argument.type_().clone(),
+                                        Variable::new(pointer_name(argument.name())),
+                                        argument.name(),
+                                    )
+                                    .into(),
+                                )
+                            } else {
+                                None
+                            }
+                        })
+                        .chain(block.instructions().iter().cloned())
+                        .collect(),
+                    block.terminal_instruction().clone(),
+                )
+            },
+            definition.options().clone(),
+        )
+    } else {
+        definition.clone()
+    }
+}
+
+fn transform_block(block: &Block, result_pointer: Option<(&str, &Type)>) -> Block {
+    let mut instructions = vec![];
+
+    for instruction in block.instructions() {
+        instructions.push(transform_instruction(instruction, result_pointer));
+    }
+
+    if let (TerminalInstruction::Return(return_), Some((pointer_name, type_))) =
+        (block.terminal_instruction(), result_pointer)
+    {
+        Block::new(
+            instructions
+                .into_iter()
+                .chain([Store::new(
+                    type_.clone(),
+                    return_.expression().clone(),
+                    Variable::new(pointer_name),
+                )
+                .into()])
+                .collect(),
+            Return::new(void_type(), void_value()),
+        )
+    } else {
+        Block::new(instructions, block.terminal_instruction().clone())
+    }
+}
+
+fn transform_instruction(
+    instruction: &Instruction,
+    result_pointer: Option<(&str, &Type)>,
+) -> Instruction {
+    match instruction {
+        Instruction::If(if_) => If::new(
+            if_.type_().clone(),
+            if_.condition().clone(),
+            transform_block(if_.then(), result_pointer),
+            transform_block(if_.else_(), result_pointer),
+            if_.name(),
+        )
+        .into(),
+        _ => instruction.clone(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    const WORD_BYTES: usize = 8;
+
+    #[test]
+    fn transform_arguments() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("x", record_type.clone())],
+                    void_type(),
+                    Block::new(vec![], Return::new(void_type(), void_value()),),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "x_c_pointer",
+                    types::Pointer::new(record_type.clone())
+                )],
+                void_type(),
+                Block::new(
+                    vec![Load::new(record_type, Variable::new("x_c_pointer"), "x").into()],
+                    Return::new(void_type(), void_value()),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )
+        );
+    }
+
+    #[test]
+    fn transform_result() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    record_type.clone(),
+                    Block::new(
+                        vec![],
+                        Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "f_c_pointer",
+                    types::Pointer::new(record_type.clone())
+                )],
+                void_type(),
+                Block::new(
+                    vec![Store::new(
+                        record_type.clone(),
+                        Undefined::new(record_type),
+                        Variable::new("f_c_pointer")
+                    )
+                    .into()],
+                    Return::new(void_type(), void_value()),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )
+        );
+    }
+
+    #[test]
+    fn transform_if() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    record_type.clone(),
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            "x"
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            FunctionDefinition::new(
+                "f",
+                vec![Argument::new(
+                    "f_c_pointer",
+                    types::Pointer::new(record_type.clone())
+                )],
+                void_type(),
+                Block::new(
+                    vec![If::new(
+                        void_type(),
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Store::new(
+                                record_type.clone(),
+                                Undefined::new(record_type.clone()),
+                                Variable::new("f_c_pointer")
+                            )
+                            .into()],
+                            Return::new(void_type(), void_value()),
+                        ),
+                        Block::new(
+                            vec![Store::new(
+                                record_type.clone(),
+                                Undefined::new(record_type),
+                                Variable::new("f_c_pointer")
+                            )
+                            .into()],
+                            Return::new(void_type(), void_value()),
+                        ),
+                        "x"
+                    )
+                    .into(),],
+                    TerminalInstruction::Unreachable
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )
+        );
+    }
+}
