@@ -12,9 +12,9 @@ pub fn transform_function(context: &Context, function: &types::Function) -> type
             function
                 .arguments()
                 .iter()
-                .map(|type_| transform_type(context, type_))
+                .map(|type_| transform(context, type_))
                 .chain(if is_result_memory {
-                    Some(transform_type(context, function.result()).into())
+                    Some(transform(context, function.result()).into())
                 } else {
                     None
                 })
@@ -31,7 +31,7 @@ pub fn transform_function(context: &Context, function: &types::Function) -> type
     }
 }
 
-fn transform_type(context: &Context, type_: &Type) -> Type {
+pub fn transform(context: &Context, type_: &Type) -> Type {
     if is_memory_class(context, type_) {
         types::Pointer::new(type_.clone()).into()
     } else {
