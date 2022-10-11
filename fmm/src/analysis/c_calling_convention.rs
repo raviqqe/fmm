@@ -104,7 +104,7 @@ fn transform_instruction(
                             .map(|(argument, type_)| {
                                 TypedExpression::new(argument.clone(), type_.clone())
                             })
-                            .chain([pointer.clone().into()])
+                            .chain([pointer.clone()])
                             .collect(),
                     )?;
 
@@ -173,7 +173,7 @@ mod tests {
                     vec![VariableDeclaration::new(
                         "x",
                         types::Function::new(
-                            vec![types::Pointer::new(result_type.clone()).into()],
+                            vec![types::Pointer::new(result_type).into()],
                             void_type(),
                             types::CallingConvention::Target,
                         )
@@ -523,13 +523,8 @@ mod tests {
                                     .into(),
                                     Load::new(record_type.clone(), Variable::new("x_c_0"), "x")
                                         .into(),
-                                    DeconstructRecord::new(
-                                        record_type.clone(),
-                                        Variable::new("x"),
-                                        0,
-                                        "y"
-                                    )
-                                    .into(),
+                                    DeconstructRecord::new(record_type, Variable::new("x"), 0, "y")
+                                        .into(),
                                 ],
                                 Return::new(types::Primitive::Integer64, Variable::new("y")),
                             ),

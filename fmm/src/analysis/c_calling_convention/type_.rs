@@ -22,7 +22,7 @@ pub fn transform_function(context: &Context, function: &types::Function) -> type
                 .iter()
                 .map(|type_| transform(context, type_))
                 .chain(if is_result_memory {
-                    Some(transform(context, function.result()).into())
+                    Some(transform(context, function.result()))
                 } else {
                     None
                 })
@@ -74,8 +74,7 @@ mod tests {
                 types::Primitive::Integer64.into(),
                 types::Primitive::Integer64.into(),
             ]);
-            let function =
-                types::Function::new(vec![], record.clone(), types::CallingConvention::Source);
+            let function = types::Function::new(vec![], record, types::CallingConvention::Source);
 
             assert_eq!(
                 transform_function(&Context::new(WORD_BYTES), &function),

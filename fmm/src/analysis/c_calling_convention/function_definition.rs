@@ -149,7 +149,7 @@ mod tests {
                 )],
                 void_type(),
                 Block::new(
-                    vec![Load::new(record_type.clone(), Variable::new("x_c_pointer"), "x").into()],
+                    vec![Load::new(record_type, Variable::new("x_c_pointer"), "x").into()],
                     Return::new(void_type(), void_value()),
                 ),
                 FunctionDefinitionOptions::new()
@@ -268,7 +268,7 @@ mod tests {
                         Block::new(
                             vec![Store::new(
                                 record_type.clone(),
-                                Undefined::new(record_type.clone()),
+                                Undefined::new(record_type),
                                 Variable::new("f_c_pointer")
                             )
                             .into()],
