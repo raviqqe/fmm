@@ -4,14 +4,11 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-pub fn transform_function(
-    context: &Context,
-    function: &types::Function,
-) -> Option<types::Function> {
+pub fn transform_function(context: &Context, function: &types::Function) -> types::Function {
     if function.calling_convention() == types::CallingConvention::Target
         && is_memory_class(context, function.result())
     {
-        Some(types::Function::new(
+        types::Function::new(
             function
                 .arguments()
                 .iter()
@@ -20,9 +17,9 @@ pub fn transform_function(
                 .collect(),
             void_type(),
             function.calling_convention(),
-        ))
+        )
     } else {
-        None
+        function.clone()
     }
 }
 

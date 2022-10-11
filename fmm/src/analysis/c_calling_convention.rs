@@ -11,7 +11,6 @@ use crate::{
     ir::*,
     types,
 };
-use fnv::FnvHashMap;
 use std::rc::Rc;
 
 // TODO Implement the complete C calling convention for all targets.
@@ -25,36 +24,19 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     type_check::check(module)?;
 
     let context = Context::new(word_bytes);
-    let mut changed_names = FnvHashMap::default();
-    let mut function_declarations = vec![];
-
-    for declaration in module.function_declarations() {
-        if let Some(declaration) = function_declaration::transform(&context, declaration) {
-            changed_names.insert(declaration.name().to_owned(), declaration.type_().clone());
-            function_declarations.push(declaration);
-        } else {
-            function_declarations.push(declaration.clone());
-        }
-    }
-
-    let mut function_definitions = vec![];
-
-    for definition in module.function_definitions() {
-        if let Some(definition) = function_definition::transform(&context, definition) {
-            changed_names.insert(definition.name().to_owned(), definition.type_().clone());
-            function_definitions.push(definition);
-        } else {
-            function_definitions.push(definition.clone());
-        }
-    }
-
     let module = Module::new(
         module.variable_declarations().to_vec(),
-        function_declarations,
-        module.variable_definitions().to_vec(),
-        function_definitions
+        module
+            .function_declarations()
             .iter()
-            .map(|definition| transform_function_definition(&context, definition))
+            .map(|declaration| function_declaration::transform(&context, declaration))
+            .collect(),
+        module.variable_definitions().to_vec(),
+        module
+            .function_definitions()
+            .iter()
+            .map(|definition| function_definition::transform(&context, definition))
+            .map(|definition| transform_function_definition(&context, &definition))
             .collect::<Result<_, _>>()?,
     );
 
@@ -109,7 +91,7 @@ fn transform_instruction(
                     builder.call(
                         build::variable(
                             variable.name(),
-                            type_::transform_function(context, function_type).unwrap(),
+                            type_::transform_function(context, function_type),
                         ),
                         call.arguments()
                             .iter()

@@ -4,13 +4,13 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-pub fn transform(context: &Context, definition: &FunctionDefinition) -> Option<FunctionDefinition> {
+pub fn transform(context: &Context, definition: &FunctionDefinition) -> FunctionDefinition {
     if definition.type_().calling_convention() == types::CallingConvention::Target
         && type_::is_memory_class(context, definition.result_type())
     {
         let pointer_name = format!("{}.p", definition.name());
 
-        Some(FunctionDefinition::new(
+        FunctionDefinition::new(
             definition.name(),
             definition
                 .arguments()
@@ -24,9 +24,9 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Option<F
             void_type(),
             transform_block(definition.body(), definition.result_type(), &pointer_name),
             definition.options().clone(),
-        ))
+        )
     } else {
-        None
+        definition.clone()
     }
 }
 
@@ -109,7 +109,7 @@ mod tests {
                         .set_calling_convention(types::CallingConvention::Target),
                 )
             ),
-            Some(FunctionDefinition::new(
+            FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
                     "f.p",
@@ -127,7 +127,7 @@ mod tests {
                 ),
                 FunctionDefinitionOptions::new()
                     .set_calling_convention(types::CallingConvention::Target),
-            ))
+            )
         );
     }
 
@@ -173,7 +173,7 @@ mod tests {
                         .set_calling_convention(types::CallingConvention::Target),
                 )
             ),
-            Some(FunctionDefinition::new(
+            FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
                     "f.p",
@@ -209,7 +209,7 @@ mod tests {
                 ),
                 FunctionDefinitionOptions::new()
                     .set_calling_convention(types::CallingConvention::Target),
-            ))
+            )
         );
     }
 }
