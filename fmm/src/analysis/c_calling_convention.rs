@@ -49,7 +49,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::void_type;
+    use crate::types::{self, void_type};
     use pretty_assertions::assert_eq;
 
     const WORD_BYTES: usize = 8;
