@@ -2,12 +2,18 @@ mod context;
 mod error;
 mod function_declaration;
 mod function_definition;
+mod function_type;
 mod utilities;
 
 use self::{context::Context, error::CCallingConventionError};
 use super::type_check;
-use crate::{ir::*, types};
+use crate::{
+    build::{self, InstructionBuilder, NameGenerator, TypedExpression},
+    ir::*,
+    types,
+};
 use fnv::FnvHashMap;
+use std::rc::Rc;
 
 // TODO Implement the complete C calling convention for all targets.
 //
@@ -49,7 +55,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
         module.variable_definitions().to_vec(),
         function_definitions
             .iter()
-            .map(|definition| transform_function_definition(definition, &changed_names))
+            .map(|definition| transform_function_definition(&context, definition))
             .collect(),
     );
 
@@ -59,62 +65,70 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
 }
 
 fn transform_function_definition(
+    context: &Context,
     definition: &FunctionDefinition,
-    names: &FnvHashMap<String, types::Function>,
 ) -> FunctionDefinition {
     FunctionDefinition::new(
         definition.name(),
         definition.arguments().to_vec(),
         definition.result_type().clone(),
-        transform_block(definition.body(), names),
+        transform_block(context, definition.body()),
         definition.options().clone(),
     )
 }
 
-fn transform_block(block: &Block, names: &FnvHashMap<String, types::Function>) -> Block {
+fn transform_block(context: &Context, block: &Block) -> Block {
     let mut instructions = vec![];
 
     for instruction in block.instructions() {
-        instructions.extend(transform_instruction(instruction, names));
+        instructions.extend(transform_instruction(context, instruction));
     }
 
     Block::new(instructions, block.terminal_instruction().clone())
 }
 
-fn transform_instruction(
-    instruction: &Instruction,
-    names: &FnvHashMap<String, types::Function>,
-) -> Vec<Instruction> {
+fn transform_instruction(context: &Context, instruction: &Instruction) -> Vec<Instruction> {
     match instruction {
-        Instruction::Call(call) => match call.function() {
-            // TODO Support complex expressions.
-            Expression::Variable(variable) => {
-                if let Some(type_) = names.get(variable.name()) {
+        Instruction::Call(call)
+            if call.type_().calling_convention() == types::CallingConvention::Target =>
+        {
+            match call.function() {
+                // TODO Support complex expressions.
+                Expression::Variable(variable) => {
+                    let builder = InstructionBuilder::new(Rc::new(
+                        NameGenerator::new(format!("{}_c_", call.name())).into(),
+                    ));
                     let function_type = call.type_();
-                    let pointer_name = format!("{}.p", call.name());
-                    let pointer = Variable::new(&pointer_name);
+                    let pointer = builder.allocate_stack(function_type.result().clone());
 
-                    vec![
-                        AllocateStack::new(function_type.result().clone(), &pointer_name).into(),
-                        Call::new(
-                            type_.clone(),
-                            variable.clone(),
+                    builder
+                        .call(
+                            build::variable(
+                                variable.name(),
+                                function_type::transform(context, function_type).unwrap(),
+                            ),
                             call.arguments()
                                 .iter()
-                                .cloned()
+                                .zip(function_type.arguments())
+                                .map(|(argument, type_)| {
+                                    TypedExpression::new(argument.clone(), type_.clone())
+                                })
                                 .chain([pointer.clone().into()])
                                 .collect(),
-                            format!("{}.r", call.name()),
                         )
-                        .into(),
-                        Load::new(function_type.result().clone(), pointer, call.name()).into(),
-                    ]
-                } else {
-                    vec![call.clone().into()]
+                        .unwrap();
+
+                    builder.add_instruction(Load::new(
+                        function_type.result().clone(),
+                        pointer.expression().clone(),
+                        call.name(),
+                    ));
+
+                    builder.into_instructions()
                 }
+                _ => vec![call.clone().into()],
             }
-            _ => vec![call.clone().into()],
-        },
+        }
         _ => vec![instruction.clone()],
     }
 }
@@ -270,7 +284,7 @@ mod tests {
                         types::Primitive::Integer64,
                         Block::new(
                             vec![
-                                AllocateStack::new(record_type.clone(), "x.p").into(),
+                                AllocateStack::new(record_type.clone(), "x_c_0").into(),
                                 Call::new(
                                     types::Function::new(
                                         vec![types::Pointer::new(record_type.clone()).into()],
@@ -278,11 +292,11 @@ mod tests {
                                         types::CallingConvention::Target
                                     ),
                                     Variable::new("f"),
-                                    vec![Variable::new("x.p").into()],
-                                    "x.r"
+                                    vec![Variable::new("x_c_0").into()],
+                                    "x_c_1"
                                 )
                                 .into(),
-                                Load::new(record_type.clone(), Variable::new("x.p"), "x").into(),
+                                Load::new(record_type.clone(), Variable::new("x_c_0"), "x").into(),
                                 DeconstructRecord::new(record_type, Variable::new("x"), 0, "y")
                                     .into()
                             ],
@@ -462,7 +476,7 @@ mod tests {
                             types::Primitive::Integer64,
                             Block::new(
                                 vec![
-                                    AllocateStack::new(record_type.clone(), "x.p").into(),
+                                    AllocateStack::new(record_type.clone(), "x_c_0").into(),
                                     Call::new(
                                         types::Function::new(
                                             vec![types::Pointer::new(record_type.clone()).into()],
@@ -470,11 +484,11 @@ mod tests {
                                             types::CallingConvention::Target
                                         ),
                                         Variable::new("f"),
-                                        vec![Variable::new("x.p").into()],
-                                        "x.r"
+                                        vec![Variable::new("x_c_0").into()],
+                                        "x_c_1"
                                     )
                                     .into(),
-                                    Load::new(record_type.clone(), Variable::new("x.p"), "x")
+                                    Load::new(record_type.clone(), Variable::new("x_c_0"), "x")
                                         .into(),
                                     DeconstructRecord::new(
                                         record_type.clone(),
