@@ -5,11 +5,11 @@ mod function_definition;
 mod type_;
 
 use self::{context::Context, error::CCallingConventionError};
-use super::type_check;
+use super::{type_check, type_conversion};
 use crate::{
     build::{self, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
-    types,
+    types::{self, Type},
 };
 use std::rc::Rc;
 
@@ -39,6 +39,11 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
             .map(|definition| transform_function_definition(&context, &definition))
             .collect::<Result<_, _>>()?,
     );
+
+    let module = type_conversion::convert(&module, &|type_| match type_ {
+        Type::Function(function) => type_::transform_function(&context, function).into(),
+        _ => type_.clone(),
+    });
 
     type_check::check(&module)?;
 
@@ -136,6 +141,49 @@ mod tests {
             transform_module(&Module::new(vec![], vec![], vec![], vec![])),
             Ok(Module::new(vec![], vec![], vec![], vec![]))
         );
+    }
+
+    mod variable_declaration {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn transform() {
+            let result_type = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+
+            assert_eq!(
+                transform_module(&Module::new(
+                    vec![VariableDeclaration::new(
+                        "x",
+                        types::Function::new(
+                            vec![],
+                            result_type.clone(),
+                            types::CallingConvention::Target,
+                        )
+                    )],
+                    vec![],
+                    vec![],
+                    vec![]
+                )),
+                Ok(Module::new(
+                    vec![VariableDeclaration::new(
+                        "x",
+                        types::Function::new(
+                            vec![types::Pointer::new(result_type.clone()).into()],
+                            void_type(),
+                            types::CallingConvention::Target,
+                        )
+                    )],
+                    vec![],
+                    vec![],
+                    vec![]
+                ))
+            );
+        }
     }
 
     mod function_declaration {
