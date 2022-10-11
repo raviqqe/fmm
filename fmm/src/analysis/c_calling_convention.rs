@@ -322,7 +322,7 @@ mod tests {
 
         #[test]
         fn transform_function_definition() {
-            let result_type = types::Record::new(vec![
+            let record_type = types::Record::new(vec![
                 types::Primitive::Integer64.into(),
                 types::Primitive::Integer64.into(),
                 types::Primitive::Integer64.into(),
@@ -334,12 +334,12 @@ mod tests {
                     vec![],
                     vec![],
                     vec![FunctionDefinition::new(
-                        "g",
+                        "f",
                         vec![],
-                        result_type.clone(),
+                        record_type.clone(),
                         Block::new(
                             vec![],
-                            Return::new(result_type.clone(), Undefined::new(result_type.clone())),
+                            Return::new(record_type.clone(), Undefined::new(record_type.clone())),
                         ),
                         FunctionDefinitionOptions::new()
                             .set_calling_convention(types::CallingConvention::Target),
@@ -350,17 +350,17 @@ mod tests {
                     vec![],
                     vec![],
                     vec![FunctionDefinition::new(
-                        "g",
+                        "f",
                         vec![Argument::new(
-                            "g.p",
-                            types::Pointer::new(result_type.clone())
+                            "f.p",
+                            types::Pointer::new(record_type.clone())
                         )],
                         void_type(),
                         Block::new(
                             vec![Store::new(
-                                result_type.clone(),
-                                Undefined::new(result_type),
-                                Variable::new("g.p")
+                                record_type.clone(),
+                                Undefined::new(record_type),
+                                Variable::new("f.p")
                             )
                             .into()],
                             Return::new(void_type(), void_value()),
@@ -368,6 +368,128 @@ mod tests {
                         FunctionDefinitionOptions::new()
                             .set_calling_convention(types::CallingConvention::Target),
                     )],
+                ))
+            );
+        }
+
+        #[test]
+        fn transform_function_definition_with_call() {
+            let record_type = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+
+            assert_eq!(
+                transform_module(&Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![
+                        FunctionDefinition::new(
+                            "f",
+                            vec![],
+                            record_type.clone(),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            FunctionDefinitionOptions::new()
+                                .set_calling_convention(types::CallingConvention::Target),
+                        ),
+                        FunctionDefinition::new(
+                            "g",
+                            vec![],
+                            types::Primitive::Integer64,
+                            Block::new(
+                                vec![
+                                    Call::new(
+                                        types::Function::new(
+                                            vec![],
+                                            record_type.clone(),
+                                            types::CallingConvention::Target
+                                        ),
+                                        Variable::new("f"),
+                                        vec![],
+                                        "x"
+                                    )
+                                    .into(),
+                                    DeconstructRecord::new(
+                                        record_type.clone(),
+                                        Variable::new("x"),
+                                        0,
+                                        "y"
+                                    )
+                                    .into()
+                                ],
+                                Return::new(types::Primitive::Integer64, Variable::new("y")),
+                            ),
+                            FunctionDefinitionOptions::new()
+                                .set_calling_convention(types::CallingConvention::Target),
+                        )
+                    ],
+                )),
+                Ok(Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![
+                        FunctionDefinition::new(
+                            "f",
+                            vec![Argument::new(
+                                "f.p",
+                                types::Pointer::new(record_type.clone())
+                            )],
+                            void_type(),
+                            Block::new(
+                                vec![Store::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone()),
+                                    Variable::new("f.p")
+                                )
+                                .into()],
+                                Return::new(void_type(), void_value()),
+                            ),
+                            FunctionDefinitionOptions::new()
+                                .set_calling_convention(types::CallingConvention::Target),
+                        ),
+                        FunctionDefinition::new(
+                            "g",
+                            vec![],
+                            types::Primitive::Integer64,
+                            Block::new(
+                                vec![
+                                    AllocateStack::new(record_type.clone(), "x.p").into(),
+                                    Call::new(
+                                        types::Function::new(
+                                            vec![types::Pointer::new(record_type.clone()).into()],
+                                            void_type(),
+                                            types::CallingConvention::Target
+                                        ),
+                                        Variable::new("f"),
+                                        vec![Variable::new("x.p").into()],
+                                        "x.r"
+                                    )
+                                    .into(),
+                                    Load::new(record_type.clone(), Variable::new("x.p"), "x")
+                                        .into(),
+                                    DeconstructRecord::new(
+                                        record_type.clone(),
+                                        Variable::new("x"),
+                                        0,
+                                        "y"
+                                    )
+                                    .into(),
+                                ],
+                                Return::new(types::Primitive::Integer64, Variable::new("y")),
+                            ),
+                            FunctionDefinitionOptions::new()
+                                .set_calling_convention(types::CallingConvention::Target),
+                        )
+                    ],
                 ))
             );
         }
