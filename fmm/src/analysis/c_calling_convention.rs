@@ -2,8 +2,7 @@ mod context;
 mod error;
 mod function_declaration;
 mod function_definition;
-mod function_type;
-mod utilities;
+mod type_;
 
 use self::{context::Context, error::CCallingConventionError};
 use super::type_check;
@@ -110,7 +109,7 @@ fn transform_instruction(
                     builder.call(
                         build::variable(
                             variable.name(),
-                            function_type::transform(context, function_type).unwrap(),
+                            type_::transform_function(context, function_type).unwrap(),
                         ),
                         call.arguments()
                             .iter()

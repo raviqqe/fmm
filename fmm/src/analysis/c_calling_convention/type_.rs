@@ -1,5 +1,30 @@
 use super::context::Context;
-use crate::{analysis::type_size, types::Type};
+use crate::{
+    analysis::type_size,
+    types::{self, void_type, Type},
+};
+
+pub fn transform_function(
+    context: &Context,
+    function: &types::Function,
+) -> Option<types::Function> {
+    if function.calling_convention() == types::CallingConvention::Target
+        && is_memory_class(context, function.result())
+    {
+        Some(types::Function::new(
+            function
+                .arguments()
+                .iter()
+                .cloned()
+                .chain([types::Pointer::new(function.result().clone()).into()])
+                .collect(),
+            void_type(),
+            function.calling_convention(),
+        ))
+    } else {
+        None
+    }
+}
 
 // The name, "memory class" comes from the C ABI on System V.
 pub fn is_memory_class(context: &Context, type_: &Type) -> bool {

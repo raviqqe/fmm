@@ -1,4 +1,4 @@
-use super::{context::Context, utilities};
+use super::{context::Context, type_};
 use crate::{
     ir::*,
     types::{self, void_type, Type},
@@ -6,7 +6,7 @@ use crate::{
 
 pub fn transform(context: &Context, definition: &FunctionDefinition) -> Option<FunctionDefinition> {
     if definition.type_().calling_convention() == types::CallingConvention::Target
-        && utilities::is_memory_class(context, definition.result_type())
+        && type_::is_memory_class(context, definition.result_type())
     {
         let pointer_name = format!("{}.p", definition.name());
 
