@@ -17,16 +17,19 @@ pub fn transform_function(context: &Context, function: &types::Function) -> type
         let is_result_memory = is_memory_class(context, function.result());
 
         types::Function::new(
-            function
-                .arguments()
-                .iter()
-                .map(|type_| transform(context, type_))
-                .chain(if is_result_memory {
-                    Some(transform(context, function.result()))
-                } else {
-                    None
-                })
-                .collect(),
+            if is_result_memory {
+                Some(transform(context, function.result()))
+            } else {
+                None
+            }
+            .into_iter()
+            .chain(
+                function
+                    .arguments()
+                    .iter()
+                    .map(|type_| transform(context, type_)),
+            )
+            .collect(),
             if is_result_memory {
                 void_type().into()
             } else {
@@ -133,6 +136,32 @@ mod tests {
                 transform_function(&Context::new(WORD_BYTES), &function),
                 types::Function::new(
                     vec![types::Pointer::new(record).into()],
+                    void_type(),
+                    types::CallingConvention::Target
+                )
+            );
+        }
+
+        #[test]
+        fn transform_function_result_with_argument() {
+            let record = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+            let function = types::Function::new(
+                vec![types::Primitive::PointerInteger.into()],
+                record.clone(),
+                types::CallingConvention::Target,
+            );
+
+            assert_eq!(
+                transform_function(&Context::new(WORD_BYTES), &function),
+                types::Function::new(
+                    vec![
+                        types::Pointer::new(record).into(),
+                        types::Primitive::PointerInteger.into()
+                    ],
                     void_type(),
                     types::CallingConvention::Target
                 )
