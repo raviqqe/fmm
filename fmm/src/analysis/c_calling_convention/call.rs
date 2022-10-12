@@ -284,43 +284,6 @@ mod tests {
             types::Primitive::Integer64.into(),
             types::Primitive::Integer64.into(),
         ]);
-        let old_block = Block::new(
-            vec![Call::new(
-                types::Function::new(
-                    vec![record_type.clone().into()],
-                    void_type(),
-                    types::CallingConvention::Target,
-                ),
-                Variable::new("g"),
-                vec![Undefined::new(record_type.clone()).into()],
-                "x",
-            )
-            .into()],
-            Return::new(types::Primitive::Integer64, Variable::new("x")),
-        );
-        let new_block = Block::new(
-            vec![
-                AllocateStack::new(record_type.clone(), "x_c_0").into(),
-                Store::new(
-                    record_type.clone(),
-                    Undefined::new(record_type.clone()),
-                    Variable::new("x_c_0"),
-                )
-                .into(),
-                Call::new(
-                    types::Function::new(
-                        vec![types::Pointer::new(record_type.clone()).into()],
-                        void_type(),
-                        types::CallingConvention::Target,
-                    ),
-                    Variable::new("g"),
-                    vec![Variable::new("x_c_0").into()],
-                    "",
-                )
-                .into(),
-            ],
-            Return::new(types::Primitive::Integer64, Variable::new("y")),
-        );
 
         assert_eq!(
             transform_function_definition(
@@ -412,7 +375,7 @@ mod tests {
                                 .into(),
                                 Call::new(
                                     types::Function::new(
-                                        vec![types::Pointer::new(record_type.clone()).into()],
+                                        vec![types::Pointer::new(record_type).into()],
                                         void_type(),
                                         types::CallingConvention::Target,
                                     ),
