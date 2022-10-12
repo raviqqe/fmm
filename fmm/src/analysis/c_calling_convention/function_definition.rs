@@ -4,10 +4,6 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-fn pointer_name(name: &str) -> String {
-    format!("{}_c_pointer", name)
-}
-
 pub fn transform(context: &Context, definition: &FunctionDefinition) -> FunctionDefinition {
     if definition.type_().calling_convention() == types::CallingConvention::Target {
         let result_pointer_name = pointer_name(definition.name());
@@ -24,7 +20,11 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
                 .iter()
                 .map(|argument| {
                     Argument::new(
-                        pointer_name(argument.name()),
+                        if type_::is_memory_class(context, argument.type_()) {
+                            pointer_name(argument.name())
+                        } else {
+                            argument.name().into()
+                        },
                         type_::transform(context, argument.type_()),
                     )
                 })
@@ -112,6 +112,10 @@ fn transform_instruction(
         .into(),
         _ => instruction.clone(),
     }
+}
+
+fn pointer_name(name: &str) -> String {
+    format!("{}_c_pointer", name)
 }
 
 #[cfg(test)]
