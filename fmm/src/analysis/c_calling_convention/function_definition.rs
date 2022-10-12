@@ -122,6 +122,23 @@ mod tests {
     const WORD_BYTES: usize = 8;
 
     #[test]
+    fn transform_compatible() {
+        let definition = FunctionDefinition::new(
+            "f",
+            vec![Argument::new("x", types::Primitive::Integer64)],
+            void_type(),
+            Block::new(vec![], Return::new(void_type(), void_value())),
+            FunctionDefinitionOptions::new()
+                .set_calling_convention(types::CallingConvention::Target),
+        );
+
+        assert_eq!(
+            transform(&Context::new(WORD_BYTES), &definition,),
+            definition
+        );
+    }
+
+    #[test]
     fn transform_arguments() {
         let record_type = types::Record::new(vec![
             types::Primitive::Integer64.into(),
