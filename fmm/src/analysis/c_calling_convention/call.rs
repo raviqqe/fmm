@@ -268,4 +268,89 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn transform_in_nested_block() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform_function_definition(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    void_type(),
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    types::Function::new(
+                                        vec![record_type.clone().into()],
+                                        void_type(),
+                                        types::CallingConvention::Target,
+                                    ),
+                                    Variable::new("f"),
+                                    vec![Undefined::new(record_type.clone()).into()],
+                                    "",
+                                )
+                                .into()],
+                                Return::new(types::Primitive::Integer64, Variable::new("y")),
+                            ),
+                            Block::new(
+                                vec![Call::new(
+                                    types::Function::new(
+                                        vec![record_type.clone().into()],
+                                        void_type(),
+                                        types::CallingConvention::Target,
+                                    ),
+                                    Variable::new("f"),
+                                    vec![Undefined::new(record_type.clone()).into()],
+                                    "",
+                                )
+                                .into()],
+                                Return::new(types::Primitive::Integer64, Variable::new("y")),
+                            ),
+                            ""
+                        )
+                        .into(),],
+                        Return::new(types::Primitive::Integer64, Variable::new("y")),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            Ok(FunctionDefinition::new(
+                "f",
+                vec![],
+                types::Primitive::Integer64,
+                Block::new(
+                    vec![
+                        AllocateStack::new(record_type.clone(), "x_c_0").into(),
+                        Call::new(
+                            types::Function::new(
+                                vec![types::Pointer::new(record_type.clone()).into()],
+                                void_type(),
+                                types::CallingConvention::Target
+                            ),
+                            Variable::new("f"),
+                            vec![Variable::new("x_c_0").into()],
+                            "x_c_1"
+                        )
+                        .into(),
+                        Load::new(record_type.clone(), Variable::new("x_c_0"), "x").into(),
+                        DeconstructRecord::new(record_type, Variable::new("x"), 0, "y").into(),
+                    ],
+                    Return::new(types::Primitive::Integer64, Variable::new("y")),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            ))
+        );
+    }
 }
