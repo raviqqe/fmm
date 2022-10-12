@@ -108,6 +108,36 @@ mod tests {
     const WORD_BYTES: usize = 8;
 
     #[test]
+    fn transform_compatible() {
+        let definition = FunctionDefinition::new(
+            "f",
+            vec![],
+            types::Primitive::Integer64,
+            Block::new(
+                vec![Call::new(
+                    types::Function::new(
+                        vec![types::Primitive::Integer64.into()],
+                        types::Primitive::Integer64,
+                        types::CallingConvention::Target,
+                    ),
+                    Variable::new("g"),
+                    vec![Undefined::new(types::Primitive::Integer64).into()],
+                    "x",
+                )
+                .into()],
+                Return::new(types::Primitive::Integer64, Variable::new("x")),
+            ),
+            FunctionDefinitionOptions::new()
+                .set_calling_convention(types::CallingConvention::Target),
+        );
+
+        assert_eq!(
+            transform_function_definition(&Context::new(WORD_BYTES), &definition),
+            Ok(definition)
+        );
+    }
+
+    #[test]
     fn transform_argument() {
         let record_type = types::Record::new(vec![
             types::Primitive::Integer64.into(),

@@ -4,10 +4,6 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-fn pointer_name(name: &str) -> String {
-    format!("{}_c_pointer", name)
-}
-
 pub fn transform(context: &Context, definition: &FunctionDefinition) -> FunctionDefinition {
     if definition.type_().calling_convention() == types::CallingConvention::Target {
         let result_pointer_name = pointer_name(definition.name());
@@ -24,7 +20,11 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
                 .iter()
                 .map(|argument| {
                     Argument::new(
-                        pointer_name(argument.name()),
+                        if type_::is_memory_class(context, argument.type_()) {
+                            pointer_name(argument.name())
+                        } else {
+                            argument.name().into()
+                        },
                         type_::transform(context, argument.type_()),
                     )
                 })
@@ -114,12 +114,33 @@ fn transform_instruction(
     }
 }
 
+fn pointer_name(name: &str) -> String {
+    format!("{}_c_pointer", name)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
     const WORD_BYTES: usize = 8;
+
+    #[test]
+    fn transform_compatible() {
+        let definition = FunctionDefinition::new(
+            "f",
+            vec![Argument::new("x", types::Primitive::Integer64)],
+            void_type(),
+            Block::new(vec![], Return::new(void_type(), void_value())),
+            FunctionDefinitionOptions::new()
+                .set_calling_convention(types::CallingConvention::Target),
+        );
+
+        assert_eq!(
+            transform(&Context::new(WORD_BYTES), &definition,),
+            definition
+        );
+    }
 
     #[test]
     fn transform_arguments() {
