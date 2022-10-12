@@ -301,12 +301,12 @@ mod tests {
                 .into(),
                 Call::new(
                     types::Function::new(
-                        vec![record_type.clone().into()],
+                        vec![types::Pointer::new(record_type.clone()).into()],
                         void_type(),
                         types::CallingConvention::Target,
                     ),
                     Variable::new("g"),
-                    vec![Undefined::new(record_type.clone()).into()],
+                    vec![Variable::new("x_c_0").into()],
                     "",
                 )
                 .into(),
