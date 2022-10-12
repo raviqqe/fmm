@@ -673,8 +673,8 @@ mod tests {
                                     ),
                                     Variable::new("f"),
                                     vec![
-                                        Variable::new("x_c_0").into(),
-                                        Variable::new("x_c_1").into()
+                                        Variable::new("x_c_1").into(),
+                                        Variable::new("x_c_0").into()
                                     ],
                                     "x_c_2"
                                 )

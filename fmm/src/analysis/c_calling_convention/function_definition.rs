@@ -16,10 +16,12 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
 
         FunctionDefinition::new(
             definition.name(),
-            definition
-                .arguments()
-                .iter()
-                .map(|argument| {
+            result_pointer
+                .map(|(name, _)| {
+                    Argument::new(name, types::Pointer::new(definition.result_type().clone()))
+                })
+                .into_iter()
+                .chain(definition.arguments().iter().map(|argument| {
                     Argument::new(
                         if type_::is_memory_class(context, argument.type_()) {
                             pointer_name(argument.name())
@@ -28,9 +30,6 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
                         },
                         type_::transform(context, argument.type_()),
                     )
-                })
-                .chain(result_pointer.map(|(name, _)| {
-                    Argument::new(name, types::Pointer::new(definition.result_type().clone()))
                 }))
                 .collect(),
             if result_pointer.is_some() {
@@ -205,6 +204,51 @@ mod tests {
                     "f_c_pointer",
                     types::Pointer::new(record_type.clone())
                 )],
+                void_type(),
+                Block::new(
+                    vec![Store::new(
+                        record_type.clone(),
+                        Undefined::new(record_type),
+                        Variable::new("f_c_pointer")
+                    )
+                    .into()],
+                    Return::new(void_type(), void_value()),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )
+        );
+    }
+
+    #[test]
+    fn transform_result_with_argument() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("x", types::Primitive::PointerInteger)],
+                    record_type.clone(),
+                    Block::new(
+                        vec![],
+                        Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            FunctionDefinition::new(
+                "f",
+                vec![
+                    Argument::new("f_c_pointer", types::Pointer::new(record_type.clone())),
+                    Argument::new("x", types::Primitive::PointerInteger)
+                ],
                 void_type(),
                 Block::new(
                     vec![Store::new(

@@ -106,14 +106,16 @@ mod tests {
                 types::Primitive::Integer64.into(),
                 types::Primitive::Integer64.into(),
             ]);
-            let function = types::Function::new(
-                vec![record.clone().into()],
-                void_type(),
-                types::CallingConvention::Target,
-            );
 
             assert_eq!(
-                transform_function(&Context::new(WORD_BYTES), &function),
+                transform_function(
+                    &Context::new(WORD_BYTES),
+                    &types::Function::new(
+                        vec![record.clone().into()],
+                        void_type(),
+                        types::CallingConvention::Target,
+                    )
+                ),
                 types::Function::new(
                     vec![types::Pointer::new(record).into()],
                     void_type(),
@@ -129,11 +131,12 @@ mod tests {
                 types::Primitive::Integer64.into(),
                 types::Primitive::Integer64.into(),
             ]);
-            let function =
-                types::Function::new(vec![], record.clone(), types::CallingConvention::Target);
 
             assert_eq!(
-                transform_function(&Context::new(WORD_BYTES), &function),
+                transform_function(
+                    &Context::new(WORD_BYTES),
+                    &types::Function::new(vec![], record.clone(), types::CallingConvention::Target)
+                ),
                 types::Function::new(
                     vec![types::Pointer::new(record).into()],
                     void_type(),
@@ -149,14 +152,16 @@ mod tests {
                 types::Primitive::Integer64.into(),
                 types::Primitive::Integer64.into(),
             ]);
-            let function = types::Function::new(
-                vec![types::Primitive::PointerInteger.into()],
-                record.clone(),
-                types::CallingConvention::Target,
-            );
 
             assert_eq!(
-                transform_function(&Context::new(WORD_BYTES), &function),
+                transform_function(
+                    &Context::new(WORD_BYTES),
+                    &types::Function::new(
+                        vec![types::Primitive::PointerInteger.into()],
+                        record.clone(),
+                        types::CallingConvention::Target,
+                    )
+                ),
                 types::Function::new(
                     vec![
                         types::Pointer::new(record).into(),
