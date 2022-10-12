@@ -12,6 +12,7 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
         } else {
             None
         };
+        let block = transform_block(definition.body(), result_pointer);
 
         FunctionDefinition::new(
             definition.name(),
@@ -37,32 +38,28 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
             } else {
                 definition.result_type().clone()
             },
-            {
-                let block = transform_block(definition.body(), result_pointer);
-
-                Block::new(
-                    definition
-                        .arguments()
-                        .iter()
-                        .flat_map(|argument| {
-                            if type_::is_memory_class(context, argument.type_()) {
-                                Some(
-                                    Load::new(
-                                        argument.type_().clone(),
-                                        Variable::new(pointer_name(argument.name())),
-                                        argument.name(),
-                                    )
-                                    .into(),
+            Block::new(
+                definition
+                    .arguments()
+                    .iter()
+                    .flat_map(|argument| {
+                        if type_::is_memory_class(context, argument.type_()) {
+                            Some(
+                                Load::new(
+                                    argument.type_().clone(),
+                                    Variable::new(pointer_name(argument.name())),
+                                    argument.name(),
                                 )
-                            } else {
-                                None
-                            }
-                        })
-                        .chain(block.instructions().iter().cloned())
-                        .collect(),
-                    block.terminal_instruction().clone(),
-                )
-            },
+                                .into(),
+                            )
+                        } else {
+                            None
+                        }
+                    })
+                    .chain(block.instructions().iter().cloned())
+                    .collect(),
+                block.terminal_instruction().clone(),
+            ),
             definition.options().clone(),
         )
     } else {
