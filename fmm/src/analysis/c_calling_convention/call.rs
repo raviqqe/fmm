@@ -276,6 +276,43 @@ mod tests {
             types::Primitive::Integer64.into(),
             types::Primitive::Integer64.into(),
         ]);
+        let old_block = Block::new(
+            vec![Call::new(
+                types::Function::new(
+                    vec![record_type.clone().into()],
+                    void_type(),
+                    types::CallingConvention::Target,
+                ),
+                Variable::new("g"),
+                vec![Undefined::new(record_type.clone()).into()],
+                "",
+            )
+            .into()],
+            Return::new(types::Primitive::Integer64, Variable::new("y")),
+        );
+        let new_block = Block::new(
+            vec![
+                AllocateStack::new(record_type.clone(), "x_c_0").into(),
+                Store::new(
+                    record_type.clone(),
+                    Undefined::new(record_type.clone()),
+                    Variable::new("x_c_0"),
+                )
+                .into(),
+                Call::new(
+                    types::Function::new(
+                        vec![record_type.clone().into()],
+                        void_type(),
+                        types::CallingConvention::Target,
+                    ),
+                    Variable::new("g"),
+                    vec![Undefined::new(record_type.clone()).into()],
+                    "",
+                )
+                .into(),
+            ],
+            Return::new(types::Primitive::Integer64, Variable::new("y")),
+        );
 
         assert_eq!(
             transform_function_definition(
@@ -288,38 +325,12 @@ mod tests {
                         vec![If::new(
                             void_type(),
                             Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    types::Function::new(
-                                        vec![record_type.clone().into()],
-                                        void_type(),
-                                        types::CallingConvention::Target,
-                                    ),
-                                    Variable::new("f"),
-                                    vec![Undefined::new(record_type.clone()).into()],
-                                    "",
-                                )
-                                .into()],
-                                Return::new(types::Primitive::Integer64, Variable::new("y")),
-                            ),
-                            Block::new(
-                                vec![Call::new(
-                                    types::Function::new(
-                                        vec![record_type.clone().into()],
-                                        void_type(),
-                                        types::CallingConvention::Target,
-                                    ),
-                                    Variable::new("f"),
-                                    vec![Undefined::new(record_type.clone()).into()],
-                                    "",
-                                )
-                                .into()],
-                                Return::new(types::Primitive::Integer64, Variable::new("y")),
-                            ),
+                            old_block.clone(),
+                            old_block,
                             ""
                         )
                         .into(),],
-                        Return::new(types::Primitive::Integer64, Variable::new("y")),
+                        Return::new(void_type(), void_value()),
                     ),
                     FunctionDefinitionOptions::new()
                         .set_calling_convention(types::CallingConvention::Target),
@@ -328,25 +339,17 @@ mod tests {
             Ok(FunctionDefinition::new(
                 "f",
                 vec![],
-                types::Primitive::Integer64,
+                void_type(),
                 Block::new(
-                    vec![
-                        AllocateStack::new(record_type.clone(), "x_c_0").into(),
-                        Call::new(
-                            types::Function::new(
-                                vec![types::Pointer::new(record_type.clone()).into()],
-                                void_type(),
-                                types::CallingConvention::Target
-                            ),
-                            Variable::new("f"),
-                            vec![Variable::new("x_c_0").into()],
-                            "x_c_1"
-                        )
-                        .into(),
-                        Load::new(record_type.clone(), Variable::new("x_c_0"), "x").into(),
-                        DeconstructRecord::new(record_type, Variable::new("x"), 0, "y").into(),
-                    ],
-                    Return::new(types::Primitive::Integer64, Variable::new("y")),
+                    vec![If::new(
+                        void_type(),
+                        Primitive::Boolean(true),
+                        new_block.clone(),
+                        new_block,
+                        ""
+                    )
+                    .into(),],
+                    Return::new(void_type(), void_value()),
                 ),
                 FunctionDefinitionOptions::new()
                     .set_calling_convention(types::CallingConvention::Target),
