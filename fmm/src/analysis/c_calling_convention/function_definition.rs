@@ -12,13 +12,16 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
         } else {
             None
         };
+        let block = transform_block(definition.body(), result_pointer);
 
         FunctionDefinition::new(
             definition.name(),
-            definition
-                .arguments()
-                .iter()
-                .map(|argument| {
+            result_pointer
+                .map(|(name, _)| {
+                    Argument::new(name, types::Pointer::new(definition.result_type().clone()))
+                })
+                .into_iter()
+                .chain(definition.arguments().iter().map(|argument| {
                     Argument::new(
                         if type_::is_memory_class(context, argument.type_()) {
                             pointer_name(argument.name())
@@ -27,9 +30,6 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
                         },
                         type_::transform(context, argument.type_()),
                     )
-                })
-                .chain(result_pointer.map(|(name, _)| {
-                    Argument::new(name, types::Pointer::new(definition.result_type().clone()))
                 }))
                 .collect(),
             if result_pointer.is_some() {
@@ -37,32 +37,28 @@ pub fn transform(context: &Context, definition: &FunctionDefinition) -> Function
             } else {
                 definition.result_type().clone()
             },
-            {
-                let block = transform_block(definition.body(), result_pointer);
-
-                Block::new(
-                    definition
-                        .arguments()
-                        .iter()
-                        .flat_map(|argument| {
-                            if type_::is_memory_class(context, argument.type_()) {
-                                Some(
-                                    Load::new(
-                                        argument.type_().clone(),
-                                        Variable::new(pointer_name(argument.name())),
-                                        argument.name(),
-                                    )
-                                    .into(),
+            Block::new(
+                definition
+                    .arguments()
+                    .iter()
+                    .flat_map(|argument| {
+                        if type_::is_memory_class(context, argument.type_()) {
+                            Some(
+                                Load::new(
+                                    argument.type_().clone(),
+                                    Variable::new(pointer_name(argument.name())),
+                                    argument.name(),
                                 )
-                            } else {
-                                None
-                            }
-                        })
-                        .chain(block.instructions().iter().cloned())
-                        .collect(),
-                    block.terminal_instruction().clone(),
-                )
-            },
+                                .into(),
+                            )
+                        } else {
+                            None
+                        }
+                    })
+                    .chain(block.instructions().iter().cloned())
+                    .collect(),
+                block.terminal_instruction().clone(),
+            ),
             definition.options().clone(),
         )
     } else {
@@ -208,6 +204,51 @@ mod tests {
                     "f_c_pointer",
                     types::Pointer::new(record_type.clone())
                 )],
+                void_type(),
+                Block::new(
+                    vec![Store::new(
+                        record_type.clone(),
+                        Undefined::new(record_type),
+                        Variable::new("f_c_pointer")
+                    )
+                    .into()],
+                    Return::new(void_type(), void_value()),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )
+        );
+    }
+
+    #[test]
+    fn transform_result_with_argument() {
+        let record_type = types::Record::new(vec![
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+            types::Primitive::Integer64.into(),
+        ]);
+
+        assert_eq!(
+            transform(
+                &Context::new(WORD_BYTES),
+                &FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("x", types::Primitive::PointerInteger)],
+                    record_type.clone(),
+                    Block::new(
+                        vec![],
+                        Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Target),
+                )
+            ),
+            FunctionDefinition::new(
+                "f",
+                vec![
+                    Argument::new("f_c_pointer", types::Pointer::new(record_type.clone())),
+                    Argument::new("x", types::Primitive::PointerInteger)
+                ],
                 void_type(),
                 Block::new(
                     vec![Store::new(

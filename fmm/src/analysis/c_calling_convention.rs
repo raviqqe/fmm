@@ -673,8 +673,127 @@ mod tests {
                                     ),
                                     Variable::new("f"),
                                     vec![
-                                        Variable::new("x_c_0").into(),
-                                        Variable::new("x_c_1").into()
+                                        Variable::new("x_c_1").into(),
+                                        Variable::new("x_c_0").into()
+                                    ],
+                                    "x_c_2"
+                                )
+                                .into(),
+                                Load::new(record_type.clone(), Variable::new("x_c_1"), "x").into(),
+                                DeconstructRecord::new(record_type, Variable::new("x"), 0, "y")
+                                    .into()
+                            ],
+                            Return::new(types::Primitive::Integer64, Variable::new("y"))
+                        ),
+                        Default::default()
+                    )]
+                ))
+            );
+        }
+
+        #[test]
+        fn transform_argument_and_result_in_call_with_compatible_argument() {
+            let record_type = types::Record::new(vec![
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+                types::Primitive::Integer64.into(),
+            ]);
+
+            assert_eq!(
+                transform_module(&Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new(
+                        "f",
+                        types::Function::new(
+                            vec![
+                                types::Primitive::PointerInteger.into(),
+                                record_type.clone().into()
+                            ],
+                            record_type.clone(),
+                            types::CallingConvention::Target,
+                        )
+                    )],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "g",
+                        vec![],
+                        types::Primitive::Integer64,
+                        Block::new(
+                            vec![
+                                Call::new(
+                                    types::Function::new(
+                                        vec![
+                                            types::Primitive::PointerInteger.into(),
+                                            record_type.clone().into()
+                                        ],
+                                        record_type.clone(),
+                                        types::CallingConvention::Target
+                                    ),
+                                    Variable::new("f"),
+                                    vec![
+                                        Primitive::PointerInteger(42).into(),
+                                        Undefined::new(record_type.clone()).into()
+                                    ],
+                                    "x"
+                                )
+                                .into(),
+                                DeconstructRecord::new(
+                                    record_type.clone(),
+                                    Variable::new("x"),
+                                    0,
+                                    "y"
+                                )
+                                .into()
+                            ],
+                            Return::new(types::Primitive::Integer64, Variable::new("y"))
+                        ),
+                        Default::default()
+                    )]
+                )),
+                Ok(Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new(
+                        "f",
+                        types::Function::new(
+                            vec![
+                                types::Pointer::new(record_type.clone()).into(),
+                                types::Primitive::PointerInteger.into(),
+                                types::Pointer::new(record_type.clone()).into()
+                            ],
+                            void_type(),
+                            types::CallingConvention::Target,
+                        )
+                    )],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "g",
+                        vec![],
+                        types::Primitive::Integer64,
+                        Block::new(
+                            vec![
+                                AllocateStack::new(record_type.clone(), "x_c_0").into(),
+                                Store::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone()),
+                                    Variable::new("x_c_0")
+                                )
+                                .into(),
+                                AllocateStack::new(record_type.clone(), "x_c_1").into(),
+                                Call::new(
+                                    types::Function::new(
+                                        vec![
+                                            types::Pointer::new(record_type.clone()).into(),
+                                            types::Primitive::PointerInteger.into(),
+                                            types::Pointer::new(record_type.clone()).into()
+                                        ],
+                                        void_type(),
+                                        types::CallingConvention::Target
+                                    ),
+                                    Variable::new("f"),
+                                    vec![
+                                        Variable::new("x_c_1").into(),
+                                        Primitive::PointerInteger(42).into(),
+                                        Variable::new("x_c_0").into()
                                     ],
                                     "x_c_2"
                                 )
