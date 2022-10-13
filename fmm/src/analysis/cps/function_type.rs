@@ -1,6 +1,6 @@
 use super::stack::stack_type;
 use crate::{
-    analysis::{cps::continuation_type_compiler, type_conversion},
+    analysis::{cps::continuation_type, type_conversion},
     ir::*,
     types::{self, CallingConvention, Type},
 };
@@ -22,8 +22,7 @@ fn transform_function_type(
         types::Function::new(
             [
                 stack_type(),
-                continuation_type_compiler::compile(type_.result(), continuation_result_type)
-                    .into(),
+                continuation_type::compile(type_.result(), continuation_result_type).into(),
             ]
             .into_iter()
             .chain(type_.arguments().iter().cloned())

@@ -1,12 +1,12 @@
 mod context;
-mod continuation_type_compiler;
+mod continuation_type;
 mod error;
-mod free_variable_collector;
-mod function_type_transformer;
+mod free_variable;
+mod function_type;
 mod if_flattener;
-mod source_function_transformer;
+mod source_function;
 mod stack;
-mod target_function_transformer;
+mod target_function;
 
 use self::context::CpsContext;
 use super::type_check;
@@ -22,9 +22,9 @@ pub fn transform(
     let context = CpsContext::new(result_type.into());
 
     let module = if_flattener::flatten(module);
-    let module = source_function_transformer::transform(&context, &module)?;
-    let module = target_function_transformer::transform(&context, &module)?;
-    let module = function_type_transformer::transform(&module, context.result_type());
+    let module = source_function::transform(&context, &module)?;
+    let module = target_function::transform(&context, &module)?;
+    let module = function_type::transform(&module, context.result_type());
 
     type_check::check(&module)?;
 

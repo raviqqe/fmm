@@ -1,4 +1,4 @@
-use super::free_variable_collector;
+use super::free_variable;
 use crate::{
     analysis::expression_conversion,
     build::NameGenerator,
@@ -312,7 +312,7 @@ fn get_continuation_environment<'a>(
     terminal_instruction: &'a TerminalInstruction,
     local_variables: &hamt::Map<&str, Type>,
 ) -> Vec<(&'a str, Type)> {
-    free_variable_collector::collect(instructions, terminal_instruction)
+    free_variable::collect(instructions, terminal_instruction)
         .iter()
         .flat_map(|&name| local_variables.get(name).map(|type_| (name, type_.clone())))
         .collect()
