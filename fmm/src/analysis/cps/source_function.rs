@@ -1,11 +1,11 @@
 use super::{
     context::CpsContext,
     error::CpsTransformationError,
-    free_variable_collector,
+    free_variable,
     stack::{pop_from_stack, push_to_stack, stack_type},
 };
 use crate::{
-    analysis::cps::continuation_type_compiler,
+    analysis::cps::continuation_type,
     build::{self, BuildError, InstructionBuilder},
     ir::*,
     types::{CallingConvention, Type},
@@ -46,10 +46,8 @@ fn transform_function_definition(
 ) -> Result<FunctionDefinition, CpsTransformationError> {
     Ok(
         if definition.type_().calling_convention() == CallingConvention::Source {
-            let continuation_type = continuation_type_compiler::compile(
-                definition.result_type(),
-                context.cps.result_type(),
-            );
+            let continuation_type =
+                continuation_type::compile(definition.result_type(), context.cps.result_type());
 
             FunctionDefinition::new(
                 definition.name(),
@@ -111,10 +109,7 @@ fn transform_instructions(
 
                 (
                     vec![Call::new(
-                        continuation_type_compiler::compile(
-                            return_.type_(),
-                            context.cps.result_type(),
-                        ),
+                        continuation_type::compile(return_.type_(), context.cps.result_type()),
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
                         vec![
                             Variable::new(STACK_ARGUMENT_NAME).into(),
@@ -319,7 +314,7 @@ fn get_continuation_environment<'a>(
     )]
     .into_iter()
     .chain(
-        free_variable_collector::collect(instructions, terminal_instruction)
+        free_variable::collect(instructions, terminal_instruction)
             .iter()
             .flat_map(|&name| local_variables.get(name).map(|type_| (name, type_.clone()))),
     )
