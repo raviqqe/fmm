@@ -200,10 +200,12 @@ fn transform_if_block_without_continuation(
         &Block::new(
             block.instructions().to_vec(),
             match (block.terminal_instruction(), terminal_instruction) {
+                // Outer blocks' terminal instructions should be converted into return or
+                // unreachable already at this point.
                 (_, TerminalInstruction::Branch(_)) => unreachable!(),
                 (TerminalInstruction::Return(return_), _) => return_.clone().into(),
-                (TerminalInstruction::Unreachable, _) => TerminalInstruction::Unreachable,
-                (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
+                (TerminalInstruction::Unreachable, _)
+                | (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
                     TerminalInstruction::Unreachable
                 }
                 (TerminalInstruction::Branch(branch), return_) => {
