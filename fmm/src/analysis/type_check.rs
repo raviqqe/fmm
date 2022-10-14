@@ -1,5 +1,6 @@
 mod error;
 
+use super::local_variable;
 use crate::{
     ir::*,
     types::{self, generic_pointer_type, Type},
@@ -11,7 +12,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     check_variable_declarations(module)?;
     check_function_declarations(module)?;
 
-    let variables = module
+    let mut variables = module
         .variable_declarations()
         .iter()
         .map(|declaration| {
@@ -38,14 +39,14 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
                 .iter()
                 .map(|definition| (definition.name(), definition.type_().clone().into())),
         )
-        .collect::<hamt::Map<_, _>>();
+        .collect::<FnvHashMap<_, _>>();
 
     for definition in module.variable_definitions() {
         check_variable_definition(definition, &variables)?;
     }
 
     for definition in module.function_definitions() {
-        check_function_definition(definition, &variables)?;
+        check_function_definition(definition, &mut variables)?;
     }
 
     Ok(())
@@ -85,7 +86,7 @@ fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
 
 fn check_variable_definition(
     definition: &VariableDefinition,
-    variables: &hamt::Map<&str, Type>,
+    variables: &FnvHashMap<&str, Type>,
 ) -> Result<(), TypeCheckError> {
     check_equality(
         &check_expression(definition.body(), variables)?,
@@ -93,65 +94,61 @@ fn check_variable_definition(
     )
 }
 
-fn check_function_definition(
-    definition: &FunctionDefinition,
-    variables: &hamt::Map<&str, Type>,
+fn check_function_definition<'a>(
+    definition: &'a FunctionDefinition,
+    variables: &mut FnvHashMap<&'a str, Type>,
 ) -> Result<(), TypeCheckError> {
-    check_block(
-        definition.body(),
-        &variables.extend(
-            definition
-                .arguments()
-                .iter()
-                .map(|argument| (argument.name(), argument.type_().clone())),
-        ),
-        definition.result_type(),
-        None,
-    )?;
+    let local_variables = local_variable::collect(definition);
+
+    variables.extend(local_variables.clone());
+
+    check_block(definition.body(), definition.result_type(), None, variables)?;
+
+    for name in local_variables.keys() {
+        variables.remove(name);
+    }
 
     Ok(())
 }
 
 fn check_block(
     block: &Block,
-    variables: &hamt::Map<&str, Type>,
     return_type: &Type,
     branch_type: Option<&Type>,
+    variables: &FnvHashMap<&str, Type>,
 ) -> Result<(), TypeCheckError> {
-    let mut variables = variables.clone();
-
     for instruction in block.instructions() {
         match instruction {
             Instruction::AllocateHeap(allocate) => {
                 check_equality(
-                    &check_expression(allocate.size(), &variables)?,
+                    &check_expression(allocate.size(), variables)?,
                     &types::Primitive::PointerInteger.into(),
                 )?;
             }
             Instruction::AllocateStack(_) => {}
             Instruction::AtomicLoad(load) => {
                 check_equality(
-                    &check_expression(load.pointer(), &variables)?,
+                    &check_expression(load.pointer(), variables)?,
                     &types::Pointer::new(load.type_().clone()).clone().into(),
                 )?;
             }
             Instruction::AtomicOperation(operation) => {
                 check_equality(
-                    &check_expression(operation.pointer(), &variables)?,
+                    &check_expression(operation.pointer(), variables)?,
                     &types::Pointer::new(operation.type_()).into(),
                 )?;
                 check_equality(
-                    &check_expression(operation.value(), &variables)?,
+                    &check_expression(operation.value(), variables)?,
                     &operation.type_().into(),
                 )?;
             }
             Instruction::AtomicStore(store) => {
                 check_equality(
-                    &check_expression(store.value(), &variables)?,
+                    &check_expression(store.value(), variables)?,
                     &store.type_().clone(),
                 )?;
                 check_equality(
-                    &check_expression(store.pointer(), &variables)?,
+                    &check_expression(store.pointer(), variables)?,
                     &types::Pointer::new(store.type_().clone()).into(),
                 )?;
             }
@@ -162,32 +159,32 @@ fn check_block(
 
                 check_equality(
                     &call.type_().clone().into(),
-                    &check_expression(call.function(), &variables)?,
+                    &check_expression(call.function(), variables)?,
                 )?;
 
                 for (argument, type_) in call.arguments().iter().zip(call.type_().arguments()) {
-                    check_equality(&check_expression(argument, &variables)?, type_)?;
+                    check_equality(&check_expression(argument, variables)?, type_)?;
                 }
             }
             Instruction::CompareAndSwap(cas) => {
                 check_equality(
-                    &check_expression(cas.pointer(), &variables)?,
+                    &check_expression(cas.pointer(), variables)?,
                     &types::Pointer::new(cas.type_().clone()).into(),
                 )?;
 
                 check_equality(
-                    &check_expression(cas.old_value(), &variables)?,
+                    &check_expression(cas.old_value(), variables)?,
                     &cas.type_().clone(),
                 )?;
 
                 check_equality(
-                    &check_expression(cas.new_value(), &variables)?,
+                    &check_expression(cas.new_value(), variables)?,
                     &cas.type_().clone(),
                 )?;
             }
             Instruction::DeconstructRecord(deconstruct) => {
                 check_equality(
-                    &check_expression(deconstruct.record(), &variables)?,
+                    &check_expression(deconstruct.record(), variables)?,
                     &deconstruct.type_().clone().into(),
                 )?;
 
@@ -195,7 +192,7 @@ fn check_block(
             }
             Instruction::DeconstructUnion(deconstruct) => {
                 check_equality(
-                    &check_expression(deconstruct.union(), &variables)?,
+                    &check_expression(deconstruct.union(), variables)?,
                     &deconstruct.type_().clone().into(),
                 )?;
 
@@ -204,60 +201,56 @@ fn check_block(
             Instruction::Fence(_) => {}
             Instruction::FreeHeap(free) => {
                 check_equality(
-                    &check_expression(free.pointer(), &variables)?,
+                    &check_expression(free.pointer(), variables)?,
                     &generic_pointer_type(),
                 )?;
             }
             Instruction::If(if_) => {
                 check_equality(
-                    &check_expression(if_.condition(), &variables)?,
+                    &check_expression(if_.condition(), variables)?,
                     &types::Primitive::Boolean.into(),
                 )?;
 
-                check_block(if_.then(), &variables, return_type, Some(if_.type_()))?;
-                check_block(if_.else_(), &variables, return_type, Some(if_.type_()))?;
+                check_block(if_.then(), return_type, Some(if_.type_()), variables)?;
+                check_block(if_.else_(), return_type, Some(if_.type_()), variables)?;
             }
             Instruction::Load(load) => {
                 check_equality(
-                    &check_expression(load.pointer(), &variables)?,
+                    &check_expression(load.pointer(), variables)?,
                     &types::Pointer::new(load.type_().clone()).into(),
                 )?;
             }
             Instruction::MemoryCopy(copy) => {
                 let pointer_type = types::Pointer::new(types::Primitive::Integer8).into();
 
-                check_equality(&check_expression(copy.source(), &variables)?, &pointer_type)?;
+                check_equality(&check_expression(copy.source(), variables)?, &pointer_type)?;
                 check_equality(
-                    &check_expression(copy.destination(), &variables)?,
+                    &check_expression(copy.destination(), variables)?,
                     &pointer_type,
                 )?;
                 check_equality(
-                    &check_expression(copy.size(), &variables)?,
+                    &check_expression(copy.size(), variables)?,
                     &types::Primitive::PointerInteger.into(),
                 )?;
             }
             Instruction::ReallocateHeap(reallocate) => {
                 check_equality(
-                    &check_expression(reallocate.pointer(), &variables)?,
+                    &check_expression(reallocate.pointer(), variables)?,
                     &generic_pointer_type(),
                 )?;
 
                 check_equality(
-                    &check_expression(reallocate.size(), &variables)?,
+                    &check_expression(reallocate.size(), variables)?,
                     &types::Primitive::PointerInteger.into(),
                 )?;
             }
             Instruction::Store(store) => {
-                check_equality(&check_expression(store.value(), &variables)?, store.type_())?;
+                check_equality(&check_expression(store.value(), variables)?, store.type_())?;
                 check_equality(
-                    &check_expression(store.pointer(), &variables)?,
+                    &check_expression(store.pointer(), variables)?,
                     &types::Pointer::new(store.type_().clone()).into(),
                 )?;
             }
-        }
-
-        if let Some((name, type_)) = instruction.value() {
-            variables = variables.insert(name, type_.clone());
         }
     }
 
@@ -268,14 +261,14 @@ fn check_block(
 
             check_equality(branch.type_(), branch_type)?;
             check_equality(
-                &check_expression(branch.expression(), &variables)?,
+                &check_expression(branch.expression(), variables)?,
                 branch_type,
             )?;
         }
         TerminalInstruction::Return(return_) => {
             check_equality(return_.type_(), return_type)?;
             check_equality(
-                &check_expression(return_.expression(), &variables)?,
+                &check_expression(return_.expression(), variables)?,
                 return_type,
             )?;
         }
@@ -287,7 +280,7 @@ fn check_block(
 
 fn check_expression(
     expression: &Expression,
-    variables: &hamt::Map<&str, Type>,
+    variables: &FnvHashMap<&str, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
