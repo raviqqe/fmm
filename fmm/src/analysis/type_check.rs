@@ -7,6 +7,8 @@ use crate::{
 pub use error::*;
 use fnv::FnvHashMap;
 
+use super::local_variable;
+
 pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     check_variable_declarations(module)?;
     check_function_declarations(module)?;
@@ -38,7 +40,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
                 .iter()
                 .map(|definition| (definition.name(), definition.type_().clone().into())),
         )
-        .collect::<hamt::Map<_, _>>();
+        .collect::<FnvHashMap<_, _>>();
 
     for definition in module.variable_definitions() {
         check_variable_definition(definition, &variables)?;
@@ -85,7 +87,7 @@ fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
 
 fn check_variable_definition(
     definition: &VariableDefinition,
-    variables: &hamt::Map<&str, Type>,
+    variables: &FnvHashMap<&str, Type>,
 ) -> Result<(), TypeCheckError> {
     check_equality(
         &check_expression(definition.body(), variables)?,
@@ -95,18 +97,17 @@ fn check_variable_definition(
 
 fn check_function_definition(
     definition: &FunctionDefinition,
-    variables: &hamt::Map<&str, Type>,
+    global_variables: &FnvHashMap<&str, Type>,
 ) -> Result<(), TypeCheckError> {
+    let mut variables = local_variable::collect(definition);
+
+    variables.extend(global_variables.clone());
+
     check_block(
         definition.body(),
-        &variables.extend(
-            definition
-                .arguments()
-                .iter()
-                .map(|argument| (argument.name(), argument.type_().clone())),
-        ),
         definition.result_type(),
         None,
+        &variables,
     )?;
 
     Ok(())
@@ -114,12 +115,10 @@ fn check_function_definition(
 
 fn check_block(
     block: &Block,
-    variables: &hamt::Map<&str, Type>,
     return_type: &Type,
     branch_type: Option<&Type>,
+    variables: &FnvHashMap<&str, Type>,
 ) -> Result<(), TypeCheckError> {
-    let mut variables = variables.clone();
-
     for instruction in block.instructions() {
         match instruction {
             Instruction::AllocateHeap(allocate) => {
@@ -214,8 +213,8 @@ fn check_block(
                     &types::Primitive::Boolean.into(),
                 )?;
 
-                check_block(if_.then(), &variables, return_type, Some(if_.type_()))?;
-                check_block(if_.else_(), &variables, return_type, Some(if_.type_()))?;
+                check_block(if_.then(), return_type, Some(if_.type_()), &variables)?;
+                check_block(if_.else_(), return_type, Some(if_.type_()), &variables)?;
             }
             Instruction::Load(load) => {
                 check_equality(
@@ -255,10 +254,6 @@ fn check_block(
                 )?;
             }
         }
-
-        if let Some((name, type_)) = instruction.value() {
-            variables = variables.insert(name, type_.clone());
-        }
     }
 
     match block.terminal_instruction() {
@@ -287,7 +282,7 @@ fn check_block(
 
 fn check_expression(
     expression: &Expression,
-    variables: &hamt::Map<&str, Type>,
+    variables: &FnvHashMap<&str, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
