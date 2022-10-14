@@ -533,6 +533,52 @@ mod tests {
     }
 
     #[test]
+    fn transform_call_with_continuation_with_free_variable() {
+        let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![Argument::new(
+                    "p",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("p"), "x").into(),
+                        Call::new(function_type.clone(), Variable::new("f"), vec![], "y").into(),
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("x"),
+                            Variable::new("p"),
+                        )
+                        .into(),
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("y"),
+                            Variable::new("p"),
+                        )
+                        .into(),
+                    ],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            ArithmeticOperator::Add,
+                            Variable::new("x"),
+                            Variable::new("y"),
+                        ),
+                    ),
+                ),
+            )],
+        ));
+    }
+
+    #[test]
     fn transform_if_with_large_environment() {
         let function_type = create_function_type(
             vec![types::Primitive::Float64.into()],
@@ -589,17 +635,12 @@ mod tests {
 
     #[test]
     fn transform_if_with_continuation_with_free_variable() {
-        let function_type = create_function_type(
-            vec![types::Primitive::PointerInteger.into()],
-            types::Primitive::PointerInteger,
-        );
-
         test_transformation(&Module::new(
             vec![],
-            vec![FunctionDeclaration::new("f", function_type)],
+            vec![],
             vec![],
             vec![create_function_definition(
-                "g",
+                "f",
                 vec![Argument::new(
                     "p",
                     types::Pointer::new(types::Primitive::PointerInteger),
