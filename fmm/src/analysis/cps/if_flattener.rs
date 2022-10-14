@@ -1,10 +1,11 @@
 use super::free_variable;
 use crate::{
-    analysis::expression_conversion,
+    analysis::{expression_conversion, local_variable},
     build::NameGenerator,
     ir::*,
     types::{self, void_type, Type},
 };
+use fnv::FnvHashMap;
 
 struct Context {
     function_definitions: Vec<FunctionDefinition>,
@@ -47,11 +48,7 @@ fn transform_function_definition(
                 context,
                 definition.body(),
                 definition.result_type(),
-                &definition
-                    .arguments()
-                    .iter()
-                    .map(|argument| (argument.name(), argument.type_().clone()))
-                    .collect(),
+                &local_variable::collect(definition),
             ),
             definition.options().clone(),
         )
@@ -64,7 +61,7 @@ fn transform_block(
     context: &mut Context,
     block: &Block,
     result_type: &Type,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> Block {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -82,7 +79,7 @@ fn transform_instructions(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     result_type: &Type,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> (Vec<Instruction>, TerminalInstruction) {
     let mut rest_instructions = vec![];
     let mut terminal_instruction = terminal_instruction.clone();
@@ -120,7 +117,7 @@ fn transform_instructions(
                 let environment = get_continuation_environment(
                     &rest_instructions,
                     &terminal_instruction,
-                    &local_variables.insert(if_.name(), if_.type_().clone()),
+                    &local_variables,
                 );
                 let continuation = create_continuation(
                     context,
@@ -173,7 +170,7 @@ fn transform_if_block_without_continuation(
     if_name: &str,
     block: &Block,
     result_type: &Type,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
     terminal_instruction: &TerminalInstruction,
 ) -> Block {
     transform_block(
@@ -210,7 +207,7 @@ fn transform_if_block_with_continuation(
     if_name: &str,
     block: &Block,
     result_type: &Type,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
     continuation: &Expression,
     environment: &[(&str, Type)],
 ) -> Block {
@@ -290,7 +287,7 @@ fn create_continuation(
 fn get_continuation_environment<'a>(
     instructions: &'a [Instruction],
     terminal_instruction: &'a TerminalInstruction,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> Vec<(&'a str, Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .iter()

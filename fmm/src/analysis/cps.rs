@@ -9,7 +9,7 @@ mod stack;
 mod target_function;
 
 use self::context::CpsContext;
-use super::type_check;
+use super::{name, type_check};
 use crate::{ir::*, types::Type};
 use error::CpsTransformationError;
 
@@ -18,6 +18,7 @@ pub fn transform(
     result_type: impl Into<Type>,
 ) -> Result<Module, CpsTransformationError> {
     type_check::check(module)?;
+    name::check(module)?;
 
     let context = CpsContext::new(result_type.into());
 
@@ -27,6 +28,7 @@ pub fn transform(
     let module = function_type::transform(&module, context.result_type());
 
     type_check::check(&module)?;
+    name::check(&module)?;
 
     Ok(module)
 }
