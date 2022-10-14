@@ -117,7 +117,7 @@ fn transform_instructions(
                 let environment = get_continuation_environment(
                     &rest_instructions,
                     &terminal_instruction,
-                    &local_variables,
+                    local_variables,
                 );
                 let continuation = create_continuation(
                     context,

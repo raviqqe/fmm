@@ -595,7 +595,7 @@ mod tests {
 
         test_transformation(&Module::new(
             vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![FunctionDeclaration::new("f", function_type)],
             vec![],
             vec![create_function_definition(
                 "g",

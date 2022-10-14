@@ -21,7 +21,7 @@ fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, 
     variables.extend(block.instructions().iter().flat_map(|instruction| {
         instruction
             .value()
-            .map(|(name, type_)| (name, type_.clone()))
+            .map(|(name, type_)| (name, type_))
     }));
 
     for instruction in block.instructions() {
