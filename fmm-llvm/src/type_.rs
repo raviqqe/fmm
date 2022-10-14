@@ -62,7 +62,7 @@ pub fn compile_primitive<'c>(
 pub fn compile_pointer_integer<'c>(context: &Context<'c>) -> inkwell::types::IntType<'c> {
     context
         .inkwell()
-        .ptr_sized_int_type(&context.target_data(), None)
+        .ptr_sized_int_type(context.target_data(), None)
 }
 
 pub fn compile_record<'c>(
@@ -82,7 +82,7 @@ pub fn compile_union<'c>(
     union: &types::Union,
 ) -> inkwell::types::StructType<'c> {
     let target_data = context.target_data();
-    let integer_type = context.inkwell().ptr_sized_int_type(&target_data, None);
+    let integer_type = context.inkwell().ptr_sized_int_type(target_data, None);
 
     context.inkwell().struct_type(
         &[integer_type
