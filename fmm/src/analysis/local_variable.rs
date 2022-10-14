@@ -8,12 +8,20 @@ pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
         .map(|argument| (argument.name(), argument.type_().clone()))
         .collect();
 
-    collect_from_block(definition.body(), &mut variables);
+    collect_in_block(definition.body(), &mut variables);
 
     variables
 }
 
-fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, Type>) {
+pub fn collect_from_block(block: &Block) -> FnvHashMap<&str, Type> {
+    let mut variables = FnvHashMap::default();
+
+    collect_in_block(block, &mut variables);
+
+    variables
+}
+
+fn collect_in_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, Type>) {
     variables.extend(
         block
             .instructions()
@@ -23,8 +31,8 @@ fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, 
 
     for instruction in block.instructions() {
         if let Instruction::If(if_) = instruction {
-            collect_from_block(if_.then(), variables);
-            collect_from_block(if_.else_(), variables);
+            collect_in_block(if_.then(), variables);
+            collect_in_block(if_.else_(), variables);
         }
     }
 }
