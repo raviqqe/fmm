@@ -1,4 +1,4 @@
-use super::{context::CpsContext, error::CpsTransformationError, stack::stack_type};
+use super::{context::CpsContext, error::CpsError, stack::stack_type};
 use crate::{
     analysis::cps::stack,
     build::{self, InstructionBuilder, TypedExpression},
@@ -11,7 +11,7 @@ struct Context<'a> {
     function_definitions: Vec<FunctionDefinition>,
 }
 
-pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
+pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsError> {
     let mut context = Context {
         cps: context,
         function_definitions: vec![],
@@ -35,7 +35,7 @@ pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTra
 fn transform_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
-) -> Result<FunctionDefinition, CpsTransformationError> {
+) -> Result<FunctionDefinition, CpsError> {
     Ok(
         if definition.type_().calling_convention() == CallingConvention::Target {
             FunctionDefinition::new(
@@ -51,7 +51,7 @@ fn transform_definition(
     )
 }
 
-fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsTransformationError> {
+fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsError> {
     Ok(Block::new(
         block
             .instructions()
@@ -68,7 +68,7 @@ fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsTra
 fn transform_instruction(
     context: &mut Context,
     instruction: &Instruction,
-) -> Result<Vec<Instruction>, CpsTransformationError> {
+) -> Result<Vec<Instruction>, CpsError> {
     Ok(match instruction {
         Instruction::Call(call) => {
             if call.type_().calling_convention() == CallingConvention::Source {
@@ -92,7 +92,7 @@ fn transform_instruction(
 fn transform_source_function_call(
     context: &mut Context,
     call: &Call,
-) -> Result<Vec<Instruction>, CpsTransformationError> {
+) -> Result<Vec<Instruction>, CpsError> {
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
     let result_pointer = builder.allocate_stack(call.type_().result().clone());
@@ -141,7 +141,7 @@ fn transform_source_function_call(
 fn compile_continuation(
     context: &mut Context,
     result_type: &Type,
-) -> Result<TypedExpression, CpsTransformationError> {
+) -> Result<TypedExpression, CpsError> {
     let name = context.cps.name_generator().borrow_mut().generate();
 
     context.function_definitions.push(FunctionDefinition::new(

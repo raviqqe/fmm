@@ -9,15 +9,13 @@ mod stack;
 mod target_function;
 
 use self::context::CpsContext;
-use super::type_check;
+use super::{name, type_check};
 use crate::{ir::*, types::Type};
-use error::CpsTransformationError;
+use error::CpsError;
 
-pub fn transform(
-    module: &Module,
-    result_type: impl Into<Type>,
-) -> Result<Module, CpsTransformationError> {
+pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module, CpsError> {
     type_check::check(module)?;
+    name::check(module)?;
 
     let context = CpsContext::new(result_type.into());
 
@@ -27,6 +25,7 @@ pub fn transform(
     let module = function_type::transform(&module, context.result_type());
 
     type_check::check(&module)?;
+    name::check(&module)?;
 
     Ok(module)
 }
@@ -579,6 +578,74 @@ mod tests {
                                 Variable::new("a"),
                                 Variable::new("b"),
                             ),
+                            Variable::new("y"),
+                        ),
+                    ),
+                ),
+            )],
+        ));
+    }
+
+    #[test]
+    fn transform_if_with_continuation_with_free_variable() {
+        let function_type = create_function_type(
+            vec![types::Primitive::PointerInteger.into()],
+            types::Primitive::PointerInteger,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type)],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![Argument::new(
+                    "p",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("p"), "x").into(),
+                        If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(1),
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(2),
+                                ),
+                            ),
+                            "y",
+                        )
+                        .into(),
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("x"),
+                            Variable::new("p"),
+                        )
+                        .into(),
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("y"),
+                            Variable::new("p"),
+                        )
+                        .into(),
+                    ],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            ArithmeticOperator::Add,
+                            Variable::new("x"),
                             Variable::new("y"),
                         ),
                     ),

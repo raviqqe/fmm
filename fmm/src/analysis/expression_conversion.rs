@@ -1,9 +1,6 @@
 use crate::ir::*;
 
-pub fn convert_expressions(
-    module: &Module,
-    convert: &impl Fn(&Expression) -> Expression,
-) -> Module {
+pub fn convert(module: &Module, convert: &impl Fn(&Expression) -> Expression) -> Module {
     let convert =
         |expression: &Expression| -> Expression { convert_expression(expression, convert) };
 
@@ -23,7 +20,7 @@ pub fn convert_expressions(
     )
 }
 
-pub fn convert_expressions_in_instruction(
+pub fn convert_in_instruction(
     instruction: &Instruction,
     convert: &impl Fn(&Expression) -> Expression,
 ) -> Instruction {
@@ -32,7 +29,7 @@ pub fn convert_expressions_in_instruction(
     })
 }
 
-pub fn convert_expressions_in_terminal_instruction(
+pub fn convert_in_terminal_instruction(
     instruction: &TerminalInstruction,
     convert: &impl Fn(&Expression) -> Expression,
 ) -> TerminalInstruction {
@@ -280,7 +277,7 @@ mod tests {
         ]);
 
         pretty_assertions::assert_eq!(
-            convert_expressions_in_instruction(
+            convert_in_instruction(
                 &DeconstructUnion::new(
                     union_type.clone(),
                     Union::new(union_type.clone(), 0, Variable::new("foo")),
