@@ -10,6 +10,7 @@ mod union;
 use context::Context;
 pub use error::CompileError;
 use fmm::ir::*;
+use fnv::FnvHashMap;
 pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 
@@ -61,20 +62,20 @@ fn compile_module<'c>(
     let llvm_module = context.inkwell().create_module("");
     llvm_module.set_triple(&context.target_machine().get_triple());
 
-    let mut variables = hamt::Map::new();
+    let mut variables = FnvHashMap::default();
 
     let instruction_function_set = compile_heap_functions(context, &llvm_module);
 
     for declaration in module.variable_declarations() {
         let global = compile_variable_declaration(context, &llvm_module, declaration);
 
-        variables = variables.insert(declaration.name(), global.as_pointer_value().into());
+        variables.insert(declaration.name(), global.as_pointer_value().into());
     }
 
     for declaration in module.function_declarations() {
         let function = compile_function_declaration(context, &llvm_module, declaration);
 
-        variables = variables.insert(
+        variables.insert(
             declaration.name(),
             function.as_global_value().as_pointer_value().into(),
         );
@@ -83,13 +84,13 @@ fn compile_module<'c>(
     for definition in module.variable_definitions() {
         let global = declare_variable_definition(context, &llvm_module, definition);
 
-        variables = variables.insert(definition.name(), global.as_pointer_value().into());
+        variables.insert(definition.name(), global.as_pointer_value().into());
     }
 
     for definition in module.function_definitions() {
         let function = declare_function_definition(context, &llvm_module, definition);
 
-        variables = variables.insert(
+        variables.insert(
             definition.name(),
             function.as_global_value().as_pointer_value().into(),
         );
@@ -104,7 +105,7 @@ fn compile_module<'c>(
             context,
             &llvm_module,
             definition,
-            &variables,
+            &mut variables,
             &instruction_function_set,
         )?;
     }
@@ -217,7 +218,7 @@ fn compile_variable_definition<'c>(
     context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
 ) {
     module
         .get_global(definition.name())
@@ -265,35 +266,36 @@ fn declare_function_definition<'c>(
     function
 }
 
-fn compile_function_definition<'c>(
+fn compile_function_definition<'c, 'a>(
     context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
-    definition: &FunctionDefinition,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    definition: &'a FunctionDefinition,
+    variables: &mut FnvHashMap<&'a str, inkwell::values::BasicValueEnum<'c>>,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<(), CompileError> {
     let function = module.get_function(definition.name()).unwrap();
     let builder = context.inkwell().create_builder();
 
     builder.position_at_end(context.inkwell().append_basic_block(function, "entry"));
+    variables.extend(
+        definition
+            .arguments()
+            .iter()
+            .enumerate()
+            .map(|(index, argument)| {
+                (
+                    argument.name(),
+                    function.get_nth_param(index as u32).unwrap(),
+                )
+            }),
+    );
 
     instruction::compile_block(
         context,
         &builder,
         definition.body(),
         None,
-        &variables.extend(
-            definition
-                .arguments()
-                .iter()
-                .enumerate()
-                .map(|(index, argument)| {
-                    (
-                        argument.name(),
-                        function.get_nth_param(index as u32).unwrap(),
-                    )
-                }),
-        ),
+        variables,
         instruction_function_set,
     )?;
 

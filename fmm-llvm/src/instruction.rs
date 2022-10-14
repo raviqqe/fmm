@@ -3,31 +3,30 @@ use crate::{
     instruction_configuration::InstructionFunctionSet, type_, union::compile_union_cast,
 };
 use fmm::ir::*;
+use fnv::FnvHashMap;
 use inkwell::values::BasicValue;
 use std::convert::TryFrom;
 
-pub fn compile_block<'c>(
+pub fn compile_block<'c, 'a>(
     context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
-    block: &Block,
+    block: &'a Block,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    variables: &mut FnvHashMap<&'a str, inkwell::values::BasicValueEnum<'c>>,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
-    let mut variables = variables.clone();
-
     for instruction in block.instructions() {
         let value = compile_instruction(
             context,
             builder,
             instruction,
-            &variables,
+            variables,
             instruction_function_set,
         )?;
 
         if let Some(value) = value {
             if let Some((name, _)) = instruction.value() {
-                variables = variables.insert(name, value);
+                variables.insert(name, value);
             }
         }
     }
@@ -42,11 +41,11 @@ pub fn compile_block<'c>(
     ))
 }
 
-fn compile_instruction<'c>(
+fn compile_instruction<'c, 'a>(
     context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
-    instruction: &Instruction,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    instruction: &'a Instruction,
+    variables: &mut FnvHashMap<&'a str, inkwell::values::BasicValueEnum<'c>>,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
@@ -277,7 +276,7 @@ fn compile_terminal_instruction<'c>(
     builder: &inkwell::builder::Builder<'c>,
     instruction: &TerminalInstruction,
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Option<inkwell::values::BasicValueEnum<'c>> {
     let compile_expression =

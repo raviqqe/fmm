@@ -1,13 +1,14 @@
 use super::type_;
 use crate::{context::Context, union::compile_union_cast};
 use fmm::ir::*;
+use fnv::FnvHashMap;
 use inkwell::values::BasicValue;
 
 pub fn compile<'c>(
     context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     expression: &Expression,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
 ) -> inkwell::values::BasicValueEnum<'c> {
     let compile = |expression: &_| compile(context, builder, expression, variables);
 
@@ -83,7 +84,7 @@ pub fn compile<'c>(
 pub fn compile_constant<'c>(
     context: &Context<'c>,
     expression: &Expression,
-    variables: &hamt::Map<&str, inkwell::values::BasicValueEnum<'c>>,
+    variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
 ) -> inkwell::values::BasicValueEnum<'c> {
     let compile_expression = |expression: &_| compile_constant(context, expression, variables);
 
