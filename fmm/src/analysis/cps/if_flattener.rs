@@ -84,12 +84,14 @@ fn transform_instructions(
     result_type: &Type,
     local_variables: &hamt::Map<&str, Type>,
 ) -> (Vec<Instruction>, TerminalInstruction) {
-    match instructions {
-        [] => (vec![], terminal_instruction.clone()),
-        [instruction] => {
-            if let Instruction::If(if_) = instruction {
-                (
-                    vec![If::new(
+    let mut rest_instructions = vec![];
+    let mut terminal_instruction = terminal_instruction.clone();
+
+    for instruction in instructions.iter().rev() {
+        if let Instruction::If(if_) = instruction {
+            if rest_instructions.is_empty() {
+                rest_instructions.push(
+                    If::new(
                         void_type(),
                         if_.condition().clone(),
                         transform_if_block_without_continuation(
@@ -98,7 +100,7 @@ fn transform_instructions(
                             if_.then(),
                             result_type,
                             local_variables,
-                            terminal_instruction,
+                            &terminal_instruction,
                         ),
                         transform_if_block_without_continuation(
                             context,
@@ -106,85 +108,64 @@ fn transform_instructions(
                             if_.else_(),
                             result_type,
                             local_variables,
-                            terminal_instruction,
+                            &terminal_instruction,
                         ),
                         "",
                     )
-                    .into()],
-                    TerminalInstruction::Unreachable,
-                )
+                    .into(),
+                );
             } else {
-                (vec![instruction.clone()], terminal_instruction.clone())
-            }
-        }
-        [instruction, ..] => {
-            let instructions = &instructions[1..];
+                rest_instructions.reverse();
 
-            if let Instruction::If(if_) = instruction {
                 let environment = get_continuation_environment(
-                    instructions,
-                    terminal_instruction,
+                    &rest_instructions,
+                    &terminal_instruction,
                     &local_variables.insert(if_.name(), if_.type_().clone()),
                 );
                 let continuation = create_continuation(
                     context,
-                    instructions,
-                    terminal_instruction,
+                    &rest_instructions,
+                    &terminal_instruction,
                     result_type,
                     &environment,
                 )
                 .into();
 
-                (
-                    vec![If::new(
-                        void_type(),
-                        if_.condition().clone(),
-                        transform_if_block_with_continuation(
-                            context,
-                            if_.name(),
-                            if_.then(),
-                            result_type,
-                            local_variables,
-                            &continuation,
-                            &environment,
-                        ),
-                        transform_if_block_with_continuation(
-                            context,
-                            if_.name(),
-                            if_.else_(),
-                            result_type,
-                            local_variables,
-                            &continuation,
-                            &environment,
-                        ),
-                        "",
-                    )
-                    .into()],
-                    TerminalInstruction::Unreachable,
+                rest_instructions = vec![If::new(
+                    void_type(),
+                    if_.condition().clone(),
+                    transform_if_block_with_continuation(
+                        context,
+                        if_.name(),
+                        if_.then(),
+                        result_type,
+                        local_variables,
+                        &continuation,
+                        &environment,
+                    ),
+                    transform_if_block_with_continuation(
+                        context,
+                        if_.name(),
+                        if_.else_(),
+                        result_type,
+                        local_variables,
+                        &continuation,
+                        &environment,
+                    ),
+                    "",
                 )
-            } else {
-                let (instructions, terminal_instruction) = transform_instructions(
-                    context,
-                    instructions,
-                    terminal_instruction,
-                    result_type,
-                    &if let Some((name, type_)) = instruction.value() {
-                        local_variables.insert(name, type_)
-                    } else {
-                        local_variables.clone()
-                    },
-                );
-
-                (
-                    [instruction.clone()]
-                        .into_iter()
-                        .chain(instructions)
-                        .collect(),
-                    terminal_instruction,
-                )
+                .into()];
             }
+
+            terminal_instruction = TerminalInstruction::Unreachable;
+        } else {
+            rest_instructions.push(instruction.clone());
         }
     }
+
+    rest_instructions.reverse();
+
+    (rest_instructions, terminal_instruction)
 }
 
 fn transform_if_block_without_continuation(
