@@ -2,14 +2,10 @@ use crate::{ir::*, types::Type};
 use fnv::FnvHashMap;
 
 pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
-    let mut variables = [(definition.name(), definition.type_().clone().into())]
-        .into_iter()
-        .chain(
-            definition
-                .arguments()
-                .iter()
-                .map(|argument| (argument.name(), argument.type_().clone())),
-        )
+    let mut variables = definition
+        .arguments()
+        .iter()
+        .map(|argument| (argument.name(), argument.type_().clone()))
         .collect();
 
     collect_from_block(definition.body(), &mut variables);
@@ -49,17 +45,7 @@ mod tests {
                 Block::new(vec![], TerminalInstruction::Unreachable),
                 Default::default()
             )),
-            [(
-                "f",
-                types::Function::new(
-                    vec![],
-                    types::Primitive::PointerInteger,
-                    types::CallingConvention::Source
-                )
-                .into()
-            )]
-            .into_iter()
-            .collect()
+            Default::default()
         );
     }
 
@@ -73,20 +59,9 @@ mod tests {
                 Block::new(vec![], TerminalInstruction::Unreachable),
                 Default::default()
             )),
-            [
-                (
-                    "f",
-                    types::Function::new(
-                        vec![types::Primitive::PointerInteger.into()],
-                        types::Primitive::PointerInteger,
-                        types::CallingConvention::Source
-                    )
-                    .into()
-                ),
-                ("x", types::Primitive::PointerInteger.into())
-            ]
-            .into_iter()
-            .collect()
+            [("x", types::Primitive::PointerInteger.into())]
+                .into_iter()
+                .collect()
         );
     }
 
@@ -113,20 +88,9 @@ mod tests {
                 ),
                 Default::default()
             )),
-            [
-                (
-                    "f",
-                    types::Function::new(
-                        vec![],
-                        types::Primitive::PointerInteger,
-                        types::CallingConvention::Source
-                    )
-                    .into()
-                ),
-                ("x", types::Primitive::PointerInteger.into())
-            ]
-            .into_iter()
-            .collect()
+            [("x", types::Primitive::PointerInteger.into())]
+                .into_iter()
+                .collect()
         );
     }
 
@@ -177,15 +141,6 @@ mod tests {
                 Default::default()
             )),
             [
-                (
-                    "f",
-                    types::Function::new(
-                        vec![],
-                        types::Primitive::PointerInteger,
-                        types::CallingConvention::Source
-                    )
-                    .into()
-                ),
                 ("x", types::Primitive::PointerInteger.into()),
                 ("y", types::Primitive::PointerInteger.into()),
                 ("z", types::Primitive::PointerInteger.into())

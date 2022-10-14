@@ -12,7 +12,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     check_variable_declarations(module)?;
     check_function_declarations(module)?;
 
-    let variables = module
+    let mut variables = module
         .variable_declarations()
         .iter()
         .map(|declaration| {
@@ -46,7 +46,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     }
 
     for definition in module.function_definitions() {
-        check_function_definition(definition, &variables)?;
+        check_function_definition(definition, &mut variables)?;
     }
 
     Ok(())
@@ -94,16 +94,13 @@ fn check_variable_definition(
     )
 }
 
-fn check_function_definition(
-    definition: &FunctionDefinition,
-    global_variables: &FnvHashMap<&str, Type>,
+fn check_function_definition<'a>(
+    definition: &'a FunctionDefinition,
+    variables: &mut FnvHashMap<&'a str, Type>,
 ) -> Result<(), TypeCheckError> {
-    let mut variables = local_variable::collect(definition);
+    let local_variables = local_variable::collect(definition);
 
-    dbg!(definition.name());
-    dbg!(variables.len());
-    variables.extend(global_variables.clone());
-    dbg!(variables.len());
+    variables.extend(local_variables.clone());
 
     check_block(
         definition.body(),
@@ -111,6 +108,10 @@ fn check_function_definition(
         None,
         &variables,
     )?;
+
+    for name in local_variables.keys() {
+        variables.remove(name);
+    }
 
     Ok(())
 }
