@@ -18,11 +18,12 @@ pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
 }
 
 fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, Type>) {
-    variables.extend(block.instructions().iter().flat_map(|instruction| {
-        instruction
-            .value()
-            .map(|(name, type_)| (name, type_))
-    }));
+    variables.extend(
+        block
+            .instructions()
+            .iter()
+            .flat_map(|instruction| instruction.value().map(|(name, type_)| (name, type_))),
+    );
 
     for instruction in block.instructions() {
         if let Instruction::If(if_) = instruction {
