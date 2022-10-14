@@ -100,6 +100,7 @@ fn check_function_definition(
 ) -> Result<(), TypeCheckError> {
     let mut variables = local_variable::collect(definition);
 
+    dbg!(definition.name());
     dbg!(variables.len());
     variables.extend(global_variables.clone());
     dbg!(variables.len());
