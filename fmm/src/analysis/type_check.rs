@@ -58,7 +58,6 @@ fn check_variable_declarations(module: &Module) -> Result<(), TypeCheckError> {
         .iter()
         .map(|declaration| (declaration.name(), declaration.type_().clone()))
         .collect::<FnvHashMap<_, _>>();
-    dbg!(variables.len());
 
     for definition in module.variable_definitions() {
         if let Some(type_) = variables.get(definition.name()) {
