@@ -587,6 +587,103 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn transform_consective_if() {
+        let function_type = create_function_type(
+            vec![types::Primitive::PointerInteger.into()],
+            types::Primitive::PointerInteger,
+        );
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Call::new(
+                            function_type.clone(),
+                            Variable::new("f"),
+                            vec![Primitive::PointerInteger(42).into()],
+                            "x1",
+                        )
+                        .into(),
+                        If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type.clone(),
+                                    Variable::new("f"),
+                                    vec![Variable::new("x1").into()],
+                                    "x2",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::PointerInteger, Variable::new("x2")),
+                            ),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type.clone(),
+                                    Variable::new("f"),
+                                    vec![Variable::new("x1").into()],
+                                    "x3",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::PointerInteger, Variable::new("x3")),
+                            ),
+                            "x4",
+                        )
+                        .into(),
+                        Call::new(
+                            function_type.clone(),
+                            Variable::new("f"),
+                            vec![Variable::new("x4").into()],
+                            "x5",
+                        )
+                        .into(),
+                        If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type.clone(),
+                                    Variable::new("f"),
+                                    vec![Variable::new("x5").into()],
+                                    "x6",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::PointerInteger, Variable::new("x6")),
+                            ),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type.clone(),
+                                    Variable::new("f"),
+                                    vec![Variable::new("x5").into()],
+                                    "x7",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::PointerInteger, Variable::new("x7")),
+                            ),
+                            "x8",
+                        )
+                        .into(),
+                        Call::new(
+                            function_type.clone(),
+                            Variable::new("f"),
+                            vec![Variable::new("x8").into()],
+                            "x9",
+                        )
+                        .into(),
+                    ],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x9")),
+                ),
+            )],
+        ));
+    }
+
     mod target_function_definition {
         use super::*;
 
