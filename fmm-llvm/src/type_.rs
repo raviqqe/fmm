@@ -62,7 +62,7 @@ pub fn compile_primitive<'c>(
 pub fn compile_pointer_integer<'c>(context: &Context<'c>) -> inkwell::types::IntType<'c> {
     context
         .inkwell()
-        .ptr_sized_int_type(&context.target_machine().get_target_data(), None)
+        .ptr_sized_int_type(&context.target_data(), None)
 }
 
 pub fn compile_record<'c>(
@@ -81,7 +81,7 @@ pub fn compile_union<'c>(
     context: &Context<'c>,
     union: &types::Union,
 ) -> inkwell::types::StructType<'c> {
-    let target_data = context.target_machine().get_target_data();
+    let target_data = context.target_data();
     let integer_type = context.inkwell().ptr_sized_int_type(&target_data, None);
 
     context.inkwell().struct_type(
@@ -117,16 +117,13 @@ pub fn compile_union_member_padding<'c>(
     let member_type = compile(context, &union.members()[member_index]);
 
     context.inkwell().i8_type().array_type(
-        (get_union_size(context, union)
-            - context
-                .target_machine()
-                .get_target_data()
-                .get_store_size(&member_type)) as u32,
+        (get_union_size(context, union) - context.target_data().get_store_size(&member_type))
+            as u32,
     )
 }
 
 fn get_union_size(context: &Context, union: &types::Union) -> u64 {
-    let target_data = context.target_machine().get_target_data();
+    let target_data = context.target_data();
 
     union
         .members()

@@ -326,8 +326,7 @@ fn set_alignment(
 ) -> Result<(), &'static str> {
     value.set_alignment(
         context
-            .target_machine()
-            .get_target_data()
+            .target_data()
             .get_abi_alignment(&type_::compile(context, type_)),
     )
 }
