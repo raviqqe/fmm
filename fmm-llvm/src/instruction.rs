@@ -36,7 +36,7 @@ pub fn compile_block<'c, 'a>(
         builder,
         block.terminal_instruction(),
         destination,
-        &variables,
+        variables,
         instruction_function_set,
     ))
 }
