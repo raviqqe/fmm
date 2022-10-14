@@ -22,7 +22,7 @@ fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, 
         block
             .instructions()
             .iter()
-            .flat_map(|instruction| instruction.value().map(|(name, type_)| (name, type_))),
+            .flat_map(|instruction| instruction.value()),
     );
 
     for instruction in block.instructions() {
