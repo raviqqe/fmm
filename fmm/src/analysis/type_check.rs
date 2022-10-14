@@ -1,13 +1,12 @@
 mod error;
 
+use super::local_variable;
 use crate::{
     ir::*,
     types::{self, generic_pointer_type, Type},
 };
 pub use error::*;
 use fnv::FnvHashMap;
-
-use super::local_variable;
 
 pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     check_variable_declarations(module)?;
