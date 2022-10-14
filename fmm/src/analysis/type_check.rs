@@ -102,12 +102,7 @@ fn check_function_definition<'a>(
 
     variables.extend(local_variables.clone());
 
-    check_block(
-        definition.body(),
-        definition.result_type(),
-        None,
-        &variables,
-    )?;
+    check_block(definition.body(), definition.result_type(), None, variables)?;
 
     for name in local_variables.keys() {
         variables.remove(name);
