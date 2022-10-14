@@ -3,7 +3,7 @@ mod continuation_type;
 mod error;
 mod free_variable;
 mod function_type;
-mod if_flattener;
+mod if_;
 mod source_function;
 mod stack;
 mod target_function;
@@ -19,7 +19,7 @@ pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module
 
     let context = CpsContext::new(result_type.into());
 
-    let module = if_flattener::flatten(module);
+    let module = if_::flatten(module);
     let module = source_function::transform(&context, &module)?;
     let module = target_function::transform(&context, &module)?;
     let module = function_type::transform(&module, context.result_type());
