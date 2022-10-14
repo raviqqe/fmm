@@ -1,6 +1,6 @@
 use super::{
     context::CpsContext,
-    error::CpsTransformationError,
+    error::CpsError,
     free_variable,
     stack::{pop_from_stack, push_to_stack, stack_type},
 };
@@ -19,7 +19,7 @@ struct Context<'a> {
     function_definitions: Vec<FunctionDefinition>,
 }
 
-pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTransformationError> {
+pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsError> {
     let mut context = Context {
         cps: context,
         function_definitions: vec![],
@@ -43,7 +43,7 @@ pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsTra
 fn transform_function_definition(
     context: &mut Context,
     definition: &FunctionDefinition,
-) -> Result<FunctionDefinition, CpsTransformationError> {
+) -> Result<FunctionDefinition, CpsError> {
     Ok(
         if definition.type_().calling_convention() == CallingConvention::Source {
             let continuation_type =

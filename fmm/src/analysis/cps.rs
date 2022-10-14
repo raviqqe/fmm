@@ -11,12 +11,9 @@ mod target_function;
 use self::context::CpsContext;
 use super::{name, type_check};
 use crate::{ir::*, types::Type};
-use error::CpsTransformationError;
+use error::CpsError;
 
-pub fn transform(
-    module: &Module,
-    result_type: impl Into<Type>,
-) -> Result<Module, CpsTransformationError> {
+pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module, CpsError> {
     type_check::check(module)?;
     name::check(module)?;
 
