@@ -81,14 +81,15 @@ pub fn compile_union<'c>(
     context: &Context<'c>,
     union: &types::Union,
 ) -> inkwell::types::StructType<'c> {
-    let target_data = context.target_data();
-    let integer_type = context.inkwell().ptr_sized_int_type(target_data, None);
+    let integer_type = context
+        .inkwell()
+        .ptr_sized_int_type(context.target_data(), None);
 
     context.inkwell().struct_type(
         &[integer_type
             .array_type(get_pointer_integer_array_size(
                 get_union_size(context, union) as usize,
-                target_data.get_store_size(&integer_type) as usize,
+                context.target_data().get_store_size(&integer_type) as usize,
             ) as u32)
             .into()],
         false,
@@ -123,12 +124,14 @@ pub fn compile_union_member_padding<'c>(
 }
 
 fn get_union_size(context: &Context, union: &types::Union) -> u64 {
-    let target_data = context.target_data();
-
     union
         .members()
         .iter()
-        .map(|type_| target_data.get_store_size(&compile(context, type_)))
+        .map(|type_| {
+            context
+                .target_data()
+                .get_store_size(&compile(context, type_))
+        })
         .max()
         .unwrap()
 }
