@@ -179,8 +179,7 @@ fn compile_align_of<'c>(
     compile_pointer_integer(
         context,
         context
-            .target_machine()
-            .get_target_data()
+            .target_data()
             .get_abi_alignment(&type_::compile(context, align_of.type_())) as u64,
     )
 }
@@ -382,8 +381,7 @@ fn compile_size_of<'c>(context: &Context<'c>, size_of: &SizeOf) -> inkwell::valu
     compile_pointer_integer(
         context,
         context
-            .target_machine()
-            .get_target_data()
+            .target_data()
             .get_store_size(&type_::compile(context, size_of.type_())) as u64,
     )
 }

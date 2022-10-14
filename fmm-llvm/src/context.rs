@@ -12,6 +12,7 @@ static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
 pub struct Context<'c> {
     inkwell: &'c inkwell::context::Context,
     target_machine: inkwell::targets::TargetMachine,
+    target_data: inkwell::targets::TargetData,
     instruction_configuration: InstructionConfiguration,
 }
 
@@ -21,8 +22,12 @@ impl<'c> Context<'c> {
         target_triple: Option<&str>,
         instruction_configuration: InstructionConfiguration,
     ) -> Result<Self, CompileError> {
+        let target_machine = Self::create_target_machine(target_triple)?;
+
         Ok(Self {
             inkwell: inkwell_context,
+            // This does not `get` but `create` target data actually, which is expensive.
+            target_data: target_machine.get_target_data(),
             target_machine: Self::create_target_machine(target_triple)?,
             instruction_configuration,
         })
@@ -34,6 +39,10 @@ impl<'c> Context<'c> {
 
     pub fn target_machine(&self) -> &inkwell::targets::TargetMachine {
         &self.target_machine
+    }
+
+    pub fn target_data(&self) -> &inkwell::targets::TargetData {
+        &self.target_data
     }
 
     pub fn instruction_configuration(&self) -> &InstructionConfiguration {
