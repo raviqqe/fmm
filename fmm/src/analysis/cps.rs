@@ -588,7 +588,7 @@ mod tests {
     }
 
     #[test]
-    fn transform_consective_if() {
+    fn transform_if_with_continuation_with_free_variable() {
         let function_type = create_function_type(
             vec![types::Primitive::PointerInteger.into()],
             types::Primitive::PointerInteger,
@@ -600,85 +600,56 @@ mod tests {
             vec![],
             vec![create_function_definition(
                 "g",
-                vec![],
+                vec![Argument::new(
+                    "p",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
                 types::Primitive::PointerInteger,
                 Block::new(
                     vec![
-                        Call::new(
-                            function_type.clone(),
-                            Variable::new("f"),
-                            vec![Primitive::PointerInteger(42).into()],
-                            "x1",
-                        )
-                        .into(),
+                        Load::new(types::Primitive::PointerInteger, Variable::new("p"), "x").into(),
                         If::new(
                             types::Primitive::PointerInteger,
                             Primitive::Boolean(true),
                             Block::new(
-                                vec![Call::new(
-                                    function_type.clone(),
-                                    Variable::new("f"),
-                                    vec![Variable::new("x1").into()],
-                                    "x2",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("x2")),
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(1),
+                                ),
                             ),
                             Block::new(
-                                vec![Call::new(
-                                    function_type.clone(),
-                                    Variable::new("f"),
-                                    vec![Variable::new("x1").into()],
-                                    "x3",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("x3")),
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(2),
+                                ),
                             ),
-                            "x4",
+                            "y",
                         )
                         .into(),
-                        Call::new(
-                            function_type.clone(),
-                            Variable::new("f"),
-                            vec![Variable::new("x4").into()],
-                            "x5",
-                        )
-                        .into(),
-                        If::new(
+                        Store::new(
                             types::Primitive::PointerInteger,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type.clone(),
-                                    Variable::new("f"),
-                                    vec![Variable::new("x5").into()],
-                                    "x6",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("x6")),
-                            ),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type.clone(),
-                                    Variable::new("f"),
-                                    vec![Variable::new("x5").into()],
-                                    "x7",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("x7")),
-                            ),
-                            "x8",
+                            Variable::new("x"),
+                            Variable::new("p"),
                         )
                         .into(),
-                        Call::new(
-                            function_type.clone(),
-                            Variable::new("f"),
-                            vec![Variable::new("x8").into()],
-                            "x9",
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("y"),
+                            Variable::new("p"),
                         )
                         .into(),
                     ],
-                    Return::new(types::Primitive::PointerInteger, Variable::new("x9")),
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            ArithmeticOperator::Add,
+                            Variable::new("x"),
+                            Variable::new("y"),
+                        ),
+                    ),
                 ),
             )],
         ));
