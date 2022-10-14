@@ -550,7 +550,7 @@ mod tests {
                 Block::new(
                     vec![
                         Load::new(types::Primitive::PointerInteger, Variable::new("p"), "x").into(),
-                        Call::new(function_type.clone(), Variable::new("f"), vec![], "y").into(),
+                        Call::new(function_type, Variable::new("f"), vec![], "y").into(),
                         Store::new(
                             types::Primitive::PointerInteger,
                             Variable::new("x"),
