@@ -332,6 +332,7 @@ fn get_continuation_environment<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::analysis::format;
     use crate::types;
     use crate::types::void_type;
     use pretty_assertions::assert_eq;
@@ -512,5 +513,45 @@ mod tests {
                 )],
             ))
         );
+    }
+
+    #[test]
+    fn transform_non_tail_call() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "x",
+                            )
+                            .into(),
+                            Store::new(
+                                types::Primitive::Float64,
+                                Undefined::new(types::Primitive::Float64),
+                                Variable::new("x")
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
     }
 }
