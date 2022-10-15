@@ -345,13 +345,16 @@ mod tests {
     };
     use pretty_assertions::assert_eq;
 
-    fn flatten_module(module: &Module) {
+    fn flatten_module(module: &Module) -> Module {
         let flattened = flatten(module);
 
         name::check(&flattened).unwrap();
         type_check::check(&flattened).unwrap();
 
+        // Test reproducibility.
         assert_eq!(flattened, flatten(module));
+
+        flattened
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -476,7 +479,7 @@ mod tests {
         );
 
         assert_eq!(
-            flatten(&Module::new(
+            flatten_module(&Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -567,7 +570,7 @@ mod tests {
         );
 
         assert_eq!(
-            flatten(&Module::new(
+            flatten_module(&Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -609,8 +612,8 @@ mod tests {
                             .into(),
                             Store::new(
                                 types::Primitive::Float64,
-                                Undefined::new(types::Pointer::new(types::Primitive::Float64)),
                                 Variable::new("z"),
+                                Undefined::new(types::Pointer::new(types::Primitive::Float64)),
                             )
                             .into()
                         ],
@@ -645,10 +648,10 @@ mod tests {
                                             .into(),
                                             Store::new(
                                                 types::Primitive::Float64,
+                                                Variable::new("x"),
                                                 Undefined::new(types::Pointer::new(
                                                     types::Primitive::Float64
                                                 )),
-                                                Variable::new("x"),
                                             )
                                             .into()
                                         ],
@@ -762,7 +765,7 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten(&module), module);
+        assert_eq!(flatten_module(&module), module);
     }
 
     #[test]
@@ -808,7 +811,7 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten(&module), module);
+        assert_eq!(flatten_module(&module), module);
     }
 
     #[test]
@@ -821,7 +824,7 @@ mod tests {
 
         let module = Module::new(
             vec![],
-            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
             vec![create_function_definition(
                 "g",
@@ -853,7 +856,7 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten(&module), module);
+        assert_eq!(flatten_module(&module), module);
     }
 
     #[test]
@@ -865,9 +868,9 @@ mod tests {
         );
 
         assert_eq!(
-            flatten(&Module::new(
+            flatten_module(&Module::new(
                 vec![],
-                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
                 vec![create_function_definition(
                     "g",
@@ -906,7 +909,7 @@ mod tests {
             )),
             Module::new(
                 vec![],
-                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
                 vec![create_function_definition(
                     "g",
@@ -986,6 +989,6 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten(&module), module);
+        assert_eq!(flatten_module(&module), module);
     }
 }
