@@ -57,7 +57,7 @@ fn transform_function_definition(
                 definition.name(),
                 [
                     Argument::new(STACK_ARGUMENT_NAME, stack_type()),
-                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
+                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type),
                 ]
                 .into_iter()
                 .chain(definition.arguments().iter().cloned())
@@ -304,7 +304,8 @@ fn create_continuation(
     Ok(Variable::new(name).into())
 }
 
-// Continuation environments should not include call results because they are passed as continuation arguments.
+// Continuation environments should not include call results because they are
+// passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.
 fn get_continuation_environment<'a>(
