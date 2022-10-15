@@ -87,7 +87,7 @@ fn transform_instructions(
     for instruction in instructions.iter().rev() {
         match instruction {
             Instruction::If(if_) if has_source_call(if_.then()) || has_source_call(if_.else_()) => {
-                // Allow inlining zero or one instruction.
+                // Allow inlining a instruction.
                 if rest_instructions.len() <= 1 {
                     rest_instructions = vec![If::new(
                         void_type(),
