@@ -87,31 +87,32 @@ fn transform_instructions(
     for instruction in instructions.iter().rev() {
         match instruction {
             Instruction::If(if_) if has_source_call(if_.then()) || has_source_call(if_.else_()) => {
-                if rest_instructions.is_empty() {
-                    rest_instructions.push(
-                        If::new(
-                            void_type(),
-                            if_.condition().clone(),
-                            transform_if_block_without_continuation(
-                                context,
-                                if_.name(),
-                                if_.then(),
-                                result_type,
-                                local_variables,
-                                &terminal_instruction,
-                            ),
-                            transform_if_block_without_continuation(
-                                context,
-                                if_.name(),
-                                if_.else_(),
-                                result_type,
-                                local_variables,
-                                &terminal_instruction,
-                            ),
-                            "",
-                        )
-                        .into(),
-                    );
+                // Allow inlining zero or one instruction.
+                if rest_instructions.len() <= 1 {
+                    rest_instructions = vec![If::new(
+                        void_type(),
+                        if_.condition().clone(),
+                        transform_if_block_with_rest_instructions(
+                            context,
+                            if_.name(),
+                            if_.then(),
+                            result_type,
+                            local_variables,
+                            &rest_instructions,
+                            &terminal_instruction,
+                        ),
+                        transform_if_block_with_rest_instructions(
+                            context,
+                            if_.name(),
+                            if_.else_(),
+                            result_type,
+                            local_variables,
+                            &rest_instructions,
+                            &terminal_instruction,
+                        ),
+                        "",
+                    )
+                    .into()];
                 } else {
                     rest_instructions.reverse();
 
@@ -179,18 +180,44 @@ fn has_source_call(block: &Block) -> bool {
         })
 }
 
-fn transform_if_block_without_continuation(
+fn transform_if_block_with_rest_instructions(
     context: &mut Context,
     if_name: &str,
     block: &Block,
     result_type: &Type,
     local_variables: &FnvHashMap<&str, Type>,
+    rest_instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
 ) -> Block {
     transform_block(
         context,
         &Block::new(
-            block.instructions().to_vec(),
+            block
+                .instructions()
+                .iter()
+                .cloned()
+                .chain(
+                    if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
+                        rest_instructions
+                            .iter()
+                            .map(|instruction| {
+                                expression_conversion::convert_in_instruction(
+                                    instruction,
+                                    &|expression| {
+                                        if expression == &Variable::new(if_name).into() {
+                                            branch.expression().clone()
+                                        } else {
+                                            expression.clone()
+                                        }
+                                    },
+                                )
+                            })
+                            .collect::<Vec<_>>()
+                    } else {
+                        vec![]
+                    },
+                )
+                .collect(),
             match (block.terminal_instruction(), terminal_instruction) {
                 // Outer blocks' terminal instructions should be converted into return or
                 // unreachable already at this point.
@@ -507,12 +534,124 @@ mod tests {
                                     Primitive::Boolean(true),
                                     Block::new(
                                         vec![Call::new(
-                                            function_type,
+                                            function_type.clone(),
                                             Variable::new("f"),
                                             vec![Primitive::Float64(42.0).into()],
                                             "x",
                                         )
                                         .into()],
+                                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                                    ),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    "",
+                                )
+                                .into()],
+                                TerminalInstruction::Unreachable,
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                )]
+            )
+        );
+    }
+
+    #[test]
+    fn flatten_nested_if_with_continuation_of_instruction() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        assert_eq!(
+            flatten(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![If::new(
+                                        types::Primitive::Float64,
+                                        Primitive::Boolean(true),
+                                        Block::new(
+                                            vec![Call::new(
+                                                function_type.clone(),
+                                                Variable::new("f"),
+                                                vec![Primitive::Float64(42.0).into()],
+                                                "x",
+                                            )
+                                            .into()],
+                                            Branch::new(
+                                                types::Primitive::Float64,
+                                                Variable::new("x")
+                                            ),
+                                        ),
+                                        Block::new(vec![], TerminalInstruction::Unreachable),
+                                        "y",
+                                    )
+                                    .into()],
+                                    Branch::new(types::Primitive::Float64, Variable::new("y")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "z",
+                            )
+                            .into(),
+                            Store::new(
+                                types::Primitive::Float64,
+                                Undefined::new(types::Pointer::new(types::Primitive::Float64)),
+                                Variable::new("z"),
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::Float64, Variable::new("z")),
+                    ),
+                )],
+            )),
+            Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![If::new(
+                                    void_type(),
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![
+                                            Call::new(
+                                                function_type.clone(),
+                                                Variable::new("f"),
+                                                vec![Primitive::Float64(42.0).into()],
+                                                "x",
+                                            )
+                                            .into(),
+                                            Store::new(
+                                                types::Primitive::Float64,
+                                                Undefined::new(types::Pointer::new(
+                                                    types::Primitive::Float64
+                                                )),
+                                                Variable::new("x"),
+                                            )
+                                            .into()
+                                        ],
                                         Return::new(types::Primitive::Float64, Variable::new("x")),
                                     ),
                                     Block::new(vec![], TerminalInstruction::Unreachable),
