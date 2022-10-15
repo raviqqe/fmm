@@ -533,6 +533,61 @@ mod tests {
     }
 
     #[test]
+    fn transform_tail_call_after_preserved_if() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        insta::assert_snapshot!(format::format_module(
+            &transform(
+                &Module::new(
+                    vec![],
+                    vec![FunctionDeclaration::new("f", function_type.clone())],
+                    vec![],
+                    vec![create_function_definition(
+                        "g",
+                        vec![],
+                        types::Primitive::Float64,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::Float64,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![Load::new(
+                                            types::Primitive::Float64,
+                                            Undefined::new(types::Pointer::new(
+                                                types::Primitive::Float64
+                                            )),
+                                            "x"
+                                        )
+                                        .into()],
+                                        Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                    ),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    "y",
+                                )
+                                .into(),
+                                Call::new(
+                                    function_type,
+                                    Variable::new("f"),
+                                    vec![Variable::new("y").into()],
+                                    "z",
+                                )
+                                .into()
+                            ],
+                            Return::new(types::Primitive::Float64, Variable::new("z")),
+                        ),
+                    )],
+                ),
+                void_type()
+            )
+            .unwrap()
+        ));
+    }
+
+    #[test]
     fn transform_call_with_continuation_with_free_variable() {
         let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
