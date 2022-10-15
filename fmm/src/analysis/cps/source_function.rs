@@ -178,8 +178,6 @@ fn transform_instructions(
                         get_environment_record(&environment),
                     )?;
 
-                    let result_name = context.cps.name_generator().borrow_mut().generate();
-
                     return Ok((
                         builder
                             .into_instructions()
