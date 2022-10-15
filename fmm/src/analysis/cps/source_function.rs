@@ -314,16 +314,10 @@ fn get_continuation_environment<'a>(
     terminal_instruction: &'a TerminalInstruction,
     local_variables: &FnvHashMap<&str, Type>,
 ) -> Vec<(&'a str, Type)> {
-    [(
-        CONTINUATION_ARGUMENT_NAME,
-        local_variables[CONTINUATION_ARGUMENT_NAME].clone(),
-    )]
-    .into_iter()
-    .chain(
-        free_variable::collect(instructions, terminal_instruction)
-            .iter()
-            .flat_map(|&name| local_variables.get(name).map(|type_| (name, type_.clone()))),
-    )
-    .filter(|(name, _)| *name != call.name())
-    .collect()
+    free_variable::collect(instructions, terminal_instruction)
+        .into_iter()
+        .chain([CONTINUATION_ARGUMENT_NAME])
+        .filter(|&name| name != call.name())
+        .flat_map(|name| local_variables.get(name).map(|type_| (name, type_.clone())))
+        .collect()
 }
