@@ -158,45 +158,6 @@ mod tests {
     }
 
     #[test]
-    fn transform_if_with_return() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-
-        test_transformation(&Module::new(
-            vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
-            vec![],
-            vec![create_function_definition(
-                "g",
-                vec![],
-                types::Primitive::Float64,
-                Block::new(
-                    vec![If::new(
-                        void_type(),
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![Call::new(
-                                function_type,
-                                Variable::new("f"),
-                                vec![Primitive::Float64(42.0).into()],
-                                "x",
-                            )
-                            .into()],
-                            Return::new(types::Primitive::Float64, Variable::new("x")),
-                        ),
-                        Block::new(vec![], TerminalInstruction::Unreachable),
-                        "_",
-                    )
-                    .into()],
-                    TerminalInstruction::Unreachable,
-                ),
-            )],
-        ));
-    }
-
-    #[test]
     fn transform_two_calls() {
         let function_type = create_function_type(
             vec![types::Primitive::PointerInteger.into()],
@@ -358,7 +319,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn transform_if_with_branch() {
+        fn transform_call_in_block() {
             let function_type = create_function_type(
                 vec![types::Primitive::Float64.into()],
                 types::Primitive::Float64,
@@ -397,7 +358,7 @@ mod tests {
         }
 
         #[test]
-        fn keep_tail_call_in_if_with_branch() {
+        fn transform_call_before_branch_into_tail_call() {
             let function_type = create_function_type(
                 vec![types::Primitive::Float64.into()],
                 types::Primitive::Float64,
@@ -442,7 +403,46 @@ mod tests {
         }
 
         #[test]
-        fn transform_return_after_if_branch() {
+        fn transform_tail_call_in_block() {
+            let function_type = create_function_type(
+                vec![types::Primitive::Float64.into()],
+                types::Primitive::Float64,
+            );
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type,
+                                    Variable::new("f"),
+                                    vec![Primitive::Float64(42.0).into()],
+                                    "x",
+                                )
+                                .into()],
+                                Return::new(types::Primitive::Float64, Variable::new("x")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "_",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                )],
+            ));
+        }
+
+        #[test]
+        fn transform_non_tail_call_in_block() {
             let function_type = create_function_type(
                 vec![types::Primitive::Float64.into()],
                 types::Primitive::Float64,
@@ -495,7 +495,7 @@ mod tests {
         }
 
         #[test]
-        fn transform_two_calls_with_if() {
+        fn transform_call_in_block_and_call_after_if() {
             let function_type = create_function_type(
                 vec![types::Primitive::PointerInteger.into()],
                 types::Primitive::PointerInteger,
@@ -546,46 +546,7 @@ mod tests {
         }
 
         #[test]
-        fn transform_tail_call_in_if() {
-            let function_type = create_function_type(
-                vec![types::Primitive::Float64.into()],
-                types::Primitive::Float64,
-            );
-
-            test_transformation(&Module::new(
-                vec![],
-                vec![FunctionDeclaration::new("f", function_type.clone())],
-                vec![],
-                vec![create_function_definition(
-                    "g",
-                    vec![],
-                    types::Primitive::Float64,
-                    Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type,
-                                    Variable::new("f"),
-                                    vec![Primitive::Float64(42.0).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into()],
-                        Return::new(types::Primitive::Float64, Variable::new("y")),
-                    ),
-                )],
-            ));
-        }
-
-        #[test]
-        fn transform_tail_call_after_preserved_if() {
+        fn transform_call_after_preserved_if() {
             let function_type = create_function_type(
                 vec![types::Primitive::Float64.into()],
                 types::Primitive::Float64,
@@ -643,7 +604,7 @@ mod tests {
         }
 
         #[test]
-        fn transform_if_with_large_environment() {
+        fn transform_call_in_block_with_multiple_free_variables() {
             let function_type = create_function_type(
                 vec![types::Primitive::Float64.into()],
                 types::Primitive::Float64,
