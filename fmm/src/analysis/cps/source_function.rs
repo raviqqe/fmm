@@ -149,17 +149,10 @@ fn transform_instructions(
                             .unwrap_or_default()
                     {
                         return Ok((
-                            vec![Call::new(
-                                call.type_().clone(),
-                                call.function().clone(),
-                                [
-                                    Variable::new(STACK_ARGUMENT_NAME).into(),
-                                    Variable::new(CONTINUATION_ARGUMENT_NAME).into(),
-                                ]
-                                .into_iter()
-                                .chain(call.arguments().iter().cloned())
-                                .collect(),
-                                result_name,
+                            vec![transform_call(
+                                call,
+                                Variable::new(CONTINUATION_ARGUMENT_NAME),
+                                &result_name,
                             )
                             .into()],
                             return_,
@@ -183,23 +176,16 @@ fn transform_instructions(
                         builder
                             .into_instructions()
                             .into_iter()
-                            .chain([Call::new(
-                                call.type_().clone(),
-                                call.function().clone(),
-                                [
-                                    Variable::new(STACK_ARGUMENT_NAME).into(),
-                                    create_continuation(
-                                        context,
-                                        call,
-                                        instructions,
-                                        terminal_instruction,
-                                        &environment,
-                                    )?,
-                                ]
-                                .into_iter()
-                                .chain(call.arguments().iter().cloned())
-                                .collect(),
-                                result_name,
+                            .chain([transform_call(
+                                call,
+                                create_continuation(
+                                    context,
+                                    call,
+                                    instructions,
+                                    terminal_instruction,
+                                    &environment,
+                                )?,
+                                &result_name,
                             )
                             .into()])
                             .collect(),
@@ -239,6 +225,21 @@ fn transform_instructions(
             )
         }
     })
+}
+
+fn transform_call(call: &Call, continuation: impl Into<Expression>, result_name: &str) -> Call {
+    Call::new(
+        call.type_().clone(),
+        call.function().clone(),
+        [
+            Variable::new(STACK_ARGUMENT_NAME).into(),
+            continuation.into(),
+        ]
+        .into_iter()
+        .chain(call.arguments().iter().cloned())
+        .collect(),
+        result_name,
+    )
 }
 
 fn get_environment_record(environment: &[(&str, Type)]) -> Record {
