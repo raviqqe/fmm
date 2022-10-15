@@ -1,4 +1,4 @@
-use super::{context::CpsContext, error::CpsError, stack::stack_type};
+use super::{context::CpsContext, error::CpsError, stack::type_};
 use crate::{
     analysis::cps::stack,
     build::{self, InstructionBuilder, TypedExpression},
@@ -104,8 +104,8 @@ fn transform_source_function_call(
         result_pointer.clone(),
     );
 
-    let stack = stack::create_stack(&builder)?;
-    stack::push_to_stack(&builder, stack.clone(), result_pointer.clone())?;
+    let stack = stack::create(&builder)?;
+    stack::push(&builder, stack.clone(), result_pointer.clone())?;
 
     builder.call(
         TypedExpression::new(call.function().clone(), call.type_().clone()),
@@ -133,7 +133,7 @@ fn transform_source_function_call(
         call.name(),
     ));
 
-    stack::destroy_stack(&builder, stack)?;
+    stack::destroy(&builder, stack)?;
 
     Ok(builder.into_instructions())
 }
@@ -147,16 +147,16 @@ fn compile_continuation(
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
-            Argument::new("stack", stack_type()),
+            Argument::new("stack", type_()),
             Argument::new("result", result_type.clone()),
         ],
         context.cps.result_type().clone(),
         {
             let builder = InstructionBuilder::new(context.cps.name_generator());
 
-            let result_pointer = stack::pop_from_stack(
+            let result_pointer = stack::pop(
                 &builder,
-                build::variable("stack", stack_type()),
+                build::variable("stack", type_()),
                 types::Pointer::new(result_type.clone()),
             )?;
             builder.store(

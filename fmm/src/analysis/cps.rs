@@ -37,7 +37,7 @@ mod tests {
         analysis::format,
         types::{self, void_type, CallingConvention, Type},
     };
-    use stack::stack_type;
+    use stack::type_;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(arguments, result, CallingConvention::Source)
@@ -46,9 +46,9 @@ mod tests {
     fn create_cps_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(
             [
-                stack_type(),
+                type_(),
                 types::Function::new(
-                    vec![stack_type(), result.into()],
+                    vec![type_(), result.into()],
                     void_type(),
                     CallingConvention::Tail,
                 )
@@ -237,11 +237,11 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "g",
                     vec![
-                        Argument::new("_s", stack_type()),
+                        Argument::new("_s", type_()),
                         Argument::new(
                             "_k",
                             types::Function::new(
-                                vec![stack_type(), types::Primitive::Float64.into()],
+                                vec![type_(), types::Primitive::Float64.into()],
                                 void_type(),
                                 CallingConvention::Tail,
                             )

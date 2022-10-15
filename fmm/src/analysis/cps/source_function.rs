@@ -1,9 +1,4 @@
-use super::{
-    context::CpsContext,
-    error::CpsError,
-    free_variable,
-    stack::{pop_from_stack, push_to_stack, stack_type},
-};
+use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
     analysis::cps::continuation_type,
     build::{self, BuildError, InstructionBuilder},
@@ -52,7 +47,7 @@ fn transform_function_definition(
             FunctionDefinition::new(
                 definition.name(),
                 [
-                    Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                    Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
                     Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
                 ]
                 .into_iter()
@@ -166,9 +161,9 @@ fn transform_instructions(
                     );
                     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-                    push_to_stack(
+                    stack::push(
                         &builder,
-                        build::variable(STACK_ARGUMENT_NAME, stack_type()),
+                        build::variable(STACK_ARGUMENT_NAME, stack::type_()),
                         get_environment_record(&environment),
                     )?;
 
@@ -272,7 +267,7 @@ fn create_continuation(
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
-            Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+            Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
             Argument::new(call.name(), call.type_().result().clone()),
         ],
         context.cps.result_type().clone(),
@@ -281,9 +276,9 @@ fn create_continuation(
                 let builder = InstructionBuilder::new(context.cps.name_generator());
 
                 let environment_record_type = get_environment_record(environment).type_().clone();
-                let environment_record = pop_from_stack(
+                let environment_record = stack::pop(
                     &builder,
-                    build::variable(STACK_ARGUMENT_NAME, stack_type()),
+                    build::variable(STACK_ARGUMENT_NAME, stack::type_()),
                     environment_record_type.clone(),
                 )?;
 
@@ -371,7 +366,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![
-                        Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
                         Argument::new(
                             CONTINUATION_ARGUMENT_NAME,
                             continuation_type::compile(
@@ -421,7 +416,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![
-                        Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
                         Argument::new(
                             CONTINUATION_ARGUMENT_NAME,
                             continuation_type::compile(
@@ -484,7 +479,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![
-                        Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
                         Argument::new(
                             CONTINUATION_ARGUMENT_NAME,
                             continuation_type::compile(
