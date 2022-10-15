@@ -724,6 +724,55 @@ mod tests {
                 )],
             ));
         }
+
+        #[test]
+        fn transform_if_with_source_call_and_preserved_if() {
+            let function_type = create_function_type(
+                vec![types::Primitive::Float64.into()],
+                types::Primitive::Float64,
+            );
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            types::Primitive::Float64,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![
+                                    If::new(
+                                        types::Primitive::Float64,
+                                        Primitive::Boolean(true),
+                                        Block::new(vec![], TerminalInstruction::Unreachable),
+                                        Block::new(vec![], TerminalInstruction::Unreachable),
+                                        "",
+                                    )
+                                    .into(),
+                                    Call::new(
+                                        function_type.clone(),
+                                        Variable::new("f"),
+                                        vec![Primitive::Float64(42.0).into()],
+                                        "x",
+                                    )
+                                    .into(),
+                                ],
+                                Branch::new(types::Primitive::Float64, Variable::new("x")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "y",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Float64, Variable::new("y")),
+                    ),
+                )],
+            ));
+        }
     }
 
     mod target_function_definition {
