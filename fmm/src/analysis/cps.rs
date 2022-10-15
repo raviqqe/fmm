@@ -197,143 +197,6 @@ mod tests {
     }
 
     #[test]
-    fn transform_if_with_branch() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-
-        test_transformation(&Module::new(
-            vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
-            vec![],
-            vec![create_function_definition(
-                "g",
-                vec![],
-                types::Primitive::Float64,
-                Block::new(
-                    vec![If::new(
-                        types::Primitive::Float64,
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![Call::new(
-                                function_type,
-                                Variable::new("f"),
-                                vec![Primitive::Float64(42.0).into()],
-                                "x",
-                            )
-                            .into()],
-                            Branch::new(types::Primitive::Float64, Variable::new("x")),
-                        ),
-                        Block::new(vec![], TerminalInstruction::Unreachable),
-                        "y",
-                    )
-                    .into()],
-                    Return::new(types::Primitive::Float64, Variable::new("y")),
-                ),
-            )],
-        ));
-    }
-
-    #[test]
-    fn keep_tail_call_in_if_with_branch() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-
-        insta::assert_snapshot!(format::format_module(
-            &transform(
-                &Module::new(
-                    vec![],
-                    vec![FunctionDeclaration::new("f", function_type.clone())],
-                    vec![],
-                    vec![create_function_definition(
-                        "g",
-                        vec![],
-                        types::Primitive::Float64,
-                        Block::new(
-                            vec![If::new(
-                                types::Primitive::Float64,
-                                Primitive::Boolean(true),
-                                Block::new(
-                                    vec![Call::new(
-                                        function_type,
-                                        Variable::new("f"),
-                                        vec![Primitive::Float64(42.0).into()],
-                                        "x",
-                                    )
-                                    .into()],
-                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
-                                ),
-                                Block::new(vec![], TerminalInstruction::Unreachable),
-                                "y",
-                            )
-                            .into()],
-                            Return::new(types::Primitive::Float64, Variable::new("y")),
-                        ),
-                    )],
-                ),
-                void_type()
-            )
-            .unwrap()
-        ));
-    }
-
-    #[test]
-    fn transform_return_after_if_branch() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-
-        insta::assert_snapshot!(format::format_module(
-            &transform(
-                &Module::new(
-                    vec![],
-                    vec![FunctionDeclaration::new("f", function_type.clone())],
-                    vec![],
-                    vec![create_function_definition(
-                        "g",
-                        vec![],
-                        types::Primitive::Float64,
-                        Block::new(
-                            vec![If::new(
-                                types::Primitive::Float64,
-                                Primitive::Boolean(true),
-                                Block::new(
-                                    vec![Call::new(
-                                        function_type,
-                                        Variable::new("f"),
-                                        vec![Primitive::Float64(42.0).into()],
-                                        "x",
-                                    )
-                                    .into()],
-                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
-                                ),
-                                Block::new(vec![], TerminalInstruction::Unreachable),
-                                "y",
-                            )
-                            .into()],
-                            Return::new(
-                                types::Primitive::Float64,
-                                ArithmeticOperation::new(
-                                    types::Primitive::Float64,
-                                    ArithmeticOperator::Add,
-                                    Variable::new("y"),
-                                    Variable::new("y")
-                                )
-                            ),
-                        ),
-                    )],
-                ),
-                void_type()
-            )
-            .unwrap()
-        ));
-    }
-
-    #[test]
     fn transform_two_calls() {
         let function_type = create_function_type(
             vec![types::Primitive::PointerInteger.into()],
@@ -366,54 +229,6 @@ mod tests {
                         .into(),
                     ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
-                ),
-            )],
-        ));
-    }
-
-    #[test]
-    fn transform_two_calls_with_if() {
-        let function_type = create_function_type(
-            vec![types::Primitive::PointerInteger.into()],
-            types::Primitive::PointerInteger,
-        );
-
-        test_transformation(&Module::new(
-            vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
-            vec![],
-            vec![create_function_definition(
-                "g",
-                vec![],
-                types::Primitive::PointerInteger,
-                Block::new(
-                    vec![
-                        If::new(
-                            types::Primitive::PointerInteger,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type.clone(),
-                                    Variable::new("f"),
-                                    vec![Primitive::PointerInteger(42).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into(),
-                        Call::new(
-                            function_type,
-                            Variable::new("f"),
-                            vec![Variable::new("y").into()],
-                            "z",
-                        )
-                        .into(),
-                    ],
-                    Return::new(types::Primitive::PointerInteger, Variable::new("z")),
                 ),
             )],
         ));
@@ -541,6 +356,194 @@ mod tests {
 
     mod if_ {
         use super::*;
+
+        #[test]
+        fn transform_if_with_branch() {
+            let function_type = create_function_type(
+                vec![types::Primitive::Float64.into()],
+                types::Primitive::Float64,
+            );
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            types::Primitive::Float64,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type,
+                                    Variable::new("f"),
+                                    vec![Primitive::Float64(42.0).into()],
+                                    "x",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::Float64, Variable::new("x")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "y",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Float64, Variable::new("y")),
+                    ),
+                )],
+            ));
+        }
+
+        #[test]
+        fn keep_tail_call_in_if_with_branch() {
+            let function_type = create_function_type(
+                vec![types::Primitive::Float64.into()],
+                types::Primitive::Float64,
+            );
+
+            insta::assert_snapshot!(format::format_module(
+                &transform(
+                    &Module::new(
+                        vec![],
+                        vec![FunctionDeclaration::new("f", function_type.clone())],
+                        vec![],
+                        vec![create_function_definition(
+                            "g",
+                            vec![],
+                            types::Primitive::Float64,
+                            Block::new(
+                                vec![If::new(
+                                    types::Primitive::Float64,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into()],
+                                        Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                    ),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    "y",
+                                )
+                                .into()],
+                                Return::new(types::Primitive::Float64, Variable::new("y")),
+                            ),
+                        )],
+                    ),
+                    void_type()
+                )
+                .unwrap()
+            ));
+        }
+
+        #[test]
+        fn transform_return_after_if_branch() {
+            let function_type = create_function_type(
+                vec![types::Primitive::Float64.into()],
+                types::Primitive::Float64,
+            );
+
+            insta::assert_snapshot!(format::format_module(
+                &transform(
+                    &Module::new(
+                        vec![],
+                        vec![FunctionDeclaration::new("f", function_type.clone())],
+                        vec![],
+                        vec![create_function_definition(
+                            "g",
+                            vec![],
+                            types::Primitive::Float64,
+                            Block::new(
+                                vec![If::new(
+                                    types::Primitive::Float64,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into()],
+                                        Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                    ),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    "y",
+                                )
+                                .into()],
+                                Return::new(
+                                    types::Primitive::Float64,
+                                    ArithmeticOperation::new(
+                                        types::Primitive::Float64,
+                                        ArithmeticOperator::Add,
+                                        Variable::new("y"),
+                                        Variable::new("y")
+                                    )
+                                ),
+                            ),
+                        )],
+                    ),
+                    void_type()
+                )
+                .unwrap()
+            ));
+        }
+
+        #[test]
+        fn transform_two_calls_with_if() {
+            let function_type = create_function_type(
+                vec![types::Primitive::PointerInteger.into()],
+                types::Primitive::PointerInteger,
+            );
+
+            test_transformation(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            If::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![Call::new(
+                                        function_type.clone(),
+                                        Variable::new("f"),
+                                        vec![Primitive::PointerInteger(42).into()],
+                                        "x",
+                                    )
+                                    .into()],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("x"),
+                                    ),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into(),
+                            Call::new(
+                                function_type,
+                                Variable::new("f"),
+                                vec![Variable::new("y").into()],
+                                "z",
+                            )
+                            .into(),
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("z")),
+                    ),
+                )],
+            ));
+        }
 
         #[test]
         fn transform_tail_call_in_if() {
