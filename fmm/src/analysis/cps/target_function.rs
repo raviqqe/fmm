@@ -1,6 +1,5 @@
-use super::{context::CpsContext, error::CpsError, stack::type_};
+use super::{context::CpsContext, error::CpsError, stack};
 use crate::{
-    analysis::cps::stack,
     build::{self, InstructionBuilder, TypedExpression},
     ir::*,
     types::{self, CallingConvention, Type},
@@ -147,7 +146,7 @@ fn compile_continuation(
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
-            Argument::new("stack", type_()),
+            Argument::new("stack", stack::type_()),
             Argument::new("result", result_type.clone()),
         ],
         context.cps.result_type().clone(),
@@ -156,7 +155,7 @@ fn compile_continuation(
 
             let result_pointer = stack::pop(
                 &builder,
-                build::variable("stack", type_()),
+                build::variable("stack", stack::type_()),
                 types::Pointer::new(result_type.clone()),
             )?;
             builder.store(
