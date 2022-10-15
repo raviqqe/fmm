@@ -659,13 +659,15 @@ mod tests {
         }
 
         #[test]
-        fn transform_if_with_continuation_with_free_variable() {
+        fn transform_call_in_block_with_continuation_with_instructions() {
+            let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
+
             test_transformation(&Module::new(
                 vec![],
-                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
                 vec![create_function_definition(
-                    "f",
+                    "g",
                     vec![Argument::new(
                         "p",
                         types::Pointer::new(types::Primitive::PointerInteger),
@@ -679,10 +681,11 @@ mod tests {
                                 types::Primitive::PointerInteger,
                                 Primitive::Boolean(true),
                                 Block::new(
-                                    vec![],
+                                    vec![Call::new(function_type, Variable::new("f"), vec![], "a")
+                                        .into()],
                                     Branch::new(
                                         types::Primitive::PointerInteger,
-                                        Primitive::PointerInteger(1),
+                                        Variable::new("a"),
                                     ),
                                 ),
                                 Block::new(
