@@ -85,84 +85,98 @@ fn transform_instructions(
     let mut terminal_instruction = terminal_instruction.clone();
 
     for instruction in instructions.iter().rev() {
-        if let Instruction::If(if_) = instruction {
-            if rest_instructions.is_empty() {
-                rest_instructions.push(
-                    If::new(
+        match instruction {
+            Instruction::If(if_) if has_source_call(if_.then()) || has_source_call(if_.else_()) => {
+                if rest_instructions.is_empty() {
+                    rest_instructions.push(
+                        If::new(
+                            void_type(),
+                            if_.condition().clone(),
+                            transform_if_block_without_continuation(
+                                context,
+                                if_.name(),
+                                if_.then(),
+                                result_type,
+                                local_variables,
+                                &terminal_instruction,
+                            ),
+                            transform_if_block_without_continuation(
+                                context,
+                                if_.name(),
+                                if_.else_(),
+                                result_type,
+                                local_variables,
+                                &terminal_instruction,
+                            ),
+                            "",
+                        )
+                        .into(),
+                    );
+                } else {
+                    rest_instructions.reverse();
+
+                    let environment = get_continuation_environment(
+                        &rest_instructions,
+                        &terminal_instruction,
+                        local_variables,
+                    );
+                    let continuation = create_continuation(
+                        context,
+                        &rest_instructions,
+                        &terminal_instruction,
+                        result_type,
+                        &environment,
+                    )
+                    .into();
+
+                    rest_instructions = vec![If::new(
                         void_type(),
                         if_.condition().clone(),
-                        transform_if_block_without_continuation(
+                        transform_if_block_with_continuation(
                             context,
                             if_.name(),
                             if_.then(),
                             result_type,
                             local_variables,
-                            &terminal_instruction,
+                            &continuation,
+                            &environment,
                         ),
-                        transform_if_block_without_continuation(
+                        transform_if_block_with_continuation(
                             context,
                             if_.name(),
                             if_.else_(),
                             result_type,
                             local_variables,
-                            &terminal_instruction,
+                            &continuation,
+                            &environment,
                         ),
                         "",
                     )
-                    .into(),
-                );
-            } else {
-                rest_instructions.reverse();
+                    .into()];
+                }
 
-                let environment = get_continuation_environment(
-                    &rest_instructions,
-                    &terminal_instruction,
-                    local_variables,
-                );
-                let continuation = create_continuation(
-                    context,
-                    &rest_instructions,
-                    &terminal_instruction,
-                    result_type,
-                    &environment,
-                )
-                .into();
-
-                rest_instructions = vec![If::new(
-                    void_type(),
-                    if_.condition().clone(),
-                    transform_if_block_with_continuation(
-                        context,
-                        if_.name(),
-                        if_.then(),
-                        result_type,
-                        local_variables,
-                        &continuation,
-                        &environment,
-                    ),
-                    transform_if_block_with_continuation(
-                        context,
-                        if_.name(),
-                        if_.else_(),
-                        result_type,
-                        local_variables,
-                        &continuation,
-                        &environment,
-                    ),
-                    "",
-                )
-                .into()];
+                terminal_instruction = TerminalInstruction::Unreachable;
             }
-
-            terminal_instruction = TerminalInstruction::Unreachable;
-        } else {
-            rest_instructions.push(instruction.clone());
+            _ => rest_instructions.push(instruction.clone()),
         }
     }
 
     rest_instructions.reverse();
 
     (rest_instructions, terminal_instruction)
+}
+
+fn has_source_call(block: &Block) -> bool {
+    block
+        .instructions()
+        .iter()
+        .any(|instruction| match instruction {
+            Instruction::Call(call) => {
+                call.type_().calling_convention() == types::CallingConvention::Source
+            }
+            Instruction::If(if_) => has_source_call(if_.then()) || has_source_call(if_.else_()),
+            _ => false,
+        })
 }
 
 fn transform_if_block_without_continuation(

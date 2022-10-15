@@ -103,7 +103,6 @@ fn transform_instructions(
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
     Ok(match instructions {
         [] => match terminal_instruction {
-            TerminalInstruction::Branch(_) => unreachable!(),
             TerminalInstruction::Return(return_) => {
                 let result_name = context.cps.name_generator().borrow_mut().generate();
 
@@ -125,7 +124,9 @@ fn transform_instructions(
                     .into(),
                 )
             }
-            TerminalInstruction::Unreachable => (vec![], TerminalInstruction::Unreachable),
+            TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {
+                (vec![], TerminalInstruction::Unreachable)
+            }
         },
         [instruction, ..] => {
             let instructions = &instructions[1..];
