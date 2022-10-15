@@ -134,6 +134,11 @@ fn transform_instructions(
             if let Instruction::Call(call) = instruction {
                 if call.type_().calling_convention() == CallingConvention::Source {
                     let result_name = context.cps.name_generator().borrow_mut().generate();
+                    let return_ = Return::new(
+                        context.cps.result_type().clone(),
+                        Variable::new(&result_name),
+                    )
+                    .into();
 
                     if instructions.is_empty()
                         && terminal_instruction
@@ -154,14 +159,10 @@ fn transform_instructions(
                                 .into_iter()
                                 .chain(call.arguments().iter().cloned())
                                 .collect(),
-                                &result_name,
+                                result_name,
                             )
                             .into()],
-                            Return::new(
-                                context.cps.result_type().clone(),
-                                Variable::new(result_name),
-                            )
-                            .into(),
+                            return_,
                         ));
                     }
 
@@ -198,15 +199,11 @@ fn transform_instructions(
                                 .into_iter()
                                 .chain(call.arguments().iter().cloned())
                                 .collect(),
-                                &result_name,
+                                result_name,
                             )
                             .into()])
                             .collect(),
-                        Return::new(
-                            context.cps.result_type().clone(),
-                            Variable::new(result_name),
-                        )
-                        .into(),
+                        return_,
                     ));
                 }
             }
