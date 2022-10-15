@@ -447,4 +447,70 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn transform_tail_call() {
+        assert_eq!(
+            transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::Float64,
+                                types::CallingConvention::Source
+                            ),
+                            Variable::new("f"),
+                            vec![],
+                            "x",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                        Argument::new(
+                            CONTINUATION_ARGUMENT_NAME,
+                            continuation_type::compile(
+                                &types::Primitive::Float64.into(),
+                                &void_type().into()
+                            )
+                        )
+                    ],
+                    void_type(),
+                    Block::new(
+                        vec![Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::Float64,
+                                types::CallingConvention::Source
+                            ),
+                            Variable::new("f"),
+                            vec![Variable::new("_s").into(), Variable::new("_k").into()],
+                            "_k_0",
+                        )
+                        .into()],
+                        Return::new(void_type(), Variable::new("_k_0")),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Tail)
+                )],
+            ))
+        );
+    }
 }
