@@ -124,29 +124,6 @@ mod tests {
         assert_eq!(check(&Module::new(vec![], vec![], vec![], vec![])), Ok(()));
     }
 
-    #[test]
-    fn check_duplicate_empty_names() {
-        let module = Module::new(
-            vec![],
-            vec![],
-            vec![],
-            vec![FunctionDefinition::new(
-                "f",
-                vec![],
-                types::Primitive::PointerInteger,
-                Block::new(
-                    vec![
-                        AllocateStack::new(types::Primitive::PointerInteger, "").into(),
-                        AllocateStack::new(types::Primitive::PointerInteger, "").into(),
-                    ],
-                    TerminalInstruction::Unreachable,
-                ),
-                Default::default(),
-            )],
-        );
-
-        assert_eq!(check(&module), Ok(()));
-    }
     mod global {
         use super::*;
 
@@ -388,6 +365,30 @@ mod tests {
                         Default::default(),
                     ),
                 ],
+            );
+
+            assert_eq!(check(&module), Ok(()));
+        }
+
+        #[test]
+        fn check_duplicate_empty_names() {
+            let module = Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            AllocateStack::new(types::Primitive::PointerInteger, "").into(),
+                            AllocateStack::new(types::Primitive::PointerInteger, "").into(),
+                        ],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default(),
+                )],
             );
 
             assert_eq!(check(&module), Ok(()));
