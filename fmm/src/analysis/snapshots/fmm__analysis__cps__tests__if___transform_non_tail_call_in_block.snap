@@ -1,6 +1,6 @@
 ---
 source: fmm/src/analysis/cps.rs
-expression: "format_module(&transform_to_cps(&Module::new(vec![],\n                        vec![FunctionDeclaration ::\n                            new(\"f\", function_type.clone())], vec![],\n                        vec![create_function_definition(\"g\", vec! [], types ::\n                            Primitive :: Float64, Block ::\n                            new(vec!\n                            [If ::\n                            new(types :: Primitive :: Float64, Primitive ::\n                            Boolean(true), Block ::\n                            new(vec!\n                            [Call ::\n                            new(function_type, Variable :: new(\"f\"), vec!\n                            [Primitive :: Float64(42.0).into()], \"x\",).into()], Branch\n                            ::\n                            new(types :: Primitive :: Float64, Variable :: new(\"x\")),),\n                            Block :: new(vec! [], TerminalInstruction :: Unreachable),\n                            \"y\",).into()], Return ::\n                            new(types :: Primitive :: Float64, ArithmeticOperation ::\n                            new(types :: Primitive :: Float64, ArithmeticOperator ::\n                            Add, Variable :: new(\"y\"), Variable :: new(\"y\"))),),)]),\n                void_type()).unwrap())"
+expression: "format::format_module(&transform(&Module::new(vec![],\n                        vec![FunctionDeclaration ::\n                            new(\"f\", function_type.clone())], vec![],\n                        vec![create_function_definition(\"g\", vec! [], types ::\n                            Primitive :: Float64, Block ::\n                            new(vec!\n                            [If ::\n                            new(types :: Primitive :: Float64, Primitive ::\n                            Boolean(true), Block ::\n                            new(vec!\n                            [Call ::\n                            new(function_type, Variable :: new(\"f\"), vec!\n                            [Primitive :: Float64(42.0).into()], \"x\",).into()], Branch\n                            ::\n                            new(types :: Primitive :: Float64, Variable :: new(\"x\")),),\n                            Block :: new(vec! [], TerminalInstruction :: Unreachable),\n                            \"y\",).into()], Return ::\n                            new(types :: Primitive :: Float64, ArithmeticOperation ::\n                            new(types :: Primitive :: Float64, ArithmeticOperator ::\n                            Add, Variable :: new(\"y\"), Variable :: new(\"y\"))),),)]),\n                void_type()).unwrap())"
 ---
 (module
   (function g _s _k
@@ -33,7 +33,7 @@ expression: "format_module(&transform_to_cps(&Module::new(vec![],\n             
           (return _k_8))
         (block
           (unreachable))
-        _k_10)
+        )
       (unreachable)))
   (function _k_9 _s x
     (block

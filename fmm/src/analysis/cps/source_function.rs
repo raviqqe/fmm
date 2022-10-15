@@ -103,7 +103,6 @@ fn transform_instructions(
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
     Ok(match instructions {
         [] => match terminal_instruction {
-            TerminalInstruction::Branch(_) => unreachable!(),
             TerminalInstruction::Return(return_) => {
                 let result_name = context.cps.name_generator().borrow_mut().generate();
 
@@ -125,7 +124,9 @@ fn transform_instructions(
                     .into(),
                 )
             }
-            TerminalInstruction::Unreachable => (vec![], TerminalInstruction::Unreachable),
+            TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {
+                (vec![], terminal_instruction.clone())
+            }
         },
         [instruction, ..] => {
             let instructions = &instructions[1..];
@@ -191,19 +192,6 @@ fn transform_instructions(
                         .into(),
                     ));
                 }
-            } else if let Instruction::If(if_) = instruction {
-                // If instruction is always at tail due to if flattening.
-                return Ok((
-                    vec![If::new(
-                        if_.type_().clone(),
-                        if_.condition().clone(),
-                        transform_block(context, if_.then(), local_variables)?,
-                        transform_block(context, if_.else_(), local_variables)?,
-                        context.cps.name_generator().borrow_mut().generate(),
-                    )
-                    .into()],
-                    TerminalInstruction::Unreachable,
-                ));
             }
 
             let (instructions, terminal_instruction) = transform_instructions(
@@ -218,10 +206,21 @@ fn transform_instructions(
             )?;
 
             (
-                [instruction.clone()]
-                    .into_iter()
-                    .chain(instructions)
-                    .collect(),
+                [if let Instruction::If(if_) = instruction {
+                    If::new(
+                        if_.type_().clone(),
+                        if_.condition().clone(),
+                        transform_block(context, if_.then(), local_variables)?,
+                        transform_block(context, if_.else_(), local_variables)?,
+                        if_.name(),
+                    )
+                    .into()
+                } else {
+                    instruction.clone()
+                }]
+                .into_iter()
+                .chain(instructions)
+                .collect(),
                 terminal_instruction,
             )
         }

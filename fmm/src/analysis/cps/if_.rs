@@ -85,84 +85,98 @@ fn transform_instructions(
     let mut terminal_instruction = terminal_instruction.clone();
 
     for instruction in instructions.iter().rev() {
-        if let Instruction::If(if_) = instruction {
-            if rest_instructions.is_empty() {
-                rest_instructions.push(
-                    If::new(
+        match instruction {
+            Instruction::If(if_) if has_source_call(if_.then()) || has_source_call(if_.else_()) => {
+                if rest_instructions.is_empty() {
+                    rest_instructions.push(
+                        If::new(
+                            void_type(),
+                            if_.condition().clone(),
+                            transform_if_block_without_continuation(
+                                context,
+                                if_.name(),
+                                if_.then(),
+                                result_type,
+                                local_variables,
+                                &terminal_instruction,
+                            ),
+                            transform_if_block_without_continuation(
+                                context,
+                                if_.name(),
+                                if_.else_(),
+                                result_type,
+                                local_variables,
+                                &terminal_instruction,
+                            ),
+                            "",
+                        )
+                        .into(),
+                    );
+                } else {
+                    rest_instructions.reverse();
+
+                    let environment = get_continuation_environment(
+                        &rest_instructions,
+                        &terminal_instruction,
+                        local_variables,
+                    );
+                    let continuation = create_continuation(
+                        context,
+                        &rest_instructions,
+                        &terminal_instruction,
+                        result_type,
+                        &environment,
+                    )
+                    .into();
+
+                    rest_instructions = vec![If::new(
                         void_type(),
                         if_.condition().clone(),
-                        transform_if_block_without_continuation(
+                        transform_if_block_with_continuation(
                             context,
                             if_.name(),
                             if_.then(),
                             result_type,
                             local_variables,
-                            &terminal_instruction,
+                            &continuation,
+                            &environment,
                         ),
-                        transform_if_block_without_continuation(
+                        transform_if_block_with_continuation(
                             context,
                             if_.name(),
                             if_.else_(),
                             result_type,
                             local_variables,
-                            &terminal_instruction,
+                            &continuation,
+                            &environment,
                         ),
                         "",
                     )
-                    .into(),
-                );
-            } else {
-                rest_instructions.reverse();
+                    .into()];
+                }
 
-                let environment = get_continuation_environment(
-                    &rest_instructions,
-                    &terminal_instruction,
-                    local_variables,
-                );
-                let continuation = create_continuation(
-                    context,
-                    &rest_instructions,
-                    &terminal_instruction,
-                    result_type,
-                    &environment,
-                )
-                .into();
-
-                rest_instructions = vec![If::new(
-                    void_type(),
-                    if_.condition().clone(),
-                    transform_if_block_with_continuation(
-                        context,
-                        if_.name(),
-                        if_.then(),
-                        result_type,
-                        local_variables,
-                        &continuation,
-                        &environment,
-                    ),
-                    transform_if_block_with_continuation(
-                        context,
-                        if_.name(),
-                        if_.else_(),
-                        result_type,
-                        local_variables,
-                        &continuation,
-                        &environment,
-                    ),
-                    "",
-                )
-                .into()];
+                terminal_instruction = TerminalInstruction::Unreachable;
             }
-
-            terminal_instruction = TerminalInstruction::Unreachable;
-        } else {
-            rest_instructions.push(instruction.clone());
+            _ => rest_instructions.push(instruction.clone()),
         }
     }
 
     rest_instructions.reverse();
 
     (rest_instructions, terminal_instruction)
+}
+
+fn has_source_call(block: &Block) -> bool {
+    block
+        .instructions()
+        .iter()
+        .any(|instruction| match instruction {
+            Instruction::Call(call) => {
+                call.type_().calling_convention() == types::CallingConvention::Source
+            }
+            Instruction::If(if_) => has_source_call(if_.then()) || has_source_call(if_.else_()),
+            _ => false,
+        })
 }
 
 fn transform_if_block_without_continuation(
@@ -298,11 +312,16 @@ fn get_continuation_environment<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{analysis::type_check, types::void_type};
+    use crate::{
+        analysis::{name, type_check},
+        types::void_type,
+    };
+    use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) {
         let flattened = flatten(module);
 
+        name::check(&flattened).unwrap();
         type_check::check(&flattened).unwrap();
 
         assert_eq!(flattened, flatten(module));
@@ -475,5 +494,268 @@ mod tests {
                 ),
             )],
         ));
+    }
+
+    #[test]
+    fn preserve_if() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(1),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(2),
+                            ),
+                        ),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
+    }
+
+    #[test]
+    fn preserve_if_with_non_call_instruction() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Load::new(
+                                types::Primitive::PointerInteger,
+                                Undefined::new(types::Pointer::new(
+                                    types::Primitive::PointerInteger,
+                                )),
+                                "x",
+                            )
+                            .into()],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(1),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(2),
+                            ),
+                        ),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
+    }
+
+    #[test]
+    fn preserve_if_with_target_call() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Target,
+        );
+
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Call::new(function_type, Variable::new("f"), vec![], "x").into()],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(1),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(2),
+                            ),
+                        ),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
+    }
+
+    #[test]
+    fn transform_if_with_source_call() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+
+        assert_eq!(
+            flatten(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type.clone(),
+                                    Variable::new("f"),
+                                    vec![],
+                                    "x"
+                                )
+                                .into()],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(1),
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(2),
+                                ),
+                            ),
+                            "y",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                )],
+            )),
+            Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(function_type, Variable::new("f"), vec![], "x")
+                                    .into()],
+                                Return::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(1),
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(2),
+                                ),
+                            ),
+                            "",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable
+                    ),
+                )],
+            )
+        );
+    }
+
+    #[test]
+    fn preserve_call_after_preserved_if() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+        let module = Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                types::Primitive::Float64,
+                Block::new(
+                    vec![
+                        If::new(
+                            types::Primitive::Float64,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Load::new(
+                                    types::Primitive::Float64,
+                                    Undefined::new(types::Pointer::new(types::Primitive::Float64)),
+                                    "x",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::Float64, Variable::new("x")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "y",
+                        )
+                        .into(),
+                        Call::new(
+                            function_type,
+                            Variable::new("f"),
+                            vec![Variable::new("y").into()],
+                            "z",
+                        )
+                        .into(),
+                    ],
+                    Return::new(types::Primitive::Float64, Variable::new("z")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
     }
 }

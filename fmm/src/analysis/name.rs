@@ -92,7 +92,9 @@ fn check_instruction<'a>(
     }
 
     if let Some((name, _)) = instruction.value() {
-        check_name(name, local_names)?;
+        if !name.is_empty() {
+            check_name(name, local_names)?;
+        }
 
         if global_names.contains(name) {
             return Err(NameError::DuplicateNames(name.into()));
@@ -363,6 +365,30 @@ mod tests {
                         Default::default(),
                     ),
                 ],
+            );
+
+            assert_eq!(check(&module), Ok(()));
+        }
+
+        #[test]
+        fn check_duplicate_empty_names() {
+            let module = Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            AllocateStack::new(types::Primitive::PointerInteger, "").into(),
+                            AllocateStack::new(types::Primitive::PointerInteger, "").into(),
+                        ],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default(),
+                )],
             );
 
             assert_eq!(check(&module), Ok(()));
