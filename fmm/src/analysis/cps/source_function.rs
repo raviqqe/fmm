@@ -349,6 +349,46 @@ mod tests {
     }
 
     #[test]
+    fn transform_no_instruction() {
+        assert_eq!(
+            transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(vec![], TerminalInstruction::Unreachable,),
+                    Default::default()
+                )],
+            )),
+            Ok(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                        Argument::new(
+                            CONTINUATION_ARGUMENT_NAME,
+                            continuation_type::compile(
+                                &types::Primitive::Float64.into(),
+                                &void_type().into()
+                            )
+                        )
+                    ],
+                    void_type(),
+                    Block::new(vec![], TerminalInstruction::Unreachable,),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Tail)
+                )],
+            ))
+        );
+    }
+
+    #[test]
     fn transform_if() {
         assert_eq!(
             transform_module(&Module::new(
