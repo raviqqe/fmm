@@ -125,7 +125,7 @@ fn transform_instructions(
                 )
             }
             TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {
-                (vec![], TerminalInstruction::Unreachable)
+                (vec![], terminal_instruction.clone())
             }
         },
         [instruction, ..] => {
