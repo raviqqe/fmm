@@ -312,11 +312,16 @@ fn get_continuation_environment<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{analysis::type_check, types::void_type};
+    use crate::{
+        analysis::{name, type_check},
+        types::void_type,
+    };
+    use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) {
         let flattened = flatten(module);
 
+        name::check(&flattened).unwrap();
         type_check::check(&flattened).unwrap();
 
         assert_eq!(flattened, flatten(module));
@@ -489,5 +494,220 @@ mod tests {
                 ),
             )],
         ));
+    }
+
+    #[test]
+    fn preserve_if() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(1),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(2),
+                            ),
+                        ),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
+    }
+
+    #[test]
+    fn preserve_if_with_non_call_instruction() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "f",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Load::new(
+                                types::Primitive::PointerInteger,
+                                Undefined::new(types::Pointer::new(
+                                    types::Primitive::PointerInteger,
+                                )),
+                                "x",
+                            )
+                            .into()],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(1),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(2),
+                            ),
+                        ),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
+    }
+
+    #[test]
+    fn preserve_if_with_target_call() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Target,
+        );
+
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![If::new(
+                        types::Primitive::PointerInteger,
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![Call::new(function_type, Variable::new("f"), vec![], "x").into()],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(1),
+                            ),
+                        ),
+                        Block::new(
+                            vec![],
+                            Branch::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(2),
+                            ),
+                        ),
+                        "y",
+                    )
+                    .into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                ),
+            )],
+        );
+
+        assert_eq!(flatten(&module), module);
+    }
+
+    #[test]
+    fn transform_if_with_source_call() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+
+        assert_eq!(
+            flatten(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type.clone(),
+                                    Variable::new("f"),
+                                    vec![],
+                                    "x"
+                                )
+                                .into()],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(1),
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(2),
+                                ),
+                            ),
+                            "y",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                )],
+            )),
+            Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(function_type, Variable::new("f"), vec![], "x")
+                                    .into()],
+                                Return::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(1),
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(2),
+                                ),
+                            ),
+                            "",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable
+                    ),
+                )],
+            )
+        );
     }
 }
