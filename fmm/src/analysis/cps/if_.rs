@@ -744,7 +744,7 @@ mod tests {
                         )
                         .into(),
                         Call::new(
-                            function_type.clone(),
+                            function_type,
                             Variable::new("f"),
                             vec![Variable::new("y").into()],
                             "z",
