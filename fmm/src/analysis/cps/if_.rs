@@ -91,13 +91,15 @@ fn transform_instructions(
                     .iter()
                     .flat_map(|instruction: &Instruction| instruction.value().map(|(name, _)| name))
                     .collect::<FnvHashSet<_>>();
-                let rename_variable = |name: &str| {
+                let rename_variable = |name: &str, suffix: &str| {
                     if value_names.contains(name) {
-                        format!("{}.else", name)
+                        format!("{}.{}", name, suffix)
                     } else {
                         name.into()
                     }
                 };
+                let rename_then = |name: &str| rename_variable(name, "then");
+                let rename_else = |name: &str| rename_variable(name, "else");
 
                 // Allow inlining a instruction.
                 if rest_instructions.len() <= 1 {
@@ -110,8 +112,16 @@ fn transform_instructions(
                             if_.then(),
                             result_type,
                             local_variables,
-                            &rest_instructions,
-                            &terminal_instruction,
+                            &rest_instructions
+                                .iter()
+                                .map(|instruction| {
+                                    rename::rename_instruction(instruction, &rename_then)
+                                })
+                                .collect::<Vec<_>>(),
+                            &rename::rename_terminal_instruction(
+                                &terminal_instruction,
+                                &rename_then,
+                            ),
                         ),
                         transform_if_block_with_rest_instructions(
                             context,
@@ -122,12 +132,12 @@ fn transform_instructions(
                             &rest_instructions
                                 .iter()
                                 .map(|instruction| {
-                                    rename::rename_instruction(instruction, &rename_variable)
+                                    rename::rename_instruction(instruction, &rename_else)
                                 })
                                 .collect::<Vec<_>>(),
                             &rename::rename_terminal_instruction(
                                 &terminal_instruction,
-                                &rename_variable,
+                                &rename_else,
                             ),
                         ),
                         "",
