@@ -268,7 +268,7 @@ fn create_continuation(
                 terminal_instruction.clone()
             ))
         );
-        dbg!(&local_variables);
+        dbg!(local_variables.keys().collect::<Vec<_>>());
     }
     context.function_definitions.push(FunctionDefinition::new(
         &name,
