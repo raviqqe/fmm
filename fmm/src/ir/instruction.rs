@@ -54,6 +54,10 @@ impl Instruction {
             Self::AtomicStore(_) | Self::Fence(_) | Self::FreeHeap(_) | Self::Store(_) => None,
         }
     }
+
+    pub fn has_blocks(&self) -> bool {
+        matches!(self, Instruction::If(_))
+    }
 }
 
 impl From<AllocateHeap> for Instruction {
