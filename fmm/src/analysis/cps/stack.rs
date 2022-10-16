@@ -1,10 +1,13 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::{
-    build::{self, BuildError, InstructionBuilder, TypedExpression},
+    build::{self, BuildError, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
-    types::{self, generic_pointer_type, Type},
+    types::{self, generic_pointer_type, void_type, Type},
 };
 use once_cell::unsync::Lazy;
 
+const EXTEND_FUNCTION_NAME: &str = "_fmm_stack_extend";
 const DEFAULT_STACK_SIZE: i64 = 64;
 
 thread_local! {
@@ -53,15 +56,55 @@ pub fn push(
 ) -> Result<(), BuildError> {
     let stack = stack.into();
     let element = element.into();
+    let pointer = element_pointer(builder, &stack, element.type_())?;
 
+    builder.call(
+        build::variable(
+            EXTEND_FUNCTION_NAME,
+            types::Function::new(
+                vec![type_(), types::Primitive::PointerInteger.into()],
+                void_type(),
+                types::CallingConvention::Target,
+            ),
+        ),
+        vec![stack, element_size(builder, element.type_())?],
+    )?;
+
+    builder.store(element, pointer);
+
+    Ok(())
+}
+
+pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
+    Ok(Module::new(
+        module.variable_declarations().to_vec(),
+        module.function_declarations().to_vec(),
+        module.variable_definitions().to_vec(),
+        module
+            .function_definitions()
+            .iter()
+            .cloned()
+            .chain([extend_function_definition()?])
+            .collect(),
+    ))
+}
+
+fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
+    const STACK_NAME: &str = "s";
+    const ELEMENT_SIZE_NAME: &str = "e";
+
+    let builder = InstructionBuilder::new(Rc::new(RefCell::new(NameGenerator::new("x"))));
+
+    let stack = build::variable(STACK_NAME, type_());
     let size = builder.load(build::record_address(stack.clone(), 1)?)?;
     let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
-        element_size(builder, element.type_())?,
+        build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
     )?;
     let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
 
+    // TODO Handle elements larger than stack increase sizes.
     builder.if_(
         build::comparison_operation(
             ComparisonOperator::GreaterThan(false),
@@ -87,13 +130,20 @@ pub fn push(
         |builder| Ok(builder.branch(void_value())),
     )?;
 
-    builder.store(
-        element.clone(),
-        element_pointer(builder, &stack, element.type_())?,
-    );
     builder.store(new_size, build::record_address(stack, 1)?);
 
-    Ok(())
+    Ok(FunctionDefinition::new(
+        EXTEND_FUNCTION_NAME,
+        vec![
+            Argument::new(STACK_NAME, type_()),
+            Argument::new(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+        ],
+        void_type(),
+        builder.return_(void_value()),
+        FunctionDefinitionOptions::new()
+            .set_calling_convention(types::CallingConvention::Target)
+            .set_linkage(Linkage::Internal),
+    ))
 }
 
 pub fn pop(
@@ -135,7 +185,7 @@ fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpre
     align_size(builder, build::size_of(type_.clone()))
 }
 
-// TODO Support 16-byte data.
+// TODO Support 16-byte aligned data.
 fn align_size(
     builder: &InstructionBuilder,
     size: impl Into<TypedExpression>,

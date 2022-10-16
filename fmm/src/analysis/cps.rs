@@ -23,6 +23,7 @@ pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module
     let module = source_function::transform(&context, &module)?;
     let module = target_function::transform(&context, &module)?;
     let module = function_type::transform(&module, context.result_type());
+    let module = stack::define_utility_functions(&module)?;
 
     name::check(&module)?;
     type_check::check(&module)?;
@@ -37,29 +38,9 @@ mod tests {
         analysis::format,
         types::{self, void_type, CallingConvention, Type},
     };
-    use stack::type_;
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
         types::Function::new(arguments, result, CallingConvention::Source)
-    }
-
-    fn create_cps_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
-        types::Function::new(
-            [
-                type_(),
-                types::Function::new(
-                    vec![type_(), result.into()],
-                    void_type(),
-                    CallingConvention::Tail,
-                )
-                .into(),
-            ]
-            .into_iter()
-            .chain(arguments)
-            .collect(),
-            void_type(),
-            CallingConvention::Tail,
-        )
     }
 
     fn create_function_definition(
@@ -201,13 +182,9 @@ mod tests {
             vec![types::Primitive::Float64.into()],
             types::Primitive::Float64,
         );
-        let cps_function_type = create_cps_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
 
-        pretty_assertions::assert_eq!(
-            transform(
+        insta::assert_snapshot!(format::format_module(
+            &transform(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("f", function_type.clone())],
@@ -228,45 +205,10 @@ mod tests {
                         ),
                     )],
                 ),
-                void_type()
-            ),
-            Ok(Module::new(
-                vec![],
-                vec![FunctionDeclaration::new("f", cps_function_type.clone())],
-                vec![],
-                vec![FunctionDefinition::new(
-                    "g",
-                    vec![
-                        Argument::new("_s", type_()),
-                        Argument::new(
-                            "_k",
-                            types::Function::new(
-                                vec![type_(), types::Primitive::Float64.into()],
-                                void_type(),
-                                CallingConvention::Tail,
-                            )
-                        ),
-                    ],
-                    void_type(),
-                    Block::new(
-                        vec![Call::new(
-                            cps_function_type,
-                            Variable::new("f"),
-                            vec![
-                                Variable::new("_s").into(),
-                                Variable::new("_k").into(),
-                                Primitive::Float64(42.0).into()
-                            ],
-                            "_k_0",
-                        )
-                        .into()],
-                        Return::new(void_type(), Variable::new("_k_0")),
-                    ),
-                    FunctionDefinitionOptions::new()
-                        .set_calling_convention(CallingConvention::Tail)
-                )],
-            ))
-        );
+                void_type(),
+            )
+            .unwrap()
+        ));
     }
 
     #[test]
