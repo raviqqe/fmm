@@ -135,7 +135,7 @@ fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpre
     align_size(builder, build::size_of(type_.clone()))
 }
 
-// TODO Support 16-byte data.
+// TODO Support 16-byte aligned data.
 fn align_size(
     builder: &InstructionBuilder,
     size: impl Into<TypedExpression>,
