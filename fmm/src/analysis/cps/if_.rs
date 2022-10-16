@@ -1,11 +1,11 @@
 use super::free_variable;
 use crate::{
-    analysis::{expression_conversion, local_variable},
+    analysis::{expression_conversion, local_variable, rename},
     build::NameGenerator,
     ir::*,
     types::{self, void_type, Type},
 };
-use fnv::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 
 struct Context {
     function_definitions: Vec<FunctionDefinition>,
@@ -87,6 +87,18 @@ fn transform_instructions(
     for instruction in instructions.iter().rev() {
         match instruction {
             Instruction::If(if_) if has_source_call(if_.then()) || has_source_call(if_.else_()) => {
+                let value_names = rest_instructions
+                    .iter()
+                    .flat_map(|instruction: &Instruction| instruction.value().map(|(name, _)| name))
+                    .collect::<FnvHashSet<_>>();
+                let rename_variable = |name: &str| {
+                    if value_names.contains(name) {
+                        format!("{}.else", name)
+                    } else {
+                        name.into()
+                    }
+                };
+
                 // Allow inlining a instruction.
                 if rest_instructions.len() <= 1 {
                     rest_instructions = vec![If::new(
@@ -107,8 +119,16 @@ fn transform_instructions(
                             if_.else_(),
                             result_type,
                             local_variables,
-                            &rest_instructions,
-                            &terminal_instruction,
+                            &rest_instructions
+                                .iter()
+                                .map(|instruction| {
+                                    rename::rename_instruction(instruction, &rename_variable)
+                                })
+                                .collect::<Vec<_>>(),
+                            &rename::rename_terminal_instruction(
+                                &terminal_instruction,
+                                &rename_variable,
+                            ),
                         ),
                         "",
                     )
@@ -346,15 +366,15 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) -> Module {
-        let flattened = flatten(module);
+        let flattened_module = flatten(module);
 
-        name::check(&flattened).unwrap();
-        type_check::check(&flattened).unwrap();
+        name::check(&flattened_module).unwrap();
+        type_check::check(&flattened_module).unwrap();
 
         // Test reproducibility.
-        assert_eq!(flattened, flatten(module));
+        assert_eq!(flattened_module, flatten(module));
 
-        flattened
+        flattened_module
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -667,6 +687,94 @@ mod tests {
                             "",
                         )
                         .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                )]
+            )
+        );
+    }
+
+    #[test]
+    fn flatten_if_with_duplicated_continuation_of_instruction() {
+        let pointer_type = types::Pointer::new(types::Primitive::Float64);
+        let function_type =
+            create_function_type(vec![types::Primitive::Float64.into()], pointer_type.clone());
+
+        assert_eq!(
+            flatten_module(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    pointer_type.clone(),
+                    Block::new(
+                        vec![
+                            If::new(
+                                pointer_type.clone(),
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![Call::new(
+                                        function_type.clone(),
+                                        Variable::new("f"),
+                                        vec![Primitive::Float64(42.0).into()],
+                                        "x",
+                                    )
+                                    .into()],
+                                    Branch::new(pointer_type.clone(), Variable::new("x")),
+                                ),
+                                Block::new(
+                                    vec![],
+                                    Branch::new(
+                                        pointer_type.clone(),
+                                        Undefined::new(pointer_type.clone())
+                                    ),
+                                ),
+                                "y",
+                            )
+                            .into(),
+                            AllocateStack::new(types::Primitive::Float64, "p").into()
+                        ],
+                        Return::new(pointer_type.clone(), Variable::new("p")),
+                    ),
+                )],
+            )),
+            Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    pointer_type.clone(),
+                    Block::new(
+                        vec![
+                            If::new(
+                                void_type(),
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            function_type.clone(),
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into(),
+                                        AllocateStack::new(types::Primitive::Float64, "p").into()
+                                    ],
+                                    Return::new(pointer_type.clone(), Variable::new("p")),
+                                ),
+                                Block::new(
+                                    vec![AllocateStack::new(types::Primitive::Float64, "p.else")
+                                        .into()],
+                                    Return::new(pointer_type.clone(), Variable::new("p.else")),
+                                ),
+                                "",
+                            )
+                            .into()
+                        ],
                         TerminalInstruction::Unreachable,
                     ),
                 )]

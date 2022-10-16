@@ -79,7 +79,10 @@ fn rename_block(block: &Block, rename: &impl Fn(&str) -> String) -> Block {
     )
 }
 
-fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> String) -> Instruction {
+pub fn rename_instruction(
+    instruction: &Instruction,
+    rename: &impl Fn(&str) -> String,
+) -> Instruction {
     let rename_expression = |expression| rename_expression(expression, rename);
 
     match instruction {
@@ -180,7 +183,7 @@ fn rename_instruction(instruction: &Instruction, rename: &impl Fn(&str) -> Strin
     }
 }
 
-fn rename_terminal_instruction(
+pub fn rename_terminal_instruction(
     instruction: &TerminalInstruction,
     rename: &impl Fn(&str) -> String,
 ) -> TerminalInstruction {
