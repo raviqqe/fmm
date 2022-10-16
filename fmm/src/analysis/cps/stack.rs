@@ -86,22 +86,15 @@ pub fn pop(
 ) -> Result<TypedExpression, BuildError> {
     let type_ = type_.into();
     let stack = stack.into();
+    let size = build::arithmetic_operation(
+        ArithmeticOperator::Subtract,
+        builder.load(build::record_address(stack.clone(), 1)?)?,
+        align_size(builder, build::size_of(type_.clone()))?,
+    )?;
 
-    builder.store(
-        build::arithmetic_operation(
-            ArithmeticOperator::Subtract,
-            builder.load(build::record_address(stack.clone(), 1)?)?,
-            align_size(builder, build::size_of(type_.clone()))?,
-        )?,
-        build::record_address(stack.clone(), 1)?,
-    );
+    builder.store(size.clone(), build::record_address(stack.clone(), 1)?);
 
-    builder.load(element_pointer(
-        builder,
-        &stack,
-        &builder.load(build::record_address(stack.clone(), 1)?)?,
-        &type_,
-    )?)
+    builder.load(element_pointer(builder, &stack, &size.into(), &type_)?)
 }
 
 pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
