@@ -12,4 +12,20 @@ expression: "format::format_module(&transform(&Module::new(vec![],\n            
         (block
           (unreachable))
         )
-      (unreachable))))
+      (unreachable)))
+  (function _fmm_stack_extend s e
+    (block
+      (load (record-address s 1) x0)
+      (load (record-address s 2) x1)
+      (if (> (+ x0 e) x1)
+        (block
+          (load (record-address s 0) x2)
+          (reallocate-heap x2 (* x1 2) x3)
+          (store x3 (record-address s 0))
+          (store (* x1 2) (record-address s 2))
+          (branch (record)))
+        (block
+          (branch (record)))
+        x4)
+      (store (+ x0 e) (record-address s 1))
+      (return (record)))))
