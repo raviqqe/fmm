@@ -251,7 +251,11 @@ fn create_continuation(
     let block = transform_block(
         context,
         &Block::new(instructions.to_vec(), terminal_instruction.clone()),
-        &local_variables,
+        &environment
+            .iter()
+            .cloned()
+            .chain([(call.name(), call.type_().result().clone())])
+            .collect(),
     )?;
 
     if name == "_k_67" {
