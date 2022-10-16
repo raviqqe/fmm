@@ -8,6 +8,7 @@ use crate::{
 use once_cell::unsync::Lazy;
 
 const EXTEND_FUNCTION_NAME: &str = "_fmm_stack_extend";
+const ALIGN_SIZE_FUNCTION_NAME: &str = "_fmm_stack_align_size";
 const DEFAULT_STACK_SIZE: i64 = 64;
 
 thread_local! {
@@ -75,6 +76,26 @@ pub fn push(
     Ok(())
 }
 
+pub fn pop(
+    builder: &InstructionBuilder,
+    stack: impl Into<TypedExpression>,
+    type_: impl Into<Type>,
+) -> Result<TypedExpression, BuildError> {
+    let type_ = type_.into();
+    let stack = stack.into();
+
+    builder.store(
+        build::arithmetic_operation(
+            ArithmeticOperator::Subtract,
+            builder.load(build::record_address(stack.clone(), 1)?)?,
+            element_size(builder, &type_)?,
+        )?,
+        build::record_address(stack.clone(), 1)?,
+    );
+
+    builder.load(element_pointer(builder, &stack, &type_)?)
+}
+
 pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
     Ok(Module::new(
         module.variable_declarations().to_vec(),
@@ -84,9 +105,48 @@ pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
             .function_definitions()
             .iter()
             .cloned()
-            .chain([extend_function_definition()?])
+            .chain([
+                extend_function_definition()?,
+                align_size_function_definition()?,
+            ])
             .collect(),
     ))
+}
+
+fn element_pointer(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    type_: &Type,
+) -> Result<TypedExpression, BuildError> {
+    Ok(build::bit_cast(
+        types::Pointer::new(type_.clone()),
+        build::pointer_address(
+            builder.load(build::record_address(stack.clone(), 0)?)?,
+            builder.load(build::record_address(stack.clone(), 1)?)?,
+        )?,
+    )
+    .into())
+}
+
+fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpression, BuildError> {
+    align_size(builder, build::size_of(type_.clone()))
+}
+
+fn align_size(
+    builder: &InstructionBuilder,
+    size: impl Into<TypedExpression>,
+) -> Result<TypedExpression, BuildError> {
+    builder.call(
+        build::variable(
+            ALIGN_SIZE_FUNCTION_NAME,
+            types::Function::new(
+                vec![types::Primitive::PointerInteger.into()],
+                types::Primitive::PointerInteger,
+                types::CallingConvention::Target,
+            ),
+        ),
+        vec![size.into()],
+    )
 }
 
 fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
@@ -146,54 +206,15 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     ))
 }
 
-pub fn pop(
-    builder: &InstructionBuilder,
-    stack: impl Into<TypedExpression>,
-    type_: impl Into<Type>,
-) -> Result<TypedExpression, BuildError> {
-    let type_ = type_.into();
-    let stack = stack.into();
-
-    builder.store(
-        build::arithmetic_operation(
-            ArithmeticOperator::Subtract,
-            builder.load(build::record_address(stack.clone(), 1)?)?,
-            element_size(builder, &type_)?,
-        )?,
-        build::record_address(stack.clone(), 1)?,
-    );
-
-    builder.load(element_pointer(builder, &stack, &type_)?)
-}
-
-fn element_pointer(
-    builder: &InstructionBuilder,
-    stack: &TypedExpression,
-    type_: &Type,
-) -> Result<TypedExpression, BuildError> {
-    Ok(build::bit_cast(
-        types::Pointer::new(type_.clone()),
-        build::pointer_address(
-            builder.load(build::record_address(stack.clone(), 0)?)?,
-            builder.load(build::record_address(stack.clone(), 1)?)?,
-        )?,
-    )
-    .into())
-}
-
-fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpression, BuildError> {
-    align_size(builder, build::size_of(type_.clone()))
-}
-
 // TODO Support 16-byte aligned data.
-fn align_size(
-    builder: &InstructionBuilder,
-    size: impl Into<TypedExpression>,
-) -> Result<TypedExpression, BuildError> {
-    let size = size.into();
+fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
+    const SIZE_NAME: &str = "size";
+
+    let builder = InstructionBuilder::new(Rc::new(RefCell::new(NameGenerator::new("x"))));
+    let size = build::variable(SIZE_NAME, types::Primitive::PointerInteger);
     let alignment = build::align_of(types::Primitive::PointerInteger);
 
-    builder.if_(
+    let value = builder.if_(
         build::comparison_operation(
             ComparisonOperator::Equal,
             size.clone(),
@@ -219,5 +240,15 @@ fn align_size(
                 alignment.clone(),
             )?))
         },
-    )
+    )?;
+
+    Ok(FunctionDefinition::new(
+        ALIGN_SIZE_FUNCTION_NAME,
+        vec![Argument::new(SIZE_NAME, types::Primitive::PointerInteger)],
+        types::Primitive::PointerInteger,
+        builder.return_(value),
+        FunctionDefinitionOptions::new()
+            .set_calling_convention(types::CallingConvention::Target)
+            .set_linkage(Linkage::Internal),
+    ))
 }

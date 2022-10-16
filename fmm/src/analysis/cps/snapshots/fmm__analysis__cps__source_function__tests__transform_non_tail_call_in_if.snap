@@ -9,12 +9,7 @@ expression: "format::format_module(&transform_module(&Module::new(vec![], vec![]
         (block
           (load (record-address _s 0) _k_1)
           (load (record-address _s 1) _k_2)
-          (if (== (size-of record) 0)
-            (block
-              (branch 0))
-            (block
-              (branch (* (+ (/ (- (size-of record) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
-            _k_3)
+          (call _fmm_stack_align_size (size-of record) _k_3)
           (call _fmm_stack_extend _s _k_3 _k_4)
           (store (record _k) (bit-cast (pointer-address _k_1 _k_2)))
           (call f _s _k_5 _k_0)
@@ -26,12 +21,7 @@ expression: "format::format_module(&transform_module(&Module::new(vec![], vec![]
   (function _k_5 _s x
     (block
       (load (record-address _s 1) _k_7)
-      (if (== (size-of record) 0)
-        (block
-          (branch 0))
-        (block
-          (branch (* (+ (/ (- (size-of record) 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
-        _k_8)
+      (call _fmm_stack_align_size (size-of record) _k_8)
       (store (- _k_7 _k_8) (record-address _s 1))
       (load (record-address _s 0) _k_9)
       (load (record-address _s 1) _k_a)

@@ -22,4 +22,13 @@ expression: "format::format_module(&transform(&Module::new(vec![],\n            
           (branch (record)))
         x4)
       (store (+ x0 e) (record-address s 1))
-      (return (record)))))
+      (return (record))))
+  (function _fmm_stack_align_size size
+    (block
+      (if (== size 0)
+        (block
+          (branch 0))
+        (block
+          (branch (* (+ (/ (- size 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+        x0)
+      (return x0))))
