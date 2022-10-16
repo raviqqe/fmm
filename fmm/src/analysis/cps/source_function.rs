@@ -1,10 +1,11 @@
 use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
-    analysis::cps::continuation_type,
+    analysis::{cps::continuation_type, local_variable},
     build::{self, BuildError, InstructionBuilder},
     ir::*,
     types::{CallingConvention, Type},
 };
+use fnv::FnvHashMap;
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
@@ -43,6 +44,9 @@ fn transform_function_definition(
         if definition.type_().calling_convention() == CallingConvention::Source {
             let continuation_type =
                 continuation_type::compile(definition.result_type(), context.cps.result_type());
+            let mut local_variables = local_variable::collect(definition);
+
+            local_variables.insert(CONTINUATION_ARGUMENT_NAME, continuation_type.clone().into());
 
             FunctionDefinition::new(
                 definition.name(),
@@ -54,16 +58,7 @@ fn transform_function_definition(
                 .chain(definition.arguments().iter().cloned())
                 .collect(),
                 context.cps.result_type().clone(),
-                transform_block(
-                    context,
-                    definition.body(),
-                    &definition
-                        .arguments()
-                        .iter()
-                        .map(|argument| (argument.name(), argument.type_().clone()))
-                        .chain([(CONTINUATION_ARGUMENT_NAME, continuation_type.into())])
-                        .collect(),
-                )?,
+                transform_block(context, definition.body(), &local_variables)?,
                 definition
                     .options()
                     .clone()
@@ -78,7 +73,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &Block,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<Block, BuildError> {
     let (instructions, terminal_instruction) = transform_instructions(
         context,
@@ -94,7 +89,7 @@ fn transform_instructions(
     context: &mut Context,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
     Ok(match instructions {
         [] => match terminal_instruction {
@@ -155,6 +150,7 @@ fn transform_instructions(
                     }
 
                     let environment = get_continuation_environment(
+                        call,
                         instructions,
                         terminal_instruction,
                         local_variables,
@@ -193,11 +189,7 @@ fn transform_instructions(
                 context,
                 instructions,
                 terminal_instruction,
-                &if let Some((name, type_)) = instruction.value() {
-                    local_variables.insert(name, type_)
-                } else {
-                    local_variables.clone()
-                },
+                local_variables,
             )?;
 
             (
@@ -313,13 +305,15 @@ fn create_continuation(
 //
 // TODO Sort fields to omit extra stack operations.
 fn get_continuation_environment<'a>(
+    call: &Call,
     instructions: &'a [Instruction],
     terminal_instruction: &'a TerminalInstruction,
-    local_variables: &hamt::Map<&str, Type>,
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> Vec<(&'a str, Type)> {
     [CONTINUATION_ARGUMENT_NAME]
         .into_iter()
         .chain(free_variable::collect(instructions, terminal_instruction))
+        .filter(|name| *name != call.name())
         .flat_map(|name| local_variables.get(name).map(|type_| (name, type_.clone())))
         .collect()
 }
