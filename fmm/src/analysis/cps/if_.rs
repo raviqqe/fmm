@@ -346,15 +346,15 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) -> Module {
-        let flattened = flatten(module);
+        let flattened_module = flatten(module);
 
-        name::check(&flattened).unwrap();
-        type_check::check(&flattened).unwrap();
+        name::check(&flattened_module).unwrap();
+        type_check::check(&flattened_module).unwrap();
 
         // Test reproducibility.
-        assert_eq!(flattened, flatten(module));
+        assert_eq!(flattened_module, flatten(module));
 
-        flattened
+        flattened_module
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
