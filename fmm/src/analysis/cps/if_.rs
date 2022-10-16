@@ -766,7 +766,7 @@ mod tests {
                                 Block::new(
                                     vec![
                                         Call::new(
-                                            function_type.clone(),
+                                            function_type,
                                             Variable::new("f"),
                                             vec![Primitive::Float64(42.0).into()],
                                             "x",
@@ -780,7 +780,7 @@ mod tests {
                                 Block::new(
                                     vec![AllocateStack::new(types::Primitive::Float64, "p.else")
                                         .into()],
-                                    Return::new(pointer_type.clone(), Variable::new("p.else")),
+                                    Return::new(pointer_type, Variable::new("p.else")),
                                 ),
                                 "",
                             )
@@ -818,7 +818,7 @@ mod tests {
                                     Primitive::Boolean(true),
                                     Block::new(
                                         vec![Call::new(
-                                            function_type.clone(),
+                                            function_type,
                                             Variable::new("f"),
                                             vec![Primitive::Float64(42.0).into()],
                                             "x",
@@ -850,7 +850,7 @@ mod tests {
                         .into(),
                         AllocateStack::new(types::Primitive::Float64, "p").into(),
                     ],
-                    Return::new(pointer_type.clone(), Variable::new("p")),
+                    Return::new(pointer_type, Variable::new("p")),
                 ),
             )],
         ));
