@@ -675,6 +675,117 @@ mod tests {
     }
 
     #[test]
+    fn flatten_nested_if_with_duplicated_continuation_of_instruction() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        assert_eq!(
+            flatten_module(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![If::new(
+                                        types::Primitive::Float64,
+                                        Primitive::Boolean(true),
+                                        Block::new(
+                                            vec![Call::new(
+                                                function_type.clone(),
+                                                Variable::new("f"),
+                                                vec![Primitive::Float64(42.0).into()],
+                                                "x",
+                                            )
+                                            .into()],
+                                            Branch::new(
+                                                types::Primitive::Float64,
+                                                Variable::new("x")
+                                            ),
+                                        ),
+                                        Block::new(
+                                            vec![],
+                                            Branch::new(
+                                                types::Primitive::Float64,
+                                                Variable::new("x")
+                                            ),
+                                        ),
+                                        "y",
+                                    )
+                                    .into()],
+                                    Branch::new(types::Primitive::Float64, Variable::new("y")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "z",
+                            )
+                            .into(),
+                            AllocateStack::new(types::Primitive::Float64, "p").into()
+                        ],
+                        Return::new(types::Primitive::Float64, Variable::new("z")),
+                    ),
+                )],
+            )),
+            Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("f", function_type.clone())],
+                vec![],
+                vec![create_function_definition(
+                    "g",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![If::new(
+                                    void_type(),
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![
+                                            Call::new(
+                                                function_type.clone(),
+                                                Variable::new("f"),
+                                                vec![Primitive::Float64(42.0).into()],
+                                                "x",
+                                            )
+                                            .into(),
+                                            AllocateStack::new(types::Primitive::Float64, "p")
+                                                .into()
+                                        ],
+                                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                                    ),
+                                    Block::new(
+                                        vec![AllocateStack::new(types::Primitive::Float64, "p")
+                                            .into()],
+                                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                                    ),
+                                    "",
+                                )
+                                .into()],
+                                TerminalInstruction::Unreachable,
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                )]
+            )
+        );
+    }
+
+    #[test]
     fn flatten_if_with_multiple_free_variables() {
         let function_type = create_function_type(
             vec![types::Primitive::Float64.into()],
