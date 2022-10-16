@@ -772,9 +772,10 @@ mod tests {
                                             "x",
                                         )
                                         .into(),
-                                        AllocateStack::new(types::Primitive::Float64, "p").into()
+                                        AllocateStack::new(types::Primitive::Float64, "p.then")
+                                            .into()
                                     ],
-                                    Return::new(pointer_type.clone(), Variable::new("p")),
+                                    Return::new(pointer_type.clone(), Variable::new("p.then")),
                                 ),
                                 Block::new(
                                     vec![AllocateStack::new(types::Primitive::Float64, "p.else")
