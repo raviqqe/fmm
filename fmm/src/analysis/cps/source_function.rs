@@ -327,9 +327,7 @@ fn get_continuation_environment<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analysis::format;
-    use crate::types;
-    use crate::types::void_type;
+    use crate::{analysis::format, types, types::void_type};
     use pretty_assertions::assert_eq;
 
     fn transform_module(module: &Module) -> Result<Module, CpsError> {
