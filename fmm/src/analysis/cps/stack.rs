@@ -18,11 +18,11 @@ thread_local! {
     });
 }
 
-pub fn stack_type() -> Type {
+pub fn type_() -> Type {
     STACK_TYPE.with(|type_| (**type_).clone())
 }
 
-pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
+pub fn create(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
     let capacity = Primitive::PointerInteger(DEFAULT_STACK_SIZE);
     let pointer = builder.allocate_heap(capacity);
     let record = build::record(vec![
@@ -37,7 +37,7 @@ pub fn create_stack(builder: &InstructionBuilder) -> Result<TypedExpression, Bui
     Ok(pointer)
 }
 
-pub fn destroy_stack(
+pub fn destroy(
     builder: &InstructionBuilder,
     stack_pointer: impl Into<TypedExpression>,
 ) -> Result<(), BuildError> {
@@ -46,7 +46,7 @@ pub fn destroy_stack(
     Ok(())
 }
 
-pub fn push_to_stack(
+pub fn push(
     builder: &InstructionBuilder,
     stack: impl Into<TypedExpression>,
     element: impl Into<TypedExpression>,
@@ -58,7 +58,7 @@ pub fn push_to_stack(
     let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
-        get_element_size(builder, element.type_())?,
+        element_size(builder, element.type_())?,
     )?;
     let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
 
@@ -89,14 +89,14 @@ pub fn push_to_stack(
 
     builder.store(
         element.clone(),
-        get_element_pointer(builder, &stack, element.type_())?,
+        element_pointer(builder, &stack, element.type_())?,
     );
     builder.store(new_size, build::record_address(stack, 1)?);
 
     Ok(())
 }
 
-pub fn pop_from_stack(
+pub fn pop(
     builder: &InstructionBuilder,
     stack: impl Into<TypedExpression>,
     type_: impl Into<Type>,
@@ -108,15 +108,15 @@ pub fn pop_from_stack(
         build::arithmetic_operation(
             ArithmeticOperator::Subtract,
             builder.load(build::record_address(stack.clone(), 1)?)?,
-            get_element_size(builder, &type_)?,
+            element_size(builder, &type_)?,
         )?,
         build::record_address(stack.clone(), 1)?,
     );
 
-    builder.load(get_element_pointer(builder, &stack, &type_)?)
+    builder.load(element_pointer(builder, &stack, &type_)?)
 }
 
-fn get_element_pointer(
+fn element_pointer(
     builder: &InstructionBuilder,
     stack: &TypedExpression,
     type_: &Type,
@@ -131,10 +131,7 @@ fn get_element_pointer(
     .into())
 }
 
-fn get_element_size(
-    builder: &InstructionBuilder,
-    type_: &Type,
-) -> Result<TypedExpression, BuildError> {
+fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpression, BuildError> {
     align_size(builder, build::size_of(type_.clone()))
 }
 

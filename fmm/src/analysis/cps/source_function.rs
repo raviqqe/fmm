@@ -1,9 +1,4 @@
-use super::{
-    context::CpsContext,
-    error::CpsError,
-    free_variable,
-    stack::{pop_from_stack, push_to_stack, stack_type},
-};
+use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
     analysis::cps::continuation_type,
     build::{self, BuildError, InstructionBuilder},
@@ -52,7 +47,7 @@ fn transform_function_definition(
             FunctionDefinition::new(
                 definition.name(),
                 [
-                    Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+                    Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
                     Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
                 ]
                 .into_iter()
@@ -166,9 +161,9 @@ fn transform_instructions(
                     );
                     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-                    push_to_stack(
+                    stack::push(
                         &builder,
-                        build::variable(STACK_ARGUMENT_NAME, stack_type()),
+                        build::variable(STACK_ARGUMENT_NAME, stack::type_()),
                         get_environment_record(&environment),
                     )?;
 
@@ -272,7 +267,7 @@ fn create_continuation(
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
-            Argument::new(STACK_ARGUMENT_NAME, stack_type()),
+            Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
             Argument::new(call.name(), call.type_().result().clone()),
         ],
         context.cps.result_type().clone(),
@@ -281,9 +276,9 @@ fn create_continuation(
                 let builder = InstructionBuilder::new(context.cps.name_generator());
 
                 let environment_record_type = get_environment_record(environment).type_().clone();
-                let environment_record = pop_from_stack(
+                let environment_record = stack::pop(
                     &builder,
-                    build::variable(STACK_ARGUMENT_NAME, stack_type()),
+                    build::variable(STACK_ARGUMENT_NAME, stack::type_()),
                     environment_record_type.clone(),
                 )?;
 
@@ -327,4 +322,279 @@ fn get_continuation_environment<'a>(
         .chain(free_variable::collect(instructions, terminal_instruction))
         .flat_map(|name| local_variables.get(name).map(|type_| (name, type_.clone())))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{analysis::format, types, types::void_type};
+    use pretty_assertions::assert_eq;
+
+    fn transform_module(module: &Module) -> Result<Module, CpsError> {
+        transform(&CpsContext::new(void_type()), module)
+    }
+
+    #[test]
+    fn transform_empty() {
+        assert_eq!(
+            transform_module(&Module::new(vec![], vec![], vec![], vec![])),
+            Ok(Module::new(vec![], vec![], vec![], vec![]))
+        );
+    }
+
+    #[test]
+    fn transform_no_instruction() {
+        assert_eq!(
+            transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(vec![], TerminalInstruction::Unreachable,),
+                    Default::default()
+                )],
+            )),
+            Ok(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+                        Argument::new(
+                            CONTINUATION_ARGUMENT_NAME,
+                            continuation_type::compile(
+                                &types::Primitive::Float64.into(),
+                                &void_type().into()
+                            )
+                        )
+                    ],
+                    void_type(),
+                    Block::new(vec![], TerminalInstruction::Unreachable,),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Tail)
+                )],
+            ))
+        );
+    }
+
+    #[test]
+    fn transform_if() {
+        assert_eq!(
+            transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "_",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+                        Argument::new(
+                            CONTINUATION_ARGUMENT_NAME,
+                            continuation_type::compile(
+                                &types::Primitive::Float64.into(),
+                                &void_type().into()
+                            )
+                        )
+                    ],
+                    void_type(),
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "_",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Tail)
+                )],
+            ))
+        );
+    }
+
+    #[test]
+    fn transform_tail_call() {
+        assert_eq!(
+            transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::Float64,
+                                types::CallingConvention::Source
+                            ),
+                            Variable::new("f"),
+                            vec![],
+                            "x",
+                        )
+                        .into()],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+                        Argument::new(
+                            CONTINUATION_ARGUMENT_NAME,
+                            continuation_type::compile(
+                                &types::Primitive::Float64.into(),
+                                &void_type().into()
+                            )
+                        )
+                    ],
+                    void_type(),
+                    Block::new(
+                        vec![Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::Float64,
+                                types::CallingConvention::Source
+                            ),
+                            Variable::new("f"),
+                            vec![Variable::new("_s").into(), Variable::new("_k").into()],
+                            "_k_0",
+                        )
+                        .into()],
+                        Return::new(void_type(), Variable::new("_k_0")),
+                    ),
+                    FunctionDefinitionOptions::new()
+                        .set_calling_convention(types::CallingConvention::Tail)
+                )],
+            ))
+        );
+    }
+
+    #[test]
+    fn transform_non_tail_call() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "x",
+                            )
+                            .into(),
+                            Store::new(
+                                types::Primitive::Float64,
+                                Undefined::new(types::Primitive::Float64),
+                                Variable::new("x")
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
+    }
+
+    #[test]
+    fn transform_non_tail_call_in_if() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![
+                                    Call::new(
+                                        types::Function::new(
+                                            vec![],
+                                            types::Primitive::Float64,
+                                            types::CallingConvention::Source
+                                        ),
+                                        Variable::new("f"),
+                                        vec![],
+                                        "x",
+                                    )
+                                    .into(),
+                                    Store::new(
+                                        types::Primitive::Float64,
+                                        Undefined::new(types::Primitive::Float64),
+                                        Variable::new("x")
+                                    )
+                                    .into()
+                                ],
+                                Return::new(types::Primitive::Float64, Variable::new("x"))
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "_",
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
+    }
 }
