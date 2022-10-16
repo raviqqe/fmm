@@ -7,26 +7,25 @@ expression: "format::format_module(&transform_module(&Module::new(vec![], vec![]
     (block
       (if true
         (block
-          (load (record-address _s 0) _k_1)
-          (load (record-address _s 1) _k_2)
-          (call _fmm_stack_align_size (size-of record) _k_3)
-          (call _fmm_stack_extend _s _k_3 _k_4)
-          (store (record _k) (bit-cast (pointer-address _k_1 _k_2)))
-          (call f _s _k_5 _k_0)
+          (load (record-address _s 1) _k_1)
+          (call _fmm_stack_extend _s (size-of record) _k_2)
+          (load (record-address _s 0) _k_3)
+          (store (record _k) (bit-cast (pointer-address _k_3 _k_1)))
+          (call f _s _k_4 _k_0)
           (return _k_0))
         (block
           (unreachable))
         _)
       (unreachable)))
-  (function _k_5 _s x
+  (function _k_4 _s x
     (block
-      (load (record-address _s 1) _k_7)
-      (call _fmm_stack_align_size (size-of record) _k_8)
-      (store (- _k_7 _k_8) (record-address _s 1))
+      (load (record-address _s 1) _k_6)
+      (call _fmm_stack_align_size (size-of record) _k_7)
+      (store (- _k_6 _k_7) (record-address _s 1))
+      (load (record-address _s 1) _k_8)
       (load (record-address _s 0) _k_9)
-      (load (record-address _s 1) _k_a)
-      (load (bit-cast (pointer-address _k_9 _k_a)) _k_b)
-      (deconstruct-record _k_b 0 _k)
+      (load (bit-cast (pointer-address _k_9 _k_8)) _k_a)
+      (deconstruct-record _k_a 0 _k)
       (store undefined x)
-      (call _k _s x _k_6)
-      (return _k_6))))
+      (call _k _s x _k_5)
+      (return _k_5))))

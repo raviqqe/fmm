@@ -68,7 +68,7 @@ pub fn push(
                 types::CallingConvention::Target,
             ),
         ),
-        vec![stack.clone(), element_size(builder, element.type_())?],
+        vec![stack.clone(), build::size_of(element.type_().clone())],
     )?;
 
     builder.store(
@@ -91,7 +91,7 @@ pub fn pop(
         build::arithmetic_operation(
             ArithmeticOperator::Subtract,
             builder.load(build::record_address(stack.clone(), 1)?)?,
-            element_size(builder, &type_)?,
+            align_size(builder, build::size_of(type_.clone()))?,
         )?,
         build::record_address(stack.clone(), 1)?,
     );
@@ -137,10 +137,6 @@ fn element_pointer(
     .into())
 }
 
-fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpression, BuildError> {
-    align_size(builder, build::size_of(type_.clone()))
-}
-
 fn align_size(
     builder: &InstructionBuilder,
     size: impl Into<TypedExpression>,
@@ -169,7 +165,10 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
-        build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+        align_size(
+            &builder,
+            build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+        )?,
     )?;
     let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
 

@@ -7,43 +7,43 @@ expression: "format::format_module(&transform(&Module::new(vec![],\n            
     (block
       (if true
         (block
-          (load (record-address _s 0) _k_1)
-          (load (record-address _s 1) _k_2)
-          (call _fmm_stack_align_size (size-of record) _k_3)
-          (call _fmm_stack_extend _s _k_3 _k_4)
-          (store (record _k) (bit-cast (pointer-address _k_1 _k_2)))
-          (call f _s _k_5 42 _k_0)
+          (load (record-address _s 1) _k_1)
+          (call _fmm_stack_extend _s (size-of record) _k_2)
+          (load (record-address _s 0) _k_3)
+          (store (record _k) (bit-cast (pointer-address _k_3 _k_1)))
+          (call f _s _k_4 42 _k_0)
           (return _k_0))
         (block
           (unreachable))
         )
       (unreachable)))
-  (function _k_5 _s x
+  (function _k_4 _s x
     (block
-      (load (record-address _s 1) _k_7)
-      (call _fmm_stack_align_size (size-of record) _k_8)
-      (store (- _k_7 _k_8) (record-address _s 1))
+      (load (record-address _s 1) _k_6)
+      (call _fmm_stack_align_size (size-of record) _k_7)
+      (store (- _k_6 _k_7) (record-address _s 1))
+      (load (record-address _s 1) _k_8)
       (load (record-address _s 0) _k_9)
-      (load (record-address _s 1) _k_a)
-      (load (bit-cast (pointer-address _k_9 _k_a)) _k_b)
-      (deconstruct-record _k_b 0 _k)
-      (call _k _s (+ x x) _k_6)
-      (return _k_6)))
+      (load (bit-cast (pointer-address _k_9 _k_8)) _k_a)
+      (deconstruct-record _k_a 0 _k)
+      (call _k _s (+ x x) _k_5)
+      (return _k_5)))
   (function _fmm_stack_extend s e
     (block
       (load (record-address s 1) x0)
-      (load (record-address s 2) x1)
-      (if (> (+ x0 e) x1)
+      (call _fmm_stack_align_size e x1)
+      (load (record-address s 2) x2)
+      (if (> (+ x0 x1) x2)
         (block
-          (load (record-address s 0) x2)
-          (reallocate-heap x2 (* x1 2) x3)
-          (store x3 (record-address s 0))
-          (store (* x1 2) (record-address s 2))
+          (load (record-address s 0) x3)
+          (reallocate-heap x3 (* x2 2) x4)
+          (store x4 (record-address s 0))
+          (store (* x2 2) (record-address s 2))
           (branch (record)))
         (block
           (branch (record)))
-        x4)
-      (store (+ x0 e) (record-address s 1))
+        x5)
+      (store (+ x0 x1) (record-address s 1))
       (return (record))))
   (function _fmm_stack_align_size size
     (block
