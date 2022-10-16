@@ -597,4 +597,63 @@ mod tests {
             .unwrap()
         ));
     }
+
+    #[test]
+    fn transform_two_calls() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "x",
+                            )
+                            .into(),
+                            Load::new(
+                                types::Primitive::Float64,
+                                Undefined::new(types::Pointer::new(types::Primitive::Float64)),
+                                "y",
+                            )
+                            .into(),
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "z",
+                            )
+                            .into()
+                        ],
+                        Return::new(
+                            types::Primitive::Float64,
+                            ArithmeticOperation::new(
+                                types::Primitive::Float64,
+                                ArithmeticOperator::Add,
+                                Variable::new("y"),
+                                Variable::new("z")
+                            )
+                        ),
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
+    }
 }
