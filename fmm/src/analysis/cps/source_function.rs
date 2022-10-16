@@ -261,7 +261,7 @@ fn create_continuation(
     if name == "_k_67" {
         dbg!(&name);
         dbg!(environment.iter().map(|x| x.0).collect::<Vec<_>>());
-        println!(
+        eprintln!(
             "{}",
             format::format_block(&Block::new(
                 instructions.to_vec(),
