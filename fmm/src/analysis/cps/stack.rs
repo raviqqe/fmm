@@ -132,40 +132,20 @@ fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpre
     align_size(builder, build::size_of(type_.clone()))
 }
 
-// TODO Support 16-byte aligned data.
 fn align_size(
     builder: &InstructionBuilder,
     size: impl Into<TypedExpression>,
 ) -> Result<TypedExpression, BuildError> {
-    let size = size.into();
-    let alignment = build::align_of(types::Primitive::PointerInteger);
-
-    builder.if_(
-        build::comparison_operation(
-            ComparisonOperator::Equal,
-            size.clone(),
-            Primitive::PointerInteger(0),
-        )?,
-        |builder| Ok(builder.branch(Primitive::PointerInteger(0))),
-        |builder| {
-            Ok(builder.branch(build::arithmetic_operation(
-                ArithmeticOperator::Multiply,
-                build::arithmetic_operation(
-                    ArithmeticOperator::Add,
-                    build::arithmetic_operation(
-                        ArithmeticOperator::Divide,
-                        build::arithmetic_operation(
-                            ArithmeticOperator::Subtract,
-                            size.clone(),
-                            Primitive::PointerInteger(1),
-                        )?,
-                        alignment.clone(),
-                    )?,
-                    Primitive::PointerInteger(1),
-                )?,
-                alignment.clone(),
-            )?))
-        },
+    builder.call(
+        build::variable(
+            ALIGN_SIZE_FUNCTION_NAME,
+            types::Function::new(
+                vec![types::Primitive::PointerInteger.into()],
+                types::Primitive::PointerInteger,
+                types::CallingConvention::Target,
+            ),
+        ),
+        vec![size.into()],
     )
 }
 
@@ -226,6 +206,7 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     ))
 }
 
+// TODO Support 16-byte aligned data.
 fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
     const SIZE_NAME: &str = "size";
 
