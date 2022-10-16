@@ -175,6 +175,7 @@ fn transform_instructions(
                                     instructions,
                                     terminal_instruction,
                                     &environment,
+                                    local_variables,
                                 )?,
                                 &result_name,
                             )
@@ -244,6 +245,7 @@ fn create_continuation(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     environment: &[(&str, Type)],
+    local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
     let block = transform_block(
@@ -256,15 +258,18 @@ fn create_continuation(
             .collect(),
     )?;
 
-    dbg!(&name);
-    dbg!(environment.iter().map(|x| x.0).collect::<Vec<_>>());
-    println!(
-        "{}",
-        format::format_block(&Block::new(
-            instructions.to_vec(),
-            terminal_instruction.clone()
-        ))
-    );
+    if name == "_k_67" {
+        dbg!(&name);
+        dbg!(environment.iter().map(|x| x.0).collect::<Vec<_>>());
+        println!(
+            "{}",
+            format::format_block(&Block::new(
+                instructions.to_vec(),
+                terminal_instruction.clone()
+            ))
+        );
+        dbg!(&local_variables);
+    }
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
