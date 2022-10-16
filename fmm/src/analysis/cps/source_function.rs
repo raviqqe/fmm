@@ -251,11 +251,7 @@ fn create_continuation(
     let block = transform_block(
         context,
         &Block::new(instructions.to_vec(), terminal_instruction.clone()),
-        &environment
-            .iter()
-            .cloned()
-            .chain([(call.name(), call.type_().result().clone())])
-            .collect(),
+        local_variables,
     )?;
 
     context.function_definitions.push(FunctionDefinition::new(
