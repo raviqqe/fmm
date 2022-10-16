@@ -31,7 +31,7 @@ pub fn flatten(module: &Module) -> Module {
             .collect::<Vec<_>>()
             .into_iter()
             .chain(context.function_definitions)
-            .collect::<Vec<_>>(),
+            .collect(),
     )
 }
 
@@ -91,7 +91,7 @@ fn transform_instructions(
                     .iter()
                     .flat_map(|instruction: &Instruction| instruction.value().map(|(name, _)| name))
                     .collect::<FnvHashSet<_>>();
-                let rename_variable = |name: &str, suffix: &str| {
+                let rename_variable = |name: &str, suffix| {
                     if value_names.contains(name) {
                         format!("{}.{}", name, suffix)
                     } else {
