@@ -202,13 +202,9 @@ mod tests {
             vec![types::Primitive::Float64.into()],
             types::Primitive::Float64,
         );
-        let cps_function_type = create_cps_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
 
-        pretty_assertions::assert_eq!(
-            transform(
+        insta::assert_snapshot!(format::format_module(
+            &transform(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("f", function_type.clone())],
@@ -229,45 +225,10 @@ mod tests {
                         ),
                     )],
                 ),
-                void_type()
-            ),
-            Ok(Module::new(
-                vec![],
-                vec![FunctionDeclaration::new("f", cps_function_type.clone())],
-                vec![],
-                vec![FunctionDefinition::new(
-                    "g",
-                    vec![
-                        Argument::new("_s", type_()),
-                        Argument::new(
-                            "_k",
-                            types::Function::new(
-                                vec![type_(), types::Primitive::Float64.into()],
-                                void_type(),
-                                CallingConvention::Tail,
-                            )
-                        ),
-                    ],
-                    void_type(),
-                    Block::new(
-                        vec![Call::new(
-                            cps_function_type,
-                            Variable::new("f"),
-                            vec![
-                                Variable::new("_s").into(),
-                                Variable::new("_k").into(),
-                                Primitive::Float64(42.0).into()
-                            ],
-                            "_k_0",
-                        )
-                        .into()],
-                        Return::new(void_type(), Variable::new("_k_0")),
-                    ),
-                    FunctionDefinitionOptions::new()
-                        .set_calling_convention(CallingConvention::Tail)
-                )],
-            ))
-        );
+                void_type(),
+            )
+            .unwrap()
+        ));
     }
 
     #[test]
