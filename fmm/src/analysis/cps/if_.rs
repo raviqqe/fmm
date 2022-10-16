@@ -101,7 +101,7 @@ fn transform_instructions(
                 let rename_then = |name: &str| rename_variable(name, "then");
                 let rename_else = |name: &str| rename_variable(name, "else");
 
-                // Allow inlining a instruction.
+                // Allow inlining an instruction.
                 if rest_instructions.len() <= 1 {
                     rest_instructions = vec![If::new(
                         void_type(),
