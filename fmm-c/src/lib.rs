@@ -307,8 +307,8 @@ mod tests {
         std::fs::write(&file_path, source).unwrap();
         let output = std::process::Command::new("clang")
             .arg("-Werror") // cspell:disable-line
-            .arg("-Wno-incompatible-pointer-types-discards-qualifiers") // cspell:disable-line
-            .arg("-Wno-parentheses-equality") // cspell:disable-line
+            .arg("-Wno-incompatible-pointer-types-discards-qualifiers")
+            .arg("-Wno-parentheses-equality")
             .arg("-o")
             .arg(directory.path().join("foo.o"))
             .arg("-c")
