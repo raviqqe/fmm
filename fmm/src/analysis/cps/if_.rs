@@ -101,8 +101,12 @@ fn transform_instructions(
                 let rename_then = |name: &str| rename_variable(name, "then");
                 let rename_else = |name: &str| rename_variable(name, "else");
 
-                // Allow inlining a instruction.
-                if rest_instructions.len() <= 1 {
+                // Allow inlining an instruction. Skip if any rest instructions contain blocks.
+                if rest_instructions.len() <= 1
+                    && !rest_instructions
+                        .iter()
+                        .any(|instruction| instruction.has_blocks())
+                {
                     rest_instructions = vec![If::new(
                         void_type(),
                         if_.condition().clone(),
@@ -702,6 +706,58 @@ mod tests {
                 )]
             )
         );
+    }
+
+    #[test]
+    fn flatten_if_with_continuation_of_if() {
+        let function_type = create_function_type(
+            vec![types::Primitive::Float64.into()],
+            types::Primitive::Float64,
+        );
+
+        flatten_module(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                types::Primitive::Float64,
+                Block::new(
+                    vec![
+                        If::new(
+                            types::Primitive::Float64,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Call::new(
+                                    function_type,
+                                    Variable::new("f"),
+                                    vec![Primitive::Float64(42.0).into()],
+                                    "x",
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::Float64, Variable::new("x")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "y",
+                        )
+                        .into(),
+                        If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![AllocateStack::new(types::Primitive::Float64, "x").into()],
+                                Branch::new(void_type(), void_value()),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "",
+                        )
+                        .into(),
+                    ],
+                    Return::new(types::Primitive::Float64, Variable::new("y")),
+                ),
+            )],
+        ));
     }
 
     #[test]
