@@ -783,6 +783,69 @@ mod tests {
     }
 
     #[test]
+    fn flatten_nested_if_with_duplicated_continuation_of_instruction() {
+        let pointer_type = types::Pointer::new(types::Primitive::Float64);
+        let function_type =
+            create_function_type(vec![types::Primitive::Float64.into()], pointer_type.clone());
+
+        flatten_module(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![],
+                pointer_type.clone(),
+                Block::new(
+                    vec![
+                        If::new(
+                            pointer_type.clone(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![If::new(
+                                    pointer_type.clone(),
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![Call::new(
+                                            function_type.clone(),
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into()],
+                                        Branch::new(pointer_type.clone(), Variable::new("x")),
+                                    ),
+                                    Block::new(
+                                        vec![],
+                                        Branch::new(
+                                            pointer_type.clone(),
+                                            Undefined::new(pointer_type.clone()),
+                                        ),
+                                    ),
+                                    "y",
+                                )
+                                .into()],
+                                Branch::new(pointer_type.clone(), Variable::new("y")),
+                            ),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    pointer_type.clone(),
+                                    Undefined::new(pointer_type.clone()),
+                                ),
+                            ),
+                            "z",
+                        )
+                        .into(),
+                        AllocateStack::new(types::Primitive::Float64, "p").into(),
+                    ],
+                    Return::new(pointer_type.clone(), Variable::new("p")),
+                ),
+            )],
+        ));
+    }
+
+    #[test]
     fn flatten_if_with_multiple_free_variables() {
         let function_type = create_function_type(
             vec![types::Primitive::Float64.into()],
