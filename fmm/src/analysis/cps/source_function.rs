@@ -258,18 +258,6 @@ fn create_continuation(
             .collect(),
     )?;
 
-    if name == "_k_67" {
-        dbg!(&name);
-        dbg!(environment.iter().map(|x| x.0).collect::<Vec<_>>());
-        eprintln!(
-            "{}",
-            format::format_block(&Block::new(
-                instructions.to_vec(),
-                terminal_instruction.clone()
-            ))
-        );
-        dbg!(local_variables.keys().collect::<Vec<_>>());
-    }
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
