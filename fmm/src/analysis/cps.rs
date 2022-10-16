@@ -312,6 +312,61 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn transform_call_with_continuation_with_free_variable_from_if() {
+        let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
+        let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
+
+        test_transformation(&Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![],
+            vec![create_function_definition(
+                "g",
+                vec![Argument::new(
+                    "p",
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                )],
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![
+                        Load::new(types::Primitive::PointerInteger, Variable::new("p"), "x").into(),
+                        If::new(
+                            pointer_type.clone(),
+                            Primitive::Boolean(true),
+                            Block::new(vec![], Branch::new(pointer_type, Variable::new("p"))),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "q",
+                        )
+                        .into(),
+                        Call::new(function_type, Variable::new("f"), vec![], "y").into(),
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("x"),
+                            Variable::new("p"),
+                        )
+                        .into(),
+                        Store::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("y"),
+                            Variable::new("q"),
+                        )
+                        .into(),
+                    ],
+                    Return::new(
+                        types::Primitive::PointerInteger,
+                        ArithmeticOperation::new(
+                            types::Primitive::PointerInteger,
+                            ArithmeticOperator::Add,
+                            Variable::new("x"),
+                            Variable::new("y"),
+                        ),
+                    ),
+                ),
+            )],
+        ));
+    }
+
     mod if_ {
         use super::*;
 
