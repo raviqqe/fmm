@@ -730,7 +730,7 @@ mod tests {
                             Primitive::Boolean(true),
                             Block::new(
                                 vec![Call::new(
-                                    function_type.clone(),
+                                    function_type,
                                     Variable::new("f"),
                                     vec![Primitive::Float64(42.0).into()],
                                     "x",
