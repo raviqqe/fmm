@@ -10,6 +10,10 @@ pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
 
     collect_from_block(definition.body(), &mut variables);
 
+    if definition.name() == "_fmm_363" {
+        dbg!(definition.name());
+        dbg!(variables.keys().collect::<Vec<_>>());
+    }
     variables
 }
 
