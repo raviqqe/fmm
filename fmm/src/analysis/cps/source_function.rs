@@ -29,10 +29,10 @@ pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsErr
             .function_definitions()
             .iter()
             .map(|definition| transform_function_definition(&mut context, definition))
-            .collect::<Vec<_>>()
+            .collect::<Result<Vec<_>, _>>()?
             .into_iter()
-            .chain(context.function_definitions.drain(..).map(Ok))
-            .collect::<Result<_, _>>()?,
+            .chain(context.function_definitions)
+            .collect(),
     ))
 }
 
