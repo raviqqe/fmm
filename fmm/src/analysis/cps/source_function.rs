@@ -1,6 +1,6 @@
 use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
-    analysis::{cps::continuation_type, format, local_variable},
+    analysis::{cps::continuation_type, local_variable},
     build::{self, BuildError, InstructionBuilder},
     ir::*,
     types::{CallingConvention, Type},
@@ -52,7 +52,7 @@ fn transform_function_definition(
                 definition.name(),
                 [
                     Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
-                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
+                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type),
                 ]
                 .into_iter()
                 .chain(definition.arguments().iter().cloned())
