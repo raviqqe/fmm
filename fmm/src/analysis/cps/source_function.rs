@@ -599,7 +599,7 @@ mod tests {
     }
 
     #[test]
-    fn transform_two_calls() {
+    fn transform_two_calls_with_free_variable_inbetween() {
         insta::assert_snapshot!(format::format_module(
             &transform_module(&Module::new(
                 vec![],
