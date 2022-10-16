@@ -17,18 +17,19 @@ expression: "format::format_module(&transform(&Module::new(vec![],\n            
   (function _fmm_stack_extend s e
     (block
       (load (record-address s 1) x0)
-      (load (record-address s 2) x1)
-      (if (> (+ x0 e) x1)
+      (call _fmm_stack_align_size e x1)
+      (load (record-address s 2) x2)
+      (if (> (+ x0 x1) x2)
         (block
-          (load (record-address s 0) x2)
-          (reallocate-heap x2 (* x1 2) x3)
-          (store x3 (record-address s 0))
-          (store (* x1 2) (record-address s 2))
+          (load (record-address s 0) x3)
+          (reallocate-heap x3 (* x2 2) x4)
+          (store x4 (record-address s 0))
+          (store (* x2 2) (record-address s 2))
           (branch (record)))
         (block
           (branch (record)))
-        x4)
-      (store (+ x0 e) (record-address s 1))
+        x5)
+      (store (+ x0 x1) (record-address s 1))
       (return (record))))
   (function _fmm_stack_align_size size
     (block

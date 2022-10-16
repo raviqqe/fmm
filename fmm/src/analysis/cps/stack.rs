@@ -57,7 +57,7 @@ pub fn push(
 ) -> Result<(), BuildError> {
     let stack = stack.into();
     let element = element.into();
-    let pointer = element_pointer(builder, &stack, element.type_())?;
+    let size = builder.load(build::record_address(stack.clone(), 1)?)?;
 
     builder.call(
         build::variable(
@@ -68,10 +68,13 @@ pub fn push(
                 types::CallingConvention::Target,
             ),
         ),
-        vec![stack, element_size(builder, element.type_())?],
+        vec![stack.clone(), build::size_of(element.type_().clone())],
     )?;
 
-    builder.store(element, pointer);
+    builder.store(
+        element.clone(),
+        element_pointer(builder, &stack, &size, element.type_())?,
+    );
 
     Ok(())
 }
@@ -83,17 +86,15 @@ pub fn pop(
 ) -> Result<TypedExpression, BuildError> {
     let type_ = type_.into();
     let stack = stack.into();
+    let size = build::arithmetic_operation(
+        ArithmeticOperator::Subtract,
+        builder.load(build::record_address(stack.clone(), 1)?)?,
+        align_size(builder, build::size_of(type_.clone()))?,
+    )?;
 
-    builder.store(
-        build::arithmetic_operation(
-            ArithmeticOperator::Subtract,
-            builder.load(build::record_address(stack.clone(), 1)?)?,
-            element_size(builder, &type_)?,
-        )?,
-        build::record_address(stack.clone(), 1)?,
-    );
+    builder.store(size.clone(), build::record_address(stack.clone(), 1)?);
 
-    builder.load(element_pointer(builder, &stack, &type_)?)
+    builder.load(element_pointer(builder, &stack, &size.into(), &type_)?)
 }
 
 pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
@@ -116,20 +117,17 @@ pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
 fn element_pointer(
     builder: &InstructionBuilder,
     stack: &TypedExpression,
+    size: &TypedExpression,
     type_: &Type,
 ) -> Result<TypedExpression, BuildError> {
     Ok(build::bit_cast(
         types::Pointer::new(type_.clone()),
         build::pointer_address(
             builder.load(build::record_address(stack.clone(), 0)?)?,
-            builder.load(build::record_address(stack.clone(), 1)?)?,
+            size.clone(),
         )?,
     )
     .into())
-}
-
-fn element_size(builder: &InstructionBuilder, type_: &Type) -> Result<TypedExpression, BuildError> {
-    align_size(builder, build::size_of(type_.clone()))
 }
 
 fn align_size(
@@ -160,7 +158,10 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
-        build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+        align_size(
+            &builder,
+            build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+        )?,
     )?;
     let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
 
