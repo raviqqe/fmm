@@ -316,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn transform_two_calls_with_free_variable_inbetween() {
+    fn transform_free_variable_between_two_calls() {
         test_transformation(&Module::new(
             vec![],
             vec![],
