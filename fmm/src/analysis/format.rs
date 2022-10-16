@@ -29,7 +29,7 @@ fn format_function_definition(definition: &FunctionDefinition) -> String {
     )
 }
 
-fn format_block(block: &Block) -> String {
+pub fn format_block(block: &Block) -> String {
     let instructions = block
         .instructions()
         .iter()
