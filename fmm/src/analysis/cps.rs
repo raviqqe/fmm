@@ -23,6 +23,7 @@ pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module
     let module = source_function::transform(&context, &module)?;
     let module = target_function::transform(&context, &module)?;
     let module = function_type::transform(&module, context.result_type());
+    let module = stack::define_utility_functions(&module)?;
 
     name::check(&module)?;
     type_check::check(&module)?;
