@@ -1,6 +1,6 @@
 use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
-    analysis::{cps::continuation_type, local_variable},
+    analysis::{cps::continuation_type, format, local_variable},
     build::{self, BuildError, InstructionBuilder},
     ir::*,
     types::{CallingConvention, Type},
@@ -256,6 +256,15 @@ fn create_continuation(
             .collect(),
     )?;
 
+    dbg!(&name);
+    dbg!(environment.iter().map(|x| x.0).collect::<Vec<_>>());
+    println!(
+        "{}",
+        format::format_block(&Block::new(
+            instructions.to_vec(),
+            terminal_instruction.clone()
+        ))
+    );
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
