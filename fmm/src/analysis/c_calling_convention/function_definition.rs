@@ -76,18 +76,16 @@ fn transform_block(block: &Block, result_pointer: Option<(&str, &Type)>) -> Bloc
     if let (TerminalInstruction::Return(return_), Some((pointer_name, type_))) =
         (block.terminal_instruction(), result_pointer)
     {
-        Block::new(
-            instructions
-                .into_iter()
-                .chain([Store::new(
-                    type_.clone(),
-                    return_.expression().clone(),
-                    Variable::new(pointer_name),
-                )
-                .into()])
-                .collect(),
-            Return::new(void_type(), void_value()),
-        )
+        instructions.push(
+            Store::new(
+                type_.clone(),
+                return_.expression().clone(),
+                Variable::new(pointer_name),
+            )
+            .into(),
+        );
+
+        Block::new(instructions, Return::new(void_type(), void_value()))
     } else {
         Block::new(instructions, block.terminal_instruction().clone())
     }
