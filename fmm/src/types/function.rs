@@ -73,40 +73,109 @@ mod tests {
     use super::*;
     use crate::types::Primitive;
 
-    #[test]
-    fn equal_argument() {
-        let function = Function::new(
-            vec![Primitive::PointerInteger.into()],
-            Primitive::PointerInteger,
-            CallingConvention::Source,
-        );
+    mod equal {
+        use super::*;
 
-        assert_eq!(&function, &function);
-        assert_ne!(
-            function,
-            Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source)
-        );
+        #[test]
+        fn argument() {
+            let function = Function::new(
+                vec![Primitive::PointerInteger.into()],
+                Primitive::PointerInteger,
+                CallingConvention::Source,
+            );
+
+            assert_eq!(&function, &function);
+            assert_ne!(
+                function,
+                Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source)
+            );
+        }
+
+        #[test]
+        fn result() {
+            let function =
+                Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+
+            assert_eq!(&function, &function);
+            assert_ne!(
+                function,
+                Function::new(vec![], Primitive::Float64, CallingConvention::Source)
+            );
+        }
+
+        #[test]
+        fn calling_convention() {
+            let function =
+                Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+
+            assert_eq!(&function, &function);
+            assert_ne!(
+                function,
+                Function::new(vec![], Primitive::PointerInteger, CallingConvention::Target)
+            );
+        }
     }
 
-    #[test]
-    fn equal_result() {
-        let function = Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+    mod hash {
+        use super::*;
 
-        assert_eq!(&function, &function);
-        assert_ne!(
-            function,
-            Function::new(vec![], Primitive::Float64, CallingConvention::Source)
-        );
-    }
+        fn hash(value: &impl Hash) -> u64 {
+            let mut hasher = DefaultHasher::new();
 
-    #[test]
-    fn equal_calling_convention() {
-        let function = Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+            value.hash(&mut hasher);
 
-        assert_eq!(&function, &function);
-        assert_ne!(
-            function,
-            Function::new(vec![], Primitive::PointerInteger, CallingConvention::Target)
-        );
+            hasher.finish()
+        }
+
+        #[test]
+        fn argument() {
+            let function = Function::new(
+                vec![Primitive::PointerInteger.into()],
+                Primitive::PointerInteger,
+                CallingConvention::Source,
+            );
+
+            assert_eq!(hash(&function), hash(&function));
+            assert_ne!(
+                hash(&function),
+                hash(&Function::new(
+                    vec![],
+                    Primitive::PointerInteger,
+                    CallingConvention::Source
+                ))
+            );
+        }
+
+        #[test]
+        fn result() {
+            let function =
+                Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+
+            assert_eq!(hash(&function), hash(&function));
+            assert_ne!(
+                hash(&function),
+                hash(&Function::new(
+                    vec![],
+                    Primitive::Float64,
+                    CallingConvention::Source
+                ))
+            );
+        }
+
+        #[test]
+        fn calling_convention() {
+            let function =
+                Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+
+            assert_eq!(hash(&function), hash(&function));
+            assert_ne!(
+                hash(&function),
+                hash(&Function::new(
+                    vec![],
+                    Primitive::PointerInteger,
+                    CallingConvention::Target
+                ))
+            );
+        }
     }
 }

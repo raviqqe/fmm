@@ -51,11 +51,27 @@ mod tests {
     use super::*;
     use crate::types::Primitive;
 
+    fn hash(value: &impl Hash) -> u64 {
+        let mut hasher = DefaultHasher::new();
+
+        value.hash(&mut hasher);
+
+        hasher.finish()
+    }
+
     #[test]
     fn equal_field() {
         let record = Record::new(vec![Primitive::PointerInteger.into()]);
 
         assert_eq!(&record, &record);
         assert_ne!(record, Record::new(vec![]));
+    }
+
+    #[test]
+    fn hash_field() {
+        let record = Record::new(vec![Primitive::PointerInteger.into()]);
+
+        assert_eq!(hash(&record), hash(&record));
+        assert_ne!(hash(&record), hash(&Record::new(vec![])));
     }
 }
