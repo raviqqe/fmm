@@ -229,11 +229,11 @@ fn transform_call(call: &Call, continuation: impl Into<Expression>, result_name:
     )
 }
 
-fn get_environment_record(environment: &[(&str, Type)]) -> Record {
+fn get_environment_record(environment: &[(String, Type)]) -> Record {
     build::record(
         environment
             .iter()
-            .map(|(name, type_)| build::variable(*name, type_.clone()))
+            .map(|(name, type_)| build::variable(name.clone(), type_.clone()))
             .collect(),
     )
 }
@@ -243,7 +243,7 @@ fn create_continuation(
     call: &Call,
     instructions: Vec<Instruction>,
     terminal_instruction: TerminalInstruction,
-    environment: &[(&str, Type)],
+    environment: &[(String, Type)],
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
 
@@ -273,7 +273,7 @@ fn create_continuation(
                             environment_record_type.clone(),
                             environment_record.expression().clone(),
                             index,
-                            *name,
+                            name,
                         )
                         .into()
                     }))
@@ -297,14 +297,18 @@ fn create_continuation(
 // TODO Sort fields to omit extra stack operations.
 fn get_continuation_environment<'a>(
     call: &Call,
-    instructions: &'a [Instruction],
-    terminal_instruction: &'a TerminalInstruction,
+    instructions: &[Instruction],
+    terminal_instruction: &TerminalInstruction,
     local_variables: &FnvHashMap<&str, Type>,
-) -> Vec<(&'a str, Type)> {
+) -> Vec<(String, Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .into_iter()
         .filter(|name| *name != call.name())
-        .flat_map(|name| local_variables.get(name).map(|type_| (name, type_.clone())))
+        .flat_map(|name| {
+            local_variables
+                .get(name)
+                .map(|type_| (name.to_owned(), type_.clone()))
+        })
         .collect()
 }
 
