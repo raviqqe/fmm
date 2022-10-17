@@ -45,3 +45,17 @@ impl Hash for Record {
         self.0.hash.hash(hasher);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::Primitive;
+
+    #[test]
+    fn equal_field() {
+        let record = Record::new(vec![Primitive::PointerInteger.into()]);
+
+        assert_eq!(&record, &record);
+        assert_ne!(record, Record::new(vec![]));
+    }
+}

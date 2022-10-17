@@ -67,3 +67,46 @@ impl Hash for Function {
         self.0.hash.hash(hasher);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::Primitive;
+
+    #[test]
+    fn equal_argument() {
+        let function = Function::new(
+            vec![Primitive::PointerInteger.into()],
+            Primitive::PointerInteger,
+            CallingConvention::Source,
+        );
+
+        assert_eq!(&function, &function);
+        assert_ne!(
+            function,
+            Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source)
+        );
+    }
+
+    #[test]
+    fn equal_result() {
+        let function = Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+
+        assert_eq!(&function, &function);
+        assert_ne!(
+            function,
+            Function::new(vec![], Primitive::Float64, CallingConvention::Source)
+        );
+    }
+
+    #[test]
+    fn equal_calling_convention() {
+        let function = Function::new(vec![], Primitive::PointerInteger, CallingConvention::Source);
+
+        assert_eq!(&function, &function);
+        assert_ne!(
+            function,
+            Function::new(vec![], Primitive::PointerInteger, CallingConvention::Target)
+        );
+    }
+}
