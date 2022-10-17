@@ -91,7 +91,7 @@ fn transform_instructions(
     terminal_instruction: &TerminalInstruction,
     local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
-    let (non_tail_instructions, mut rest_instructions, mut rest_terminal_instruction) =
+    let (instructions, mut rest_instructions, mut rest_terminal_instruction) =
         match instructions.last() {
             Some(Instruction::Call(call))
                 if call.type_().calling_convention() == CallingConvention::Source
@@ -146,13 +146,15 @@ fn transform_instructions(
             },
         };
 
-    for (index, instruction) in non_tail_instructions.iter().enumerate().rev() {
+    for instruction in instructions.iter().rev() {
         if let Instruction::Call(call) = instruction {
             if call.type_().calling_convention() == CallingConvention::Source {
+                rest_instructions.reverse();
+
                 let environment = get_continuation_environment(
                     call,
-                    &instructions[index..],
-                    terminal_instruction,
+                    &rest_instructions,
+                    &rest_terminal_instruction,
                     local_variables,
                 );
                 let builder = InstructionBuilder::new(context.cps.name_generator());
@@ -165,7 +167,6 @@ fn transform_instructions(
 
                 let result_name = context.cps.name_generator().borrow_mut().generate();
 
-                rest_instructions.reverse();
                 rest_instructions = builder
                     .into_instructions()
                     .into_iter()
@@ -174,8 +175,8 @@ fn transform_instructions(
                         create_continuation(
                             context,
                             call,
-                            rest_instructions,
-                            rest_terminal_instruction,
+                            rest_instructions.clone(),
+                            rest_terminal_instruction.clone(),
                             &environment,
                         )?,
                         &result_name,
@@ -300,9 +301,8 @@ fn get_continuation_environment<'a>(
     terminal_instruction: &'a TerminalInstruction,
     local_variables: &FnvHashMap<&str, Type>,
 ) -> Vec<(&'a str, Type)> {
-    [CONTINUATION_ARGUMENT_NAME]
+    free_variable::collect(instructions, terminal_instruction)
         .into_iter()
-        .chain(free_variable::collect(instructions, terminal_instruction))
         .filter(|name| *name != call.name())
         .flat_map(|name| local_variables.get(name).map(|type_| (name, type_.clone())))
         .collect()
