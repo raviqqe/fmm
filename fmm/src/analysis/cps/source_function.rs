@@ -91,8 +91,31 @@ fn transform_instructions(
     terminal_instruction: &TerminalInstruction,
     local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
-    Ok(match instructions {
-        [] => match terminal_instruction {
+    let (mut rest_instructions, mut rest_terminal_instruction) = match instructions.last() {
+        Some(Instruction::Call(call))
+            if call.type_().calling_convention() == CallingConvention::Source
+                && terminal_instruction
+                    .to_return()
+                    .map(|return_| return_.expression() == &Variable::new(call.name()).into())
+                    .unwrap_or_default() =>
+        {
+            let result_name = context.cps.name_generator().borrow_mut().generate();
+
+            return Ok((
+                vec![transform_call(
+                    call,
+                    Variable::new(CONTINUATION_ARGUMENT_NAME),
+                    &result_name,
+                )
+                .into()],
+                Return::new(
+                    context.cps.result_type().clone(),
+                    Variable::new(&result_name),
+                )
+                .into(),
+            ));
+        }
+        _ => match terminal_instruction {
             TerminalInstruction::Return(return_) => {
                 let result_name = context.cps.name_generator().borrow_mut().generate();
 
@@ -118,101 +141,73 @@ fn transform_instructions(
                 (vec![], terminal_instruction.clone())
             }
         },
-        [instruction, ..] => {
-            let instructions = &instructions[1..];
+    };
 
-            if let Instruction::Call(call) = instruction {
-                if call.type_().calling_convention() == CallingConvention::Source {
-                    let result_name = context.cps.name_generator().borrow_mut().generate();
-                    let return_ = Return::new(
-                        context.cps.result_type().clone(),
-                        Variable::new(&result_name),
-                    )
-                    .into();
+    for (index, instruction) in instructions.iter().enumerate().rev() {
+        if let Instruction::Call(call) = instruction {
+            if call.type_().calling_convention() == CallingConvention::Source {
+                let environment = get_continuation_environment(
+                    call,
+                    &instructions[index..],
+                    terminal_instruction,
+                    local_variables,
+                );
+                let builder = InstructionBuilder::new(context.cps.name_generator());
 
-                    if instructions.is_empty()
-                        && terminal_instruction
-                            .to_return()
-                            .map(|return_| {
-                                return_.expression() == &Variable::new(call.name()).into()
-                            })
-                            .unwrap_or_default()
-                    {
-                        return Ok((
-                            vec![transform_call(
-                                call,
-                                Variable::new(CONTINUATION_ARGUMENT_NAME),
-                                &result_name,
-                            )
-                            .into()],
-                            return_,
-                        ));
-                    }
+                stack::push(
+                    &builder,
+                    build::variable(STACK_ARGUMENT_NAME, stack::type_()),
+                    get_environment_record(&environment),
+                )?;
 
-                    let environment = get_continuation_environment(
+                let result_name = context.cps.name_generator().borrow_mut().generate();
+
+                rest_instructions.reverse();
+                rest_instructions = builder
+                    .into_instructions()
+                    .into_iter()
+                    .chain([transform_call(
                         call,
-                        instructions,
-                        terminal_instruction,
-                        local_variables,
-                    );
-                    let builder = InstructionBuilder::new(context.cps.name_generator());
-
-                    stack::push(
-                        &builder,
-                        build::variable(STACK_ARGUMENT_NAME, stack::type_()),
-                        get_environment_record(&environment),
-                    )?;
-
-                    return Ok((
-                        builder
-                            .into_instructions()
-                            .into_iter()
-                            .chain([transform_call(
-                                call,
-                                create_continuation(
-                                    context,
-                                    call,
-                                    instructions,
-                                    terminal_instruction,
-                                    &environment,
-                                    local_variables,
-                                )?,
-                                &result_name,
-                            )
-                            .into()])
-                            .collect(),
-                        return_,
-                    ));
-                }
-            }
-
-            let (instructions, terminal_instruction) = transform_instructions(
-                context,
-                instructions,
-                terminal_instruction,
-                local_variables,
-            )?;
-
-            (
-                [if let Instruction::If(if_) = instruction {
-                    If::new(
-                        if_.type_().clone(),
-                        if_.condition().clone(),
-                        transform_block(context, if_.then(), local_variables)?,
-                        transform_block(context, if_.else_(), local_variables)?,
-                        if_.name(),
+                        create_continuation(
+                            context,
+                            call,
+                            rest_instructions,
+                            rest_terminal_instruction,
+                            &environment,
+                        )?,
+                        &result_name,
                     )
-                    .into()
-                } else {
-                    instruction.clone()
-                }]
-                .into_iter()
-                .chain(instructions)
-                .collect(),
-                terminal_instruction,
-            )
+                    .into()])
+                    .rev()
+                    .collect();
+
+                rest_terminal_instruction = Return::new(
+                    context.cps.result_type().clone(),
+                    Variable::new(result_name),
+                )
+                .into();
+
+                continue;
+            }
         }
-    })
+
+        rest_instructions.push(if let Instruction::If(if_) = instruction {
+            If::new(
+                if_.type_().clone(),
+                if_.condition().clone(),
+                transform_block(context, if_.then(), local_variables)?,
+                transform_block(context, if_.else_(), local_variables)?,
+                if_.name(),
+            )
+            .into()
+        } else {
+            instruction.clone()
+        });
+    }
+
+    rest_instructions.reverse();
+
+    Ok((rest_instructions, rest_terminal_instruction))
 }
 
 fn transform_call(call: &Call, continuation: impl Into<Expression>, result_name: &str) -> Call {
@@ -242,17 +237,11 @@ fn get_environment_record(environment: &[(&str, Type)]) -> Record {
 fn create_continuation(
     context: &mut Context,
     call: &Call,
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
+    instructions: Vec<Instruction>,
+    terminal_instruction: TerminalInstruction,
     environment: &[(&str, Type)],
-    local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
-    let block = transform_block(
-        context,
-        &Block::new(instructions.to_vec(), terminal_instruction.clone()),
-        local_variables,
-    )?;
 
     context.function_definitions.push(FunctionDefinition::new(
         &name,
@@ -284,10 +273,10 @@ fn create_continuation(
                         )
                         .into()
                     }))
-                    .chain(block.instructions().iter().cloned())
+                    .chain(instructions)
                     .collect()
             },
-            block.terminal_instruction().clone(),
+            terminal_instruction,
         ),
         FunctionDefinitionOptions::new()
             .set_address_named(false)
