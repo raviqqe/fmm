@@ -175,8 +175,8 @@ fn transform_instructions(
                         create_continuation(
                             context,
                             call,
-                            rest_instructions.clone(),
-                            rest_terminal_instruction.clone(),
+                            rest_instructions,
+                            rest_terminal_instruction,
                             &environment,
                         )?,
                         &result_name,
@@ -295,7 +295,7 @@ fn create_continuation(
 // passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.
-fn get_continuation_environment<'a>(
+fn get_continuation_environment(
     call: &Call,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
