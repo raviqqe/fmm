@@ -91,59 +91,62 @@ fn transform_instructions(
     terminal_instruction: &TerminalInstruction,
     local_variables: &FnvHashMap<&str, Type>,
 ) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
-    let (mut rest_instructions, mut rest_terminal_instruction) = match instructions.last() {
-        Some(Instruction::Call(call))
-            if call.type_().calling_convention() == CallingConvention::Source
-                && terminal_instruction
-                    .to_return()
-                    .map(|return_| return_.expression() == &Variable::new(call.name()).into())
-                    .unwrap_or_default() =>
-        {
-            let result_name = context.cps.name_generator().borrow_mut().generate();
-
-            return Ok((
-                vec![transform_call(
-                    call,
-                    Variable::new(CONTINUATION_ARGUMENT_NAME),
-                    &result_name,
-                )
-                .into()],
-                Return::new(
-                    context.cps.result_type().clone(),
-                    Variable::new(&result_name),
-                )
-                .into(),
-            ));
-        }
-        _ => match terminal_instruction {
-            TerminalInstruction::Return(return_) => {
+    let (non_tail_instructions, mut rest_instructions, mut rest_terminal_instruction) =
+        match instructions.last() {
+            Some(Instruction::Call(call))
+                if call.type_().calling_convention() == CallingConvention::Source
+                    && terminal_instruction
+                        .to_return()
+                        .map(|return_| return_.expression() == &Variable::new(call.name()).into())
+                        .unwrap_or_default() =>
+            {
                 let result_name = context.cps.name_generator().borrow_mut().generate();
 
                 (
-                    vec![Call::new(
-                        continuation_type::compile(return_.type_(), context.cps.result_type()),
+                    &instructions[..instructions.len() - 1],
+                    vec![transform_call(
+                        call,
                         Variable::new(CONTINUATION_ARGUMENT_NAME),
-                        vec![
-                            Variable::new(STACK_ARGUMENT_NAME).into(),
-                            return_.expression().clone(),
-                        ],
                         &result_name,
                     )
                     .into()],
                     Return::new(
                         context.cps.result_type().clone(),
-                        Variable::new(result_name),
+                        Variable::new(&result_name),
                     )
                     .into(),
                 )
             }
-            TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {
-                (vec![], terminal_instruction.clone())
-            }
-        },
-    };
+            _ => match terminal_instruction {
+                TerminalInstruction::Return(return_) => {
+                    let result_name = context.cps.name_generator().borrow_mut().generate();
 
-    for (index, instruction) in instructions.iter().enumerate().rev() {
+                    (
+                        instructions,
+                        vec![Call::new(
+                            continuation_type::compile(return_.type_(), context.cps.result_type()),
+                            Variable::new(CONTINUATION_ARGUMENT_NAME),
+                            vec![
+                                Variable::new(STACK_ARGUMENT_NAME).into(),
+                                return_.expression().clone(),
+                            ],
+                            &result_name,
+                        )
+                        .into()],
+                        Return::new(
+                            context.cps.result_type().clone(),
+                            Variable::new(result_name),
+                        )
+                        .into(),
+                    )
+                }
+                TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {
+                    (instructions, vec![], terminal_instruction.clone())
+                }
+            },
+        };
+
+    for (index, instruction) in non_tail_instructions.iter().enumerate().rev() {
         if let Instruction::Call(call) = instruction {
             if call.type_().calling_convention() == CallingConvention::Source {
                 let environment = get_continuation_environment(
