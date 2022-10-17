@@ -56,9 +56,9 @@ impl Function {
 
 impl PartialEq for Function {
     fn eq(&self, other: &Self) -> bool {
-        &self.0.arguments == &other.0.arguments
-            && &self.0.result == &other.0.result
-            && &self.0.calling_convention == &other.0.calling_convention
+        self.0.arguments == other.0.arguments
+            && self.0.result == other.0.result
+            && self.0.calling_convention == other.0.calling_convention
     }
 }
 

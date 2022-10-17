@@ -36,7 +36,7 @@ impl Record {
 
 impl PartialEq for Record {
     fn eq(&self, other: &Self) -> bool {
-        &self.0.fields == &other.0.fields
+        self.0.fields == other.0.fields
     }
 }
 
