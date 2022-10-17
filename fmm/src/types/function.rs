@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd)]
 pub struct Function(Arc<FunctionInner>);
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -13,7 +13,7 @@ struct FunctionInner {
     arguments: Vec<Type>,
     result: Arc<Type>,
     calling_convention: CallingConvention,
-    hash: u64,
+    hash: u64, // cached hash
 }
 
 impl Function {
@@ -51,6 +51,14 @@ impl Function {
 
     pub fn calling_convention(&self) -> CallingConvention {
         self.0.calling_convention
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        &self.0.arguments == &other.0.arguments
+            && &self.0.result == &other.0.result
+            && &self.0.calling_convention == &other.0.calling_convention
     }
 }
 

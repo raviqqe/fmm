@@ -5,13 +5,13 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialOrd)]
 pub struct Record(Arc<RecordInner>);
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct RecordInner {
     fields: Vec<Type>,
-    hash: u64,
+    hash: u64, // cached hash
 }
 
 impl Record {
@@ -31,6 +31,12 @@ impl Record {
 
     pub fn fields(&self) -> &[Type] {
         &self.0.fields
+    }
+}
+
+impl PartialEq for Record {
+    fn eq(&self, other: &Self) -> bool {
+        &self.0.fields == &other.0.fields
     }
 }
 
