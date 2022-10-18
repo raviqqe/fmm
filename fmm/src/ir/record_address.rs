@@ -17,7 +17,7 @@ impl RecordAddress {
         Self(
             RecordAddressInner {
                 type_,
-                pointer: pointer.into().into(),
+                pointer: pointer.into(),
                 field_index,
             }
             .into(),

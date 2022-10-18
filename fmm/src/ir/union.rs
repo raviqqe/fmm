@@ -18,7 +18,7 @@ impl Union {
             UnionInner {
                 type_,
                 member_index,
-                member: member.into().into(),
+                member: member.into(),
             }
             .into(),
         )

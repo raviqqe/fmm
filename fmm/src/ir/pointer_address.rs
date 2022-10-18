@@ -21,8 +21,8 @@ impl PointerAddress {
         Self(
             PointerAddressInner {
                 type_,
-                pointer: pointer.into().into(),
-                offset: offset.into().into(),
+                pointer: pointer.into(),
+                offset: offset.into(),
             }
             .into(),
         )

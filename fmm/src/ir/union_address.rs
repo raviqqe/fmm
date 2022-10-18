@@ -17,7 +17,7 @@ impl UnionAddress {
         Self(
             UnionAddressInner {
                 type_,
-                pointer: pointer.into().into(),
+                pointer: pointer.into(),
                 member_index,
             }
             .into(),

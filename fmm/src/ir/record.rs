@@ -13,13 +13,7 @@ struct RecordInner {
 
 impl Record {
     pub fn new(type_: types::Record, fields: Vec<Expression>) -> Self {
-        Self(
-            RecordInner {
-                type_,
-                fields: fields.into(),
-            }
-            .into(),
-        )
+        Self(RecordInner { type_, fields }.into())
     }
 
     pub fn type_(&self) -> &types::Record {
