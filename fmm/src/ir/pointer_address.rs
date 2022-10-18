@@ -3,10 +3,13 @@ use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PointerAddress {
+pub struct PointerAddress(Arc<PointerAddressInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct PointerAddressInner {
     type_: types::Pointer, // type of the pointer value
-    pointer: Arc<Expression>,
-    offset: Arc<Expression>,
+    pointer: Expression,
+    offset: Expression,
 }
 
 impl PointerAddress {
@@ -15,22 +18,25 @@ impl PointerAddress {
         pointer: impl Into<Expression>,
         offset: impl Into<Expression>,
     ) -> Self {
-        Self {
-            type_,
-            pointer: pointer.into().into(),
-            offset: offset.into().into(),
-        }
+        Self(
+            PointerAddressInner {
+                type_,
+                pointer: pointer.into().into(),
+                offset: offset.into().into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &types::Pointer {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 
     pub fn offset(&self) -> &Expression {
-        &self.offset
+        &self.0.offset
     }
 }

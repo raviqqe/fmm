@@ -114,3 +114,14 @@ impl From<Variable> for Expression {
         Self::Variable(variable)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn size() {
+        assert!(size_of::<Expression>() <= 3 * size_of::<usize>());
+    }
+}

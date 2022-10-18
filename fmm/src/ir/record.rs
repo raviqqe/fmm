@@ -3,24 +3,30 @@ use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Record {
+pub struct Record(Arc<RecordInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct RecordInner {
     type_: types::Record,
-    fields: Arc<Vec<Expression>>,
+    fields: Vec<Expression>,
 }
 
 impl Record {
     pub fn new(type_: types::Record, fields: Vec<Expression>) -> Self {
-        Self {
-            type_,
-            fields: fields.into(),
-        }
+        Self(
+            RecordInner {
+                type_,
+                fields: fields.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &types::Record {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn fields(&self) -> &[Expression] {
-        &self.fields
+        &self.0.fields
     }
 }

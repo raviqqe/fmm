@@ -3,30 +3,36 @@ use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UnionAddress {
+pub struct UnionAddress(Arc<UnionAddressInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct UnionAddressInner {
     type_: types::Union,
-    pointer: Arc<Expression>, // pointer to union
+    pointer: Expression, // pointer to union
     member_index: usize,
 }
 
 impl UnionAddress {
     pub fn new(type_: types::Union, pointer: impl Into<Expression>, member_index: usize) -> Self {
-        Self {
-            type_,
-            pointer: pointer.into().into(),
-            member_index,
-        }
+        Self(
+            UnionAddressInner {
+                type_,
+                pointer: pointer.into().into(),
+                member_index,
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &types::Union {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 
     pub fn member_index(&self) -> usize {
-        self.member_index
+        self.0.member_index
     }
 }

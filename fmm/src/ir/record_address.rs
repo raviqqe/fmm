@@ -3,30 +3,36 @@ use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct RecordAddress {
+pub struct RecordAddress(Arc<RecordAddressInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct RecordAddressInner {
     type_: types::Record,
-    pointer: Arc<Expression>, // pointer to record
+    pointer: Expression, // pointer to record
     field_index: usize,
 }
 
 impl RecordAddress {
     pub fn new(type_: types::Record, pointer: impl Into<Expression>, field_index: usize) -> Self {
-        Self {
-            type_,
-            pointer: pointer.into().into(),
-            field_index,
-        }
+        Self(
+            RecordAddressInner {
+                type_,
+                pointer: pointer.into().into(),
+                field_index,
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &types::Record {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 
     pub fn field_index(&self) -> usize {
-        self.field_index
+        self.0.field_index
     }
 }

@@ -12,11 +12,14 @@ pub enum BitwiseOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BitwiseOperation {
+pub struct BitwiseOperation(Arc<BitwiseOperationInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct BitwiseOperationInner {
     type_: types::Primitive,
     operator: BitwiseOperator,
-    lhs: Arc<Expression>,
-    rhs: Arc<Expression>,
+    lhs: Expression,
+    rhs: Expression,
 }
 
 impl BitwiseOperation {
@@ -26,27 +29,30 @@ impl BitwiseOperation {
         lhs: impl Into<Expression>,
         rhs: impl Into<Expression>,
     ) -> Self {
-        Self {
-            type_,
-            operator,
-            lhs: Arc::new(lhs.into()),
-            rhs: Arc::new(rhs.into()),
-        }
+        Self(
+            BitwiseOperationInner {
+                type_,
+                operator,
+                lhs: lhs.into(),
+                rhs: rhs.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> types::Primitive {
-        self.type_
+        self.0.type_
     }
 
     pub fn operator(&self) -> BitwiseOperator {
-        self.operator
+        self.0.operator
     }
 
     pub fn lhs(&self) -> &Expression {
-        &self.lhs
+        &self.0.lhs
     }
 
     pub fn rhs(&self) -> &Expression {
-        &self.rhs
+        &self.0.rhs
     }
 }

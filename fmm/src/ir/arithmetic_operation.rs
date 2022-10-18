@@ -11,11 +11,14 @@ pub enum ArithmeticOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ArithmeticOperation {
+pub struct ArithmeticOperation(Arc<ArithmeticOperationInner>);
+
+#[derive(Debug, PartialEq)]
+struct ArithmeticOperationInner {
     type_: types::Primitive,
     operator: ArithmeticOperator,
-    lhs: Arc<Expression>,
-    rhs: Arc<Expression>,
+    lhs: Expression,
+    rhs: Expression,
 }
 
 impl ArithmeticOperation {
@@ -25,27 +28,30 @@ impl ArithmeticOperation {
         lhs: impl Into<Expression>,
         rhs: impl Into<Expression>,
     ) -> Self {
-        Self {
-            type_,
-            operator,
-            lhs: Arc::new(lhs.into()),
-            rhs: Arc::new(rhs.into()),
-        }
+        Self(
+            ArithmeticOperationInner {
+                type_,
+                operator,
+                lhs: lhs.into(),
+                rhs: rhs.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> types::Primitive {
-        self.type_
+        self.0.type_
     }
 
     pub fn operator(&self) -> ArithmeticOperator {
-        self.operator
+        self.0.operator
     }
 
     pub fn lhs(&self) -> &Expression {
-        &self.lhs
+        &self.0.lhs
     }
 
     pub fn rhs(&self) -> &Expression {
-        &self.rhs
+        &self.0.rhs
     }
 }
