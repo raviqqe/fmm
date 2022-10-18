@@ -32,7 +32,7 @@ impl<'c> Context<'c> {
             inkwell: inkwell_context,
             // This does not `get` but `create` target data actually, which is expensive.
             target_data: target_machine.get_target_data(),
-            target_machine: Self::create_target_machine(target_triple)?,
+            target_machine,
             instruction_configuration,
             types: Default::default(),
         })
