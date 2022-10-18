@@ -1,9 +1,8 @@
-use std::cell::RefCell;
-
 use crate::{CompileError, InstructionConfiguration};
 use fmm::types::Type;
 use fnv::FnvHashMap;
 use once_cell::sync::Lazy;
+use std::cell::RefCell;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
     inkwell::targets::TargetMachine::get_default_triple()
