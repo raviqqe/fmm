@@ -29,9 +29,9 @@ impl CompareAndSwap {
         Self(
             CompareAndSwapInner {
                 type_: type_.into(),
-                pointer: pointer.into().into(),
-                old_value: old_value.into().into(),
-                new_value: new_value.into().into(),
+                pointer: pointer.into(),
+                old_value: old_value.into(),
+                new_value: new_value.into(),
                 success_ordering,
                 failure_ordering,
                 name: name.into(),

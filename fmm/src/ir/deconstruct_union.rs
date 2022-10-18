@@ -23,7 +23,7 @@ impl DeconstructUnion {
         Self(
             DeconstructUnionInner {
                 type_,
-                union: union.into().into(),
+                union: union.into(),
                 member_index,
                 name: name.into(),
             }

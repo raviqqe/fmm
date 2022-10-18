@@ -23,7 +23,7 @@ impl DeconstructRecord {
         Self(
             DeconstructRecordInner {
                 type_,
-                record: record.into().into(),
+                record: record.into(),
                 field_index,
                 name: name.into(),
             }

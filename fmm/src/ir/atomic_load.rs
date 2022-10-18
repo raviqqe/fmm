@@ -23,7 +23,7 @@ impl AtomicLoad {
         Self(
             AtomicLoadInner {
                 type_: type_.into(),
-                pointer: pointer.into().into(),
+                pointer: pointer.into(),
                 ordering,
                 name: name.into(),
             }

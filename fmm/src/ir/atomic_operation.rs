@@ -34,8 +34,8 @@ impl AtomicOperation {
             AtomicOperationInner {
                 type_,
                 operator,
-                pointer: pointer.into().into(),
-                value: value.into().into(),
+                pointer: pointer.into(),
+                value: value.into(),
                 ordering,
                 name: name.into(),
             }

@@ -21,7 +21,7 @@ impl Load {
         Self(
             LoadInner {
                 type_: type_.into(),
-                pointer: pointer.into().into(),
+                pointer: pointer.into(),
                 name: name.into(),
             }
             .into(),

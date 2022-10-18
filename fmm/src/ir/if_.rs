@@ -26,8 +26,8 @@ impl If {
             IfInner {
                 type_: type_.into(),
                 condition: condition.into(),
-                then: then.into(),
-                else_: else_.into(),
+                then,
+                else_,
                 name: name.into(),
             }
             .into(),

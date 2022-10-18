@@ -19,9 +19,9 @@ impl MemoryCopy {
     ) -> Self {
         Self(
             MemoryCopyInner {
-                source: source.into().into(),
-                destination: destination.into().into(),
-                size: size.into().into(),
+                source: source.into(),
+                destination: destination.into(),
+                size: size.into(),
             }
             .into(),
         )

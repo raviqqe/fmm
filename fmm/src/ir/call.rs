@@ -23,8 +23,8 @@ impl Call {
         Self(
             CallInner {
                 type_,
-                function: function.into().into(),
-                arguments: arguments.into(),
+                function: function.into(),
+                arguments,
                 name: name.into(),
             }
             .into(),

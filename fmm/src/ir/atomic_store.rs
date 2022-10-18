@@ -23,8 +23,8 @@ impl AtomicStore {
         Self(
             AtomicStoreInner {
                 type_: type_.into(),
-                value: value.into().into(),
-                pointer: pointer.into().into(),
+                value: value.into(),
+                pointer: pointer.into(),
                 ordering,
             }
             .into(),
