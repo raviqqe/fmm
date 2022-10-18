@@ -2,10 +2,13 @@ use crate::{ir::Expression, types::Type};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BitCast {
+pub struct BitCast(Arc<BitCastInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct BitCastInner {
     from: Type,
     to: Type,
-    expression: Arc<Expression>,
+    expression: Expression,
 }
 
 impl BitCast {
@@ -14,22 +17,25 @@ impl BitCast {
         to: impl Into<Type>,
         expression: impl Into<Expression>,
     ) -> Self {
-        Self {
-            from: from.into(),
-            to: to.into(),
-            expression: expression.into().into(),
-        }
+        Self(
+            BitCastInner {
+                from: from.into(),
+                to: to.into(),
+                expression: expression.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn from(&self) -> &Type {
-        &self.from
+        &self.0.from
     }
 
     pub fn to(&self) -> &Type {
-        &self.to
+        &self.0.to
     }
 
     pub fn expression(&self) -> &Expression {
-        &self.expression
+        &self.0.expression
     }
 }

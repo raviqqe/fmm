@@ -13,11 +13,14 @@ pub enum ComparisonOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ComparisonOperation {
+pub struct ComparisonOperation(Arc<ComparisonOperationInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct ComparisonOperationInner {
     type_: types::Primitive,
     operator: ComparisonOperator,
-    lhs: Arc<Expression>,
-    rhs: Arc<Expression>,
+    lhs: Expression,
+    rhs: Expression,
 }
 
 impl ComparisonOperation {
@@ -29,27 +32,30 @@ impl ComparisonOperation {
         lhs: impl Into<Expression>,
         rhs: impl Into<Expression>,
     ) -> Self {
-        Self {
-            type_,
-            operator,
-            lhs: Arc::new(lhs.into()),
-            rhs: Arc::new(rhs.into()),
-        }
+        Self(
+            ComparisonOperationInner {
+                type_,
+                operator,
+                lhs: (lhs.into()),
+                rhs: (rhs.into()),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> types::Primitive {
-        self.type_
+        self.0.type_
     }
 
     pub fn operator(&self) -> ComparisonOperator {
-        self.operator
+        self.0.operator
     }
 
     pub fn lhs(&self) -> &Expression {
-        &self.lhs
+        &self.0.lhs
     }
 
     pub fn rhs(&self) -> &Expression {
-        &self.rhs
+        &self.0.rhs
     }
 }
