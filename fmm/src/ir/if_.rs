@@ -3,11 +3,14 @@ use crate::types::Type;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct If {
+pub struct If(Arc<IfInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct IfInner {
     type_: Type,
     condition: Expression,
-    then: Arc<Block>,
-    else_: Arc<Block>,
+    then: Block,
+    else_: Block,
     name: String,
 }
 
@@ -19,32 +22,35 @@ impl If {
         else_: Block,
         name: impl Into<String>,
     ) -> Self {
-        Self {
-            type_: type_.into(),
-            condition: condition.into(),
-            then: then.into(),
-            else_: else_.into(),
-            name: name.into(),
-        }
+        Self(
+            IfInner {
+                type_: type_.into(),
+                condition: condition.into(),
+                then,
+                else_,
+                name: name.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &Type {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn condition(&self) -> &Expression {
-        &self.condition
+        &self.0.condition
     }
 
     pub fn then(&self) -> &Block {
-        &self.then
+        &self.0.then
     }
 
     pub fn else_(&self) -> &Block {
-        &self.else_
+        &self.0.else_
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.0.name
     }
 }

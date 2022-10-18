@@ -3,10 +3,13 @@ use crate::types::Type;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Store {
+pub struct Store(Arc<StoreInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct StoreInner {
     type_: Type, // pointer element type
-    value: Arc<Expression>,
-    pointer: Arc<Expression>,
+    value: Expression,
+    pointer: Expression,
 }
 
 impl Store {
@@ -15,22 +18,25 @@ impl Store {
         value: impl Into<Expression>,
         pointer: impl Into<Expression>,
     ) -> Self {
-        Self {
-            type_: type_.into(),
-            value: value.into().into(),
-            pointer: pointer.into().into(),
-        }
+        Self(
+            StoreInner {
+                type_: type_.into(),
+                value: value.into(),
+                pointer: pointer.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &Type {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn value(&self) -> &Expression {
-        &self.value
+        &self.0.value
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 }

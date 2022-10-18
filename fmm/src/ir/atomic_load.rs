@@ -3,9 +3,12 @@ use crate::types::Type;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicLoad {
+pub struct AtomicLoad(Arc<AtomicLoadInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct AtomicLoadInner {
     type_: Type, // pointer element type
-    pointer: Arc<Expression>,
+    pointer: Expression,
     ordering: AtomicOrdering,
     name: String,
 }
@@ -17,27 +20,30 @@ impl AtomicLoad {
         ordering: AtomicOrdering,
         name: impl Into<String>,
     ) -> Self {
-        Self {
-            type_: type_.into(),
-            pointer: pointer.into().into(),
-            ordering,
-            name: name.into(),
-        }
+        Self(
+            AtomicLoadInner {
+                type_: type_.into(),
+                pointer: pointer.into(),
+                ordering,
+                name: name.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &Type {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 
     pub fn ordering(&self) -> AtomicOrdering {
-        self.ordering
+        self.0.ordering
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.0.name
     }
 }

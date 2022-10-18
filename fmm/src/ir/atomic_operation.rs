@@ -9,11 +9,14 @@ pub enum AtomicOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicOperation {
+pub struct AtomicOperation(Arc<AtomicOperationInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct AtomicOperationInner {
     type_: types::Primitive,
     operator: AtomicOperator,
-    pointer: Arc<Expression>,
-    value: Arc<Expression>,
+    pointer: Expression,
+    value: Expression,
     ordering: AtomicOrdering,
     name: String,
 }
@@ -27,37 +30,40 @@ impl AtomicOperation {
         ordering: AtomicOrdering,
         name: impl Into<String>,
     ) -> Self {
-        Self {
-            type_,
-            operator,
-            pointer: pointer.into().into(),
-            value: value.into().into(),
-            ordering,
-            name: name.into(),
-        }
+        Self(
+            AtomicOperationInner {
+                type_,
+                operator,
+                pointer: pointer.into(),
+                value: value.into(),
+                ordering,
+                name: name.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> types::Primitive {
-        self.type_
+        self.0.type_
     }
 
     pub fn operator(&self) -> AtomicOperator {
-        self.operator
+        self.0.operator
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 
     pub fn value(&self) -> &Expression {
-        &self.value
+        &self.0.value
     }
 
     pub fn ordering(&self) -> AtomicOrdering {
-        self.ordering
+        self.0.ordering
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.0.name
     }
 }

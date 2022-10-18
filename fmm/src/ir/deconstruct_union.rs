@@ -3,9 +3,12 @@ use crate::types;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DeconstructUnion {
+pub struct DeconstructUnion(Arc<DeconstructUnionInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct DeconstructUnionInner {
     type_: types::Union,
-    union: Arc<Expression>,
+    union: Expression,
     member_index: usize,
     name: String,
 }
@@ -17,27 +20,30 @@ impl DeconstructUnion {
         member_index: usize,
         name: impl Into<String>,
     ) -> Self {
-        Self {
-            type_,
-            union: union.into().into(),
-            member_index,
-            name: name.into(),
-        }
+        Self(
+            DeconstructUnionInner {
+                type_,
+                union: union.into(),
+                member_index,
+                name: name.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn type_(&self) -> &types::Union {
-        &self.type_
+        &self.0.type_
     }
 
     pub fn union(&self) -> &Expression {
-        &self.union
+        &self.0.union
     }
 
     pub fn member_index(&self) -> usize {
-        self.member_index
+        self.0.member_index
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.0.name
     }
 }
