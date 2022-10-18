@@ -1,7 +1,11 @@
 use super::expression::Expression;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ReallocateHeap {
+pub struct ReallocateHeap(Arc<ReallocateHeapInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct ReallocateHeapInner {
     pointer: Expression,
     size: Expression,
     name: String,
@@ -13,22 +17,25 @@ impl ReallocateHeap {
         size: impl Into<Expression>,
         name: impl Into<String>,
     ) -> Self {
-        Self {
-            pointer: pointer.into(),
-            size: size.into(),
-            name: name.into(),
-        }
+        Self(
+            ReallocateHeapInner {
+                pointer: pointer.into(),
+                size: size.into(),
+                name: name.into(),
+            }
+            .into(),
+        )
     }
 
     pub fn pointer(&self) -> &Expression {
-        &self.pointer
+        &self.0.pointer
     }
 
     pub fn size(&self) -> &Expression {
-        &self.size
+        &self.0.size
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.0.name
     }
 }

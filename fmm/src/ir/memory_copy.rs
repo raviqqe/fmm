@@ -2,10 +2,13 @@ use super::expression::Expression;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct MemoryCopy {
-    source: Arc<Expression>,
-    destination: Arc<Expression>,
-    size: Arc<Expression>,
+pub struct MemoryCopy(Arc<MemoryCopyInner>);
+
+#[derive(Clone, Debug, PartialEq)]
+struct MemoryCopyInner {
+    source: Expression,
+    destination: Expression,
+    size: Expression,
 }
 
 impl MemoryCopy {
@@ -14,22 +17,25 @@ impl MemoryCopy {
         destination: impl Into<Expression>,
         size: impl Into<Expression>,
     ) -> Self {
-        Self {
-            source: source.into().into(),
-            destination: destination.into().into(),
-            size: size.into().into(),
-        }
+        Self(
+            MemoryCopyInner {
+                source: source.into().into(),
+                destination: destination.into().into(),
+                size: size.into().into(),
+            }
+            .into(),
+        )
     }
 
     pub fn source(&self) -> &Expression {
-        &self.source
+        &self.0.source
     }
 
     pub fn destination(&self) -> &Expression {
-        &self.destination
+        &self.0.destination
     }
 
     pub fn size(&self) -> &Expression {
-        &self.size
+        &self.0.size
     }
 }
