@@ -1,4 +1,8 @@
+use std::cell::RefCell;
+
 use crate::{CompileError, InstructionConfiguration};
+use fmm::types::Type;
+use fnv::FnvHashMap;
 use once_cell::sync::Lazy;
 
 static DEFAULT_TARGET_TRIPLE: Lazy<String> = Lazy::new(|| {
@@ -14,6 +18,7 @@ pub struct Context<'c> {
     target_machine: inkwell::targets::TargetMachine,
     target_data: inkwell::targets::TargetData,
     instruction_configuration: InstructionConfiguration,
+    types: RefCell<FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>>>,
 }
 
 impl<'c> Context<'c> {
@@ -30,6 +35,7 @@ impl<'c> Context<'c> {
             target_data: target_machine.get_target_data(),
             target_machine: Self::create_target_machine(target_triple)?,
             instruction_configuration,
+            types: Default::default(),
         })
     }
 
@@ -66,5 +72,9 @@ impl<'c> Context<'c> {
                 inkwell::targets::CodeModel::Default,
             )
             .ok_or(CompileError::TargetMachineNotCreated)
+    }
+
+    pub fn types(&self) -> &RefCell<FnvHashMap<Type, inkwell::types::BasicTypeEnum<'c>>> {
+        &self.types
     }
 }
