@@ -36,7 +36,7 @@ impl Record {
 
 impl PartialEq for Record {
     fn eq(&self, other: &Self) -> bool {
-        self.0.fields == other.0.fields
+        Arc::as_ptr(&self.0) == Arc::as_ptr(&other.0) || self.0.fields == other.0.fields
     }
 }
 
