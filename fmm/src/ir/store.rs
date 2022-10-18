@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types::Type;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Store(Arc<StoreInner>);
+pub struct Store(Rc<StoreInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct StoreInner {

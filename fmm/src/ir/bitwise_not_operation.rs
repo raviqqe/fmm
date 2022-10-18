@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BitwiseNotOperation(Arc<BitwiseNotOperationInner>);
+pub struct BitwiseNotOperation(Rc<BitwiseNotOperationInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct BitwiseNotOperationInner {

@@ -1,6 +1,6 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ArithmeticOperator {
@@ -11,7 +11,7 @@ pub enum ArithmeticOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ArithmeticOperation(Arc<ArithmeticOperationInner>);
+pub struct ArithmeticOperation(Rc<ArithmeticOperationInner>);
 
 #[derive(Debug, PartialEq)]
 struct ArithmeticOperationInner {

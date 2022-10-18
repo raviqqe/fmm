@@ -1,8 +1,8 @@
 use super::expression::Expression;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct MemoryCopy(Arc<MemoryCopyInner>);
+pub struct MemoryCopy(Rc<MemoryCopyInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct MemoryCopyInner {

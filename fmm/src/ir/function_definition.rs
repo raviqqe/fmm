@@ -1,11 +1,11 @@
 use super::{argument::Argument, block::Block, FunctionDefinitionOptions};
 use crate::types::{self, Type};
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionDefinition {
     name: String,
-    arguments: Arc<Vec<Argument>>,
+    arguments: Rc<Vec<Argument>>,
     body: Block,
     result_type: Type,
     type_: types::Function,
