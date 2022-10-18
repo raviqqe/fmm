@@ -1,9 +1,9 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicStore(Arc<AtomicStoreInner>);
+pub struct AtomicStore(Rc<AtomicStoreInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct AtomicStoreInner {

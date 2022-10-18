@@ -1,6 +1,6 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ComparisonOperator {
@@ -13,7 +13,7 @@ pub enum ComparisonOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ComparisonOperation(Arc<ComparisonOperationInner>);
+pub struct ComparisonOperation(Rc<ComparisonOperationInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct ComparisonOperationInner {

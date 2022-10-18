@@ -1,9 +1,9 @@
 use super::{instruction::Instruction, terminal_instruction::TerminalInstruction};
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    instructions: Arc<Vec<Instruction>>,
+    instructions: Rc<Vec<Instruction>>,
     terminal_instruction: TerminalInstruction,
 }
 

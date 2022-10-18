@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Call(Arc<CallInner>);
+pub struct Call(Rc<CallInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct CallInner {

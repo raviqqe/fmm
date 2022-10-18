@@ -2,11 +2,11 @@ use super::type_::Type;
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
-    sync::Arc,
+    rc::Rc,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd)]
-pub struct Record(Arc<RecordInner>);
+pub struct Record(Rc<RecordInner>);
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct RecordInner {
@@ -36,7 +36,7 @@ impl Record {
 
 impl PartialEq for Record {
     fn eq(&self, other: &Self) -> bool {
-        Arc::as_ptr(&self.0) == Arc::as_ptr(&other.0) || self.0.fields == other.0.fields
+        Rc::as_ptr(&self.0) == Rc::as_ptr(&other.0) || self.0.fields == other.0.fields
     }
 }
 

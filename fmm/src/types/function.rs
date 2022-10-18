@@ -2,16 +2,16 @@ use super::{calling_convention::CallingConvention, type_::Type};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
-    sync::Arc,
+    rc::Rc,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd)]
-pub struct Function(Arc<FunctionInner>);
+pub struct Function(Rc<FunctionInner>);
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct FunctionInner {
     arguments: Vec<Type>,
-    result: Arc<Type>,
+    result: Rc<Type>,
     calling_convention: CallingConvention,
     hash: u64, // cached hash
 }
@@ -56,7 +56,7 @@ impl Function {
 
 impl PartialEq for Function {
     fn eq(&self, other: &Self) -> bool {
-        Arc::as_ptr(&self.0) == Arc::as_ptr(&other.0)
+        Rc::as_ptr(&self.0) == Rc::as_ptr(&other.0)
             || self.0.arguments == other.0.arguments
                 && self.0.result == other.0.result
                 && self.0.calling_convention == other.0.calling_convention

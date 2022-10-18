@@ -1,8 +1,8 @@
 use super::expression::Expression;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ReallocateHeap(Arc<ReallocateHeapInner>);
+pub struct ReallocateHeap(Rc<ReallocateHeapInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct ReallocateHeapInner {

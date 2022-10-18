@@ -1,8 +1,8 @@
 use crate::{ir::Expression, types::Type};
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BitCast(Arc<BitCastInner>);
+pub struct BitCast(Rc<BitCastInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct BitCastInner {

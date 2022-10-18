@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct PointerAddress(Arc<PointerAddressInner>);
+pub struct PointerAddress(Rc<PointerAddressInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct PointerAddressInner {

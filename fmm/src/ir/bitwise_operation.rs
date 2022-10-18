@@ -1,6 +1,6 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum BitwiseOperator {
@@ -12,7 +12,7 @@ pub enum BitwiseOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct BitwiseOperation(Arc<BitwiseOperationInner>);
+pub struct BitwiseOperation(Rc<BitwiseOperationInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct BitwiseOperationInner {

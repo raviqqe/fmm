@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types;
-use std::sync::Arc;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Union(Arc<UnionInner>);
+pub struct Union(Rc<UnionInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct UnionInner {
