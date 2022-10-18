@@ -8,8 +8,8 @@ pub struct Store(Arc<StoreInner>);
 #[derive(Clone, Debug, PartialEq)]
 struct StoreInner {
     type_: Type, // pointer element type
-    value: Arc<Expression>,
-    pointer: Arc<Expression>,
+    value: Expression,
+    pointer: Expression,
 }
 
 impl Store {
@@ -21,8 +21,8 @@ impl Store {
         Self(
             StoreInner {
                 type_: type_.into(),
-                value: value.into().into(),
-                pointer: pointer.into().into(),
+                value: value.into(),
+                pointer: pointer.into(),
             }
             .into(),
         )
