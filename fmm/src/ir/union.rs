@@ -9,7 +9,7 @@ pub struct Union(Arc<UnionInner>);
 struct UnionInner {
     type_: types::Union,
     member_index: usize,
-    member: Arc<Expression>,
+    member: Expression,
 }
 
 impl Union {
