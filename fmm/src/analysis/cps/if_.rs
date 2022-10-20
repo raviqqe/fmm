@@ -377,6 +377,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) -> Module {
+        validation::validate(&module).unwrap();
+
         let flattened_module = flatten(module);
 
         validation::validate(&flattened_module).unwrap();
@@ -742,7 +744,7 @@ mod tests {
                             void_type(),
                             Primitive::Boolean(true),
                             Block::new(
-                                vec![AllocateStack::new(types::Primitive::Float64, "x").into()],
+                                vec![AllocateStack::new(types::Primitive::Float64, "z").into()],
                                 Branch::new(void_type(), void_value()),
                             ),
                             Block::new(vec![], TerminalInstruction::Unreachable),
