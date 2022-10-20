@@ -132,7 +132,6 @@ impl InstructionBuilder {
         arguments: Vec<TypedExpression>,
     ) -> Result<TypedExpression, BuildError> {
         let function = function.into();
-        let arguments = arguments.into_iter().collect::<Vec<_>>();
         let type_ = function
             .type_()
             .to_function()
