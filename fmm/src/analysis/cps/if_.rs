@@ -373,17 +373,13 @@ fn get_continuation_environment<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        analysis::{name, type_check},
-        types::void_type,
-    };
+    use crate::{analysis::validation, types::void_type};
     use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) -> Module {
         let flattened_module = flatten(module);
 
-        name::check(&flattened_module).unwrap();
-        type_check::check(&flattened_module).unwrap();
+        validation::validate(&flattened_module).unwrap();
 
         // Test reproducibility.
         assert_eq!(flattened_module, flatten(module));

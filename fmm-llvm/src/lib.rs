@@ -56,9 +56,6 @@ fn compile_module<'c>(
     context: &Context<'c>,
     module: &Module,
 ) -> Result<inkwell::module::Module<'c>, CompileError> {
-    fmm::analysis::name::check(module)?;
-    fmm::analysis::type_check::check(module)?;
-
     let llvm_module = context.inkwell().create_module("");
     llvm_module.set_triple(&context.target_machine().get_triple());
 
@@ -340,6 +337,8 @@ mod tests {
     });
 
     fn compile_transformed_module(module: &Module, targets: &[&str]) {
+        fmm::analysis::validation::validate(module).unwrap();
+
         let one = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
         let other = compile_to_object(module, &DUMMY_INSTRUCTION_CONFIGURATION, None).unwrap();
 

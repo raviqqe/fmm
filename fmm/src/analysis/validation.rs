@@ -3,6 +3,8 @@ use super::{
     type_check::{self, TypeCheckError},
 };
 use crate::ir::Module;
+use std::fmt::{self, Display};
+use std::{error::Error, fmt::Formatter};
 
 pub fn validate(module: &Module) -> Result<(), ValidationError> {
     name::check(module)?;
@@ -11,10 +13,19 @@ pub fn validate(module: &Module) -> Result<(), ValidationError> {
     Ok(())
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum ValidationError {
     Name(NameError),
     TypeCheck(TypeCheckError),
 }
+
+impl Display for ValidationError {
+    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
+        write!(formatter, "{:?}", self)
+    }
+}
+
+impl Error for ValidationError {}
 
 impl From<NameError> for ValidationError {
     fn from(error: NameError) -> Self {
