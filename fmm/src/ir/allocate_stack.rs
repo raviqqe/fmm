@@ -1,8 +1,8 @@
 use crate::types::Type;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AllocateStack(Rc<AllocateStackInner>);
+pub struct AllocateStack(Box<AllocateStackInner>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct AllocateStackInner {

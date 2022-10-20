@@ -1,9 +1,9 @@
 use super::{block::Block, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct If(Rc<IfInner>);
+pub struct If(Box<IfInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct IfInner {

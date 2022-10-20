@@ -1,6 +1,6 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types;
-use std::rc::Rc;
+
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AtomicOperator {
@@ -9,7 +9,7 @@ pub enum AtomicOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicOperation(Rc<AtomicOperationInner>);
+pub struct AtomicOperation(Box<AtomicOperationInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct AtomicOperationInner {

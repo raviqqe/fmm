@@ -1,9 +1,9 @@
 use super::{instruction::Instruction, terminal_instruction::TerminalInstruction};
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    instructions: Rc<Vec<Instruction>>,
+    instructions: Box<Vec<Instruction>>,
     terminal_instruction: TerminalInstruction,
 }
 

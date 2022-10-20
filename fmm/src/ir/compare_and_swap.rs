@@ -1,9 +1,9 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct CompareAndSwap(Rc<CompareAndSwapInner>);
+pub struct CompareAndSwap(Box<CompareAndSwapInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct CompareAndSwapInner {

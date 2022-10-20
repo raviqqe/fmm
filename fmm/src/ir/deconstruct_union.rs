@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DeconstructUnion(Rc<DeconstructUnionInner>);
+pub struct DeconstructUnion(Box<DeconstructUnionInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct DeconstructUnionInner {

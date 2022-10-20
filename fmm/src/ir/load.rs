@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types::Type;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Load(Rc<LoadInner>);
+pub struct Load(Box<LoadInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct LoadInner {

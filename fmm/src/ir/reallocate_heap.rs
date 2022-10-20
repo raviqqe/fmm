@@ -1,8 +1,8 @@
 use super::expression::Expression;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ReallocateHeap(Rc<ReallocateHeapInner>);
+pub struct ReallocateHeap(Box<ReallocateHeapInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct ReallocateHeapInner {

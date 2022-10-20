@@ -1,9 +1,9 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
+
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DeconstructRecord(Rc<DeconstructRecordInner>);
+pub struct DeconstructRecord(Box<DeconstructRecordInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct DeconstructRecordInner {
