@@ -44,12 +44,23 @@ pub fn check(module: &Module) -> Result<(), NameError> {
     }
 
     for definition in module.function_definitions() {
-        let mut local_names = FnvHashSet::default();
-
-        check_block(definition.body(), &mut local_names, &global_names)?;
+        check_function_definition(definition, &global_names)?;
     }
 
     Ok(())
+}
+
+fn check_function_definition<'a>(
+    definition: &FunctionDefinition,
+    global_names: &FnvHashSet<&'a str>,
+) -> Result<(), NameError> {
+    let mut local_names = FnvHashSet::default();
+
+    for argument in definition.arguments() {
+        check_name(argument.name(), &mut local_names)?;
+    }
+
+    check_block(definition.body(), &mut local_names, &global_names)
 }
 
 fn check_block<'a>(
