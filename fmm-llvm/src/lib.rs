@@ -296,8 +296,6 @@ fn compile_function_definition<'c, 'a>(
         instruction_function_set,
     )?;
 
-    function.verify(true);
-
     Ok(())
 }
 
