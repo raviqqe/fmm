@@ -60,7 +60,7 @@ fn check_function_definition<'a>(
         check_name(argument.name(), &mut local_names)?;
     }
 
-    check_block(definition.body(), &mut local_names, &global_names)
+    check_block(definition.body(), &mut local_names, global_names)
 }
 
 fn check_block<'a>(
