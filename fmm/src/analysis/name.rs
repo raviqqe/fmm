@@ -317,6 +317,27 @@ mod tests {
         }
 
         #[test]
+        fn check_duplicate_names_in_argument_and_instruction() {
+            let module = Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("x", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default(),
+                )],
+            );
+
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("x".into())));
+        }
+
+        #[test]
         fn check_duplicate_names_in_instruction_and_function_definition() {
             let module = Module::new(
                 vec![],
