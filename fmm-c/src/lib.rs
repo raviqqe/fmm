@@ -24,9 +24,6 @@ pub fn compile(
     module: &Module,
     instruction_configuration: Option<InstructionConfiguration>,
 ) -> Result<String, CompileError> {
-    fmm::analysis::name::check(module)?;
-    fmm::analysis::type_check::check(module)?;
-
     let module = rename::rename(module);
     let global_variables = module
         .variable_declarations()
@@ -295,6 +292,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn compile_final_module(module: &Module) {
+        fmm::analysis::validation::validate(module).unwrap();
+
         let directory = tempfile::tempdir().unwrap();
         let file_path = directory.path().join("foo.c");
         let source = compile(module, Some(DUMMY_INSTRUCTION_CONFIGURATION.clone())).unwrap();

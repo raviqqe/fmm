@@ -9,14 +9,10 @@ mod stack;
 mod target_function;
 
 use self::context::CpsContext;
-use super::{name, type_check};
 use crate::{ir::*, types::Type};
 use error::CpsError;
 
 pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module, CpsError> {
-    name::check(module)?;
-    type_check::check(module)?;
-
     let context = CpsContext::new(result_type.into());
 
     let module = if_::flatten(module);
@@ -25,9 +21,6 @@ pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module
     let module = function_type::transform(&module, context.result_type());
     let module = stack::define_utility_functions(&module)?;
 
-    name::check(&module)?;
-    type_check::check(&module)?;
-
     Ok(module)
 }
 
@@ -35,7 +28,7 @@ pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module
 mod tests {
     use super::*;
     use crate::{
-        analysis::format,
+        analysis::{format, validation},
         types::{self, void_type, CallingConvention, Type},
     };
 
@@ -53,11 +46,12 @@ mod tests {
     }
 
     fn test_transformation(module: &Module) {
+        validation::validate(module).unwrap();
+
         let one = transform(module, void_type()).unwrap();
         let other = transform(module, void_type()).unwrap();
 
-        name::check(&one).unwrap();
-        type_check::check(&one).unwrap();
+        validation::validate(module).unwrap();
 
         assert_eq!(one, other);
     }

@@ -6,7 +6,7 @@ mod function_definition;
 mod type_;
 
 use self::{context::Context, error::CCallingConventionError};
-use super::{type_check, type_conversion};
+use super::type_conversion;
 use crate::{ir::*, types::Type};
 
 // TODO Implement the complete C calling convention for all targets.
@@ -16,8 +16,6 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     if ![4, 8].contains(&word_bytes) {
         return Err(CCallingConventionError::WordSize(word_bytes));
     }
-
-    type_check::check(module)?;
 
     let context = Context::new(word_bytes);
     let module = Module::new(
@@ -36,26 +34,31 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
             .collect::<Result<_, _>>()?,
     );
 
-    let module = type_conversion::convert(&module, &|type_| match type_ {
+    Ok(type_conversion::convert(&module, &|type_| match type_ {
         Type::Function(function) => type_::transform_function(&context, function).into(),
         _ => type_.clone(),
-    });
-
-    type_check::check(&module)?;
-
-    Ok(module)
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{self, void_type};
+    use crate::{
+        analysis::validation,
+        types::{self, void_type},
+    };
     use pretty_assertions::assert_eq;
 
     const WORD_BYTES: usize = 8;
 
     fn transform_module(module: &Module) -> Result<Module, CCallingConventionError> {
-        transform(module, WORD_BYTES)
+        validation::validate(module).unwrap();
+
+        let module = transform(module, WORD_BYTES)?;
+
+        validation::validate(&module).unwrap();
+
+        Ok(module)
     }
 
     #[test]
