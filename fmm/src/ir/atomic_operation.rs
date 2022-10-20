@@ -1,7 +1,6 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types;
 
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AtomicOperator {
     Add,

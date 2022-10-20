@@ -1,6 +1,5 @@
 use crate::types::Type;
 
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AllocateStack(Box<AllocateStackInner>);
 

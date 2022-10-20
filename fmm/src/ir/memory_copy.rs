@@ -1,6 +1,5 @@
 use super::expression::Expression;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoryCopy(Box<MemoryCopyInner>);
 

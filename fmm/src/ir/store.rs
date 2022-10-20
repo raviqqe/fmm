@@ -1,7 +1,6 @@
 use super::expression::Expression;
 use crate::types::Type;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Store(Box<StoreInner>);
 

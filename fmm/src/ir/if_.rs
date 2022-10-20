@@ -1,7 +1,6 @@
 use super::{block::Block, expression::Expression};
 use crate::types::Type;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct If(Box<IfInner>);
 

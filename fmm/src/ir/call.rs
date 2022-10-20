@@ -1,7 +1,6 @@
 use super::expression::Expression;
 use crate::types;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Call(Box<CallInner>);
 

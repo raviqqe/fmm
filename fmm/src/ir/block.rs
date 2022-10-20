@@ -1,6 +1,5 @@
 use super::{instruction::Instruction, terminal_instruction::TerminalInstruction};
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
     instructions: Box<Vec<Instruction>>,

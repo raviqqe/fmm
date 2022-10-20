@@ -1,7 +1,6 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct AtomicStore(Box<AtomicStoreInner>);
 
