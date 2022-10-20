@@ -288,9 +288,7 @@ fn compile_linkage(linkage: Linkage) -> &'static str {
 mod tests {
     use super::*;
     use crate::instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION;
-    use fmm::{
-        types::{self, CallingConvention, Type},
-    };
+    use fmm::types::{self, CallingConvention, Type};
     use pretty_assertions::assert_eq;
 
     fn compile_final_module(module: &Module) {

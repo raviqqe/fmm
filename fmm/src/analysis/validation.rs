@@ -3,8 +3,10 @@ use super::{
     type_check::{self, TypeCheckError},
 };
 use crate::ir::Module;
-use std::fmt::{self, Display};
-use std::{error::Error, fmt::Formatter};
+use std::{
+    error::Error,
+    fmt::{self, Display, Formatter},
+};
 
 pub fn validate(module: &Module) -> Result<(), ValidationError> {
     name::check(module)?;

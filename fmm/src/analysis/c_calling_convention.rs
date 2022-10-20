@@ -6,7 +6,7 @@ mod function_definition;
 mod type_;
 
 use self::{context::Context, error::CCallingConventionError};
-use super::{type_conversion};
+use super::type_conversion;
 use crate::{ir::*, types::Type};
 
 // TODO Implement the complete C calling convention for all targets.
