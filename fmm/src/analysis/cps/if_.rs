@@ -377,7 +377,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     fn flatten_module(module: &Module) -> Module {
-        validation::validate(&module).unwrap();
+        validation::validate(module).unwrap();
 
         let flattened_module = flatten(module);
 
