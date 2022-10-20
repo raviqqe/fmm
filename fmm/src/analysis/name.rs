@@ -44,12 +44,23 @@ pub fn check(module: &Module) -> Result<(), NameError> {
     }
 
     for definition in module.function_definitions() {
-        let mut local_names = FnvHashSet::default();
-
-        check_block(definition.body(), &mut local_names, &global_names)?;
+        check_function_definition(definition, &global_names)?;
     }
 
     Ok(())
+}
+
+fn check_function_definition<'a>(
+    definition: &FunctionDefinition,
+    global_names: &FnvHashSet<&'a str>,
+) -> Result<(), NameError> {
+    let mut local_names = FnvHashSet::default();
+
+    for argument in definition.arguments() {
+        check_name(argument.name(), &mut local_names)?;
+    }
+
+    check_block(definition.body(), &mut local_names, global_names)
 }
 
 fn check_block<'a>(
@@ -309,6 +320,48 @@ mod tests {
                         ],
                         TerminalInstruction::Unreachable,
                     ),
+                    Default::default(),
+                )],
+            );
+
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("x".into())));
+        }
+
+        #[test]
+        fn check_duplicate_names_in_argument_and_instruction() {
+            let module = Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("x", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
+                        TerminalInstruction::Unreachable,
+                    ),
+                    Default::default(),
+                )],
+            );
+
+            assert_eq!(check(&module), Err(NameError::DuplicateNames("x".into())));
+        }
+
+        #[test]
+        fn check_duplicate_names_in_arguments() {
+            let module = Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new("x", types::Primitive::PointerInteger),
+                        Argument::new("x", types::Primitive::PointerInteger),
+                    ],
+                    types::Primitive::PointerInteger,
+                    Block::new(vec![], TerminalInstruction::Unreachable),
                     Default::default(),
                 )],
             );
