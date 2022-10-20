@@ -289,7 +289,6 @@ mod tests {
     use super::*;
     use crate::instruction_configuration::DUMMY_INSTRUCTION_CONFIGURATION;
     use fmm::{
-        analysis::validation,
         types::{self, CallingConvention, Type},
     };
     use pretty_assertions::assert_eq;
