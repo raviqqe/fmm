@@ -70,6 +70,8 @@ impl FunctionDefinition {
     }
 
     pub fn arguments_mut(&mut self) -> &mut [Argument] {
+        *self.type_.borrow_mut() = None;
+
         &mut self.arguments
     }
 
@@ -78,6 +80,8 @@ impl FunctionDefinition {
     }
 
     pub fn result_type_mut(&mut self) -> &mut Type {
+        *self.type_.borrow_mut() = None;
+
         &mut self.result_type
     }
 }
