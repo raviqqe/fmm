@@ -19,20 +19,29 @@ pub fn transform(context: &Context, definition: &mut FunctionDefinition) {
     };
 
     let mut arguments = vec![];
+    let mut instructions = vec![];
 
     if let Some((name, type_)) = &result_pointer {
         arguments.push(Argument::new(name, types::Pointer::new(type_.clone())));
     }
 
     for argument in definition.arguments_mut().drain(..) {
-        arguments.push(if type_::is_memory_class(context, argument.type_()) {
-            Argument::new(
+        if type_::is_memory_class(context, argument.type_()) {
+            arguments.push(Argument::new(
                 pointer_name(argument.name()),
                 types::Pointer::new(argument.type_().clone()),
-            )
+            ));
+            instructions.push(
+                Load::new(
+                    argument.type_().clone(),
+                    Variable::new(pointer_name(argument.name())),
+                    argument.name(),
+                )
+                .into(),
+            );
         } else {
-            argument
-        });
+            arguments.push(argument);
+        }
     }
 
     *definition.arguments_mut() = arguments;
@@ -40,25 +49,6 @@ pub fn transform(context: &Context, definition: &mut FunctionDefinition) {
     if result_pointer.is_some() {
         *definition.result_type_mut() = void_type().into()
     }
-
-    let instructions = definition
-        .arguments()
-        .iter()
-        .flat_map(|argument| {
-            if type_::is_memory_class(context, argument.type_()) {
-                Some(
-                    Load::new(
-                        argument.type_().clone(),
-                        Variable::new(pointer_name(argument.name())),
-                        argument.name(),
-                    )
-                    .into(),
-                )
-            } else {
-                None
-            }
-        })
-        .collect();
 
     transform_block(definition.body_mut(), instructions, result_pointer.as_ref());
 }
