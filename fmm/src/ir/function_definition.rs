@@ -40,7 +40,7 @@ impl FunctionDefinition {
         &self.arguments
     }
 
-    pub fn arguments_mut(&mut self) -> &mut [Argument] {
+    pub fn arguments_mut(&mut self) -> &mut Vec<Argument> {
         *self.type_.borrow_mut() = None;
 
         &mut self.arguments

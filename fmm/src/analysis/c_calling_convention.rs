@@ -1,7 +1,6 @@
 mod call;
 mod context;
 mod error;
-mod function_declaration;
 mod function_definition;
 mod type_;
 
@@ -12,34 +11,23 @@ use crate::{ir::*, types::Type};
 // TODO Implement the complete C calling convention for all targets.
 //
 // Based on: https://refspecs.linuxfoundation.org/elf/x86_64-SysV-psABI.pdf
-pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingConventionError> {
+pub fn transform(module: &mut Module, word_bytes: usize) -> Result<(), CCallingConventionError> {
     if ![4, 8].contains(&word_bytes) {
         return Err(CCallingConventionError::WordSize(word_bytes));
     }
 
     let context = Context::new(word_bytes);
-    let mut module = Module::new(
-        module.variable_declarations().to_vec(),
-        module
-            .function_declarations()
-            .iter()
-            .map(|declaration| function_declaration::transform(&context, declaration))
-            .collect(),
-        module.variable_definitions().to_vec(),
-        module
-            .function_definitions()
-            .iter()
-            .map(|definition| function_definition::transform(&context, definition))
-            .map(|definition| call::transform_function_definition(&context, &definition))
-            .collect::<Result<_, _>>()?,
-    );
+    for definition in module.function_definitions_mut() {
+        function_definition::transform(&context, definition);
+        call::transform_function_definition(&context, definition)?;
+    }
 
-    type_conversion::convert(&mut module, &|type_| match type_ {
+    type_conversion::convert(module, &|type_| match type_ {
         Type::Function(function) => type_::transform_function(&context, function).into(),
         _ => type_.clone(),
     })?;
 
-    Ok(module)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -53,10 +41,10 @@ mod tests {
 
     const WORD_BYTES: usize = 8;
 
-    fn transform_module(module: &Module) -> Result<Module, CCallingConventionError> {
-        validation::validate(module).unwrap();
+    fn transform_module(mut module: Module) -> Result<Module, CCallingConventionError> {
+        validation::validate(&module).unwrap();
 
-        let module = transform(module, WORD_BYTES)?;
+        transform(&mut module, WORD_BYTES)?;
 
         validation::validate(&module).unwrap();
 
@@ -66,7 +54,7 @@ mod tests {
     #[test]
     fn transform_empty() {
         assert_eq!(
-            transform_module(&Module::new(vec![], vec![], vec![], vec![])),
+            transform_module(Module::new(vec![], vec![], vec![], vec![])),
             Ok(Module::new(vec![], vec![], vec![], vec![]))
         );
     }
@@ -84,7 +72,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![VariableDeclaration::new(
                         "x",
                         types::Function::new(
@@ -137,7 +125,7 @@ mod tests {
                 vec![],
             );
 
-            assert_eq!(transform_module(&module), Ok(module));
+            assert_eq!(transform_module(module.clone()), Ok(module));
         }
 
         #[test]
@@ -149,7 +137,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
@@ -187,7 +175,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
@@ -239,7 +227,7 @@ mod tests {
                 )],
             );
 
-            assert_eq!(transform_module(&module), Ok(module));
+            assert_eq!(transform_module(module.clone()), Ok(module));
         }
 
         #[test]
@@ -251,7 +239,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![],
                     vec![],
@@ -303,7 +291,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![],
                     vec![],
@@ -420,7 +408,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
@@ -507,7 +495,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
@@ -598,7 +586,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",
@@ -705,7 +693,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                transform_module(&Module::new(
+                transform_module(Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(
                         "f",

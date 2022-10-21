@@ -25,7 +25,7 @@ impl Block {
         &self.terminal_instruction
     }
 
-    pub fn instructions_mut(&mut self) -> &mut [Instruction] {
+    pub fn instructions_mut(&mut self) -> &mut Vec<Instruction> {
         &mut self.instructions
     }
 
