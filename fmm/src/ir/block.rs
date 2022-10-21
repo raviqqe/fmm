@@ -12,7 +12,7 @@ impl Block {
         terminal_instruction: impl Into<TerminalInstruction>,
     ) -> Self {
         Self {
-            instructions: instructions.into(),
+            instructions,
             terminal_instruction: terminal_instruction.into(),
         }
     }

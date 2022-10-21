@@ -117,7 +117,7 @@ impl ModuleBuilder {
             body(InstructionBuilder::new(self.name_generator.clone()))?,
             options,
         );
-        let type_ = function_definition.type_().clone();
+        let type_ = function_definition.type_();
 
         self.function_definitions
             .borrow_mut()

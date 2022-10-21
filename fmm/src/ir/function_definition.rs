@@ -25,7 +25,7 @@ impl FunctionDefinition {
         Self {
             type_: None.into(),
             name: name.into(),
-            arguments: arguments.into(),
+            arguments,
             result_type,
             body,
             options,

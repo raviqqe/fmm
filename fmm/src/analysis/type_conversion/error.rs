@@ -4,7 +4,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TypeConversionError {
     FunctionExpected(Type),
     PrimitiveExpected(Type),

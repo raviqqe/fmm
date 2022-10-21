@@ -50,7 +50,7 @@ fn convert_function_declaration(
         if let Type::Function(function) = type_ {
             function
         } else {
-            return Err(TypeConversionError::FunctionExpected(type_.clone()));
+            return Err(TypeConversionError::FunctionExpected(type_));
         }
     };
 
