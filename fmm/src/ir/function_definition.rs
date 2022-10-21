@@ -40,12 +40,28 @@ impl FunctionDefinition {
         &self.arguments
     }
 
+    pub fn arguments_mut(&mut self) -> &mut [Argument] {
+        *self.type_.borrow_mut() = None;
+
+        &mut self.arguments
+    }
+
     pub fn body(&self) -> &Block {
         &self.body
     }
 
+    pub fn body_mut(&mut self) -> &mut Block {
+        &mut self.body
+    }
+
     pub fn result_type(&self) -> &Type {
         &self.result_type
+    }
+
+    pub fn result_type_mut(&mut self) -> &mut Type {
+        *self.type_.borrow_mut() = None;
+
+        &mut self.result_type
     }
 
     pub fn type_(&self) -> types::Function {
@@ -67,22 +83,6 @@ impl FunctionDefinition {
 
     pub fn options(&self) -> &FunctionDefinitionOptions {
         &self.options
-    }
-
-    pub fn arguments_mut(&mut self) -> &mut [Argument] {
-        *self.type_.borrow_mut() = None;
-
-        &mut self.arguments
-    }
-
-    pub fn body_mut(&mut self) -> &mut Block {
-        &mut self.body
-    }
-
-    pub fn result_type_mut(&mut self) -> &mut Type {
-        *self.type_.borrow_mut() = None;
-
-        &mut self.result_type
     }
 }
 
