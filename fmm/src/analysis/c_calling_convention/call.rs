@@ -16,7 +16,7 @@ pub fn transform_function_definition(
 }
 
 fn transform_block(context: &Context, block: &mut Block) -> Result<(), CCallingConventionError> {
-    let mut instructions = vec![];
+    let mut instructions = Vec::with_capacity(block.instructions().len());
 
     for instruction in block.instructions_mut().drain(..) {
         transform_instruction(context, instruction, &mut instructions)?;
@@ -43,7 +43,7 @@ fn transform_instruction(
             let function_type = type_::transform_function(context, original_function_type);
             let function = TypedExpression::new(call.function().clone(), function_type.clone());
 
-            let mut arguments = vec![];
+            let mut arguments = Vec::with_capacity(call.arguments().len());
 
             for (argument, type_) in call
                 .arguments()
