@@ -44,14 +44,9 @@ fn convert_function_declaration(
     declaration: &mut FunctionDeclaration,
     convert: &mut impl FnMut(&Type) -> Type,
 ) -> Result<(), TypeConversionError> {
-    *declaration.type_mut() = {
-        let type_ = convert(&declaration.type_().clone().into());
-
-        if let Type::Function(function) = type_ {
-            function
-        } else {
-            return Err(TypeConversionError::FunctionExpected(type_));
-        }
+    *declaration.type_mut() = match convert(&declaration.type_().clone().into()) {
+        Type::Function(function) => function,
+        type_ => return Err(TypeConversionError::FunctionExpected(type_)),
     };
 
     Ok(())
