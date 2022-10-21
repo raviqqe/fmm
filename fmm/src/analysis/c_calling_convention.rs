@@ -18,7 +18,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     }
 
     let context = Context::new(word_bytes);
-    let module = Module::new(
+    let mut module = Module::new(
         module.variable_declarations().to_vec(),
         module
             .function_declarations()
@@ -34,10 +34,12 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
             .collect::<Result<_, _>>()?,
     );
 
-    Ok(type_conversion::convert(&module, &|type_| match type_ {
+    type_conversion::convert(&mut module, &|type_| match type_ {
         Type::Function(function) => type_::transform_function(&context, function).into(),
         _ => type_.clone(),
-    }))
+    });
+
+    Ok(module)
 }
 
 #[cfg(test)]

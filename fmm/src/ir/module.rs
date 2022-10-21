@@ -41,4 +41,20 @@ impl Module {
     pub fn function_definitions(&self) -> &[FunctionDefinition] {
         &self.function_definitions
     }
+
+    pub fn variable_declarations_mut(&mut self) -> &mut [VariableDeclaration] {
+        &mut self.variable_declarations
+    }
+
+    pub fn function_declarations_mut(&mut self) -> &mut [FunctionDeclaration] {
+        &mut self.function_declarations
+    }
+
+    pub fn variable_definitions_mut(&mut self) -> &mut [VariableDefinition] {
+        &mut self.variable_definitions
+    }
+
+    pub fn function_definitions_mut(&mut self) -> &mut [FunctionDefinition] {
+        &mut self.function_definitions
+    }
 }

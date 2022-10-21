@@ -30,11 +30,23 @@ impl MemoryCopy {
         &self.0.source
     }
 
+    pub fn source_mut(&mut self) -> &mut Expression {
+        &mut self.0.source
+    }
+
     pub fn destination(&self) -> &Expression {
         &self.0.destination
     }
 
+    pub fn destination_mut(&mut self) -> &mut Expression {
+        &mut self.0.destination
+    }
+
     pub fn size(&self) -> &Expression {
         &self.0.size
+    }
+
+    pub fn size_mut(&mut self) -> &mut Expression {
+        &mut self.0.size
     }
 }

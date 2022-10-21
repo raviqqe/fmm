@@ -34,12 +34,24 @@ impl Call {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut types::Function {
+        &mut self.0.type_
+    }
+
     pub fn function(&self) -> &Expression {
         &self.0.function
     }
 
+    pub fn function_mut(&mut self) -> &mut Expression {
+        &mut self.0.function
+    }
+
     pub fn arguments(&self) -> &[Expression] {
         &self.0.arguments
+    }
+
+    pub fn arguments_mut(&mut self) -> &mut [Expression] {
+        &mut self.0.arguments
     }
 
     pub fn name(&self) -> &str {

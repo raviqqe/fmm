@@ -1,231 +1,204 @@
+mod error;
+
+pub use self::error::TypeConversionError;
 use crate::{
     ir::*,
     types::{self, Type},
 };
 use fnv::FnvHashMap;
 
-pub fn convert(module: &Module, convert: &impl Fn(&Type) -> Type) -> Module {
+pub fn convert(
+    module: &mut Module,
+    convert: &impl Fn(&Type) -> Type,
+) -> Result<(), TypeConversionError> {
     let mut cache = FnvHashMap::default();
     let mut convert = |type_: &Type| -> Type { convert_type(type_, convert, &mut cache) };
 
-    Module::new(
-        module
-            .variable_declarations()
-            .iter()
-            .map(|declaration| convert_variable_declaration(declaration, &mut convert))
-            .collect(),
-        module
-            .function_declarations()
-            .iter()
-            .map(|declaration| convert_function_declaration(declaration, &mut convert))
-            .collect(),
-        module
-            .variable_definitions()
-            .iter()
-            .map(|definition| convert_variable_definition(definition, &mut convert))
-            .collect(),
-        module
-            .function_definitions()
-            .iter()
-            .map(|definition| convert_function_definition(definition, &mut convert))
-            .collect(),
-    )
+    for variable_declaration in module.variable_declarations_mut() {
+        convert_variable_declaration(variable_declaration, &mut convert);
+    }
+
+    for function_declaration in module.function_declarations_mut() {
+        convert_function_declaration(function_declaration, &mut convert);
+    }
+
+    for variable_definition in module.variable_definitions_mut() {
+        convert_variable_definition(variable_definition, &mut convert);
+    }
+
+    for function_definition in module.function_definitions_mut() {
+        convert_function_definition(function_definition, &mut convert)?;
+    }
+
+    Ok(())
 }
 
 fn convert_variable_declaration(
-    declaration: &VariableDeclaration,
+    declaration: &mut VariableDeclaration,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> VariableDeclaration {
-    VariableDeclaration::new(declaration.name(), convert(declaration.type_()))
+) {
+    *declaration.type_mut() = convert(declaration.type_());
 }
 
 fn convert_function_declaration(
-    declaration: &FunctionDeclaration,
+    declaration: &mut FunctionDeclaration,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> FunctionDeclaration {
-    FunctionDeclaration::new(
-        declaration.name(),
-        convert(&declaration.type_().clone().into())
-            .to_function()
-            .unwrap()
-            .clone(),
-    )
+) -> Result<(), TypeConversionError> {
+    *declaration.type_mut() = {
+        let type_ = convert(&declaration.type_().clone().into());
+
+        if let Type::Function(function) = type_ {
+            function
+        } else {
+            return Err(TypeConversionError::FunctionExpected(type_.clone()));
+        }
+    };
+
+    Ok(())
 }
 
 fn convert_variable_definition(
-    definition: &VariableDefinition,
+    definition: &mut VariableDefinition,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> VariableDefinition {
-    VariableDefinition::new(
-        definition.name(),
-        convert_expression(definition.body(), convert),
-        convert(definition.type_()),
-        definition.options().clone(),
-    )
+) {
+    *definition.body_mut() = convert_expression(definition.body(), convert);
+    *definition.type_mut() = convert(definition.type_());
 }
 
 fn convert_function_definition(
-    definition: &FunctionDefinition,
+    definition: &mut FunctionDefinition,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> FunctionDefinition {
-    FunctionDefinition::new(
-        definition.name(),
-        definition
-            .arguments()
-            .iter()
-            .map(|argument| Argument::new(argument.name(), convert(argument.type_())))
-            .collect(),
-        convert(definition.result_type()),
-        convert_block(definition.body(), convert),
-        definition.options().clone(),
-    )
+) -> Result<(), TypeConversionError> {
+    for argument in definition.arguments_mut() {
+        *argument.type_mut() = convert(argument.type_());
+    }
+
+    *definition.result_type_mut() = convert(definition.result_type());
+
+    convert_block(definition.body_mut(), convert);
+
+    Ok(())
 }
 
-fn convert_block(block: &Block, convert: &mut impl FnMut(&Type) -> Type) -> Block {
-    Block::new(
-        block
-            .instructions()
-            .iter()
-            .map(|instruction| convert_instruction(instruction, convert))
-            .collect(),
-        convert_terminal_instruction(block.terminal_instruction(), convert),
-    )
+fn convert_block(
+    block: &mut Block,
+    convert: &mut impl FnMut(&Type) -> Type,
+) -> Result<(), TypeConversionError> {
+    for instruction in block.instructions_mut() {
+        convert_instruction(instruction, convert)?;
+    }
+
+    convert_terminal_instruction(block.terminal_instruction_mut(), convert);
+
+    Ok(())
 }
 
 fn convert_instruction(
-    instruction: &Instruction,
+    instruction: &mut Instruction,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> Instruction {
+) -> Result<(), TypeConversionError> {
     match instruction {
-        Instruction::AllocateHeap(allocate) => AllocateHeap::new(
-            convert_expression(allocate.size(), convert),
-            allocate.name(),
-        )
-        .into(),
+        Instruction::AllocateHeap(allocate) => {
+            *allocate.size_mut() = convert_expression(allocate.size(), convert);
+        }
         Instruction::AllocateStack(allocate) => {
-            AllocateStack::new(convert(allocate.type_()), allocate.name()).into()
+            *allocate.type_mut() = convert(allocate.type_());
         }
-        Instruction::AtomicLoad(load) => AtomicLoad::new(
-            convert(load.type_()),
-            convert_expression(load.pointer(), convert),
-            load.ordering(),
-            load.name(),
-        )
-        .into(),
-        Instruction::AtomicOperation(operation) => AtomicOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
-            operation.operator(),
-            convert_expression(operation.pointer(), convert),
-            convert_expression(operation.value(), convert),
-            operation.ordering(),
-            operation.name(),
-        )
-        .into(),
-        Instruction::AtomicStore(store) => AtomicStore::new(
-            convert(store.type_()),
-            convert_expression(store.value(), convert),
-            convert_expression(store.pointer(), convert),
-            store.ordering(),
-        )
-        .into(),
-        Instruction::Call(call) => Call::new(
-            convert(&call.type_().clone().into())
-                .to_function()
-                .unwrap()
-                .clone(),
-            convert_expression(call.function(), convert),
-            call.arguments()
-                .iter()
-                .map(|expression| convert_expression(expression, convert))
-                .collect(),
-            call.name(),
-        )
-        .into(),
-        Instruction::CompareAndSwap(cas) => CompareAndSwap::new(
-            convert(cas.type_()),
-            convert_expression(cas.pointer(), convert),
-            convert_expression(cas.old_value(), convert),
-            convert_expression(cas.new_value(), convert),
-            cas.success_ordering(),
-            cas.failure_ordering(),
-            cas.name(),
-        )
-        .into(),
-        Instruction::DeconstructRecord(deconstruct) => DeconstructRecord::new(
-            convert(&deconstruct.type_().clone().into())
-                .to_record()
-                .unwrap()
-                .clone(),
-            convert_expression(deconstruct.record(), convert),
-            deconstruct.field_index(),
-            deconstruct.name(),
-        )
-        .into(),
-        Instruction::DeconstructUnion(deconstruct) => DeconstructUnion::new(
-            convert(&deconstruct.type_().clone().into())
-                .to_union()
-                .unwrap()
-                .clone(),
-            convert_expression(deconstruct.union(), convert),
-            deconstruct.member_index(),
-            deconstruct.name(),
-        )
-        .into(),
-        Instruction::Fence(fence) => fence.clone().into(),
+        Instruction::AtomicLoad(load) => {
+            *load.type_mut() = convert(load.type_());
+            *load.pointer_mut() = convert_expression(load.pointer(), convert);
+        }
+        Instruction::AtomicOperation(operation) => {
+            *operation.type_mut() = match convert(&operation.type_().into()) {
+                Type::Primitive(primitive) => primitive,
+                type_ => return Err(TypeConversionError::PrimitiveExpected(type_)),
+            };
+            *operation.pointer_mut() = convert_expression(operation.pointer(), convert);
+            *operation.value_mut() = convert_expression(operation.value(), convert);
+        }
+        Instruction::AtomicStore(store) => {
+            *store.type_mut() = convert(store.type_());
+            *store.value_mut() = convert_expression(store.value(), convert);
+            *store.pointer_mut() = convert_expression(store.pointer(), convert);
+        }
+        Instruction::Call(call) => {
+            *call.type_mut() = match convert(&call.type_().clone().into()) {
+                Type::Function(function) => function,
+                type_ => return Err(TypeConversionError::FunctionExpected(type_)),
+            };
+            *call.function_mut() = convert_expression(call.function(), convert);
+
+            for argument in call.arguments_mut() {
+                convert_expression(argument, convert);
+            }
+        }
+        Instruction::CompareAndSwap(cas) => {
+            *cas.type_mut() = convert(cas.type_());
+            *cas.pointer_mut() = convert_expression(cas.pointer(), convert);
+            *cas.old_value_mut() = convert_expression(cas.old_value(), convert);
+            *cas.new_value_mut() = convert_expression(cas.new_value(), convert);
+        }
+        Instruction::DeconstructRecord(deconstruct) => {
+            *deconstruct.type_mut() = match convert(&deconstruct.type_().clone().into()) {
+                Type::Record(record) => record,
+                type_ => return Err(TypeConversionError::RecordExpected(type_)),
+            };
+            *deconstruct.record_mut() = convert_expression(deconstruct.record(), convert);
+        }
+        Instruction::DeconstructUnion(deconstruct) => {
+            *deconstruct.type_mut() = match convert(&deconstruct.type_().clone().into()) {
+                Type::Union(union) => union,
+                type_ => return Err(TypeConversionError::UnionExpected(type_)),
+            };
+            *deconstruct.union_mut() = convert_expression(deconstruct.union(), convert);
+        }
+        Instruction::Fence(_) => {}
         Instruction::FreeHeap(free) => {
-            FreeHeap::new(convert_expression(free.pointer(), convert)).into()
+            *free.pointer_mut() = convert_expression(free.pointer(), convert);
         }
-        Instruction::If(if_) => If::new(
-            convert(if_.type_()),
-            convert_expression(if_.condition(), convert),
-            convert_block(if_.then(), convert),
-            convert_block(if_.else_(), convert),
-            if_.name(),
-        )
-        .into(),
-        Instruction::Load(load) => Load::new(
-            convert(load.type_()),
-            convert_expression(load.pointer(), convert),
-            load.name(),
-        )
-        .into(),
-        Instruction::MemoryCopy(copy) => MemoryCopy::new(
-            convert_expression(copy.source(), convert),
-            convert_expression(copy.destination(), convert),
-            convert_expression(copy.size(), convert),
-        )
-        .into(),
-        Instruction::ReallocateHeap(reallocate) => ReallocateHeap::new(
-            convert_expression(reallocate.pointer(), convert),
-            convert_expression(reallocate.size(), convert),
-            reallocate.name(),
-        )
-        .into(),
-        Instruction::Store(store) => Store::new(
-            convert(store.type_()),
-            convert_expression(store.value(), convert),
-            convert_expression(store.pointer(), convert),
-        )
-        .into(),
+        Instruction::If(if_) => {
+            *if_.type_mut() = convert(if_.type_());
+            *if_.condition_mut() = convert_expression(if_.condition(), convert);
+            convert_block(if_.then_mut(), convert)?;
+            convert_block(if_.else_mut(), convert)?;
+        }
+        Instruction::Load(load) => {
+            *load.type_mut() = convert(load.type_());
+            *load.pointer_mut() = convert_expression(load.pointer(), convert);
+        }
+        Instruction::MemoryCopy(copy) => {
+            *copy.source_mut() = convert_expression(copy.source(), convert);
+            *copy.destination_mut() = convert_expression(copy.destination(), convert);
+            *copy.size_mut() = convert_expression(copy.size(), convert);
+        }
+        Instruction::ReallocateHeap(reallocate) => {
+            *reallocate.pointer_mut() = convert_expression(reallocate.pointer(), convert);
+            *reallocate.size_mut() = convert_expression(reallocate.size(), convert);
+        }
+        Instruction::Store(store) => {
+            *store.type_mut() = convert(store.type_());
+            *store.value_mut() = convert_expression(store.value(), convert);
+            *store.pointer_mut() = convert_expression(store.pointer(), convert);
+        }
     }
+
+    Ok(())
 }
 
 fn convert_terminal_instruction(
-    instruction: &TerminalInstruction,
+    instruction: &mut TerminalInstruction,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> TerminalInstruction {
+) {
     match instruction {
-        TerminalInstruction::Branch(branch) => Branch::new(
-            convert(branch.type_()),
-            convert_expression(branch.expression(), convert),
-        )
-        .into(),
-        TerminalInstruction::Return(return_) => Return::new(
-            convert(return_.type_()),
-            convert_expression(return_.expression(), convert),
-        )
-        .into(),
-        TerminalInstruction::Unreachable => TerminalInstruction::Unreachable,
+        TerminalInstruction::Branch(branch) => {
+            *branch.type_mut() = convert(branch.type_());
+            *branch.expression_mut() = convert_expression(branch.expression(), convert);
+        }
+        TerminalInstruction::Return(return_) => {
+            *return_.type_mut() = convert(return_.type_());
+            *return_.expression_mut() = convert_expression(return_.expression(), convert);
+        }
+        TerminalInstruction::Unreachable => {}
     }
 }
 
@@ -361,12 +334,20 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    fn convert_module(module: &Module, convert_type: &impl Fn(&Type) -> Type) -> Module {
+        let mut module = module.clone();
+
+        convert(&mut module, convert_type);
+
+        module
+    }
+
     #[test]
     fn convert_empty() {
         let module = Module::new(vec![], vec![], vec![], vec![]);
 
         assert_eq!(
-            convert(&module, &|_| types::Primitive::PointerInteger.into()),
+            convert_module(&module, &|_| types::Primitive::PointerInteger.into()),
             module
         );
     }
@@ -374,7 +355,7 @@ mod tests {
     #[test]
     fn convert_variable_declaration() {
         assert_eq!(
-            convert(
+            convert_module(
                 &Module::new(
                     vec![VariableDeclaration::new("x", types::Primitive::Integer32)],
                     vec![],
@@ -402,7 +383,7 @@ mod tests {
     #[test]
     fn convert_function_declaration() {
         assert_eq!(
-            convert(
+            convert_module(
                 &Module::new(
                     vec![],
                     vec![FunctionDeclaration::new(

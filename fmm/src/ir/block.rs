@@ -24,4 +24,12 @@ impl Block {
     pub fn terminal_instruction(&self) -> &TerminalInstruction {
         &self.terminal_instruction
     }
+
+    pub fn instructions_mut(&mut self) -> &mut [Instruction] {
+        &mut self.instructions
+    }
+
+    pub fn terminal_instruction_mut(&mut self) -> &mut TerminalInstruction {
+        &mut self.terminal_instruction
+    }
 }

@@ -30,8 +30,16 @@ impl ReallocateHeap {
         &self.0.pointer
     }
 
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.0.pointer
+    }
+
     pub fn size(&self) -> &Expression {
         &self.0.size
+    }
+
+    pub fn size_mut(&mut self) -> &mut Expression {
+        &mut self.0.size
     }
 
     pub fn name(&self) -> &str {

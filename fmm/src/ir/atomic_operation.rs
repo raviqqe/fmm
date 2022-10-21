@@ -46,6 +46,10 @@ impl AtomicOperation {
         self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut types::Primitive {
+        &mut self.0.type_
+    }
+
     pub fn operator(&self) -> AtomicOperator {
         self.0.operator
     }
@@ -54,8 +58,16 @@ impl AtomicOperation {
         &self.0.pointer
     }
 
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.0.pointer
+    }
+
     pub fn value(&self) -> &Expression {
         &self.0.value
+    }
+
+    pub fn value_mut(&mut self) -> &mut Expression {
+        &mut self.0.value
     }
 
     pub fn ordering(&self) -> AtomicOrdering {

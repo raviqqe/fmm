@@ -235,7 +235,7 @@ fn declare_function_definition<'c>(
     let function = module.get_function(definition.name()).unwrap_or_else(|| {
         module.add_function(
             definition.name(),
-            type_::compile_function(context, definition.type_()),
+            type_::compile_function(context, &definition.type_()),
             Some(compile_linkage(definition.options().linkage())),
         )
     });

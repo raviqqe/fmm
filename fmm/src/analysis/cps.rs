@@ -17,8 +17,8 @@ pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module
 
     let module = if_::flatten(module);
     let module = source_function::transform(&context, &module)?;
-    let module = target_function::transform(&context, &module)?;
-    let module = function_type::transform(&module, context.result_type());
+    let mut module = target_function::transform(&context, &module)?;
+    function_type::transform(&mut module, context.result_type());
     let module = stack::define_utility_functions(&module)?;
 
     Ok(module)

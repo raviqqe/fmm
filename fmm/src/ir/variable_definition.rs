@@ -39,4 +39,12 @@ impl VariableDefinition {
     pub fn options(&self) -> &VariableDefinitionOptions {
         &self.options
     }
+
+    pub fn body_mut(&mut self) -> &mut Expression {
+        &mut self.body
+    }
+
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.type_
+    }
 }

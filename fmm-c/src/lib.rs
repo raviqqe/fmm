@@ -175,7 +175,7 @@ fn compile_function_forward_declaration(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.options().linkage()).to_owned()
-        + &type_::compile_function_name(definition.type_(), definition.name(), type_ids)
+        + &type_::compile_function_name(&definition.type_(), definition.name(), type_ids)
         + ";"
 }
 

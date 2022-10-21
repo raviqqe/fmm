@@ -1,13 +1,14 @@
 use super::{argument::Argument, block::Block, FunctionDefinitionOptions};
 use crate::types::{self, Type};
+use std::cell::RefCell;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct FunctionDefinition {
     name: String,
     arguments: Vec<Argument>,
     body: Block,
     result_type: Type,
-    type_: types::Function,
+    type_: RefCell<Option<types::Function>>,
     options: FunctionDefinitionOptions,
 }
 
@@ -22,14 +23,7 @@ impl FunctionDefinition {
         let result_type = result_type.into();
 
         Self {
-            type_: types::Function::new(
-                arguments
-                    .iter()
-                    .map(|argument| argument.type_().clone())
-                    .collect(),
-                result_type.clone(),
-                options.calling_convention(),
-            ),
+            type_: None.into(),
             name: name.into(),
             arguments: arguments.into(),
             result_type,
@@ -54,11 +48,46 @@ impl FunctionDefinition {
         &self.result_type
     }
 
-    pub fn type_(&self) -> &types::Function {
-        &self.type_
+    pub fn type_(&self) -> types::Function {
+        if let Some(type_) = &*self.type_.borrow() {
+            return type_.clone();
+        }
+
+        *self.type_.borrow_mut() = Some(types::Function::new(
+            self.arguments
+                .iter()
+                .map(|argument| argument.type_().clone())
+                .collect(),
+            self.result_type.clone(),
+            self.options.calling_convention(),
+        ));
+
+        self.type_()
     }
 
     pub fn options(&self) -> &FunctionDefinitionOptions {
         &self.options
+    }
+
+    pub fn arguments_mut(&mut self) -> &mut [Argument] {
+        &mut self.arguments
+    }
+
+    pub fn body_mut(&mut self) -> &mut Block {
+        &mut self.body
+    }
+
+    pub fn result_type_mut(&mut self) -> &mut Type {
+        &mut self.result_type
+    }
+}
+
+impl PartialEq for FunctionDefinition {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+            && self.arguments == other.arguments
+            && self.body == other.body
+            && self.result_type == other.result_type
+            && self.options == other.options
     }
 }

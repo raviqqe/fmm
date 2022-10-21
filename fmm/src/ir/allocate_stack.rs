@@ -24,6 +24,10 @@ impl AllocateStack {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
+    }
+
     pub fn name(&self) -> &str {
         &self.0.name
     }

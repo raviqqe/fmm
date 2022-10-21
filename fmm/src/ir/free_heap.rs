@@ -15,4 +15,8 @@ impl FreeHeap {
     pub fn pointer(&self) -> &Expression {
         &self.pointer
     }
+
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.pointer
+    }
 }

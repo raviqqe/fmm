@@ -21,4 +21,8 @@ impl FunctionDeclaration {
     pub fn type_(&self) -> &types::Function {
         &self.type_
     }
+
+    pub fn type_mut(&mut self) -> &mut types::Function {
+        &mut self.type_
+    }
 }

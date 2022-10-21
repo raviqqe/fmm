@@ -37,16 +37,32 @@ impl If {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
+    }
+
     pub fn condition(&self) -> &Expression {
         &self.0.condition
+    }
+
+    pub fn condition_mut(&mut self) -> &mut Expression {
+        &mut self.0.condition
     }
 
     pub fn then(&self) -> &Block {
         &self.0.then
     }
 
+    pub fn then_mut(&mut self) -> &mut Block {
+        &mut self.0.then
+    }
+
     pub fn else_(&self) -> &Block {
         &self.0.else_
+    }
+
+    pub fn else_mut(&mut self) -> &mut Block {
+        &mut self.0.else_
     }
 
     pub fn name(&self) -> &str {
