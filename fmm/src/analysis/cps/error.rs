@@ -1,5 +1,5 @@
 use crate::{
-    analysis::{name::NameError, type_check::TypeCheckError},
+    analysis::{name::NameError, type_conversion::TypeConversionError},
     build::BuildError,
     ir::*,
 };
@@ -13,7 +13,7 @@ pub enum CpsError {
     Build(BuildError),
     InvalidCallingConvention(Call),
     Name(NameError),
-    TypeCheck(TypeCheckError),
+    TypeConversion(TypeConversionError),
 }
 
 impl Display for CpsError {
@@ -36,8 +36,8 @@ impl From<NameError> for CpsError {
     }
 }
 
-impl From<TypeCheckError> for CpsError {
-    fn from(error: TypeCheckError) -> Self {
-        Self::TypeCheck(error)
+impl From<TypeConversionError> for CpsError {
+    fn from(error: TypeConversionError) -> Self {
+        Self::TypeConversion(error)
     }
 }

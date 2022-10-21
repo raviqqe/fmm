@@ -37,7 +37,7 @@ pub fn transform(module: &Module, word_bytes: usize) -> Result<Module, CCallingC
     type_conversion::convert(&mut module, &|type_| match type_ {
         Type::Function(function) => type_::transform_function(&context, function).into(),
         _ => type_.clone(),
-    });
+    })?;
 
     Ok(module)
 }

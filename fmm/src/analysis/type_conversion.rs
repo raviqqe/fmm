@@ -19,7 +19,7 @@ pub fn convert(
     }
 
     for function_declaration in module.function_declarations_mut() {
-        convert_function_declaration(function_declaration, &mut convert);
+        convert_function_declaration(function_declaration, &mut convert)?;
     }
 
     for variable_definition in module.variable_definitions_mut() {
@@ -75,7 +75,7 @@ fn convert_function_definition(
 
     *definition.result_type_mut() = convert(definition.result_type());
 
-    convert_block(definition.body_mut(), convert);
+    convert_block(definition.body_mut(), convert)?;
 
     Ok(())
 }
@@ -337,7 +337,7 @@ mod tests {
     fn convert_module(module: &Module, convert_type: &impl Fn(&Type) -> Type) -> Module {
         let mut module = module.clone();
 
-        convert(&mut module, convert_type);
+        convert(&mut module, convert_type).unwrap();
 
         module
     }
