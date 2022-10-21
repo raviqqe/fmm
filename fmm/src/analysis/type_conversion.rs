@@ -124,7 +124,7 @@ fn convert_instruction(
             *call.function_mut() = convert_expression(call.function(), convert);
 
             for argument in call.arguments_mut() {
-                convert_expression(argument, convert);
+                *argument = convert_expression(argument, convert);
             }
         }
         Instruction::CompareAndSwap(cas) => {
@@ -197,6 +197,7 @@ fn convert_terminal_instruction(
     }
 }
 
+#[must_use]
 fn convert_expression(
     expression: &Expression,
     convert: &mut impl FnMut(&Type) -> Type,
@@ -289,6 +290,7 @@ fn convert_expression(
     }
 }
 
+#[must_use]
 fn convert_type(
     type_: &Type,
     convert: &dyn Fn(&Type) -> Type,
@@ -410,6 +412,106 @@ mod tests {
                 )],
                 vec![],
                 vec![],
+            )
+        );
+    }
+
+    #[test]
+    fn convert_function_definition() {
+        assert_eq!(
+            convert_module(
+                &Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![],
+                        types::Primitive::Integer32,
+                        Block::new(vec![], TerminalInstruction::Unreachable),
+                        Default::default(),
+                    )],
+                ),
+                &|type_| match type_ {
+                    Type::Primitive(types::Primitive::Integer32) =>
+                        types::Primitive::PointerInteger.into(),
+                    _ => type_.clone(),
+                }
+            ),
+            Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    Default::default(),
+                )],
+            )
+        );
+    }
+
+    #[test]
+    fn convert_call_argument() {
+        assert_eq!(
+            convert_module(
+                &Module::new(
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::PointerInteger,
+                                    types::CallingConvention::Target
+                                ),
+                                Variable::new("f"),
+                                vec![Undefined::new(types::Primitive::Integer32).into()],
+                                "x"
+                            )
+                            .into()],
+                            TerminalInstruction::Unreachable
+                        ),
+                        Default::default(),
+                    )],
+                ),
+                &|type_| match type_ {
+                    Type::Primitive(types::Primitive::Integer32) =>
+                        types::Primitive::PointerInteger.into(),
+                    _ => type_.clone(),
+                }
+            ),
+            Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::PointerInteger,
+                                types::CallingConvention::Target
+                            ),
+                            Variable::new("f"),
+                            vec![Undefined::new(types::Primitive::PointerInteger).into()],
+                            "x"
+                        )
+                        .into()],
+                        TerminalInstruction::Unreachable
+                    ),
+                    Default::default(),
+                )],
             )
         );
     }
