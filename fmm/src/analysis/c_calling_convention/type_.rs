@@ -4,12 +4,8 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-pub fn transform(context: &Context, type_: &Type) -> Type {
-    if is_memory_class(context, type_) {
-        types::Pointer::new(type_.clone()).into()
-    } else {
-        type_.clone()
-    }
+pub fn transform_memory_class(type_: &Type) -> Type {
+    types::Pointer::new(type_.clone()).into()
 }
 
 pub fn transform_function(context: &Context, function: &types::Function) -> types::Function {
@@ -18,17 +14,18 @@ pub fn transform_function(context: &Context, function: &types::Function) -> type
 
         types::Function::new(
             if is_result_memory {
-                Some(transform(context, function.result()))
+                Some(transform_memory_class(function.result()))
             } else {
                 None
             }
             .into_iter()
-            .chain(
-                function
-                    .arguments()
-                    .iter()
-                    .map(|type_| transform(context, type_)),
-            )
+            .chain(function.arguments().iter().map(|type_| {
+                if is_memory_class(context, type_) {
+                    transform_memory_class(type_)
+                } else {
+                    type_.clone()
+                }
+            }))
             .collect(),
             if is_result_memory {
                 void_type().into()

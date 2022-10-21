@@ -22,14 +22,14 @@ pub fn transform(context: &Context, definition: &mut FunctionDefinition) {
     let mut instructions = vec![];
 
     if let Some((name, type_)) = &result_pointer {
-        arguments.push(Argument::new(name, types::Pointer::new(type_.clone())));
+        arguments.push(Argument::new(name, type_::transform_memory_class(type_)));
     }
 
     for argument in definition.arguments_mut().drain(..) {
         if type_::is_memory_class(context, argument.type_()) {
             arguments.push(Argument::new(
                 pointer_name(argument.name()),
-                types::Pointer::new(argument.type_().clone()),
+                type_::transform_memory_class(argument.type_()),
             ));
             instructions.push(
                 Load::new(
