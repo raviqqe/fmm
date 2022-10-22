@@ -145,7 +145,7 @@ fn transform_block(
                     &rest_terminal_instruction,
                     local_variables,
                 );
-                let builder = InstructionBuilder::with_capacity(context.cps.name_generator(), 8);
+                let builder = InstructionBuilder::new(context.cps.name_generator());
 
                 stack::push(
                     &builder,
@@ -235,10 +235,7 @@ fn create_continuation(
         context.cps.result_type().clone(),
         Block::new(
             {
-                let builder = InstructionBuilder::with_capacity(
-                    context.cps.name_generator(),
-                    instructions.len() + environment.len() + 8,
-                );
+                let builder = InstructionBuilder::new(context.cps.name_generator());
 
                 let environment_record_type = get_environment_record(environment).type_().clone();
                 let environment_record = stack::pop(
@@ -247,10 +244,10 @@ fn create_continuation(
                     environment_record_type.clone(),
                 )?;
 
-                let mut all_instructions = builder.into_instructions();
-
-                all_instructions.extend(environment.iter().enumerate().map(
-                    |(index, (name, _))| {
+                builder
+                    .into_instructions()
+                    .into_iter()
+                    .chain(environment.iter().enumerate().map(|(index, (name, _))| {
                         DeconstructRecord::new(
                             environment_record_type.clone(),
                             environment_record.expression().clone(),
@@ -258,11 +255,9 @@ fn create_continuation(
                             name,
                         )
                         .into()
-                    },
-                ));
-                all_instructions.extend(instructions);
-
-                all_instructions
+                    }))
+                    .chain(instructions)
+                    .collect()
             },
             terminal_instruction,
         ),
