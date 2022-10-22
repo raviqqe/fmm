@@ -199,13 +199,9 @@ fn transform_block(
 }
 
 fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_name: String) {
-    *call.arguments_mut() = [
-        Variable::new(STACK_ARGUMENT_NAME).into(),
-        continuation.into(),
-    ]
-    .into_iter()
-    .chain(call.arguments().iter().cloned())
-    .collect();
+    call.arguments_mut()
+        .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
+    call.arguments_mut().insert(1, continuation.into());
     *call.name_mut() = result_name;
 }
 
