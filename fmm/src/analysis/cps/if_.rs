@@ -179,7 +179,7 @@ fn transform_if_block_with_rest_instructions(
         (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
             *block.terminal_instruction_mut() = TerminalInstruction::Unreachable;
         }
-        (TerminalInstruction::Branch(branch), return_) => {
+        (TerminalInstruction::Branch(branch), mut return_) => {
             let convert = |expression: &Expression| {
                 if expression == &Variable::new(if_name).into() {
                     branch.expression()
@@ -189,14 +189,12 @@ fn transform_if_block_with_rest_instructions(
                 .clone()
             };
 
-            // TODO Make expression conversion in place.
             for instruction in &mut rest_instructions {
-                *instruction = expression_conversion::convert_in_instruction(instruction, &convert);
+                expression_conversion::convert_in_instruction(instruction, &convert);
             }
 
-            // TODO Make expression conversion in place.
-            *block.terminal_instruction_mut() =
-                expression_conversion::convert_in_terminal_instruction(&return_, &convert);
+            expression_conversion::convert_in_terminal_instruction(&mut return_, &convert);
+            *block.terminal_instruction_mut() = return_;
         }
     }
 

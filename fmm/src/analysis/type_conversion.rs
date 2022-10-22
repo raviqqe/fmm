@@ -223,7 +223,9 @@ fn convert_expression(
         )
         .into(),
         Expression::BitwiseNotOperation(operation) => BitwiseNotOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
+            convert(&operation.type_().into())
+                .to_primitive()
+                .ok_or_else(|| TypeConversionError::PrimitiveExpected(operation.type_().into()))?,
             convert_expression(operation.value(), convert)?,
         )
         .into(),
@@ -259,7 +261,7 @@ fn convert_expression(
         Expression::Record(record) => Record::new(
             convert(&record.type_().clone().into())
                 .to_record()
-                .unwrap()
+                .ok_or_else(|| TypeConversionError::RecordExpected(record.type_().clone().into()))?
                 .clone(),
             record
                 .fields()
@@ -281,7 +283,7 @@ fn convert_expression(
         Expression::Union(union) => Union::new(
             convert(&union.type_().clone().into())
                 .to_union()
-                .unwrap()
+                .ok_or_else(|| TypeConversionError::UnionExpected(union.type_().clone().into()))?
                 .clone(),
             union.member_index(),
             convert_expression(union.member(), convert)?,
@@ -290,7 +292,7 @@ fn convert_expression(
         Expression::UnionAddress(address) => UnionAddress::new(
             convert(&address.type_().clone().into())
                 .to_union()
-                .unwrap()
+                .ok_or_else(|| TypeConversionError::UnionExpected(address.type_().clone().into()))?
                 .clone(),
             convert_expression(address.pointer(), convert)?,
             address.member_index(),
