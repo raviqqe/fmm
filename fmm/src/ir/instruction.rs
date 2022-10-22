@@ -155,3 +155,14 @@ impl From<Store> for Instruction {
         Self::Store(store)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::mem::size_of;
+
+    #[test]
+    fn type_size() {
+        assert!(size_of::<Type>() <= 2 * size_of::<usize>());
+    }
+}
