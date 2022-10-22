@@ -35,7 +35,7 @@ fn transform_instruction(
         Instruction::Call(call)
             if call.type_().calling_convention() == types::CallingConvention::Target =>
         {
-            let builder = InstructionBuilder::new(context.name_generator().clone());
+            let builder = InstructionBuilder::new(context.name_generator());
             let original_function_type = call.type_();
             let function_type = type_::transform_function(context, original_function_type);
             let function = TypedExpression::new(call.function().clone(), function_type.clone());
