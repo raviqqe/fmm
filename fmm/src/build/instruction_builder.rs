@@ -305,11 +305,11 @@ impl InstructionBuilder {
         ));
     }
 
-    pub fn branch(&self, typed_expression: impl Into<TypedExpression>) -> Block {
+    pub fn branch(self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.borrow().clone(),
+            self.instructions.into_inner(),
             Branch::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -317,11 +317,11 @@ impl InstructionBuilder {
         )
     }
 
-    pub fn return_(&self, typed_expression: impl Into<TypedExpression>) -> Block {
+    pub fn return_(self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.borrow().clone(),
+            self.instructions.into_inner(),
             Return::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -329,9 +329,9 @@ impl InstructionBuilder {
         )
     }
 
-    pub fn unreachable(&self) -> Block {
+    pub fn unreachable(self) -> Block {
         Block::new(
-            self.instructions.borrow().clone(),
+            self.instructions.into_inner(),
             TerminalInstruction::Unreachable,
         )
     }
