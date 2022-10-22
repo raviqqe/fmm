@@ -322,9 +322,8 @@ mod tests {
 
     fn compile_module(mut module: Module) {
         compile_final_module(&module);
-        compile_final_module(
-            &fmm::analysis::cps::transform(&mut module, types::void_type()).unwrap(),
-        );
+        fmm::analysis::cps::transform(&mut module, types::void_type()).unwrap();
+        compile_final_module(&module);
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {

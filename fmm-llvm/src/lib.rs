@@ -349,10 +349,8 @@ mod tests {
 
     fn compile_module_with_targets(mut module: Module, targets: &[&str]) {
         compile_transformed_module(&module, targets);
-        compile_transformed_module(
-            &fmm::analysis::cps::transform(&mut module, types::void_type()).unwrap(),
-            targets,
-        );
+        fmm::analysis::cps::transform(&mut module, types::void_type()).unwrap();
+        compile_transformed_module(&module, targets);
     }
 
     fn compile_module(module: Module) {
