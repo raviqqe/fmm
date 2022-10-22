@@ -37,7 +37,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
             module
                 .function_definitions()
                 .iter()
-                .map(|definition| (definition.name(), definition.type_().clone().into())),
+                .map(|definition| (definition.name(), definition.type_().into())),
         )
         .collect::<FnvHashMap<_, _>>();
 

@@ -1,9 +1,8 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DeconstructRecord(Rc<DeconstructRecordInner>);
+pub struct DeconstructRecord(Box<DeconstructRecordInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct DeconstructRecordInner {
@@ -35,8 +34,16 @@ impl DeconstructRecord {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut types::Record {
+        &mut self.0.type_
+    }
+
     pub fn record(&self) -> &Expression {
         &self.0.record
+    }
+
+    pub fn record_mut(&mut self) -> &mut Expression {
+        &mut self.0.record
     }
 
     pub fn field_index(&self) -> usize {

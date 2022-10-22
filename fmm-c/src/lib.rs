@@ -175,7 +175,7 @@ fn compile_function_forward_declaration(
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
     compile_linkage(definition.options().linkage()).to_owned()
-        + &type_::compile_function_name(definition.type_(), definition.name(), type_ids)
+        + &type_::compile_function_name(&definition.type_(), definition.name(), type_ids)
         + ";"
 }
 
@@ -320,9 +320,10 @@ mod tests {
         assert!(output.status.success());
     }
 
-    fn compile_module(module: &Module) {
-        compile_final_module(module);
-        compile_final_module(&fmm::analysis::cps::transform(module, types::void_type()).unwrap());
+    fn compile_module(mut module: Module) {
+        compile_final_module(&module);
+        fmm::analysis::cps::transform(&mut module, types::void_type()).unwrap();
+        compile_final_module(&module);
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -339,17 +340,17 @@ mod tests {
     }
 
     fn compile_function_definition(definition: FunctionDefinition) {
-        compile_module(&Module::new(vec![], vec![], vec![], vec![definition]));
+        compile_module(Module::new(vec![], vec![], vec![], vec![definition]));
     }
 
     #[test]
     fn compile_empty_module() {
-        compile_module(&Module::new(vec![], vec![], vec![], vec![]));
+        compile_module(Module::new(vec![], vec![], vec![], vec![]));
     }
 
     #[test]
     fn rename_names_first() {
-        compile_module(&Module::new(
+        compile_module(Module::new(
             vec![VariableDeclaration::new(
                 "😀",
                 types::Primitive::PointerInteger,
@@ -365,7 +366,7 @@ mod tests {
 
         #[test]
         fn compile_pointer_integer() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Primitive::PointerInteger,
@@ -378,7 +379,7 @@ mod tests {
 
         #[test]
         fn compile_pointer_integer_pointer() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Pointer::new(types::Primitive::PointerInteger),
@@ -391,7 +392,7 @@ mod tests {
 
         #[test]
         fn compile_function_pointer() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     create_function_type(vec![], types::Primitive::PointerInteger),
@@ -404,7 +405,7 @@ mod tests {
 
         #[test]
         fn compile_reference_to_declared_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Primitive::PointerInteger,
@@ -428,7 +429,7 @@ mod tests {
 
         #[test]
         fn check_variable_declaration_matching_definition() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Primitive::PointerInteger,
@@ -450,7 +451,7 @@ mod tests {
 
         #[test]
         fn compile_function_pointer() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new(
                     "x",
@@ -463,7 +464,7 @@ mod tests {
 
         #[test]
         fn check_function_declaration_matching_definition() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new(
                     "f",
@@ -489,7 +490,7 @@ mod tests {
 
         #[test]
         fn compile_record_type_definition() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Record::new(vec![types::Primitive::PointerInteger.into()]),
@@ -502,7 +503,7 @@ mod tests {
 
         #[test]
         fn compile_nested_record_type_definition() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Record::new(vec![types::Record::new(vec![]).into()]),
@@ -515,7 +516,7 @@ mod tests {
 
         #[test]
         fn compile_record_type_definition_with_nested_union_type() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Record::new(vec![types::Union::new(vec![
@@ -531,7 +532,7 @@ mod tests {
 
         #[test]
         fn compile_union_type_definition() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Union::new(vec![types::Primitive::PointerInteger.into()]),
@@ -544,7 +545,7 @@ mod tests {
 
         #[test]
         fn compile_nested_union_type_definition() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Union::new(vec![types::Union::new(vec![
@@ -560,7 +561,7 @@ mod tests {
 
         #[test]
         fn compile_union_type_definition_with_nested_record_type() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
                     types::Union::new(vec![types::Record::new(vec![]).into()]),
@@ -573,7 +574,7 @@ mod tests {
 
         #[test]
         fn compile_multiple_record_type_definitions() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![
                     VariableDeclaration::new(
                         "x",
@@ -600,7 +601,7 @@ mod tests {
 
         #[test]
         fn compile_constant_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -615,7 +616,7 @@ mod tests {
 
         #[test]
         fn compile_mutable_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -630,7 +631,7 @@ mod tests {
 
         #[test]
         fn compile_external_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -645,7 +646,7 @@ mod tests {
 
         #[test]
         fn compile_internal_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -660,7 +661,7 @@ mod tests {
 
         #[test]
         fn compile_weak_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -675,7 +676,7 @@ mod tests {
 
         #[test]
         fn compile_reference_to_defined_variable() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -705,7 +706,7 @@ mod tests {
 
         #[test]
         fn compile_external_function() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -727,7 +728,7 @@ mod tests {
 
         #[test]
         fn compile_internal_function() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -749,7 +750,7 @@ mod tests {
 
         #[test]
         fn compile_weak_function() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -775,7 +776,7 @@ mod tests {
 
         #[test]
         fn compile_size_of() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -790,7 +791,7 @@ mod tests {
 
         #[test]
         fn compile_align_of() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -805,7 +806,7 @@ mod tests {
 
         #[test]
         fn compile_bit_cast() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -824,7 +825,7 @@ mod tests {
 
         #[test]
         fn compile_bitwise_and() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -844,7 +845,7 @@ mod tests {
 
         #[test]
         fn compile_bitwise_or() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -864,7 +865,7 @@ mod tests {
 
         #[test]
         fn compile_signed_bitwise_right_shift() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -884,7 +885,7 @@ mod tests {
 
         #[test]
         fn compile_bitwise_xor() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -904,7 +905,7 @@ mod tests {
 
         #[test]
         fn compile_bitwise_left_shift() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -924,7 +925,7 @@ mod tests {
 
         #[test]
         fn compile_bitwise_right_shift() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -944,7 +945,7 @@ mod tests {
 
         #[test]
         fn compile_bitwise_not() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -968,7 +969,7 @@ mod tests {
                 ArithmeticOperator::Multiply,
                 ArithmeticOperator::Divide,
             ] {
-                compile_module(&Module::new(
+                compile_module(Module::new(
                     vec![],
                     vec![],
                     vec![VariableDefinition::new(
@@ -1001,7 +1002,7 @@ mod tests {
                 ComparisonOperator::GreaterThanOrEqual(false),
                 ComparisonOperator::GreaterThanOrEqual(true),
             ] {
-                compile_module(&Module::new(
+                compile_module(Module::new(
                     vec![],
                     vec![],
                     vec![VariableDefinition::new(
@@ -1044,7 +1045,7 @@ mod tests {
             let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
             let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new("x", record_type.clone())],
                 vec![],
                 vec![],
@@ -1093,7 +1094,7 @@ mod tests {
             ]);
             let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![VariableDeclaration::new("x", union_type.clone())],
                 vec![],
                 vec![],
@@ -1114,7 +1115,7 @@ mod tests {
 
         #[test]
         fn compile_constant_pointer_address() {
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -1138,7 +1139,7 @@ mod tests {
                 types::Primitive::PointerInteger.into(),
             ]);
 
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(
@@ -1162,7 +1163,7 @@ mod tests {
                 types::Primitive::PointerInteger.into(),
             ]);
 
-            compile_module(&Module::new(
+            compile_module(Module::new(
                 vec![],
                 vec![],
                 vec![VariableDefinition::new(

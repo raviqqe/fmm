@@ -1,9 +1,8 @@
 use super::expression::Expression;
 use crate::types;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DeconstructUnion(Rc<DeconstructUnionInner>);
+pub struct DeconstructUnion(Box<DeconstructUnionInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct DeconstructUnionInner {
@@ -35,8 +34,16 @@ impl DeconstructUnion {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut types::Union {
+        &mut self.0.type_
+    }
+
     pub fn union(&self) -> &Expression {
         &self.0.union
+    }
+
+    pub fn union_mut(&mut self) -> &mut Expression {
+        &mut self.0.union
     }
 
     pub fn member_index(&self) -> usize {

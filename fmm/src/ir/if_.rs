@@ -1,9 +1,8 @@
 use super::{block::Block, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct If(Rc<IfInner>);
+pub struct If(Box<IfInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct IfInner {
@@ -38,19 +37,39 @@ impl If {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
+    }
+
     pub fn condition(&self) -> &Expression {
         &self.0.condition
+    }
+
+    pub fn condition_mut(&mut self) -> &mut Expression {
+        &mut self.0.condition
     }
 
     pub fn then(&self) -> &Block {
         &self.0.then
     }
 
+    pub fn then_mut(&mut self) -> &mut Block {
+        &mut self.0.then
+    }
+
     pub fn else_(&self) -> &Block {
         &self.0.else_
     }
 
+    pub fn else_mut(&mut self) -> &mut Block {
+        &mut self.0.else_
+    }
+
     pub fn name(&self) -> &str {
         &self.0.name
+    }
+
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.0.name
     }
 }

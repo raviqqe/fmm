@@ -5,9 +5,9 @@ use crate::{
     ir::*,
     types::{self, generic_pointer_type, void_type, Type},
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, mem::take, rc::Rc};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug)]
 pub struct InstructionBuilder {
     name_generator: Rc<RefCell<NameGenerator>>,
     instructions: RefCell<Vec<Instruction>>,
@@ -18,6 +18,13 @@ impl InstructionBuilder {
         Self {
             name_generator,
             instructions: vec![].into(),
+        }
+    }
+
+    pub fn with_capacity(name_generator: Rc<RefCell<NameGenerator>>, capacity: usize) -> Self {
+        Self {
+            name_generator,
+            instructions: Vec::with_capacity(capacity).into(),
         }
     }
 
@@ -309,7 +316,7 @@ impl InstructionBuilder {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.borrow().clone(),
+            take(&mut self.instructions.borrow_mut()),
             Branch::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -321,7 +328,7 @@ impl InstructionBuilder {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.borrow().clone(),
+            take(&mut self.instructions.borrow_mut()),
             Return::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -331,7 +338,7 @@ impl InstructionBuilder {
 
     pub fn unreachable(&self) -> Block {
         Block::new(
-            self.instructions.borrow().clone(),
+            take(&mut self.instructions.borrow_mut()),
             TerminalInstruction::Unreachable,
         )
     }

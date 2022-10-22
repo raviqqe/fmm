@@ -97,21 +97,13 @@ pub fn pop(
     builder.load(element_pointer(builder, &stack, &size.into(), &type_)?)
 }
 
-pub fn define_utility_functions(module: &Module) -> Result<Module, BuildError> {
-    Ok(Module::new(
-        module.variable_declarations().to_vec(),
-        module.function_declarations().to_vec(),
-        module.variable_definitions().to_vec(),
-        module
-            .function_definitions()
-            .iter()
-            .cloned()
-            .chain([
-                extend_function_definition()?,
-                align_size_function_definition()?,
-            ])
-            .collect(),
-    ))
+pub fn define_utility_functions(module: &mut Module) -> Result<(), BuildError> {
+    module.function_definitions_mut().extend([
+        extend_function_definition()?,
+        align_size_function_definition()?,
+    ]);
+
+    Ok(())
 }
 
 fn element_pointer(

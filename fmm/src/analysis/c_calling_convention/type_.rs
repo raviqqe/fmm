@@ -4,39 +4,44 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-pub fn transform(context: &Context, type_: &Type) -> Type {
-    if is_memory_class(context, type_) {
-        types::Pointer::new(type_.clone()).into()
-    } else {
-        type_.clone()
-    }
+pub fn transform_memory_class(type_: &Type) -> Type {
+    types::Pointer::new(type_.clone()).into()
 }
 
 pub fn transform_function(context: &Context, function: &types::Function) -> types::Function {
     if function.calling_convention() == types::CallingConvention::Target {
         let is_result_memory = is_memory_class(context, function.result());
+        let is_argument_memory = function
+            .arguments()
+            .iter()
+            .any(|type_| is_memory_class(context, type_));
 
-        types::Function::new(
-            if is_result_memory {
-                Some(transform(context, function.result()))
-            } else {
-                None
-            }
-            .into_iter()
-            .chain(
-                function
-                    .arguments()
-                    .iter()
-                    .map(|type_| transform(context, type_)),
+        if is_result_memory || is_argument_memory {
+            types::Function::new(
+                if is_result_memory {
+                    Some(transform_memory_class(function.result()))
+                } else {
+                    None
+                }
+                .into_iter()
+                .chain(function.arguments().iter().map(|type_| {
+                    if is_memory_class(context, type_) {
+                        transform_memory_class(type_)
+                    } else {
+                        type_.clone()
+                    }
+                }))
+                .collect(),
+                if is_result_memory {
+                    void_type().into()
+                } else {
+                    function.result().clone()
+                },
+                function.calling_convention(),
             )
-            .collect(),
-            if is_result_memory {
-                void_type().into()
-            } else {
-                function.result().clone()
-            },
-            function.calling_convention(),
-        )
+        } else {
+            function.clone()
+        }
     } else {
         function.clone()
     }

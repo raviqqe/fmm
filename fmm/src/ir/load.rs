@@ -1,9 +1,8 @@
 use super::expression::Expression;
 use crate::types::Type;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Load(Rc<LoadInner>);
+pub struct Load(Box<LoadInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct LoadInner {
@@ -32,8 +31,16 @@ impl Load {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
+    }
+
     pub fn pointer(&self) -> &Expression {
         &self.0.pointer
+    }
+
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.0.pointer
     }
 
     pub fn name(&self) -> &str {

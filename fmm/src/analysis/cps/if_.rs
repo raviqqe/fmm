@@ -1,11 +1,12 @@
 use super::free_variable;
 use crate::{
-    analysis::{expression_conversion, local_variable, rename},
+    analysis::{expression_conversion, local_variable},
     build::NameGenerator,
     ir::*,
     types::{self, void_type, Type},
 };
-use fnv::{FnvHashMap, FnvHashSet};
+use fnv::FnvHashMap;
+use std::mem::replace;
 
 struct Context {
     function_definitions: Vec<FunctionDefinition>,
@@ -14,142 +15,91 @@ struct Context {
 
 // TODO Consider integrating this logic deeply with CPS transformation to omit
 // extra CPS stack manipulation.
-pub fn flatten(module: &Module) -> Module {
+pub fn flatten(module: &mut Module) {
     let mut context = Context {
         function_definitions: vec![],
         name_generator: NameGenerator::new("_if_"),
     };
 
-    Module::new(
-        module.variable_declarations().to_vec(),
-        module.function_declarations().to_vec(),
-        module.variable_definitions().to_vec(),
-        module
-            .function_definitions()
-            .iter()
-            .map(|definition| transform_function_definition(&mut context, definition))
-            .collect::<Vec<_>>()
-            .into_iter()
-            .chain(context.function_definitions)
-            .collect(),
-    )
+    for definition in module.function_definitions_mut() {
+        transform_function_definition(&mut context, definition);
+    }
+
+    module
+        .function_definitions_mut()
+        .extend(context.function_definitions);
 }
 
-fn transform_function_definition(
-    context: &mut Context,
-    definition: &FunctionDefinition,
-) -> FunctionDefinition {
-    if definition.type_().calling_convention() == types::CallingConvention::Source {
-        FunctionDefinition::new(
-            definition.name(),
-            definition.arguments().to_vec(),
-            definition.result_type().clone(),
-            transform_block(
-                context,
-                definition.body(),
-                definition.result_type(),
-                &local_variable::collect(definition),
-            ),
-            definition.options().clone(),
-        )
-    } else {
-        definition.clone()
+fn transform_function_definition(context: &mut Context, definition: &mut FunctionDefinition) {
+    if definition.type_().calling_convention() != types::CallingConvention::Source {
+        return;
     }
+
+    let result_type = definition.result_type().clone();
+    let local_variables = local_variable::collect(definition)
+        .into_iter()
+        .map(|(name, type_)| (name.to_owned(), type_))
+        .collect();
+
+    transform_block(
+        context,
+        definition.body_mut(),
+        &result_type,
+        &local_variables,
+    );
 }
 
 fn transform_block(
     context: &mut Context,
-    block: &Block,
+    block: &mut Block,
     result_type: &Type,
-    local_variables: &FnvHashMap<&str, Type>,
-) -> Block {
-    let (instructions, terminal_instruction) = transform_instructions(
-        context,
-        block.instructions(),
-        block.terminal_instruction(),
-        result_type,
-        local_variables,
+    local_variables: &FnvHashMap<String, Type>,
+) {
+    let mut rest_instructions = vec![];
+    let mut terminal_instruction = replace(
+        block.terminal_instruction_mut(),
+        TerminalInstruction::Unreachable,
     );
 
-    Block::new(instructions, terminal_instruction)
-}
-
-fn transform_instructions(
-    context: &mut Context,
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-    result_type: &Type,
-    local_variables: &FnvHashMap<&str, Type>,
-) -> (Vec<Instruction>, TerminalInstruction) {
-    let mut rest_instructions = vec![];
-    let mut terminal_instruction = terminal_instruction.clone();
-
-    for instruction in instructions.iter().rev() {
+    for instruction in block.instructions_mut().drain(..).rev() {
         match instruction {
-            Instruction::If(if_) if has_source_call(if_.then()) || has_source_call(if_.else_()) => {
-                let value_names = rest_instructions
-                    .iter()
-                    .flat_map(|instruction: &Instruction| instruction.value().map(|(name, _)| name))
-                    .collect::<FnvHashSet<_>>();
-                let rename_variable = |name: &str, suffix| {
-                    if value_names.contains(name) {
-                        format!("{}.{}", name, suffix)
-                    } else {
-                        name.into()
-                    }
-                };
-                let rename_then = |name: &str| rename_variable(name, "then");
-                let rename_else = |name: &str| rename_variable(name, "else");
+            Instruction::If(mut if_)
+                if has_source_call(if_.then()) || has_source_call(if_.else_()) =>
+            {
+                rest_instructions.reverse();
 
-                // Allow inlining an instruction. Skip if any rest instructions contain blocks.
-                if rest_instructions.len() <= 1
-                    && !rest_instructions
-                        .iter()
-                        .any(|instruction| instruction.has_blocks())
+                let name = if_.name().to_owned();
+
+                if rest_instructions.is_empty()
+                    || if_.then().terminal_instruction().is_branch()
+                        != if_.else_().terminal_instruction().is_branch()
                 {
-                    rest_instructions = vec![If::new(
-                        void_type(),
-                        if_.condition().clone(),
-                        transform_if_block_with_rest_instructions(
-                            context,
-                            if_.name(),
-                            if_.then(),
-                            result_type,
-                            local_variables,
-                            &rest_instructions
-                                .iter()
-                                .map(|instruction| {
-                                    rename::rename_instruction(instruction, &rename_then)
-                                })
-                                .collect::<Vec<_>>(),
-                            &rename::rename_terminal_instruction(
-                                &terminal_instruction,
-                                &rename_then,
-                            ),
-                        ),
-                        transform_if_block_with_rest_instructions(
-                            context,
-                            if_.name(),
-                            if_.else_(),
-                            result_type,
-                            local_variables,
-                            &rest_instructions
-                                .iter()
-                                .map(|instruction| {
-                                    rename::rename_instruction(instruction, &rename_else)
-                                })
-                                .collect::<Vec<_>>(),
-                            &rename::rename_terminal_instruction(
-                                &terminal_instruction,
-                                &rename_else,
-                            ),
-                        ),
-                        "",
-                    )
-                    .into()];
-                } else {
-                    rest_instructions.reverse();
+                    let (then_instructions, else_instructions) =
+                        if if_.then().terminal_instruction().is_branch() {
+                            (rest_instructions, vec![])
+                        } else {
+                            (vec![], rest_instructions)
+                        };
 
+                    transform_if_block_with_rest_instructions(
+                        context,
+                        &name,
+                        if_.then_mut(),
+                        then_instructions,
+                        terminal_instruction.clone(),
+                        result_type,
+                        local_variables,
+                    );
+                    transform_if_block_with_rest_instructions(
+                        context,
+                        &name,
+                        if_.else_mut(),
+                        else_instructions,
+                        terminal_instruction,
+                        result_type,
+                        local_variables,
+                    );
+                } else {
                     let environment = get_continuation_environment(
                         &rest_instructions,
                         &terminal_instruction,
@@ -157,48 +107,46 @@ fn transform_instructions(
                     );
                     let continuation = create_continuation(
                         context,
-                        &rest_instructions,
-                        &terminal_instruction,
+                        Block::new(rest_instructions, terminal_instruction),
                         result_type,
                         &environment,
                     )
                     .into();
 
-                    rest_instructions = vec![If::new(
-                        void_type(),
-                        if_.condition().clone(),
-                        transform_if_block_with_continuation(
-                            context,
-                            if_.name(),
-                            if_.then(),
-                            result_type,
-                            local_variables,
-                            &continuation,
-                            &environment,
-                        ),
-                        transform_if_block_with_continuation(
-                            context,
-                            if_.name(),
-                            if_.else_(),
-                            result_type,
-                            local_variables,
-                            &continuation,
-                            &environment,
-                        ),
-                        "",
-                    )
-                    .into()];
+                    transform_if_block_with_continuation(
+                        context,
+                        &name,
+                        if_.then_mut(),
+                        result_type,
+                        local_variables,
+                        &continuation,
+                        &environment,
+                    );
+                    transform_if_block_with_continuation(
+                        context,
+                        &name,
+                        if_.else_mut(),
+                        result_type,
+                        local_variables,
+                        &continuation,
+                        &environment,
+                    );
                 }
 
+                *if_.type_mut() = void_type().into();
+                *if_.name_mut() = "".into();
+
+                rest_instructions = vec![if_.into()];
                 terminal_instruction = TerminalInstruction::Unreachable;
             }
-            _ => rest_instructions.push(instruction.clone()),
+            _ => rest_instructions.push(instruction),
         }
     }
 
     rest_instructions.reverse();
 
-    (rest_instructions, terminal_instruction)
+    *block.instructions_mut() = rest_instructions;
+    *block.terminal_instruction_mut() = terminal_instruction;
 }
 
 fn has_source_call(block: &Block) -> bool {
@@ -217,136 +165,98 @@ fn has_source_call(block: &Block) -> bool {
 fn transform_if_block_with_rest_instructions(
     context: &mut Context,
     if_name: &str,
-    block: &Block,
+    block: &mut Block,
+    mut rest_instructions: Vec<Instruction>,
+    terminal_instruction: TerminalInstruction,
     result_type: &Type,
-    local_variables: &FnvHashMap<&str, Type>,
-    rest_instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-) -> Block {
-    transform_block(
-        context,
-        &Block::new(
-            block
-                .instructions()
-                .iter()
-                .cloned()
-                .chain(
-                    if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
-                        rest_instructions
-                            .iter()
-                            .map(|instruction| {
-                                expression_conversion::convert_in_instruction(
-                                    instruction,
-                                    &|expression| {
-                                        if expression == &Variable::new(if_name).into() {
-                                            branch.expression().clone()
-                                        } else {
-                                            expression.clone()
-                                        }
-                                    },
-                                )
-                            })
-                            .collect::<Vec<_>>()
-                    } else {
-                        vec![]
-                    },
-                )
-                .collect(),
-            match (block.terminal_instruction(), terminal_instruction) {
-                // Outer blocks' terminal instructions should be converted into return or
-                // unreachable already at this point.
-                (_, TerminalInstruction::Branch(_)) => unreachable!(),
-                (TerminalInstruction::Return(return_), _) => return_.clone().into(),
-                (TerminalInstruction::Unreachable, _)
-                | (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
-                    TerminalInstruction::Unreachable
+    local_variables: &FnvHashMap<String, Type>,
+) {
+    match (block.terminal_instruction_mut(), terminal_instruction) {
+        // Outer blocks' terminal instructions should be converted into return or
+        // unreachable already at this point.
+        (_, TerminalInstruction::Branch(_)) => unreachable!(),
+        (TerminalInstruction::Return(_), _) | (TerminalInstruction::Unreachable, _) => {}
+        (TerminalInstruction::Branch(_), TerminalInstruction::Unreachable) => {
+            *block.terminal_instruction_mut() = TerminalInstruction::Unreachable;
+        }
+        (TerminalInstruction::Branch(branch), return_) => {
+            let convert = |expression: &Expression| {
+                if expression == &Variable::new(if_name).into() {
+                    branch.expression()
+                } else {
+                    expression
                 }
-                (TerminalInstruction::Branch(branch), return_) => {
-                    expression_conversion::convert_in_terminal_instruction(return_, &|expression| {
-                        if expression == &Variable::new(if_name).into() {
-                            branch.expression().clone()
-                        } else {
-                            expression.clone()
-                        }
-                    })
-                }
-            },
-        ),
-        result_type,
-        local_variables,
-    )
+                .clone()
+            };
+
+            // TODO Make expression conversion in place.
+            for instruction in &mut rest_instructions {
+                *instruction = expression_conversion::convert_in_instruction(instruction, &convert);
+            }
+
+            // TODO Make expression conversion in place.
+            *block.terminal_instruction_mut() =
+                expression_conversion::convert_in_terminal_instruction(&return_, &convert);
+        }
+    }
+
+    block.instructions_mut().extend(rest_instructions);
+
+    transform_block(context, block, result_type, local_variables);
 }
 
 fn transform_if_block_with_continuation(
     context: &mut Context,
     if_name: &str,
-    block: &Block,
+    block: &mut Block,
     result_type: &Type,
-    local_variables: &FnvHashMap<&str, Type>,
+    local_variables: &FnvHashMap<String, Type>,
     continuation: &Expression,
-    environment: &[(&str, Type)],
-) -> Block {
+    environment: &[(String, Type)],
+) {
     if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
         let result_name = context.name_generator.generate();
-
-        transform_block(
-            context,
-            &Block::new(
-                block
-                    .instructions()
-                    .iter()
-                    .cloned()
-                    .chain([Call::new(
-                        types::Function::new(
-                            environment.iter().map(|(_, type_)| type_.clone()).collect(),
-                            result_type.clone(),
-                            types::CallingConvention::Source,
-                        ),
-                        continuation.clone(),
-                        environment
-                            .iter()
-                            .map(|(name, _)| {
-                                if name == &if_name {
-                                    branch.expression().clone()
-                                } else {
-                                    Variable::new(*name).into()
-                                }
-                            })
-                            .collect(),
-                        &result_name,
-                    )
-                    .into()])
-                    .collect(),
-                Return::new(result_type.clone(), Variable::new(result_name)),
+        let call = Call::new(
+            types::Function::new(
+                environment.iter().map(|(_, type_)| type_.clone()).collect(),
+                result_type.clone(),
+                types::CallingConvention::Source,
             ),
-            result_type,
-            local_variables,
-        )
-    } else {
-        transform_block(context, block, result_type, local_variables)
+            continuation.clone(),
+            environment
+                .iter()
+                .map(|(name, _)| {
+                    if name == if_name {
+                        branch.expression().clone()
+                    } else {
+                        Variable::new(name).into()
+                    }
+                })
+                .collect(),
+            &result_name,
+        );
+
+        block.instructions_mut().push(call.into());
+        *block.terminal_instruction_mut() =
+            Return::new(result_type.clone(), Variable::new(result_name)).into();
     }
+
+    transform_block(context, block, result_type, local_variables);
 }
 
 fn create_continuation(
     context: &mut Context,
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
+    block: Block,
     result_type: &Type,
-    environment: &[(&str, Type)],
+    environment: &[(String, Type)],
 ) -> Variable {
     let name = context.name_generator.generate();
-    let block = transform_block(
-        context,
-        &Block::new(instructions.to_vec(), terminal_instruction.clone()),
-        result_type,
-        &environment.iter().cloned().collect(),
-    );
 
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         environment
             .iter()
-            .map(|(name, type_)| Argument::new(*name, type_.clone()))
+            .map(|(name, type_)| Argument::new(name, type_.clone()))
             .collect(),
         result_type.clone(),
         block,
@@ -359,14 +269,18 @@ fn create_continuation(
     Variable::new(name)
 }
 
-fn get_continuation_environment<'a>(
-    instructions: &'a [Instruction],
-    terminal_instruction: &'a TerminalInstruction,
-    local_variables: &FnvHashMap<&str, Type>,
-) -> Vec<(&'a str, Type)> {
+fn get_continuation_environment(
+    instructions: &[Instruction],
+    terminal_instruction: &TerminalInstruction,
+    local_variables: &FnvHashMap<String, Type>,
+) -> Vec<(String, Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .iter()
-        .flat_map(|&name| local_variables.get(name).map(|type_| (name, type_.clone())))
+        .flat_map(|&name| {
+            local_variables
+                .get(name)
+                .map(|type_| (name.into(), type_.clone()))
+        })
         .collect()
 }
 
@@ -376,17 +290,20 @@ mod tests {
     use crate::{analysis::validation, types::void_type};
     use pretty_assertions::assert_eq;
 
-    fn flatten_module(module: &Module) -> Module {
-        validation::validate(module).unwrap();
+    fn flatten_module(mut module: Module) -> Module {
+        validation::validate(&module).unwrap();
 
-        let flattened_module = flatten(module);
+        let mut other = module.clone();
 
-        validation::validate(&flattened_module).unwrap();
+        flatten(&mut module);
+        flatten(&mut other);
+
+        validation::validate(&module).unwrap();
 
         // Test reproducibility.
-        assert_eq!(flattened_module, flatten(module));
+        assert_eq!(module, other);
 
-        flattened_module
+        module
     }
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -404,12 +321,12 @@ mod tests {
 
     #[test]
     fn transform_empty_module() {
-        flatten_module(&Module::new(vec![], vec![], vec![], vec![]));
+        flatten_module(Module::new(vec![], vec![], vec![], vec![]));
     }
 
     #[test]
     fn transform_function_definition() {
-        flatten_module(&Module::new(
+        flatten_module(Module::new(
             vec![],
             vec![],
             vec![],
@@ -432,7 +349,7 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        flatten_module(&Module::new(
+        flatten_module(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -471,7 +388,7 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        flatten_module(&Module::new(
+        flatten_module(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -511,7 +428,7 @@ mod tests {
         );
 
         assert_eq!(
-            flatten_module(&Module::new(
+            flatten_module(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -602,7 +519,7 @@ mod tests {
         );
 
         assert_eq!(
-            flatten_module(&Module::new(
+            flatten_module(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -713,7 +630,7 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        flatten_module(&Module::new(
+        flatten_module(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -765,7 +682,7 @@ mod tests {
             create_function_type(vec![types::Primitive::Float64.into()], pointer_type.clone());
 
         assert_eq!(
-            flatten_module(&Module::new(
+            flatten_module(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -808,13 +725,13 @@ mod tests {
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
-                vec![create_function_definition(
-                    "g",
-                    vec![],
-                    pointer_type.clone(),
-                    Block::new(
-                        vec![
-                            If::new(
+                vec![
+                    create_function_definition(
+                        "g",
+                        vec![],
+                        pointer_type.clone(),
+                        Block::new(
+                            vec![If::new(
                                 void_type(),
                                 Primitive::Boolean(true),
                                 Block::new(
@@ -826,23 +743,53 @@ mod tests {
                                             "x",
                                         )
                                         .into(),
-                                        AllocateStack::new(types::Primitive::Float64, "p.then")
-                                            .into()
+                                        Call::new(
+                                            types::Function::new(
+                                                vec![],
+                                                pointer_type.clone(),
+                                                types::CallingConvention::Source
+                                            ),
+                                            Variable::new("_if_0"),
+                                            vec![],
+                                            "_if_1",
+                                        )
+                                        .into(),
                                     ],
-                                    Return::new(pointer_type.clone(), Variable::new("p.then")),
+                                    Return::new(pointer_type.clone(), Variable::new("_if_1")),
                                 ),
                                 Block::new(
-                                    vec![AllocateStack::new(types::Primitive::Float64, "p.else")
-                                        .into()],
-                                    Return::new(pointer_type, Variable::new("p.else")),
+                                    vec![Call::new(
+                                        types::Function::new(
+                                            vec![],
+                                            pointer_type.clone(),
+                                            types::CallingConvention::Source
+                                        ),
+                                        Variable::new("_if_0"),
+                                        vec![],
+                                        "_if_2",
+                                    )
+                                    .into()],
+                                    Return::new(pointer_type.clone(), Variable::new("_if_2")),
                                 ),
                                 "",
                             )
-                            .into()
-                        ],
-                        TerminalInstruction::Unreachable,
+                            .into()],
+                            TerminalInstruction::Unreachable,
+                        ),
                     ),
-                )]
+                    FunctionDefinition::new(
+                        "_if_0",
+                        vec![],
+                        pointer_type.clone(),
+                        Block::new(
+                            vec![AllocateStack::new(types::Primitive::Float64, "p").into()],
+                            Return::new(pointer_type, Variable::new("p"),),
+                        ),
+                        FunctionDefinitionOptions::new()
+                            .set_address_named(false)
+                            .set_linkage(Linkage::Internal)
+                    )
+                ]
             )
         );
     }
@@ -853,7 +800,7 @@ mod tests {
         let function_type =
             create_function_type(vec![types::Primitive::Float64.into()], pointer_type.clone());
 
-        flatten_module(&Module::new(
+        flatten_module(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -917,7 +864,7 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        flatten_module(&Module::new(
+        flatten_module(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -1001,7 +948,7 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten_module(&module), module);
+        assert_eq!(flatten_module(module.clone()), module);
     }
 
     #[test]
@@ -1047,7 +994,7 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten_module(&module), module);
+        assert_eq!(flatten_module(module.clone()), module);
     }
 
     #[test]
@@ -1092,7 +1039,7 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten_module(&module), module);
+        assert_eq!(flatten_module(module.clone()), module);
     }
 
     #[test]
@@ -1104,7 +1051,7 @@ mod tests {
         );
 
         assert_eq!(
-            flatten_module(&Module::new(
+            flatten_module(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -1225,6 +1172,6 @@ mod tests {
             )],
         );
 
-        assert_eq!(flatten_module(&module), module);
+        assert_eq!(flatten_module(module.clone()), module);
     }
 }

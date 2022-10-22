@@ -4,73 +4,64 @@ use crate::{
     types::{self, void_type, Type},
 };
 
-pub fn transform(context: &Context, definition: &FunctionDefinition) -> FunctionDefinition {
-    if definition.type_().calling_convention() == types::CallingConvention::Target {
-        let result_pointer_name = pointer_name(definition.name());
-        let result_pointer = if type_::is_memory_class(context, definition.result_type()) {
-            Some((&*result_pointer_name, definition.result_type()))
-        } else {
-            None
-        };
-        let block = transform_block(definition.body(), result_pointer);
-
-        FunctionDefinition::new(
-            definition.name(),
-            result_pointer
-                .map(|(name, _)| {
-                    Argument::new(name, types::Pointer::new(definition.result_type().clone()))
-                })
-                .into_iter()
-                .chain(definition.arguments().iter().map(|argument| {
-                    Argument::new(
-                        if type_::is_memory_class(context, argument.type_()) {
-                            pointer_name(argument.name())
-                        } else {
-                            argument.name().into()
-                        },
-                        type_::transform(context, argument.type_()),
-                    )
-                }))
-                .collect(),
-            if result_pointer.is_some() {
-                void_type().into()
-            } else {
-                definition.result_type().clone()
-            },
-            Block::new(
-                definition
-                    .arguments()
-                    .iter()
-                    .flat_map(|argument| {
-                        if type_::is_memory_class(context, argument.type_()) {
-                            Some(
-                                Load::new(
-                                    argument.type_().clone(),
-                                    Variable::new(pointer_name(argument.name())),
-                                    argument.name(),
-                                )
-                                .into(),
-                            )
-                        } else {
-                            None
-                        }
-                    })
-                    .chain(block.instructions().iter().cloned())
-                    .collect(),
-                block.terminal_instruction().clone(),
-            ),
-            definition.options().clone(),
-        )
-    } else {
-        definition.clone()
+pub fn transform(context: &Context, definition: &mut FunctionDefinition) {
+    if definition.type_().calling_convention() != types::CallingConvention::Target {
+        return;
     }
+
+    let result_pointer = if type_::is_memory_class(context, definition.result_type()) {
+        Some((
+            pointer_name(definition.name()),
+            definition.result_type().clone(),
+        ))
+    } else {
+        None
+    };
+
+    let mut arguments = Vec::with_capacity(definition.arguments().len());
+    let mut instructions = Vec::with_capacity(definition.body().instructions().len());
+
+    if let Some((name, type_)) = &result_pointer {
+        arguments.push(Argument::new(name, type_::transform_memory_class(type_)));
+    }
+
+    for argument in definition.arguments_mut().drain(..) {
+        if type_::is_memory_class(context, argument.type_()) {
+            arguments.push(Argument::new(
+                pointer_name(argument.name()),
+                type_::transform_memory_class(argument.type_()),
+            ));
+            instructions.push(
+                Load::new(
+                    argument.type_().clone(),
+                    Variable::new(pointer_name(argument.name())),
+                    argument.name(),
+                )
+                .into(),
+            );
+        } else {
+            arguments.push(argument);
+        }
+    }
+
+    *definition.arguments_mut() = arguments;
+
+    if result_pointer.is_some() {
+        *definition.result_type_mut() = void_type().into()
+    }
+
+    transform_block(definition.body_mut(), instructions, result_pointer.as_ref());
 }
 
-fn transform_block(block: &Block, result_pointer: Option<(&str, &Type)>) -> Block {
-    let mut instructions = vec![];
+fn transform_block(
+    block: &mut Block,
+    mut instructions: Vec<Instruction>,
+    result_pointer: Option<&(String, Type)>,
+) {
+    for mut instruction in block.instructions_mut().drain(..) {
+        transform_instruction(&mut instruction, result_pointer);
 
-    for instruction in block.instructions() {
-        instructions.push(transform_instruction(instruction, result_pointer));
+        instructions.push(instruction);
     }
 
     if let (TerminalInstruction::Return(return_), Some((pointer_name, type_))) =
@@ -84,32 +75,21 @@ fn transform_block(block: &Block, result_pointer: Option<(&str, &Type)>) -> Bloc
             )
             .into(),
         );
-
-        Block::new(instructions, Return::new(void_type(), void_value()))
-    } else {
-        Block::new(instructions, block.terminal_instruction().clone())
+        *block.terminal_instruction_mut() = Return::new(void_type(), void_value()).into();
     }
+
+    *block.instructions_mut() = instructions;
 }
 
-fn transform_instruction(
-    instruction: &Instruction,
-    result_pointer: Option<(&str, &Type)>,
-) -> Instruction {
-    match instruction {
-        Instruction::If(if_) => If::new(
-            if_.type_().clone(),
-            if_.condition().clone(),
-            transform_block(if_.then(), result_pointer),
-            transform_block(if_.else_(), result_pointer),
-            if_.name(),
-        )
-        .into(),
-        _ => instruction.clone(),
+fn transform_instruction(instruction: &mut Instruction, result_pointer: Option<&(String, Type)>) {
+    if let Instruction::If(if_) = instruction {
+        transform_block(if_.then_mut(), vec![], result_pointer);
+        transform_block(if_.else_mut(), vec![], result_pointer);
     }
 }
 
 fn pointer_name(name: &str) -> String {
-    format!("{}_c_pointer", name)
+    format!("{}_p", name)
 }
 
 #[cfg(test)]
@@ -118,6 +98,12 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     const WORD_BYTES: usize = 8;
+
+    fn transform_definition(mut definition: FunctionDefinition) -> FunctionDefinition {
+        transform(&Context::new(WORD_BYTES), &mut definition);
+
+        definition
+    }
 
     #[test]
     fn transform_compatible() {
@@ -130,10 +116,7 @@ mod tests {
                 .set_calling_convention(types::CallingConvention::Target),
         );
 
-        assert_eq!(
-            transform(&Context::new(WORD_BYTES), &definition,),
-            definition
-        );
+        assert_eq!(transform_definition(definition.clone()), definition);
     }
 
     #[test]
@@ -145,26 +128,23 @@ mod tests {
         ]);
 
         assert_eq!(
-            transform(
-                &Context::new(WORD_BYTES),
-                &FunctionDefinition::new(
-                    "f",
-                    vec![Argument::new("x", record_type.clone())],
-                    void_type(),
-                    Block::new(vec![], Return::new(void_type(), void_value()),),
-                    FunctionDefinitionOptions::new()
-                        .set_calling_convention(types::CallingConvention::Target),
-                )
-            ),
+            transform_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", record_type.clone())],
+                void_type(),
+                Block::new(vec![], Return::new(void_type(), void_value()),),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )),
             FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
-                    "x_c_pointer",
+                    "x_p",
                     types::Pointer::new(record_type.clone())
                 )],
                 void_type(),
                 Block::new(
-                    vec![Load::new(record_type, Variable::new("x_c_pointer"), "x").into()],
+                    vec![Load::new(record_type, Variable::new("x_p"), "x").into()],
                     Return::new(void_type(), void_value()),
                 ),
                 FunctionDefinitionOptions::new()
@@ -182,24 +162,21 @@ mod tests {
         ]);
 
         assert_eq!(
-            transform(
-                &Context::new(WORD_BYTES),
-                &FunctionDefinition::new(
-                    "f",
+            transform_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                record_type.clone(),
+                Block::new(
                     vec![],
-                    record_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(record_type.clone(), Undefined::new(record_type.clone())),
-                    ),
-                    FunctionDefinitionOptions::new()
-                        .set_calling_convention(types::CallingConvention::Target),
-                )
-            ),
+                    Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )),
             FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
-                    "f_c_pointer",
+                    "f_p",
                     types::Pointer::new(record_type.clone())
                 )],
                 void_type(),
@@ -207,7 +184,7 @@ mod tests {
                     vec![Store::new(
                         record_type.clone(),
                         Undefined::new(record_type),
-                        Variable::new("f_c_pointer")
+                        Variable::new("f_p")
                     )
                     .into()],
                     Return::new(void_type(), void_value()),
@@ -227,24 +204,21 @@ mod tests {
         ]);
 
         assert_eq!(
-            transform(
-                &Context::new(WORD_BYTES),
-                &FunctionDefinition::new(
-                    "f",
-                    vec![Argument::new("x", types::Primitive::PointerInteger)],
-                    record_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(record_type.clone(), Undefined::new(record_type.clone())),
-                    ),
-                    FunctionDefinitionOptions::new()
-                        .set_calling_convention(types::CallingConvention::Target),
-                )
-            ),
+            transform_definition(FunctionDefinition::new(
+                "f",
+                vec![Argument::new("x", types::Primitive::PointerInteger)],
+                record_type.clone(),
+                Block::new(
+                    vec![],
+                    Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )),
             FunctionDefinition::new(
                 "f",
                 vec![
-                    Argument::new("f_c_pointer", types::Pointer::new(record_type.clone())),
+                    Argument::new("f_p", types::Pointer::new(record_type.clone())),
                     Argument::new("x", types::Primitive::PointerInteger)
                 ],
                 void_type(),
@@ -252,7 +226,7 @@ mod tests {
                     vec![Store::new(
                         record_type.clone(),
                         Undefined::new(record_type),
-                        Variable::new("f_c_pointer")
+                        Variable::new("f_p")
                     )
                     .into()],
                     Return::new(void_type(), void_value()),
@@ -272,43 +246,34 @@ mod tests {
         ]);
 
         assert_eq!(
-            transform(
-                &Context::new(WORD_BYTES),
-                &FunctionDefinition::new(
-                    "f",
-                    vec![],
-                    record_type.clone(),
-                    Block::new(
-                        vec![If::new(
-                            void_type(),
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![],
-                                Return::new(
-                                    record_type.clone(),
-                                    Undefined::new(record_type.clone())
-                                ),
-                            ),
-                            Block::new(
-                                vec![],
-                                Return::new(
-                                    record_type.clone(),
-                                    Undefined::new(record_type.clone())
-                                ),
-                            ),
-                            "x"
-                        )
-                        .into()],
-                        TerminalInstruction::Unreachable
-                    ),
-                    FunctionDefinitionOptions::new()
-                        .set_calling_convention(types::CallingConvention::Target),
-                )
-            ),
+            transform_definition(FunctionDefinition::new(
+                "f",
+                vec![],
+                record_type.clone(),
+                Block::new(
+                    vec![If::new(
+                        void_type(),
+                        Primitive::Boolean(true),
+                        Block::new(
+                            vec![],
+                            Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                        ),
+                        Block::new(
+                            vec![],
+                            Return::new(record_type.clone(), Undefined::new(record_type.clone())),
+                        ),
+                        "x"
+                    )
+                    .into()],
+                    TerminalInstruction::Unreachable
+                ),
+                FunctionDefinitionOptions::new()
+                    .set_calling_convention(types::CallingConvention::Target),
+            )),
             FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
-                    "f_c_pointer",
+                    "f_p",
                     types::Pointer::new(record_type.clone())
                 )],
                 void_type(),
@@ -320,7 +285,7 @@ mod tests {
                             vec![Store::new(
                                 record_type.clone(),
                                 Undefined::new(record_type.clone()),
-                                Variable::new("f_c_pointer")
+                                Variable::new("f_p")
                             )
                             .into()],
                             Return::new(void_type(), void_value()),
@@ -329,7 +294,7 @@ mod tests {
                             vec![Store::new(
                                 record_type.clone(),
                                 Undefined::new(record_type),
-                                Variable::new("f_c_pointer")
+                                Variable::new("f_p")
                             )
                             .into()],
                             Return::new(void_type(), void_value()),

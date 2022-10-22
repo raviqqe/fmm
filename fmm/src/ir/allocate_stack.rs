@@ -1,8 +1,7 @@
 use crate::types::Type;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AllocateStack(Rc<AllocateStackInner>);
+pub struct AllocateStack(Box<AllocateStackInner>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct AllocateStackInner {
@@ -23,6 +22,10 @@ impl AllocateStack {
 
     pub fn type_(&self) -> &Type {
         &self.0.type_
+    }
+
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
     }
 
     pub fn name(&self) -> &str {

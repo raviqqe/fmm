@@ -1,9 +1,8 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct CompareAndSwap(Rc<CompareAndSwapInner>);
+pub struct CompareAndSwap(Box<CompareAndSwapInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct CompareAndSwapInner {
@@ -44,16 +43,32 @@ impl CompareAndSwap {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
+    }
+
     pub fn pointer(&self) -> &Expression {
         &self.0.pointer
+    }
+
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.0.pointer
     }
 
     pub fn old_value(&self) -> &Expression {
         &self.0.old_value
     }
 
+    pub fn old_value_mut(&mut self) -> &mut Expression {
+        &mut self.0.old_value
+    }
+
     pub fn new_value(&self) -> &Expression {
         &self.0.new_value
+    }
+
+    pub fn new_value_mut(&mut self) -> &mut Expression {
+        &mut self.0.new_value
     }
 
     pub fn success_ordering(&self) -> AtomicOrdering {

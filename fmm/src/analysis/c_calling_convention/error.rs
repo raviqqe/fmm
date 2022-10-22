@@ -1,13 +1,13 @@
-use crate::{analysis::type_check::TypeCheckError, build::BuildError};
+use crate::{analysis::type_conversion::TypeConversionError, build::BuildError};
 use std::{
     error::Error,
     fmt::{self, Display, Formatter},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CCallingConventionError {
     Build(BuildError),
-    TypeCheck(TypeCheckError),
+    TypeConversion(TypeConversionError),
     WordSize(usize),
 }
 
@@ -25,8 +25,8 @@ impl From<BuildError> for CCallingConventionError {
     }
 }
 
-impl From<TypeCheckError> for CCallingConventionError {
-    fn from(error: TypeCheckError) -> Self {
-        Self::TypeCheck(error)
+impl From<TypeConversionError> for CCallingConventionError {
+    fn from(error: TypeConversionError) -> Self {
+        Self::TypeConversion(error)
     }
 }

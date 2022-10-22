@@ -1,9 +1,8 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types::Type;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicLoad(Rc<AtomicLoadInner>);
+pub struct AtomicLoad(Box<AtomicLoadInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct AtomicLoadInner {
@@ -35,8 +34,16 @@ impl AtomicLoad {
         &self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.0.type_
+    }
+
     pub fn pointer(&self) -> &Expression {
         &self.0.pointer
+    }
+
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.0.pointer
     }
 
     pub fn ordering(&self) -> AtomicOrdering {

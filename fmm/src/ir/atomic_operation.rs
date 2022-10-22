@@ -1,6 +1,5 @@
 use super::{atomic_ordering::AtomicOrdering, expression::Expression};
 use crate::types;
-use std::rc::Rc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AtomicOperator {
@@ -9,7 +8,7 @@ pub enum AtomicOperator {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AtomicOperation(Rc<AtomicOperationInner>);
+pub struct AtomicOperation(Box<AtomicOperationInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct AtomicOperationInner {
@@ -47,6 +46,10 @@ impl AtomicOperation {
         self.0.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut types::Primitive {
+        &mut self.0.type_
+    }
+
     pub fn operator(&self) -> AtomicOperator {
         self.0.operator
     }
@@ -55,8 +58,16 @@ impl AtomicOperation {
         &self.0.pointer
     }
 
+    pub fn pointer_mut(&mut self) -> &mut Expression {
+        &mut self.0.pointer
+    }
+
     pub fn value(&self) -> &Expression {
         &self.0.value
+    }
+
+    pub fn value_mut(&mut self) -> &mut Expression {
+        &mut self.0.value
     }
 
     pub fn ordering(&self) -> AtomicOrdering {

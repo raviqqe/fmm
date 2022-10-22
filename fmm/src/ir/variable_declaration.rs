@@ -21,4 +21,8 @@ impl VariableDeclaration {
     pub fn type_(&self) -> &Type {
         &self.type_
     }
+
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.type_
+    }
 }

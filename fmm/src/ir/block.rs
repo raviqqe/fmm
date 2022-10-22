@@ -1,9 +1,8 @@
 use super::{instruction::Instruction, terminal_instruction::TerminalInstruction};
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    instructions: Rc<Vec<Instruction>>,
+    instructions: Vec<Instruction>,
     terminal_instruction: TerminalInstruction,
 }
 
@@ -13,7 +12,7 @@ impl Block {
         terminal_instruction: impl Into<TerminalInstruction>,
     ) -> Self {
         Self {
-            instructions: instructions.into(),
+            instructions,
             terminal_instruction: terminal_instruction.into(),
         }
     }
@@ -24,5 +23,13 @@ impl Block {
 
     pub fn terminal_instruction(&self) -> &TerminalInstruction {
         &self.terminal_instruction
+    }
+
+    pub fn instructions_mut(&mut self) -> &mut Vec<Instruction> {
+        &mut self.instructions
+    }
+
+    pub fn terminal_instruction_mut(&mut self) -> &mut TerminalInstruction {
+        &mut self.terminal_instruction
     }
 }

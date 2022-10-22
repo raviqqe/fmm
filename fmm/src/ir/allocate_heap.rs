@@ -1,8 +1,7 @@
 use super::expression::Expression;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct AllocateHeap(Rc<AllocateHeapInner>);
+pub struct AllocateHeap(Box<AllocateHeapInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct AllocateHeapInner {
@@ -23,6 +22,10 @@ impl AllocateHeap {
 
     pub fn size(&self) -> &Expression {
         &self.0.size
+    }
+
+    pub fn size_mut(&mut self) -> &mut Expression {
+        &mut self.0.size
     }
 
     pub fn name(&self) -> &str {

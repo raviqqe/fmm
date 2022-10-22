@@ -19,7 +19,15 @@ impl Return {
         &self.type_
     }
 
+    pub fn type_mut(&mut self) -> &mut Type {
+        &mut self.type_
+    }
+
     pub fn expression(&self) -> &Expression {
         &self.expression
+    }
+
+    pub fn expression_mut(&mut self) -> &mut Expression {
+        &mut self.expression
     }
 }

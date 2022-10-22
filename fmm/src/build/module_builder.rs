@@ -7,32 +7,32 @@ use crate::{
 };
 use std::{cell::RefCell, rc::Rc};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug)]
 pub struct ModuleBuilder {
     name_generator: Rc<RefCell<NameGenerator>>,
-    variable_declarations: Rc<RefCell<Vec<VariableDeclaration>>>,
-    function_declarations: Rc<RefCell<Vec<FunctionDeclaration>>>,
-    variable_definitions: Rc<RefCell<Vec<VariableDefinition>>>,
-    function_definitions: Rc<RefCell<Vec<FunctionDefinition>>>,
+    variable_declarations: RefCell<Vec<VariableDeclaration>>,
+    function_declarations: RefCell<Vec<FunctionDeclaration>>,
+    variable_definitions: RefCell<Vec<VariableDefinition>>,
+    function_definitions: RefCell<Vec<FunctionDefinition>>,
 }
 
 impl ModuleBuilder {
     pub fn new() -> Self {
         Self {
             name_generator: Rc::new(NameGenerator::new("_fmm_").into()),
-            variable_declarations: RefCell::new(vec![]).into(),
-            function_declarations: RefCell::new(vec![]).into(),
-            variable_definitions: RefCell::new(vec![]).into(),
-            function_definitions: RefCell::new(vec![]).into(),
+            variable_declarations: Default::default(),
+            function_declarations: Default::default(),
+            variable_definitions: Default::default(),
+            function_definitions: Default::default(),
         }
     }
 
-    pub fn as_module(&self) -> Module {
+    pub fn into_module(self) -> Module {
         Module::new(
-            self.variable_declarations.as_ref().borrow().clone(),
-            self.function_declarations.as_ref().borrow().clone(),
-            self.variable_definitions.as_ref().borrow().clone(),
-            self.function_definitions.as_ref().borrow().clone(),
+            self.variable_declarations.into_inner(),
+            self.function_declarations.into_inner(),
+            self.variable_definitions.into_inner(),
+            self.function_definitions.into_inner(),
         )
     }
 
@@ -117,7 +117,7 @@ impl ModuleBuilder {
             body(InstructionBuilder::new(self.name_generator.clone()))?,
             options,
         );
-        let type_ = function_definition.type_().clone();
+        let type_ = function_definition.type_();
 
         self.function_definitions
             .borrow_mut()
@@ -144,5 +144,11 @@ impl ModuleBuilder {
 
     pub fn generate_name(&self) -> String {
         self.name_generator.borrow_mut().generate()
+    }
+}
+
+impl Default for ModuleBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
