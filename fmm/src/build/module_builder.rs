@@ -27,7 +27,7 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn as_module(self) -> Module {
+    pub fn into_module(self) -> Module {
         Module::new(
             self.variable_declarations.into_inner(),
             self.function_declarations.into_inner(),
