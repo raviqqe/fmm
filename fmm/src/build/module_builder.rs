@@ -10,10 +10,10 @@ use std::{cell::RefCell, rc::Rc};
 #[derive(Clone, Debug, Default)]
 pub struct ModuleBuilder {
     name_generator: Rc<RefCell<NameGenerator>>,
-    variable_declarations: Rc<RefCell<Vec<VariableDeclaration>>>,
-    function_declarations: Rc<RefCell<Vec<FunctionDeclaration>>>,
-    variable_definitions: Rc<RefCell<Vec<VariableDefinition>>>,
-    function_definitions: Rc<RefCell<Vec<FunctionDefinition>>>,
+    variable_declarations: RefCell<Vec<VariableDeclaration>>,
+    function_declarations: RefCell<Vec<FunctionDeclaration>>,
+    variable_definitions: RefCell<Vec<VariableDefinition>>,
+    function_definitions: RefCell<Vec<FunctionDefinition>>,
 }
 
 impl ModuleBuilder {
@@ -27,12 +27,12 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn as_module(&self) -> Module {
+    pub fn as_module(self) -> Module {
         Module::new(
-            self.variable_declarations.as_ref().borrow().clone(),
-            self.function_declarations.as_ref().borrow().clone(),
-            self.variable_definitions.as_ref().borrow().clone(),
-            self.function_definitions.as_ref().borrow().clone(),
+            self.variable_declarations.into_inner(),
+            self.function_declarations.into_inner(),
+            self.variable_definitions.into_inner(),
+            self.function_definitions.into_inner(),
         )
     }
 
