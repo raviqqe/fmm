@@ -1,11 +1,9 @@
 use crate::{ir::*, types::Type};
-use fnv::{FnvBuildHasher, FnvHashMap};
+use fnv::FnvHashMap;
 
 pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
-    let mut variables = FnvHashMap::with_capacity_and_hasher(
-        calculate_capacity(definition),
-        FnvBuildHasher::default(),
-    );
+    let mut variables =
+        FnvHashMap::with_capacity_and_hasher(calculate_capacity(definition), Default::default());
 
     variables.extend(
         definition

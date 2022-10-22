@@ -41,13 +41,14 @@ fn transform_function_definition(
         let continuation_type =
             continuation_type::compile(definition.result_type(), context.cps.result_type());
 
-        *definition.arguments_mut() = [
-            Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+        definition
+            .arguments_mut()
+            .insert(0, Argument::new(STACK_ARGUMENT_NAME, stack::type_()));
+        definition.arguments_mut().insert(
+            1,
             Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
-        ]
-        .into_iter()
-        .chain(definition.arguments().iter().cloned())
-        .collect();
+        );
+
         *definition.result_type_mut() = context.cps.result_type().clone();
         *definition.options_mut() = definition
             .options()
