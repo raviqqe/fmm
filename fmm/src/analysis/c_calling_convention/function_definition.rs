@@ -89,7 +89,7 @@ fn transform_instruction(instruction: &mut Instruction, result_pointer: Option<&
 }
 
 fn pointer_name(name: &str) -> String {
-    format!("{}_c_pointer", name)
+    format!("{}.p", name)
 }
 
 #[cfg(test)]
@@ -139,12 +139,12 @@ mod tests {
             FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
-                    "x_c_pointer",
+                    "x.p",
                     types::Pointer::new(record_type.clone())
                 )],
                 void_type(),
                 Block::new(
-                    vec![Load::new(record_type, Variable::new("x_c_pointer"), "x").into()],
+                    vec![Load::new(record_type, Variable::new("x.p"), "x").into()],
                     Return::new(void_type(), void_value()),
                 ),
                 FunctionDefinitionOptions::new()
@@ -176,7 +176,7 @@ mod tests {
             FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
-                    "f_c_pointer",
+                    "f.p",
                     types::Pointer::new(record_type.clone())
                 )],
                 void_type(),
@@ -184,7 +184,7 @@ mod tests {
                     vec![Store::new(
                         record_type.clone(),
                         Undefined::new(record_type),
-                        Variable::new("f_c_pointer")
+                        Variable::new("f.p")
                     )
                     .into()],
                     Return::new(void_type(), void_value()),
@@ -218,7 +218,7 @@ mod tests {
             FunctionDefinition::new(
                 "f",
                 vec![
-                    Argument::new("f_c_pointer", types::Pointer::new(record_type.clone())),
+                    Argument::new("f.p", types::Pointer::new(record_type.clone())),
                     Argument::new("x", types::Primitive::PointerInteger)
                 ],
                 void_type(),
@@ -226,7 +226,7 @@ mod tests {
                     vec![Store::new(
                         record_type.clone(),
                         Undefined::new(record_type),
-                        Variable::new("f_c_pointer")
+                        Variable::new("f.p")
                     )
                     .into()],
                     Return::new(void_type(), void_value()),
@@ -273,7 +273,7 @@ mod tests {
             FunctionDefinition::new(
                 "f",
                 vec![Argument::new(
-                    "f_c_pointer",
+                    "f.p",
                     types::Pointer::new(record_type.clone())
                 )],
                 void_type(),
@@ -285,7 +285,7 @@ mod tests {
                             vec![Store::new(
                                 record_type.clone(),
                                 Undefined::new(record_type.clone()),
-                                Variable::new("f_c_pointer")
+                                Variable::new("f.p")
                             )
                             .into()],
                             Return::new(void_type(), void_value()),
@@ -294,7 +294,7 @@ mod tests {
                             vec![Store::new(
                                 record_type.clone(),
                                 Undefined::new(record_type),
-                                Variable::new("f_c_pointer")
+                                Variable::new("f.p")
                             )
                             .into()],
                             Return::new(void_type(), void_value()),

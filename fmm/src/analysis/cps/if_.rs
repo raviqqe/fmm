@@ -70,6 +70,7 @@ fn transform_block(
 
                 let name = if_.name().to_owned();
 
+                // TODO Refactor those duplication of function calls.
                 if rest_instructions.is_empty() {
                     transform_if_block_with_rest_instructions(
                         context,
