@@ -70,34 +70,22 @@ fn transform_block(
 
                 let name = if_.name().to_owned();
 
-                // TODO Refactor those duplication of function calls.
-                if rest_instructions.is_empty() {
-                    transform_if_block_with_rest_instructions(
-                        context,
-                        &name,
-                        if_.then_mut(),
-                        vec![],
-                        terminal_instruction.clone(),
-                        result_type,
-                        local_variables,
-                    );
-                    transform_if_block_with_rest_instructions(
-                        context,
-                        &name,
-                        if_.else_mut(),
-                        vec![],
-                        terminal_instruction,
-                        result_type,
-                        local_variables,
-                    );
-                } else if if_.then().terminal_instruction().is_branch()
-                    && !if_.else_().terminal_instruction().is_branch()
+                if rest_instructions.is_empty()
+                    || if_.then().terminal_instruction().is_branch()
+                        != if_.else_().terminal_instruction().is_branch()
                 {
+                    let (then_instructions, else_instructions) =
+                        if if_.then().terminal_instruction().is_branch() {
+                            (rest_instructions, vec![])
+                        } else {
+                            (vec![], rest_instructions)
+                        };
+
                     transform_if_block_with_rest_instructions(
                         context,
                         &name,
                         if_.then_mut(),
-                        rest_instructions,
+                        then_instructions,
                         terminal_instruction.clone(),
                         result_type,
                         local_variables,
@@ -106,28 +94,7 @@ fn transform_block(
                         context,
                         &name,
                         if_.else_mut(),
-                        vec![],
-                        terminal_instruction,
-                        result_type,
-                        local_variables,
-                    );
-                } else if !if_.then().terminal_instruction().is_branch()
-                    && if_.else_().terminal_instruction().is_branch()
-                {
-                    transform_if_block_with_rest_instructions(
-                        context,
-                        &name,
-                        if_.then_mut(),
-                        vec![],
-                        terminal_instruction.clone(),
-                        result_type,
-                        local_variables,
-                    );
-                    transform_if_block_with_rest_instructions(
-                        context,
-                        &name,
-                        if_.else_mut(),
-                        rest_instructions,
+                        else_instructions,
                         terminal_instruction,
                         result_type,
                         local_variables,
@@ -172,7 +139,7 @@ fn transform_block(
                 rest_instructions = vec![if_.into()];
                 terminal_instruction = TerminalInstruction::Unreachable;
             }
-            _ => rest_instructions.push(instruction.clone()),
+            _ => rest_instructions.push(instruction),
         }
     }
 
@@ -215,10 +182,11 @@ fn transform_if_block_with_rest_instructions(
         (TerminalInstruction::Branch(branch), return_) => {
             let convert = |expression: &Expression| {
                 if expression == &Variable::new(if_name).into() {
-                    branch.expression().clone()
+                    branch.expression()
                 } else {
-                    expression.clone()
+                    expression
                 }
+                .clone()
             };
 
             // TODO Make expression conversion in place.
