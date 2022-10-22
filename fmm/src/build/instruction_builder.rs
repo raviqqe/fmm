@@ -5,7 +5,7 @@ use crate::{
     ir::*,
     types::{self, generic_pointer_type, void_type, Type},
 };
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, mem::take, rc::Rc};
 
 #[derive(Clone, Debug, Default)]
 pub struct InstructionBuilder {
@@ -305,11 +305,11 @@ impl InstructionBuilder {
         ));
     }
 
-    pub fn branch(self, typed_expression: impl Into<TypedExpression>) -> Block {
+    pub fn branch(&self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.into_inner(),
+            take(&mut self.instructions.borrow_mut()),
             Branch::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -317,11 +317,11 @@ impl InstructionBuilder {
         )
     }
 
-    pub fn return_(self, typed_expression: impl Into<TypedExpression>) -> Block {
+    pub fn return_(&self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
         Block::new(
-            self.instructions.into_inner(),
+            take(&mut self.instructions.borrow_mut()),
             Return::new(
                 typed_expression.type_().clone(),
                 typed_expression.expression().clone(),
@@ -329,9 +329,9 @@ impl InstructionBuilder {
         )
     }
 
-    pub fn unreachable(self) -> Block {
+    pub fn unreachable(&self) -> Block {
         Block::new(
-            self.instructions.into_inner(),
+            take(&mut self.instructions.borrow_mut()),
             TerminalInstruction::Unreachable,
         )
     }
