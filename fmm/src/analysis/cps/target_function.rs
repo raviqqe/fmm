@@ -10,88 +10,74 @@ struct Context<'a> {
     function_definitions: Vec<FunctionDefinition>,
 }
 
-pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsError> {
+pub fn transform(context: &CpsContext, module: &mut Module) -> Result<(), CpsError> {
     let mut context = Context {
         cps: context,
         function_definitions: vec![],
     };
 
-    Ok(Module::new(
-        module.variable_declarations().to_vec(),
-        module.function_declarations().to_vec(),
-        module.variable_definitions().to_vec(),
-        module
-            .function_definitions()
-            .iter()
-            .map(|definition| transform_definition(&mut context, definition))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .chain(context.function_definitions)
-            .collect(),
-    ))
+    for definition in module.function_definitions_mut() {
+        transform_definition(&mut context, definition)?;
+    }
+
+    module
+        .function_definitions_mut()
+        .extend(context.function_definitions);
+
+    Ok(())
 }
 
 fn transform_definition(
     context: &mut Context,
-    definition: &FunctionDefinition,
-) -> Result<FunctionDefinition, CpsError> {
-    Ok(
-        if definition.type_().calling_convention() == CallingConvention::Target {
-            FunctionDefinition::new(
-                definition.name(),
-                definition.arguments().to_vec(),
-                definition.result_type().clone(),
-                transform_block(context, definition.body())?,
-                definition.options().clone(),
-            )
-        } else {
-            definition.clone()
-        },
-    )
+    definition: &mut FunctionDefinition,
+) -> Result<(), CpsError> {
+    if definition.type_().calling_convention() == CallingConvention::Target {
+        transform_block(context, definition.body_mut())?;
+    }
+
+    Ok(())
 }
 
-fn transform_block(context: &mut Context, block: &Block) -> Result<Block, CpsError> {
-    Ok(Block::new(
-        block
-            .instructions()
-            .iter()
-            .map(|instruction| transform_instruction(context, instruction))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect(),
-        block.terminal_instruction().clone(),
-    ))
+fn transform_block(context: &mut Context, block: &mut Block) -> Result<(), CpsError> {
+    let mut instructions = Vec::with_capacity(block.instructions().len());
+
+    for instruction in block.instructions_mut().drain(..) {
+        transform_instruction(context, instruction, &mut instructions)?;
+    }
+
+    *block.instructions_mut() = instructions;
+
+    Ok(())
 }
 
 fn transform_instruction(
     context: &mut Context,
-    instruction: &Instruction,
-) -> Result<Vec<Instruction>, CpsError> {
-    Ok(match instruction {
-        Instruction::Call(call) => {
-            if call.type_().calling_convention() == CallingConvention::Source {
-                transform_source_function_call(context, call)?
-            } else {
-                vec![call.clone().into()]
-            }
+    instruction: Instruction,
+    instructions: &mut Vec<Instruction>,
+) -> Result<(), CpsError> {
+    match instruction {
+        Instruction::Call(call)
+            if call.type_().calling_convention() == CallingConvention::Source =>
+        {
+            transform_source_function_call(context, call, instructions)?;
         }
-        Instruction::If(if_) => vec![If::new(
-            if_.type_().clone(),
-            if_.condition().clone(),
-            transform_block(context, if_.then())?,
-            transform_block(context, if_.else_())?,
-            if_.name(),
-        )
-        .into()],
-        _ => vec![instruction.clone()],
-    })
+        Instruction::If(mut if_) => {
+            transform_block(context, if_.then_mut())?;
+            transform_block(context, if_.else_mut())?;
+
+            instructions.push(if_.into());
+        }
+        _ => instructions.push(instruction.clone()),
+    }
+
+    Ok(())
 }
 
 fn transform_source_function_call(
     context: &mut Context,
-    call: &Call,
-) -> Result<Vec<Instruction>, CpsError> {
+    call: Call,
+    instructions: &mut Vec<Instruction>,
+) -> Result<(), CpsError> {
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
     let result_pointer = builder.allocate_stack(call.type_().result().clone());
@@ -134,7 +120,9 @@ fn transform_source_function_call(
 
     stack::destroy(&builder, stack)?;
 
-    Ok(builder.into_instructions())
+    instructions.extend(builder.into_instructions());
+
+    Ok(())
 }
 
 fn compile_continuation(

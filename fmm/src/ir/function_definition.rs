@@ -84,6 +84,10 @@ impl FunctionDefinition {
     pub fn options(&self) -> &FunctionDefinitionOptions {
         &self.options
     }
+
+    pub fn options_mut(&mut self) -> &mut FunctionDefinitionOptions {
+        &mut self.options
+    }
 }
 
 impl PartialEq for FunctionDefinition {

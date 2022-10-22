@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
     analysis::{cps::continuation_type, local_variable},
@@ -15,115 +17,104 @@ struct Context<'a> {
     function_definitions: Vec<FunctionDefinition>,
 }
 
-pub fn transform(context: &CpsContext, module: &Module) -> Result<Module, CpsError> {
+pub fn transform(context: &CpsContext, module: &mut Module) -> Result<(), CpsError> {
     let mut context = Context {
         cps: context,
         function_definitions: vec![],
     };
 
-    Ok(Module::new(
-        module.variable_declarations().to_vec(),
-        module.function_declarations().to_vec(),
-        module.variable_definitions().to_vec(),
-        module
-            .function_definitions()
-            .iter()
-            .map(|definition| transform_function_definition(&mut context, definition))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .chain(context.function_definitions)
-            .collect(),
-    ))
+    for definition in module.function_definitions_mut() {
+        transform_function_definition(&mut context, definition)?;
+    }
+
+    module
+        .function_definitions_mut()
+        .extend(context.function_definitions);
+
+    Ok(())
 }
 
 fn transform_function_definition(
     context: &mut Context,
-    definition: &FunctionDefinition,
-) -> Result<FunctionDefinition, CpsError> {
-    Ok(
-        if definition.type_().calling_convention() == CallingConvention::Source {
-            let continuation_type =
-                continuation_type::compile(definition.result_type(), context.cps.result_type());
-            let mut local_variables = local_variable::collect(definition);
+    definition: &mut FunctionDefinition,
+) -> Result<(), CpsError> {
+    if definition.type_().calling_convention() == CallingConvention::Source {
+        let continuation_type =
+            continuation_type::compile(definition.result_type(), context.cps.result_type());
 
-            local_variables.insert(CONTINUATION_ARGUMENT_NAME, continuation_type.clone().into());
+        *definition.arguments_mut() = [
+            Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+            Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
+        ]
+        .into_iter()
+        .chain(definition.arguments().iter().cloned())
+        .collect();
+        *definition.result_type_mut() = context.cps.result_type().clone();
+        *definition.options_mut() = definition
+            .options()
+            .clone()
+            .set_calling_convention(CallingConvention::Tail);
 
-            FunctionDefinition::new(
-                definition.name(),
-                [
-                    Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
-                    Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type),
-                ]
-                .into_iter()
-                .chain(definition.arguments().iter().cloned())
-                .collect(),
-                context.cps.result_type().clone(),
-                transform_block(context, definition.body(), &local_variables)?,
-                definition
-                    .options()
-                    .clone()
-                    .set_calling_convention(CallingConvention::Tail),
-            )
-        } else {
-            definition.clone()
-        },
-    )
+        let mut local_variables = local_variable::collect(definition)
+            .into_iter()
+            .map(|(name, type_)| (name.to_owned(), type_))
+            .collect::<FnvHashMap<_, _>>();
+
+        local_variables.insert(
+            CONTINUATION_ARGUMENT_NAME.into(),
+            continuation_type.clone().into(),
+        );
+
+        transform_block(context, definition.body_mut(), &local_variables)?;
+    }
+
+    Ok(())
 }
 
 fn transform_block(
     context: &mut Context,
-    block: &Block,
-    local_variables: &FnvHashMap<&str, Type>,
-) -> Result<Block, BuildError> {
-    let (instructions, terminal_instruction) = transform_instructions(
-        context,
-        block.instructions(),
-        block.terminal_instruction(),
-        local_variables,
-    )?;
+    block: &mut Block,
+    local_variables: &FnvHashMap<String, Type>,
+) -> Result<(), BuildError> {
+    let mut rest_instructions = Vec::with_capacity(block.instructions().len());
+    let mut rest_terminal_instruction = replace(
+        block.terminal_instruction_mut(),
+        TerminalInstruction::Unreachable,
+    );
 
-    Ok(Block::new(instructions, terminal_instruction))
-}
+    match block.instructions_mut().pop() {
+        Some(Instruction::Call(mut call))
+            if call.type_().calling_convention() == CallingConvention::Source
+                && rest_terminal_instruction
+                    .to_return()
+                    .map(|return_| return_.expression() == &Variable::new(call.name()).into())
+                    .unwrap_or_default() =>
+        {
+            let result_name = context.cps.name_generator().borrow_mut().generate();
 
-fn transform_instructions(
-    context: &mut Context,
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<&str, Type>,
-) -> Result<(Vec<Instruction>, TerminalInstruction), BuildError> {
-    let (instructions, mut rest_instructions, mut rest_terminal_instruction) =
-        match instructions.last() {
-            Some(Instruction::Call(call))
-                if call.type_().calling_convention() == CallingConvention::Source
-                    && terminal_instruction
-                        .to_return()
-                        .map(|return_| return_.expression() == &Variable::new(call.name()).into())
-                        .unwrap_or_default() =>
-            {
-                let result_name = context.cps.name_generator().borrow_mut().generate();
+            rest_terminal_instruction = Return::new(
+                context.cps.result_type().clone(),
+                Variable::new(&result_name),
+            )
+            .into();
 
-                (
-                    &instructions[..instructions.len() - 1],
-                    vec![transform_call(
-                        call,
-                        Variable::new(CONTINUATION_ARGUMENT_NAME),
-                        &result_name,
-                    )
-                    .into()],
-                    Return::new(
-                        context.cps.result_type().clone(),
-                        Variable::new(&result_name),
-                    )
-                    .into(),
-                )
-            }
-            _ => match terminal_instruction {
+            transform_call(
+                &mut call,
+                Variable::new(CONTINUATION_ARGUMENT_NAME),
+                result_name,
+            );
+
+            rest_instructions.push(call.into());
+        }
+        instruction => {
+            block.instructions_mut().extend(instruction);
+
+            match rest_terminal_instruction {
                 TerminalInstruction::Return(return_) => {
                     let result_name = context.cps.name_generator().borrow_mut().generate();
 
-                    (
-                        instructions,
-                        vec![Call::new(
+                    rest_instructions.push(
+                        Call::new(
                             continuation_type::compile(return_.type_(), context.cps.result_type()),
                             Variable::new(CONTINUATION_ARGUMENT_NAME),
                             vec![
@@ -132,27 +123,28 @@ fn transform_instructions(
                             ],
                             &result_name,
                         )
-                        .into()],
-                        Return::new(
-                            context.cps.result_type().clone(),
-                            Variable::new(result_name),
-                        )
                         .into(),
+                    );
+                    rest_terminal_instruction = Return::new(
+                        context.cps.result_type().clone(),
+                        Variable::new(result_name),
                     )
+                    .into();
                 }
-                TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {
-                    (instructions, vec![], terminal_instruction.clone())
-                }
-            },
-        };
+                TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {}
+            }
+        }
+    }
 
-    for instruction in instructions.iter().rev() {
-        if let Instruction::Call(call) = instruction {
-            if call.type_().calling_convention() == CallingConvention::Source {
+    for instruction in block.instructions_mut().drain(..).rev() {
+        match instruction {
+            Instruction::Call(mut call)
+                if call.type_().calling_convention() == CallingConvention::Source =>
+            {
                 rest_instructions.reverse();
 
                 let environment = get_continuation_environment(
-                    call,
+                    &call,
                     &rest_instructions,
                     &rest_terminal_instruction,
                     local_variables,
@@ -167,66 +159,57 @@ fn transform_instructions(
 
                 let result_name = context.cps.name_generator().borrow_mut().generate();
 
-                rest_instructions = builder
-                    .into_instructions()
-                    .into_iter()
-                    .chain([transform_call(
-                        call,
-                        create_continuation(
-                            context,
-                            call,
-                            rest_instructions,
-                            rest_terminal_instruction,
-                            &environment,
-                        )?,
-                        &result_name,
-                    )
-                    .into()])
-                    .rev()
-                    .collect();
+                let continuation = create_continuation(
+                    context,
+                    &call,
+                    replace(&mut rest_instructions, vec![]),
+                    replace(
+                        &mut rest_terminal_instruction,
+                        Return::new(
+                            context.cps.result_type().clone(),
+                            Variable::new(&result_name),
+                        )
+                        .into(),
+                    ),
+                    &environment,
+                )?;
 
-                rest_terminal_instruction = Return::new(
-                    context.cps.result_type().clone(),
-                    Variable::new(result_name),
-                )
-                .into();
+                transform_call(&mut call, continuation, result_name);
+
+                rest_instructions.push(call.into());
+                rest_instructions.extend(builder.into_instructions().into_iter().rev());
 
                 continue;
             }
-        }
+            Instruction::If(mut if_) => {
+                transform_block(context, if_.then_mut(), local_variables)?;
+                transform_block(context, if_.else_mut(), local_variables)?;
 
-        rest_instructions.push(if let Instruction::If(if_) = instruction {
-            If::new(
-                if_.type_().clone(),
-                if_.condition().clone(),
-                transform_block(context, if_.then(), local_variables)?,
-                transform_block(context, if_.else_(), local_variables)?,
-                if_.name(),
-            )
-            .into()
-        } else {
-            instruction.clone()
-        });
+                rest_instructions.push(if_.into());
+            }
+            instruction => {
+                rest_instructions.push(instruction);
+            }
+        }
     }
 
     rest_instructions.reverse();
 
-    Ok((rest_instructions, rest_terminal_instruction))
+    *block.instructions_mut() = rest_instructions;
+    *block.terminal_instruction_mut() = rest_terminal_instruction;
+
+    Ok(())
 }
 
-fn transform_call(call: &Call, continuation: impl Into<Expression>, result_name: &str) -> Call {
-    Call::new(
-        call.type_().clone(),
-        call.function().clone(),
-        [
-            Variable::new(STACK_ARGUMENT_NAME).into(),
-            continuation.into(),
-        ]
-        .into_iter()
-        .chain(call.arguments().iter().cloned())
-        .collect(),
-        result_name,
-    )
+fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_name: String) {
+    *call.arguments_mut() = [
+        Variable::new(STACK_ARGUMENT_NAME).into(),
+        continuation.into(),
+    ]
+    .into_iter()
+    .chain(call.arguments().iter().cloned())
+    .collect();
+    *call.name_mut() = result_name;
 }
 
 fn get_environment_record(environment: &[(String, Type)]) -> Record {
@@ -299,11 +282,11 @@ fn get_continuation_environment(
     call: &Call,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<&str, Type>,
+    local_variables: &FnvHashMap<String, Type>,
 ) -> Vec<(String, Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .into_iter()
-        .filter(|name| *name != call.name())
+        .filter(|name| *name != call.name() && *name != STACK_ARGUMENT_NAME)
         .flat_map(|name| {
             local_variables
                 .get(name)
@@ -318,14 +301,16 @@ mod tests {
     use crate::{analysis::format, types, types::void_type};
     use pretty_assertions::assert_eq;
 
-    fn transform_module(module: &Module) -> Result<Module, CpsError> {
-        transform(&CpsContext::new(void_type()), module)
+    fn transform_module(mut module: Module) -> Result<Module, CpsError> {
+        transform(&CpsContext::new(void_type()), &mut module)?;
+
+        Ok(module)
     }
 
     #[test]
     fn transform_empty() {
         assert_eq!(
-            transform_module(&Module::new(vec![], vec![], vec![], vec![])),
+            transform_module(Module::new(vec![], vec![], vec![], vec![])),
             Ok(Module::new(vec![], vec![], vec![], vec![]))
         );
     }
@@ -333,7 +318,7 @@ mod tests {
     #[test]
     fn transform_no_instruction() {
         assert_eq!(
-            transform_module(&Module::new(
+            transform_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -373,7 +358,7 @@ mod tests {
     #[test]
     fn transform_if() {
         assert_eq!(
-            transform_module(&Module::new(
+            transform_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -433,7 +418,7 @@ mod tests {
     #[test]
     fn transform_tail_call() {
         assert_eq!(
-            transform_module(&Module::new(
+            transform_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -499,7 +484,7 @@ mod tests {
     #[test]
     fn transform_non_tail_call() {
         insta::assert_snapshot!(format::format_module(
-            &transform_module(&Module::new(
+            &transform_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -539,7 +524,7 @@ mod tests {
     #[test]
     fn transform_non_tail_call_in_if() {
         insta::assert_snapshot!(format::format_module(
-            &transform_module(&Module::new(
+            &transform_module(Module::new(
                 vec![],
                 vec![],
                 vec![],
@@ -589,7 +574,7 @@ mod tests {
     #[test]
     fn transform_free_variable_between_two_calls() {
         insta::assert_snapshot!(format::format_module(
-            &transform_module(&Module::new(
+            &transform_module(Module::new(
                 vec![],
                 vec![],
                 vec![],

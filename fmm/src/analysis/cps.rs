@@ -12,14 +12,15 @@ use self::context::CpsContext;
 use crate::{ir::*, types::Type};
 use error::CpsError;
 
-pub fn transform(module: &Module, result_type: impl Into<Type>) -> Result<Module, CpsError> {
+pub fn transform(module: &mut Module, result_type: impl Into<Type>) -> Result<Module, CpsError> {
     let context = CpsContext::new(result_type.into());
 
-    let module = if_::flatten(module);
-    let module = source_function::transform(&context, &module)?;
-    let mut module = target_function::transform(&context, &module)?;
+    // TODO
+    let mut module = if_::flatten(module);
+    source_function::transform(&context, &mut module)?;
+    target_function::transform(&context, &mut module)?;
     function_type::transform(&mut module, context.result_type())?;
-    let module = stack::define_utility_functions(&module)?;
+    stack::define_utility_functions(&mut module)?;
 
     Ok(module)
 }
@@ -45,25 +46,25 @@ mod tests {
         FunctionDefinition::new(name, arguments, result_type, body, Default::default())
     }
 
-    fn test_transformation(module: &Module) {
-        validation::validate(module).unwrap();
+    fn test_transformation(mut module: Module) {
+        validation::validate(&module).unwrap();
 
-        let one = transform(module, void_type()).unwrap();
-        let other = transform(module, void_type()).unwrap();
+        let one = transform(&mut module.clone(), void_type()).unwrap();
+        let other = transform(&mut module, void_type()).unwrap();
 
-        validation::validate(module).unwrap();
+        validation::validate(&module).unwrap();
 
         assert_eq!(one, other);
     }
 
     #[test]
     fn transform_empty_module() {
-        test_transformation(&Module::new(vec![], vec![], vec![], vec![]));
+        test_transformation(Module::new(vec![], vec![], vec![], vec![]));
     }
 
     #[test]
     fn transform_function_definition() {
-        test_transformation(&Module::new(
+        test_transformation(Module::new(
             vec![],
             vec![],
             vec![],
@@ -86,7 +87,7 @@ mod tests {
             types::Primitive::Float64,
         );
 
-        test_transformation(&Module::new(
+        test_transformation(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -113,7 +114,7 @@ mod tests {
         let function_type =
             create_function_type(vec![], types::Pointer::new(types::Primitive::Float64));
 
-        test_transformation(&Module::new(
+        test_transformation(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -139,7 +140,7 @@ mod tests {
             types::Primitive::PointerInteger,
         );
 
-        test_transformation(&Module::new(
+        test_transformation(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -179,7 +180,7 @@ mod tests {
 
         insta::assert_snapshot!(format::format_module(
             &transform(
-                &Module::new(
+                &mut Module::new(
                     vec![],
                     vec![FunctionDeclaration::new("f", function_type.clone())],
                     vec![],
@@ -209,7 +210,7 @@ mod tests {
     fn transform_call_with_continuation_with_free_variable() {
         let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
-        test_transformation(&Module::new(
+        test_transformation(Module::new(
             vec![],
             vec![FunctionDeclaration::new("f", function_type.clone())],
             vec![],
@@ -253,7 +254,7 @@ mod tests {
 
     #[test]
     fn transform_free_variable_between_two_calls() {
-        test_transformation(&Module::new(
+        test_transformation(Module::new(
             vec![],
             vec![],
             vec![],
@@ -317,7 +318,7 @@ mod tests {
                 types::Primitive::Float64,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -358,7 +359,7 @@ mod tests {
 
             insta::assert_snapshot!(format::format_module(
                 &transform(
-                    &Module::new(
+                    &mut Module::new(
                         vec![],
                         vec![FunctionDeclaration::new("f", function_type.clone())],
                         vec![],
@@ -401,7 +402,7 @@ mod tests {
                 types::Primitive::Float64,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -442,7 +443,7 @@ mod tests {
 
             insta::assert_snapshot!(format::format_module(
                 &transform(
-                    &Module::new(
+                    &mut Module::new(
                         vec![],
                         vec![FunctionDeclaration::new("f", function_type.clone())],
                         vec![],
@@ -493,7 +494,7 @@ mod tests {
                 types::Primitive::PointerInteger,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -546,7 +547,7 @@ mod tests {
 
             insta::assert_snapshot!(format::format_module(
                 &transform(
-                    &Module::new(
+                    &mut Module::new(
                         vec![],
                         vec![FunctionDeclaration::new("f", function_type.clone())],
                         vec![],
@@ -602,7 +603,7 @@ mod tests {
                 types::Primitive::Float64,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -654,7 +655,7 @@ mod tests {
         fn transform_call_in_block_with_continuation_with_instructions() {
             let function_type = create_function_type(vec![], types::Primitive::PointerInteger);
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -724,7 +725,7 @@ mod tests {
                 types::Primitive::Float64,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("f", function_type.clone())],
                 vec![],
@@ -774,7 +775,7 @@ mod tests {
         fn transform_with_no_argument() {
             let function_type = create_function_type(vec![], types::Primitive::Float64);
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("g", function_type.clone())],
                 vec![],
@@ -799,7 +800,7 @@ mod tests {
                 types::Primitive::Float64,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("g", function_type.clone())],
                 vec![],
@@ -833,7 +834,7 @@ mod tests {
                 types::Primitive::Float64,
             );
 
-            test_transformation(&Module::new(
+            test_transformation(Module::new(
                 vec![],
                 vec![FunctionDeclaration::new("g", function_type.clone())],
                 vec![],
