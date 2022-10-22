@@ -201,7 +201,6 @@ fn convert_terminal_instruction(
     Ok(())
 }
 
-#[must_use]
 fn convert_expression(
     expression: &Expression,
     convert: &mut impl FnMut(&Type) -> Type,
@@ -217,9 +216,7 @@ fn convert_expression(
         Expression::ArithmeticOperation(operation) => ArithmeticOperation::new(
             convert(&operation.type_().into())
                 .to_primitive()
-                .ok_or_else(|| {
-                    TypeConversionError::PrimitiveExpected(operation.type_().clone().into())
-                })?,
+                .ok_or_else(|| TypeConversionError::PrimitiveExpected(operation.type_().into()))?,
             operation.operator(),
             convert_expression(operation.lhs(), convert)?,
             convert_expression(operation.rhs(), convert)?,
@@ -233,9 +230,7 @@ fn convert_expression(
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
             convert(&operation.type_().into())
                 .to_primitive()
-                .ok_or_else(|| {
-                    TypeConversionError::PrimitiveExpected(operation.type_().clone().into())
-                })?,
+                .ok_or_else(|| TypeConversionError::PrimitiveExpected(operation.type_().into()))?,
             operation.operator(),
             convert_expression(operation.lhs(), convert)?,
             convert_expression(operation.rhs(), convert)?,
@@ -244,9 +239,7 @@ fn convert_expression(
         Expression::ComparisonOperation(operation) => ComparisonOperation::new(
             convert(&operation.type_().into())
                 .to_primitive()
-                .ok_or_else(|| {
-                    TypeConversionError::PrimitiveExpected(operation.type_().clone().into())
-                })?,
+                .ok_or_else(|| TypeConversionError::PrimitiveExpected(operation.type_().into()))?,
             operation.operator(),
             convert_expression(operation.lhs(), convert)?,
             convert_expression(operation.rhs(), convert)?,
