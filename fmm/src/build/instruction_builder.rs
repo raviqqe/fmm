@@ -305,7 +305,6 @@ impl InstructionBuilder {
         ));
     }
 
-    // TODO Consider moving self.
     pub fn branch(&self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
@@ -318,7 +317,6 @@ impl InstructionBuilder {
         )
     }
 
-    // TODO Consider moving self.
     pub fn return_(&self, typed_expression: impl Into<TypedExpression>) -> Block {
         let typed_expression = typed_expression.into();
 
@@ -331,7 +329,6 @@ impl InstructionBuilder {
         )
     }
 
-    // TODO Consider moving self.
     pub fn unreachable(&self) -> Block {
         Block::new(
             take(&mut self.instructions.borrow_mut()),
