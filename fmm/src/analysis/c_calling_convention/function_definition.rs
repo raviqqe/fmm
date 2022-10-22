@@ -18,8 +18,8 @@ pub fn transform(context: &Context, definition: &mut FunctionDefinition) {
         None
     };
 
-    let mut arguments = vec![];
-    let mut instructions = vec![];
+    let mut arguments = Vec::with_capacity(definition.arguments().len());
+    let mut instructions = Vec::with_capacity(definition.body().instructions().len());
 
     if let Some((name, type_)) = &result_pointer {
         arguments.push(Argument::new(name, type_::transform_memory_class(type_)));
