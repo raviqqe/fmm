@@ -8,6 +8,14 @@ pub enum TerminalInstruction {
 }
 
 impl TerminalInstruction {
+    pub fn is_branch(&self) -> bool {
+        matches!(self, TerminalInstruction::Branch(_))
+    }
+
+    pub fn is_return(&self) -> bool {
+        matches!(self, TerminalInstruction::Return(_))
+    }
+
     pub fn to_branch(&self) -> Option<&Branch> {
         if let TerminalInstruction::Branch(branch) = self {
             Some(branch)

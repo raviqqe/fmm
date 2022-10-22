@@ -68,4 +68,8 @@ impl If {
     pub fn name(&self) -> &str {
         &self.0.name
     }
+
+    pub fn name_mut(&mut self) -> &mut String {
+        &mut self.0.name
+    }
 }
