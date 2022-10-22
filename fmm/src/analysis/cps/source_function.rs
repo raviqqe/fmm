@@ -1,4 +1,3 @@
-use std::mem::{replace, take};
 use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
     analysis::{cps::continuation_type, local_variable},
@@ -7,6 +6,7 @@ use crate::{
     types::{CallingConvention, Type},
 };
 use fnv::FnvHashMap;
+use std::mem::{replace, take};
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
@@ -59,10 +59,7 @@ fn transform_function_definition(
             .map(|(name, type_)| (name.to_owned(), type_))
             .collect::<FnvHashMap<_, _>>();
 
-        local_variables.insert(
-            CONTINUATION_ARGUMENT_NAME.into(),
-            continuation_type.into(),
-        );
+        local_variables.insert(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into());
 
         transform_block(context, definition.body_mut(), &local_variables)?;
     }
