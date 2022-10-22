@@ -78,7 +78,7 @@ fn transform_source_function_call(
     call: Call,
     instructions: &mut Vec<Instruction>,
 ) -> Result<(), CpsError> {
-    let builder = InstructionBuilder::new(context.cps.name_generator());
+    let builder = InstructionBuilder::with_capacity(context.cps.name_generator(), 16);
 
     let result_pointer = builder.allocate_stack(call.type_().result().clone());
 
@@ -139,7 +139,7 @@ fn compile_continuation(
         ],
         context.cps.result_type().clone(),
         {
-            let builder = InstructionBuilder::new(context.cps.name_generator());
+            let builder = InstructionBuilder::with_capacity(context.cps.name_generator(), 8);
 
             let result_pointer = stack::pop(
                 &builder,

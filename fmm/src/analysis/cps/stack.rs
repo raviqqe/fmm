@@ -143,7 +143,8 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     const STACK_NAME: &str = "s";
     const ELEMENT_SIZE_NAME: &str = "e";
 
-    let builder = InstructionBuilder::new(Rc::new(RefCell::new(NameGenerator::new("x"))));
+    let builder =
+        InstructionBuilder::with_capacity(Rc::new(RefCell::new(NameGenerator::new("x"))), 8);
 
     let stack = build::variable(STACK_NAME, type_());
     let size = builder.load(build::record_address(stack.clone(), 1)?)?;
