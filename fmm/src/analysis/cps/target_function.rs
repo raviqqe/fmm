@@ -67,7 +67,7 @@ fn transform_instruction(
 
             instructions.push(if_.into());
         }
-        _ => instructions.push(instruction.clone()),
+        _ => instructions.push(instruction),
     }
 
     Ok(())
