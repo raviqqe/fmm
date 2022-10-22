@@ -1,5 +1,4 @@
-use std::mem::replace;
-
+use std::mem::{replace, take};
 use super::{context::CpsContext, error::CpsError, free_variable, stack};
 use crate::{
     analysis::{cps::continuation_type, local_variable},
@@ -62,7 +61,7 @@ fn transform_function_definition(
 
         local_variables.insert(
             CONTINUATION_ARGUMENT_NAME.into(),
-            continuation_type.clone().into(),
+            continuation_type.into(),
         );
 
         transform_block(context, definition.body_mut(), &local_variables)?;
@@ -162,7 +161,7 @@ fn transform_block(
                 let continuation = create_continuation(
                     context,
                     &call,
-                    replace(&mut rest_instructions, vec![]),
+                    take(&mut rest_instructions),
                     replace(
                         &mut rest_terminal_instruction,
                         Return::new(
