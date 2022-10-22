@@ -20,10 +20,7 @@ impl ModuleBuilder {
     pub fn new() -> Self {
         Self {
             name_generator: Rc::new(NameGenerator::new("_fmm_").into()),
-            variable_declarations: RefCell::new(vec![]).into(),
-            function_declarations: RefCell::new(vec![]).into(),
-            variable_definitions: RefCell::new(vec![]).into(),
-            function_definitions: RefCell::new(vec![]).into(),
+            ..Default::default()
         }
     }
 
