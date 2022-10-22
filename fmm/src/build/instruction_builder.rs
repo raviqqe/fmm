@@ -7,7 +7,7 @@ use crate::{
 };
 use std::{cell::RefCell, mem::take, rc::Rc};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug)]
 pub struct InstructionBuilder {
     name_generator: Rc<RefCell<NameGenerator>>,
     instructions: RefCell<Vec<Instruction>>,
