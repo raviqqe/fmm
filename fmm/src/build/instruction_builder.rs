@@ -21,6 +21,13 @@ impl InstructionBuilder {
         }
     }
 
+    pub fn with_capacity(name_generator: Rc<RefCell<NameGenerator>>, capacity: usize) -> Self {
+        Self {
+            name_generator,
+            instructions: Vec::with_capacity(capacity).into(),
+        }
+    }
+
     fn clone_empty(&self) -> Self {
         Self::new(self.name_generator.clone())
     }
