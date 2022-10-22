@@ -23,7 +23,7 @@ pub fn convert(
     }
 
     for variable_definition in module.variable_definitions_mut() {
-        convert_variable_definition(variable_definition, &mut convert);
+        convert_variable_definition(variable_definition, &mut convert)?;
     }
 
     for function_definition in module.function_definitions_mut() {
@@ -55,9 +55,11 @@ fn convert_function_declaration(
 fn convert_variable_definition(
     definition: &mut VariableDefinition,
     convert: &mut impl FnMut(&Type) -> Type,
-) {
-    *definition.body_mut() = convert_expression(definition.body(), convert);
+) -> Result<(), TypeConversionError> {
+    *definition.body_mut() = convert_expression(definition.body(), convert)?;
     *definition.type_mut() = convert(definition.type_());
+
+    Ok(())
 }
 
 fn convert_function_definition(
@@ -83,7 +85,7 @@ fn convert_block(
         convert_instruction(instruction, convert)?;
     }
 
-    convert_terminal_instruction(block.terminal_instruction_mut(), convert);
+    convert_terminal_instruction(block.terminal_instruction_mut(), convert)?;
 
     Ok(())
 }
@@ -94,86 +96,86 @@ fn convert_instruction(
 ) -> Result<(), TypeConversionError> {
     match instruction {
         Instruction::AllocateHeap(allocate) => {
-            *allocate.size_mut() = convert_expression(allocate.size(), convert);
+            *allocate.size_mut() = convert_expression(allocate.size(), convert)?;
         }
         Instruction::AllocateStack(allocate) => {
             *allocate.type_mut() = convert(allocate.type_());
         }
         Instruction::AtomicLoad(load) => {
             *load.type_mut() = convert(load.type_());
-            *load.pointer_mut() = convert_expression(load.pointer(), convert);
+            *load.pointer_mut() = convert_expression(load.pointer(), convert)?;
         }
         Instruction::AtomicOperation(operation) => {
             *operation.type_mut() = match convert(&operation.type_().into()) {
                 Type::Primitive(primitive) => primitive,
                 type_ => return Err(TypeConversionError::PrimitiveExpected(type_)),
             };
-            *operation.pointer_mut() = convert_expression(operation.pointer(), convert);
-            *operation.value_mut() = convert_expression(operation.value(), convert);
+            *operation.pointer_mut() = convert_expression(operation.pointer(), convert)?;
+            *operation.value_mut() = convert_expression(operation.value(), convert)?;
         }
         Instruction::AtomicStore(store) => {
             *store.type_mut() = convert(store.type_());
-            *store.value_mut() = convert_expression(store.value(), convert);
-            *store.pointer_mut() = convert_expression(store.pointer(), convert);
+            *store.value_mut() = convert_expression(store.value(), convert)?;
+            *store.pointer_mut() = convert_expression(store.pointer(), convert)?;
         }
         Instruction::Call(call) => {
             *call.type_mut() = match convert(&call.type_().clone().into()) {
                 Type::Function(function) => function,
                 type_ => return Err(TypeConversionError::FunctionExpected(type_)),
             };
-            *call.function_mut() = convert_expression(call.function(), convert);
+            *call.function_mut() = convert_expression(call.function(), convert)?;
 
             for argument in call.arguments_mut() {
-                *argument = convert_expression(argument, convert);
+                *argument = convert_expression(argument, convert)?;
             }
         }
         Instruction::CompareAndSwap(cas) => {
             *cas.type_mut() = convert(cas.type_());
-            *cas.pointer_mut() = convert_expression(cas.pointer(), convert);
-            *cas.old_value_mut() = convert_expression(cas.old_value(), convert);
-            *cas.new_value_mut() = convert_expression(cas.new_value(), convert);
+            *cas.pointer_mut() = convert_expression(cas.pointer(), convert)?;
+            *cas.old_value_mut() = convert_expression(cas.old_value(), convert)?;
+            *cas.new_value_mut() = convert_expression(cas.new_value(), convert)?;
         }
         Instruction::DeconstructRecord(deconstruct) => {
             *deconstruct.type_mut() = match convert(&deconstruct.type_().clone().into()) {
                 Type::Record(record) => record,
                 type_ => return Err(TypeConversionError::RecordExpected(type_)),
             };
-            *deconstruct.record_mut() = convert_expression(deconstruct.record(), convert);
+            *deconstruct.record_mut() = convert_expression(deconstruct.record(), convert)?;
         }
         Instruction::DeconstructUnion(deconstruct) => {
             *deconstruct.type_mut() = match convert(&deconstruct.type_().clone().into()) {
                 Type::Union(union) => union,
                 type_ => return Err(TypeConversionError::UnionExpected(type_)),
             };
-            *deconstruct.union_mut() = convert_expression(deconstruct.union(), convert);
+            *deconstruct.union_mut() = convert_expression(deconstruct.union(), convert)?;
         }
         Instruction::Fence(_) => {}
         Instruction::FreeHeap(free) => {
-            *free.pointer_mut() = convert_expression(free.pointer(), convert);
+            *free.pointer_mut() = convert_expression(free.pointer(), convert)?;
         }
         Instruction::If(if_) => {
             *if_.type_mut() = convert(if_.type_());
-            *if_.condition_mut() = convert_expression(if_.condition(), convert);
+            *if_.condition_mut() = convert_expression(if_.condition(), convert)?;
             convert_block(if_.then_mut(), convert)?;
             convert_block(if_.else_mut(), convert)?;
         }
         Instruction::Load(load) => {
             *load.type_mut() = convert(load.type_());
-            *load.pointer_mut() = convert_expression(load.pointer(), convert);
+            *load.pointer_mut() = convert_expression(load.pointer(), convert)?;
         }
         Instruction::MemoryCopy(copy) => {
-            *copy.source_mut() = convert_expression(copy.source(), convert);
-            *copy.destination_mut() = convert_expression(copy.destination(), convert);
-            *copy.size_mut() = convert_expression(copy.size(), convert);
+            *copy.source_mut() = convert_expression(copy.source(), convert)?;
+            *copy.destination_mut() = convert_expression(copy.destination(), convert)?;
+            *copy.size_mut() = convert_expression(copy.size(), convert)?;
         }
         Instruction::ReallocateHeap(reallocate) => {
-            *reallocate.pointer_mut() = convert_expression(reallocate.pointer(), convert);
-            *reallocate.size_mut() = convert_expression(reallocate.size(), convert);
+            *reallocate.pointer_mut() = convert_expression(reallocate.pointer(), convert)?;
+            *reallocate.size_mut() = convert_expression(reallocate.size(), convert)?;
         }
         Instruction::Store(store) => {
             *store.type_mut() = convert(store.type_());
-            *store.value_mut() = convert_expression(store.value(), convert);
-            *store.pointer_mut() = convert_expression(store.pointer(), convert);
+            *store.value_mut() = convert_expression(store.value(), convert)?;
+            *store.pointer_mut() = convert_expression(store.pointer(), convert)?;
         }
     }
 
@@ -183,66 +185,82 @@ fn convert_instruction(
 fn convert_terminal_instruction(
     instruction: &mut TerminalInstruction,
     convert: &mut impl FnMut(&Type) -> Type,
-) {
+) -> Result<(), TypeConversionError> {
     match instruction {
         TerminalInstruction::Branch(branch) => {
             *branch.type_mut() = convert(branch.type_());
-            *branch.expression_mut() = convert_expression(branch.expression(), convert);
+            *branch.expression_mut() = convert_expression(branch.expression(), convert)?;
         }
         TerminalInstruction::Return(return_) => {
             *return_.type_mut() = convert(return_.type_());
-            *return_.expression_mut() = convert_expression(return_.expression(), convert);
+            *return_.expression_mut() = convert_expression(return_.expression(), convert)?;
         }
         TerminalInstruction::Unreachable => {}
     }
+
+    Ok(())
 }
 
 #[must_use]
 fn convert_expression(
     expression: &Expression,
     convert: &mut impl FnMut(&Type) -> Type,
-) -> Expression {
-    match expression {
+) -> Result<Expression, TypeConversionError> {
+    Ok(match expression {
         Expression::AlignOf(align_of) => AlignOf::new(convert(align_of.type_())).into(),
         Expression::BitCast(bit_cast) => BitCast::new(
             convert(bit_cast.from()),
             convert(bit_cast.to()),
-            convert_expression(bit_cast.expression(), convert),
+            convert_expression(bit_cast.expression(), convert)?,
         )
         .into(),
         Expression::ArithmeticOperation(operation) => ArithmeticOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
+            convert(&operation.type_().into())
+                .to_primitive()
+                .ok_or_else(|| {
+                    TypeConversionError::PrimitiveExpected(operation.type_().clone().into())
+                })?,
             operation.operator(),
-            convert_expression(operation.lhs(), convert),
-            convert_expression(operation.rhs(), convert),
+            convert_expression(operation.lhs(), convert)?,
+            convert_expression(operation.rhs(), convert)?,
         )
         .into(),
         Expression::BitwiseNotOperation(operation) => BitwiseNotOperation::new(
             convert(&operation.type_().into()).to_primitive().unwrap(),
-            convert_expression(operation.value(), convert),
+            convert_expression(operation.value(), convert)?,
         )
         .into(),
         Expression::BitwiseOperation(operation) => BitwiseOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
+            convert(&operation.type_().into())
+                .to_primitive()
+                .ok_or_else(|| {
+                    TypeConversionError::PrimitiveExpected(operation.type_().clone().into())
+                })?,
             operation.operator(),
-            convert_expression(operation.lhs(), convert),
-            convert_expression(operation.rhs(), convert),
+            convert_expression(operation.lhs(), convert)?,
+            convert_expression(operation.rhs(), convert)?,
         )
         .into(),
         Expression::ComparisonOperation(operation) => ComparisonOperation::new(
-            convert(&operation.type_().into()).to_primitive().unwrap(),
+            convert(&operation.type_().into())
+                .to_primitive()
+                .ok_or_else(|| {
+                    TypeConversionError::PrimitiveExpected(operation.type_().clone().into())
+                })?,
             operation.operator(),
-            convert_expression(operation.lhs(), convert),
-            convert_expression(operation.rhs(), convert),
+            convert_expression(operation.lhs(), convert)?,
+            convert_expression(operation.rhs(), convert)?,
         )
         .into(),
         Expression::PointerAddress(address) => PointerAddress::new(
             convert(&address.type_().clone().into())
                 .to_pointer()
-                .unwrap()
+                .ok_or_else(|| {
+                    TypeConversionError::PointerExpected(address.type_().clone().into())
+                })?
                 .clone(),
-            convert_expression(address.pointer(), convert),
-            convert_expression(address.offset(), convert),
+            convert_expression(address.pointer(), convert)?,
+            convert_expression(address.offset(), convert)?,
         )
         .into(),
         Expression::Record(record) => Record::new(
@@ -254,15 +272,15 @@ fn convert_expression(
                 .fields()
                 .iter()
                 .map(|expression| convert_expression(expression, convert))
-                .collect(),
+                .collect::<Result<_, _>>()?,
         )
         .into(),
         Expression::RecordAddress(address) => RecordAddress::new(
             convert(&address.type_().clone().into())
                 .to_record()
-                .unwrap()
+                .ok_or_else(|| TypeConversionError::RecordExpected(address.type_().clone().into()))?
                 .clone(),
-            convert_expression(address.pointer(), convert),
+            convert_expression(address.pointer(), convert)?,
             address.field_index(),
         )
         .into(),
@@ -273,7 +291,7 @@ fn convert_expression(
                 .unwrap()
                 .clone(),
             union.member_index(),
-            convert_expression(union.member(), convert),
+            convert_expression(union.member(), convert)?,
         )
         .into(),
         Expression::UnionAddress(address) => UnionAddress::new(
@@ -281,13 +299,13 @@ fn convert_expression(
                 .to_union()
                 .unwrap()
                 .clone(),
-            convert_expression(address.pointer(), convert),
+            convert_expression(address.pointer(), convert)?,
             address.member_index(),
         )
         .into(),
         Expression::Undefined(undefined) => Undefined::new(convert(undefined.type_())).into(),
         Expression::Primitive(_) | Expression::Variable(_) => expression.clone(),
-    }
+    })
 }
 
 #[must_use]
