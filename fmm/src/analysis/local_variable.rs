@@ -1,12 +1,18 @@
 use crate::{ir::*, types::Type};
-use fnv::FnvHashMap;
+use fnv::{FnvBuildHasher, FnvHashMap};
 
 pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
-    let mut variables = definition
-        .arguments()
-        .iter()
-        .map(|argument| (argument.name(), argument.type_().clone()))
-        .collect();
+    let mut variables = FnvHashMap::with_capacity_and_hasher(
+        calculate_capacity(definition),
+        FnvBuildHasher::default(),
+    );
+
+    variables.extend(
+        definition
+            .arguments()
+            .iter()
+            .map(|argument| (argument.name(), argument.type_().clone())),
+    );
 
     collect_from_block(definition.body(), &mut variables);
 
@@ -27,6 +33,25 @@ fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, 
             collect_from_block(if_.else_(), variables);
         }
     }
+}
+
+fn calculate_capacity(definition: &FunctionDefinition) -> usize {
+    definition.arguments().len() + count_instructions(definition.body())
+}
+
+fn count_instructions(block: &Block) -> usize {
+    block.instructions().len()
+        + block
+            .instructions()
+            .iter()
+            .map(|instruction| {
+                if let Instruction::If(if_) = instruction {
+                    count_instructions(if_.then()) + count_instructions(if_.else_())
+                } else {
+                    0
+                }
+            })
+            .sum::<usize>()
 }
 
 #[cfg(test)]
