@@ -17,19 +17,19 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
         .iter()
         .map(|declaration| {
             (
-                declaration.name(),
+                declaration.name().into(),
                 types::Pointer::new(declaration.type_().clone()).into(),
             )
         })
-        .chain(
-            module
-                .function_declarations()
-                .iter()
-                .map(|declaration| (declaration.name(), declaration.type_().clone().into())),
-        )
+        .chain(module.function_declarations().iter().map(|declaration| {
+            (
+                declaration.name().into(),
+                declaration.type_().clone().into(),
+            )
+        }))
         .chain(module.variable_definitions().iter().map(|definition| {
             (
-                definition.name(),
+                definition.name().into(),
                 types::Pointer::new(definition.type_().clone()).into(),
             )
         }))
@@ -37,7 +37,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
             module
                 .function_definitions()
                 .iter()
-                .map(|definition| (definition.name(), definition.type_().into())),
+                .map(|definition| (definition.name().into(), definition.type_().into())),
         )
         .collect::<FnvHashMap<_, _>>();
 
@@ -86,7 +86,7 @@ fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
 
 fn check_variable_definition(
     definition: &VariableDefinition,
-    variables: &FnvHashMap<&str, Type>,
+    variables: &FnvHashMap<String, Type>,
 ) -> Result<(), TypeCheckError> {
     check_equality(
         &check_expression(definition.body(), variables)?,
@@ -94,9 +94,9 @@ fn check_variable_definition(
     )
 }
 
-fn check_function_definition<'a>(
-    definition: &'a FunctionDefinition,
-    variables: &mut FnvHashMap<&'a str, Type>,
+fn check_function_definition(
+    definition: &FunctionDefinition,
+    variables: &mut FnvHashMap<String, Type>,
 ) -> Result<(), TypeCheckError> {
     let local_variables = local_variable::collect(definition);
 
@@ -115,7 +115,7 @@ fn check_block(
     block: &Block,
     return_type: &Type,
     branch_type: Option<&Type>,
-    variables: &FnvHashMap<&str, Type>,
+    variables: &FnvHashMap<String, Type>,
 ) -> Result<(), TypeCheckError> {
     for instruction in block.instructions() {
         match instruction {
@@ -280,7 +280,7 @@ fn check_block(
 
 fn check_expression(
     expression: &Expression,
-    variables: &FnvHashMap<&str, Type>,
+    variables: &FnvHashMap<String, Type>,
 ) -> Result<Type, TypeCheckError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
