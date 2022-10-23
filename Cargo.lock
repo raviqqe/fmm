@@ -96,6 +96,7 @@ name = "fmm"
 version = "0.1.0"
 dependencies = [
  "fnv",
+ "indexmap",
  "insta",
  "once_cell",
  "petgraph",
