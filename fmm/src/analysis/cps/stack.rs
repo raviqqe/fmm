@@ -22,7 +22,7 @@ thread_local! {
 }
 
 pub fn type_() -> Type {
-    STACK_TYPE.with(|type_| (**type_).clone())
+    STACK_TYPE.with(|type_| (*type_).clone())
 }
 
 pub fn create(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
