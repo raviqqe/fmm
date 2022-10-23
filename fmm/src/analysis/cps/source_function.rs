@@ -625,4 +625,153 @@ mod tests {
             .unwrap()
         ));
     }
+
+    #[test]
+    fn transform_two_calls_with_shared_free_variable() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("x", types::Primitive::Float64)],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "y",
+                            )
+                            .into(),
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "z",
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
+    }
+
+    #[test]
+    fn transform_two_calls_with_two_shared_free_variables() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new("x", types::Primitive::Float64),
+                        Argument::new("y", types::Primitive::Float64)
+                    ],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "p",
+                            )
+                            .into(),
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "q",
+                            )
+                            .into()
+                        ],
+                        Return::new(
+                            types::Primitive::Float64,
+                            ArithmeticOperation::new(
+                                types::Primitive::Float64,
+                                ArithmeticOperator::Add,
+                                Variable::new("x"),
+                                Variable::new("y")
+                            )
+                        ),
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
+    }
+
+    #[test]
+    fn transform_two_calls_with_free_variables_shared_and_dropped() {
+        insta::assert_snapshot!(format::format_module(
+            &transform_module(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![
+                        Argument::new("x", types::Primitive::Float64),
+                        Argument::new("y", types::Primitive::Float64)
+                    ],
+                    types::Primitive::Float64,
+                    Block::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![],
+                                "p",
+                            )
+                            .into(),
+                            Call::new(
+                                types::Function::new(
+                                    vec![types::Primitive::Float64.into()],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("g"),
+                                vec![Variable::new("y").into()],
+                                "q",
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::Float64, Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            ))
+            .unwrap()
+        ));
+    }
 }
