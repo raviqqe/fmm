@@ -727,7 +727,7 @@ mod tests {
         ));
     }
 
-    // TODO Add todos.
+    // TODO Fix a stack element order.
     #[test]
     fn transform_two_calls_with_free_variables_shared_and_dropped() {
         insta::assert_snapshot!(format::format_module(
