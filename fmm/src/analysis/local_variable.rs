@@ -1,7 +1,7 @@
 use crate::{ir::*, types::Type};
 use fnv::FnvHashMap;
 
-pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<String, Type> {
+pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<&str, Type> {
     let mut variables =
         FnvHashMap::with_capacity_and_hasher(calculate_capacity(definition), Default::default());
 
@@ -9,7 +9,7 @@ pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<String, Type> {
         definition
             .arguments()
             .iter()
-            .map(|argument| (argument.name().into(), argument.type_().clone())),
+            .map(|argument| (argument.name(), argument.type_().clone())),
     );
 
     collect_from_block(definition.body(), &mut variables);
@@ -17,12 +17,13 @@ pub fn collect(definition: &FunctionDefinition) -> FnvHashMap<String, Type> {
     variables
 }
 
-fn collect_from_block(block: &Block, variables: &mut FnvHashMap<String, Type>) {
-    variables.extend(block.instructions().iter().flat_map(|instruction| {
-        instruction
-            .value()
-            .map(|(name, type_)| (name.into(), type_))
-    }));
+fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashMap<&'a str, Type>) {
+    variables.extend(
+        block
+            .instructions()
+            .iter()
+            .flat_map(|instruction| instruction.value()),
+    );
 
     for instruction in block.instructions() {
         if let Instruction::If(if_) = instruction {
@@ -83,7 +84,6 @@ mod tests {
             )),
             [("x", types::Primitive::PointerInteger.into())]
                 .into_iter()
-                .map(|(name, type_)| (name.into(), type_))
                 .collect()
         );
     }
@@ -113,7 +113,6 @@ mod tests {
             )),
             [("x", types::Primitive::PointerInteger.into())]
                 .into_iter()
-                .map(|(name, type_)| (name.into(), type_))
                 .collect()
         );
     }
@@ -170,7 +169,6 @@ mod tests {
                 ("z", types::Primitive::PointerInteger.into())
             ]
             .into_iter()
-            .map(|(name, type_)| (name.into(), type_))
             .collect()
         );
     }
