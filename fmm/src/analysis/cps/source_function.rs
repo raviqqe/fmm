@@ -178,8 +178,6 @@ fn transform_block(
 
                 rest_instructions.push(call.into());
                 rest_instructions.extend(builder.into_instructions().into_iter().rev());
-
-                continue;
             }
             Instruction::If(mut if_) => {
                 transform_block(context, if_.then_mut(), local_variables)?;
