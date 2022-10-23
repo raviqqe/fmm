@@ -12,6 +12,7 @@
     "conv",
     "hamt",
     "hasher",
+    "indexmap",
     "insta",
     "llvmc",
     "malloc",

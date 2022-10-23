@@ -1,11 +1,11 @@
 use crate::ir::*;
-use fnv::FnvHashSet;
+use indexmap::IndexSet;
 
 pub fn collect<'a>(
     instructions: &'a [Instruction],
     terminal_instruction: &'a TerminalInstruction,
-) -> FnvHashSet<&'a str> {
-    let mut variables = FnvHashSet::default();
+) -> IndexSet<&'a str> {
+    let mut variables = IndexSet::default();
 
     collect_from_instructions(instructions, terminal_instruction, &mut variables);
 
@@ -15,7 +15,7 @@ pub fn collect<'a>(
 fn collect_from_instructions<'a>(
     instructions: &'a [Instruction],
     terminal_instruction: &'a TerminalInstruction,
-    variables: &mut FnvHashSet<&'a str>,
+    variables: &mut IndexSet<&'a str>,
 ) {
     collect_from_terminal_instruction(terminal_instruction, variables);
 
@@ -28,7 +28,7 @@ fn collect_from_instructions<'a>(
     }
 }
 
-fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashSet<&'a str>) {
+fn collect_from_block<'a>(block: &'a Block, variables: &mut IndexSet<&'a str>) {
     collect_from_instructions(
         block.instructions(),
         block.terminal_instruction(),
@@ -36,7 +36,7 @@ fn collect_from_block<'a>(block: &'a Block, variables: &mut FnvHashSet<&'a str>)
     );
 }
 
-fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut FnvHashSet<&'a str>) {
+fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut IndexSet<&'a str>) {
     let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
 
     match instruction {
@@ -92,7 +92,7 @@ fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut Fn
 
 fn collect_from_terminal_instruction<'a>(
     instruction: &'a TerminalInstruction,
-    variables: &mut FnvHashSet<&'a str>,
+    variables: &mut IndexSet<&'a str>,
 ) {
     let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
 
@@ -103,7 +103,7 @@ fn collect_from_terminal_instruction<'a>(
     }
 }
 
-fn collect_from_expression<'a>(expression: &'a Expression, variables: &mut FnvHashSet<&'a str>) {
+fn collect_from_expression<'a>(expression: &'a Expression, variables: &mut IndexSet<&'a str>) {
     let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
 
     match expression {
@@ -152,7 +152,7 @@ mod tests {
     fn collect_nothing() {
         assert_eq!(
             collect(&[], &TerminalInstruction::Unreachable),
-            Default::default()
+            IndexSet::<&str>::default()
         );
     }
 
@@ -163,7 +163,7 @@ mod tests {
                 &[],
                 &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
             ),
-            ["x"].into_iter().collect()
+            IndexSet::<&str>::from_iter(["x"])
         );
     }
 
@@ -174,7 +174,7 @@ mod tests {
                 &[AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
                 &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
             ),
-            Default::default()
+            IndexSet::<&str>::default()
         );
     }
 
@@ -185,7 +185,7 @@ mod tests {
                 &[Load::new(types::Primitive::PointerInteger, Variable::new("x"), "x").into()],
                 &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
             ),
-            ["x"].into_iter().collect()
+            IndexSet::<&str>::from_iter(["x"])
         );
     }
 
@@ -199,7 +199,23 @@ mod tests {
                 ],
                 &TerminalInstruction::Unreachable
             ),
-            Default::default()
+            IndexSet::<&str>::default()
+        );
+    }
+
+    #[test]
+    fn collect_multiple_variables_in_order() {
+        assert_eq!(
+            collect(
+                &[
+                    FreeHeap::new(Variable::new("v")).into(),
+                    FreeHeap::new(Variable::new("w")).into(),
+                    FreeHeap::new(Variable::new("x")).into(),
+                    FreeHeap::new(Variable::new("y")).into(),
+                ],
+                &Return::new(types::Primitive::PointerInteger, Variable::new("z")).into()
+            ),
+            IndexSet::<&str>::from_iter(["z", "y", "x", "w", "v"])
         );
     }
 }
