@@ -1,12 +1,12 @@
 use crate::{build::NameGenerator, types::Type};
 use std::{cell::RefCell, rc::Rc};
 
-pub struct CpsContext {
+pub struct Context {
     name_generator: Rc<RefCell<NameGenerator>>,
     result_type: Type,
 }
 
-impl CpsContext {
+impl Context {
     pub fn new(result_type: impl Into<Type>) -> Self {
         Self {
             name_generator: Rc::new(NameGenerator::new("_k_").into()),
