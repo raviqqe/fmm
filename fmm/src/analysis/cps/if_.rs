@@ -36,6 +36,7 @@ fn transform_function_definition(context: &mut Context, definition: &mut Functio
     }
 
     let result_type = definition.result_type().clone();
+    // TODO Consider collecting `String` keys.
     let local_variables = local_variable::collect(definition)
         .into_iter()
         .map(|(name, type_)| (name.to_owned(), type_))

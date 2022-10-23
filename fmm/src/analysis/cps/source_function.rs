@@ -55,6 +55,7 @@ fn transform_function_definition(
             .clone()
             .set_calling_convention(CallingConvention::Tail);
 
+        // TODO Consider collecting `String` keys.
         let mut local_variables = local_variable::collect(definition)
             .into_iter()
             .map(|(name, type_)| (name.to_owned(), type_))
