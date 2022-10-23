@@ -8,12 +8,12 @@ mod source_function;
 mod stack;
 mod target_function;
 
-use self::context::CpsContext;
+use self::context::Context;
 use crate::{ir::*, types::Type};
 use error::CpsError;
 
 pub fn transform(module: &mut Module, result_type: impl Into<Type>) -> Result<(), CpsError> {
-    let context = CpsContext::new(result_type.into());
+    let context = Context::new(result_type.into());
 
     if_::flatten(module);
     source_function::transform(&context, module)?;

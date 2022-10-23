@@ -1,4 +1,4 @@
-use super::{context::CpsContext, error::CpsError, stack};
+use super::{context::Context as CpsContext, error::CpsError, stack};
 use crate::{
     build::{self, InstructionBuilder, TypedExpression},
     ir::*,
