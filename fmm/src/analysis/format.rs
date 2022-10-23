@@ -71,7 +71,7 @@ fn format_instruction(instruction: &Instruction) -> String {
         }
         Instruction::AtomicOperation(operation) => {
             format!(
-                "(atomic{} {} {} {})",
+                "(atomic {} {} {} {})",
                 match operation.operator() {
                     AtomicOperator::Add => "+",
                     AtomicOperator::Subtract => "-",
