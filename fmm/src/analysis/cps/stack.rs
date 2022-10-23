@@ -1,11 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
     build::{self, BuildError, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
     types::{self, generic_pointer_type, void_type, Type},
 };
 use once_cell::unsync::Lazy;
+use std::{cell::RefCell, rc::Rc};
 
 const EXTEND_FUNCTION_NAME: &str = "_fmm_stack_extend";
 const ALIGN_SIZE_FUNCTION_NAME: &str = "_fmm_stack_align_size";
