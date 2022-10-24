@@ -119,7 +119,7 @@ fn transform_block(
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
-                    let mut block = Block::new(take(&mut rest_instructions), terminal_instruction);
+                    let mut block = Block::new(rest_instructions, terminal_instruction);
                     transform_block(context, &mut block, local_variables)?;
                     create_continuation(context, &call, block, &environment)?
                 };
