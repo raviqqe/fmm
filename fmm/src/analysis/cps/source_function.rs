@@ -110,25 +110,18 @@ fn transform_block(
                         &terminal_instruction,
                         local_variables,
                     );
-                    let builder = InstructionBuilder::new(context.cps.name_generator());
 
+                    let builder = InstructionBuilder::new(context.cps.name_generator());
                     stack::push(
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
                         get_environment_record(&environment),
                     )?;
-
-                    let continuation = create_continuation(
-                        context,
-                        &call,
-                        Block::new(take(&mut rest_instructions), terminal_instruction),
-                        &environment,
-                        local_variables,
-                    )?;
-
                     block.instructions_mut().extend(builder.into_instructions());
 
-                    continuation
+                    let mut block = Block::new(take(&mut rest_instructions), terminal_instruction);
+                    transform_block(context, &mut block, local_variables)?;
+                    create_continuation(context, &call, block, &environment)?
                 };
 
                 transform_call(&mut call, continuation, result_name);
@@ -189,12 +182,8 @@ fn create_continuation(
     call: &Call,
     mut block: Block,
     environment: &[(String, Type)],
-    local_variables: &FnvHashMap<String, Type>,
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
-
-    transform_block(context, &mut block, local_variables)?;
-
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
     let environment_record_type = get_environment_record(environment).type_().clone();
