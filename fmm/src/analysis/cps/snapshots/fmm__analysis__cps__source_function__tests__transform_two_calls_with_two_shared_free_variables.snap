@@ -5,24 +5,24 @@ expression: "format::format_module(&transform_module(Module::new(vec![], vec![],
 (module
   (function f _s _k x y
     (block
-      (load (record-address _s 1) _k_1)
-      (call _fmm_stack_extend _s (size-of record) _k_2)
-      (load (record-address _s 0) _k_3)
-      (store (record _k x y) (bit-cast (pointer-address _k_3 _k_1)))
-      (call f _s _k_e _k_0)
-      (return _k_0)))
-  (function _k_9 _s q
-    (block
       (load (record-address _s 1) _k_a)
-      (call _fmm_stack_align_size (size-of record) _k_b)
-      (store (- _k_a _k_b) (record-address _s 1))
+      (call _fmm_stack_extend _s (size-of record) _k_b)
       (load (record-address _s 0) _k_c)
-      (load (bit-cast (pointer-address _k_c (- _k_a _k_b))) _k_d)
-      (deconstruct-record _k_d 0 _k)
-      (deconstruct-record _k_d 1 x)
-      (deconstruct-record _k_d 2 y)
-      (call _k _s (+ x y) _k_8)
-      (return _k_8)))
+      (store (record _k x y) (bit-cast (pointer-address _k_c _k_a)))
+      (call f _s _k_e _k_d)
+      (return _k_d)))
+  (function _k_5 _s q
+    (block
+      (load (record-address _s 1) _k_6)
+      (call _fmm_stack_align_size (size-of record) _k_7)
+      (store (- _k_6 _k_7) (record-address _s 1))
+      (load (record-address _s 0) _k_8)
+      (load (bit-cast (pointer-address _k_8 (- _k_6 _k_7))) _k_9)
+      (deconstruct-record _k_9 0 _k)
+      (deconstruct-record _k_9 1 x)
+      (deconstruct-record _k_9 2 y)
+      (call _k _s (+ x y) _k_0)
+      (return _k_0)))
   (function _k_e _s p
     (block
       (load (record-address _s 1) _k_f)
@@ -33,9 +33,9 @@ expression: "format::format_module(&transform_module(Module::new(vec![], vec![],
       (deconstruct-record _k_12 0 _k)
       (deconstruct-record _k_12 1 x)
       (deconstruct-record _k_12 2 y)
-      (load (record-address _s 1) _k_5)
-      (call _fmm_stack_extend _s (size-of record) _k_6)
-      (load (record-address _s 0) _k_7)
-      (store (record _k x y) (bit-cast (pointer-address _k_7 _k_5)))
-      (call f _s _k_9 _k_4)
+      (load (record-address _s 1) _k_1)
+      (call _fmm_stack_extend _s (size-of record) _k_2)
+      (load (record-address _s 0) _k_3)
+      (store (record _k x y) (bit-cast (pointer-address _k_3 _k_1)))
+      (call f _s _k_5 _k_4)
       (return _k_4))))
