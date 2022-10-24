@@ -109,27 +109,23 @@ fn transform_block(
         instruction => {
             block.instructions_mut().extend(instruction);
 
-            match rest_terminal_instruction {
+            match &mut rest_terminal_instruction {
                 TerminalInstruction::Return(return_) => {
                     let result_name = context.cps.name_generator().borrow_mut().generate();
+                    let result_type =
+                        replace(return_.type_mut(), context.cps.result_type().clone().into());
+                    let result_expression =
+                        replace(return_.expression_mut(), Variable::new(&result_name).into());
 
                     rest_instructions.push(
                         Call::new(
-                            continuation_type::compile(return_.type_(), context.cps.result_type()),
+                            continuation_type::compile(&result_type, context.cps.result_type()),
                             Variable::new(CONTINUATION_ARGUMENT_NAME),
-                            vec![
-                                Variable::new(STACK_ARGUMENT_NAME).into(),
-                                return_.expression().clone(),
-                            ],
-                            &result_name,
+                            vec![Variable::new(STACK_ARGUMENT_NAME).into(), result_expression],
+                            result_name,
                         )
                         .into(),
                     );
-                    rest_terminal_instruction = Return::new(
-                        context.cps.result_type().clone(),
-                        Variable::new(result_name),
-                    )
-                    .into();
                 }
                 TerminalInstruction::Branch(_) | TerminalInstruction::Unreachable => {}
             }
