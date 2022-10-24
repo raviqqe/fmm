@@ -16,6 +16,13 @@ struct Context<'a> {
     function_definitions: Vec<FunctionDefinition>,
 }
 
+struct Continuation {
+    name: String,
+    argument: Argument,
+    environment: Vec<(String, Type)>,
+    block: Block,
+}
+
 pub fn transform(context: &CpsContext, module: &mut Module) -> Result<(), CpsError> {
     let mut context = Context {
         cps: context,
@@ -66,7 +73,13 @@ fn transform_function_definition(
 
     local_variables.insert(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into());
 
-    transform_block(context, definition.body_mut(), &local_variables)?;
+    let mut continuation_option =
+        transform_block(context, definition.body_mut(), &local_variables)?;
+
+    while let Some(mut continuation) = continuation_option {
+        continuation_option = transform_block(context, &mut continuation.block, &local_variables)?;
+        create_continuation(context, continuation)?;
+    }
 
     Ok(())
 }
@@ -75,7 +88,7 @@ fn transform_block(
     context: &mut Context,
     block: &mut Block,
     local_variables: &FnvHashMap<String, Type>,
-) -> Result<(), BuildError> {
+) -> Result<Option<Continuation>, BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
     rest_instructions.reverse();
 
@@ -96,13 +109,16 @@ fn transform_block(
                     .into(),
                 );
 
-                let continuation = if rest_instructions.is_empty()
+                if rest_instructions.is_empty()
                     && terminal_instruction
                         .to_return()
                         .map(|return_| return_.expression() == &Variable::new(call.name()).into())
                         .unwrap_or_default()
                 {
-                    Variable::new(CONTINUATION_ARGUMENT_NAME).into()
+                    transform_call(&mut call, CONTINUATION_ARGUMENT_NAME, result_name);
+                    block.instructions_mut().push(call.into());
+
+                    return Ok(None);
                 } else {
                     let environment = get_continuation_environment(
                         &call,
@@ -119,15 +135,22 @@ fn transform_block(
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
+                    let name = context.cps.name_generator().borrow_mut().generate();
+                    let argument = Argument::new(call.name(), call.type_().result().clone());
+
+                    transform_call(&mut call, &name, result_name);
+                    block.instructions_mut().push(call.into());
+
                     let mut block = Block::new(rest_instructions, terminal_instruction);
                     transform_block(context, &mut block, local_variables)?;
-                    create_continuation(context, &call, block, &environment)?
-                };
 
-                transform_call(&mut call, continuation, result_name);
-                block.instructions_mut().push(call.into());
-
-                return Ok(());
+                    return Ok(Some(Continuation {
+                        name,
+                        argument,
+                        environment,
+                        block,
+                    }));
+                }
             }
             Instruction::If(mut if_) => {
                 transform_block(context, if_.then_mut(), local_variables)?;
@@ -158,13 +181,14 @@ fn transform_block(
         );
     }
 
-    Ok(())
+    Ok(None)
 }
 
-fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_name: String) {
+fn transform_call(call: &mut Call, continuation_name: &str, result_name: String) {
     call.arguments_mut()
         .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
-    call.arguments_mut().insert(1, continuation.into());
+    call.arguments_mut()
+        .insert(1, Variable::new(continuation_name).into());
     *call.name_mut() = result_name;
 }
 
@@ -179,14 +203,16 @@ fn get_environment_record(environment: &[(String, Type)]) -> Record {
 
 fn create_continuation(
     context: &mut Context,
-    call: &Call,
-    mut block: Block,
-    environment: &[(String, Type)],
-) -> Result<Expression, BuildError> {
-    let name = context.cps.name_generator().borrow_mut().generate();
+    Continuation {
+        name,
+        argument,
+        environment,
+        mut block,
+    }: Continuation,
+) -> Result<(), BuildError> {
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-    let environment_record_type = get_environment_record(environment).type_().clone();
+    let environment_record_type = get_environment_record(&environment).type_().clone();
     let environment_record = stack::pop(
         &builder,
         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
@@ -210,10 +236,7 @@ fn create_continuation(
 
     context.function_definitions.push(FunctionDefinition::new(
         &name,
-        vec![
-            Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
-            Argument::new(call.name(), call.type_().result().clone()),
-        ],
+        vec![Argument::new(STACK_ARGUMENT_NAME, stack::type_()), argument],
         context.cps.result_type().clone(),
         block,
         FunctionDefinitionOptions::new()
@@ -222,7 +245,7 @@ fn create_continuation(
             .set_linkage(Linkage::Internal),
     ));
 
-    Ok(Variable::new(name).into())
+    Ok(())
 }
 
 // Local variables should not include call results because they are
