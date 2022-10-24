@@ -66,7 +66,7 @@ fn transform_function_definition(
 
     local_variables.insert(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into());
 
-    transform_block(context, definition.body_mut(), &local_variables)?;
+    transform_block(context, definition.body_mut(), &[], &local_variables)?;
 
     Ok(())
 }
@@ -74,6 +74,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
+    environment: &[(&str, &Type)],
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = Vec::with_capacity(block.instructions().len());
@@ -180,8 +181,8 @@ fn transform_block(
                 rest_instructions.extend(builder.into_instructions().into_iter().rev());
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), local_variables)?;
-                transform_block(context, if_.else_mut(), local_variables)?;
+                transform_block(context, if_.then_mut(), environment, local_variables)?;
+                transform_block(context, if_.else_mut(), environment, local_variables)?;
 
                 rest_instructions.push(if_.into());
             }
