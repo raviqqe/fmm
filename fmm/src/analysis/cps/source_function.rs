@@ -178,8 +178,6 @@ fn transform_block(
 
                 rest_instructions.push(call.into());
                 rest_instructions.extend(builder.into_instructions().into_iter().rev());
-
-                continue;
             }
             Instruction::If(mut if_) => {
                 transform_block(context, if_.then_mut(), local_variables)?;
@@ -208,11 +206,11 @@ fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_n
     *call.name_mut() = result_name;
 }
 
-fn get_environment_record(environment: &[(String, Type)]) -> Record {
+fn get_environment_record(environment: &[(&str, &Type)]) -> Record {
     build::record(
         environment
             .iter()
-            .map(|(name, type_)| build::variable(name.clone(), type_.clone()))
+            .map(|(name, type_)| build::variable(*name, (*type_).clone()))
             .collect(),
     )
 }
@@ -222,9 +220,17 @@ fn create_continuation(
     call: &Call,
     instructions: Vec<Instruction>,
     terminal_instruction: TerminalInstruction,
-    environment: &[(String, Type)],
+    environment: &[(&str, &Type)],
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
+    let builder = InstructionBuilder::new(context.cps.name_generator());
+
+    let environment_record_type = get_environment_record(environment).type_().clone();
+    let environment_record = stack::pop(
+        &builder,
+        build::variable(STACK_ARGUMENT_NAME, stack::type_()),
+        environment_record_type.clone(),
+    )?;
 
     context.function_definitions.push(FunctionDefinition::new(
         &name,
@@ -234,31 +240,20 @@ fn create_continuation(
         ],
         context.cps.result_type().clone(),
         Block::new(
-            {
-                let builder = InstructionBuilder::new(context.cps.name_generator());
-
-                let environment_record_type = get_environment_record(environment).type_().clone();
-                let environment_record = stack::pop(
-                    &builder,
-                    build::variable(STACK_ARGUMENT_NAME, stack::type_()),
-                    environment_record_type.clone(),
-                )?;
-
-                builder
-                    .into_instructions()
-                    .into_iter()
-                    .chain(environment.iter().enumerate().map(|(index, (name, _))| {
-                        DeconstructRecord::new(
-                            environment_record_type.clone(),
-                            environment_record.expression().clone(),
-                            index,
-                            name,
-                        )
-                        .into()
-                    }))
-                    .chain(instructions)
-                    .collect()
-            },
+            builder
+                .into_instructions()
+                .into_iter()
+                .chain(environment.iter().enumerate().map(|(index, (name, _))| {
+                    DeconstructRecord::new(
+                        environment_record_type.clone(),
+                        environment_record.expression().clone(),
+                        index,
+                        *name,
+                    )
+                    .into()
+                }))
+                .chain(instructions)
+                .collect(),
             terminal_instruction,
         ),
         FunctionDefinitionOptions::new()
@@ -274,19 +269,19 @@ fn create_continuation(
 // passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.
-fn get_continuation_environment(
+fn get_continuation_environment<'a>(
     call: &Call,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<String, Type>,
-) -> Vec<(String, Type)> {
+    local_variables: &'a FnvHashMap<String, Type>,
+) -> Vec<(&'a str, &'a Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .into_iter()
         .filter(|name| *name != call.name() && *name != STACK_ARGUMENT_NAME)
         .flat_map(|name| {
             local_variables
-                .get(name)
-                .map(|type_| (name.to_owned(), type_.clone()))
+                .get_key_value(name)
+                .map(|(name, type_)| (name.as_str(), type_))
         })
         .collect()
 }
