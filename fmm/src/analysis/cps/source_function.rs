@@ -132,7 +132,8 @@ fn transform_block(
         }
     }
 
-    // We need to transform instructions in a reverse order for efficient free variable collection.
+    // We need to transform instructions in a reverse order for efficient free
+    // variable collection.
     for instruction in block.instructions_mut().drain(..).rev() {
         match instruction {
             Instruction::Call(mut call)
