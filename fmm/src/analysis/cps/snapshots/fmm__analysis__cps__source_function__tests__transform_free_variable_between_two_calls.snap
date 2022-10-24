@@ -1,28 +1,28 @@
 ---
 source: fmm/src/analysis/cps/source_function.rs
-expression: "format::format_module(&transform_module(&Module::new(vec![], vec![], vec![],\n                        vec![FunctionDefinition ::\n                            new(\"f\", vec! [], types :: Primitive :: Float64, Block ::\n                            new(vec!\n                            [Call ::\n                            new(types :: Function ::\n                            new(vec! [], types :: Primitive :: Float64, types ::\n                            CallingConvention :: Source), Variable :: new(\"f\"), vec! [],\n                            \"x\",).into(), Load ::\n                            new(types :: Primitive :: Float64, Undefined ::\n                            new(types :: Pointer :: new(types :: Primitive :: Float64)),\n                            \"y\",).into(), Call ::\n                            new(types :: Function ::\n                            new(vec! [], types :: Primitive :: Float64, types ::\n                            CallingConvention :: Source), Variable :: new(\"f\"), vec! [],\n                            \"z\",).into()], Return ::\n                            new(types :: Primitive :: Float64, ArithmeticOperation ::\n                            new(types :: Primitive :: Float64, ArithmeticOperator ::\n                            Add, Variable :: new(\"y\"), Variable :: new(\"z\"))),), Default\n                            :: default())])).unwrap())"
+expression: "format::format_module(&transform_module(Module::new(vec![], vec![], vec![],\n                    vec![FunctionDefinition ::\n                        new(\"f\", vec! [], types :: Primitive :: Float64, Block ::\n                        new(vec!\n                        [Call ::\n                        new(types :: Function ::\n                        new(vec! [], types :: Primitive :: Float64, types ::\n                        CallingConvention :: Source), Variable :: new(\"f\"), vec! [],\n                        \"x\",).into(), Load ::\n                        new(types :: Primitive :: Float64, Undefined ::\n                        new(types :: Pointer :: new(types :: Primitive :: Float64)),\n                        \"y\",).into(), Call ::\n                        new(types :: Function ::\n                        new(vec! [], types :: Primitive :: Float64, types ::\n                        CallingConvention :: Source), Variable :: new(\"f\"), vec! [],\n                        \"z\",).into()], Return ::\n                        new(types :: Primitive :: Float64, ArithmeticOperation ::\n                        new(types :: Primitive :: Float64, ArithmeticOperator ::\n                        Add, Variable :: new(\"y\"), Variable :: new(\"z\"))),), Default\n                        :: default())])).unwrap())"
 ---
 (module
   (function f _s _k
     (block
-      (load (record-address _s 1) _k_a)
-      (call _fmm_stack_extend _s (size-of record) _k_b)
-      (load (record-address _s 0) _k_c)
-      (store (record _k) (bit-cast (pointer-address _k_c _k_a)))
-      (call f _s _k_e _k_d)
-      (return _k_d)))
-  (function _k_5 _s z
-    (block
-      (load (record-address _s 1) _k_6)
-      (call _fmm_stack_align_size (size-of record) _k_7)
-      (store (- _k_6 _k_7) (record-address _s 1))
-      (load (record-address _s 0) _k_8)
-      (load (bit-cast (pointer-address _k_8 (- _k_6 _k_7))) _k_9)
-      (deconstruct-record _k_9 0 _k)
-      (deconstruct-record _k_9 1 y)
-      (call _k _s (+ y z) _k_0)
+      (load (record-address _s 1) _k_1)
+      (call _fmm_stack_extend _s (size-of record) _k_2)
+      (load (record-address _s 0) _k_3)
+      (store (record _k) (bit-cast (pointer-address _k_3 _k_1)))
+      (call f _s _k_4 _k_0)
       (return _k_0)))
-  (function _k_e _s x
+  (function _k_9 _s z
+    (block
+      (load (record-address _s 1) _k_b)
+      (call _fmm_stack_align_size (size-of record) _k_c)
+      (store (- _k_b _k_c) (record-address _s 1))
+      (load (record-address _s 0) _k_d)
+      (load (bit-cast (pointer-address _k_d (- _k_b _k_c))) _k_e)
+      (deconstruct-record _k_e 0 _k)
+      (deconstruct-record _k_e 1 y)
+      (call _k _s (+ y z) _k_a)
+      (return _k_a)))
+  (function _k_4 _s x
     (block
       (load (record-address _s 1) _k_f)
       (call _fmm_stack_align_size (size-of record) _k_10)
@@ -31,9 +31,9 @@ expression: "format::format_module(&transform_module(&Module::new(vec![], vec![]
       (load (bit-cast (pointer-address _k_11 (- _k_f _k_10))) _k_12)
       (deconstruct-record _k_12 0 _k)
       (load undefined y)
-      (load (record-address _s 1) _k_1)
-      (call _fmm_stack_extend _s (size-of record) _k_2)
-      (load (record-address _s 0) _k_3)
-      (store (record _k y) (bit-cast (pointer-address _k_3 _k_1)))
-      (call f _s _k_5 _k_4)
-      (return _k_4))))
+      (load (record-address _s 1) _k_6)
+      (call _fmm_stack_extend _s (size-of record) _k_7)
+      (load (record-address _s 0) _k_8)
+      (store (record _k y) (bit-cast (pointer-address _k_8 _k_6)))
+      (call f _s _k_9 _k_5)
+      (return _k_5))))
