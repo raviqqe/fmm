@@ -113,7 +113,7 @@ fn transform_block(
                 TerminalInstruction::Return(return_) => {
                     let result_name = context.cps.name_generator().borrow_mut().generate();
                     let result_type =
-                        replace(return_.type_mut(), context.cps.result_type().clone().into());
+                        replace(return_.type_mut(), context.cps.result_type().clone());
                     let result_expression =
                         replace(return_.expression_mut(), Variable::new(&result_name).into());
 
