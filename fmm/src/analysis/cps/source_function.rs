@@ -83,10 +83,10 @@ fn transform_block_recursively(
     block: &mut Block,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
-    let mut continuation_option = transform_block(context, block, &local_variables)?;
+    let mut continuation_option = transform_block(context, block, local_variables)?;
 
     while let Some(mut continuation) = continuation_option {
-        continuation_option = transform_block(context, &mut continuation.block, &local_variables)?;
+        continuation_option = transform_block(context, &mut continuation.block, local_variables)?;
         create_continuation(context, continuation)?;
     }
 
