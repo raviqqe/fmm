@@ -73,8 +73,17 @@ fn transform_function_definition(
 
     local_variables.insert(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into());
 
-    let mut continuation_option =
-        transform_block(context, definition.body_mut(), &local_variables)?;
+    transform_block_recursively(context, definition.body_mut(), &local_variables)?;
+
+    Ok(())
+}
+
+fn transform_block_recursively(
+    context: &mut Context,
+    block: &mut Block,
+    local_variables: &FnvHashMap<String, Type>,
+) -> Result<(), BuildError> {
+    let mut continuation_option = transform_block(context, block, &local_variables)?;
 
     while let Some(mut continuation) = continuation_option {
         continuation_option = transform_block(context, &mut continuation.block, &local_variables)?;
@@ -141,20 +150,17 @@ fn transform_block(
                     transform_call(&mut call, &name, result_name);
                     block.instructions_mut().push(call.into());
 
-                    let mut block = Block::new(rest_instructions, terminal_instruction);
-                    transform_block(context, &mut block, local_variables)?;
-
                     return Ok(Some(Continuation {
                         name,
                         argument,
                         environment,
-                        block,
+                        block: Block::new(rest_instructions, terminal_instruction),
                     }));
                 }
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), local_variables)?;
-                transform_block(context, if_.else_mut(), local_variables)?;
+                transform_block_recursively(context, if_.then_mut(), local_variables)?;
+                transform_block_recursively(context, if_.else_mut(), local_variables)?;
 
                 block.instructions_mut().push(if_.into());
             }
