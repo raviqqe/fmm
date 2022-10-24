@@ -150,22 +150,15 @@ fn transform_block(
 
     if let TerminalInstruction::Return(return_) = block.terminal_instruction_mut() {
         let result_name = context.cps.name_generator().borrow_mut().generate();
-        let result_type = return_.type_().clone();
-        let result_expression = return_.expression().clone();
-
-        *return_ = Return::new(
-            context.cps.result_type().clone(),
-            Variable::new(&result_name),
-        );
+        let result_type = replace(return_.type_mut(), context.cps.result_type().clone());
+        let result_expression =
+            replace(return_.expression_mut(), Variable::new(&result_name).into());
 
         block.instructions_mut().push(
             Call::new(
                 continuation_type::compile(&result_type, context.cps.result_type()),
                 Variable::new(CONTINUATION_ARGUMENT_NAME),
-                vec![
-                    Variable::new(STACK_ARGUMENT_NAME).into(),
-                    result_expression.clone(),
-                ],
+                vec![Variable::new(STACK_ARGUMENT_NAME).into(), result_expression],
                 result_name,
             )
             .into(),
