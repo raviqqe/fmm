@@ -44,12 +44,22 @@ fn transform_function_definition(
     let continuation_type =
         continuation_type::compile(definition.result_type(), context.cps.result_type());
 
+    // TODO Consider collecting `String` keys.
+    let mut local_variables = local_variable::collect(definition)
+        .into_iter()
+        .map(|(name, type_)| (name.to_owned(), type_))
+        .collect::<FnvHashMap<_, _>>();
+    local_variables.insert(
+        CONTINUATION_ARGUMENT_NAME.into(),
+        continuation_type.clone().into(),
+    );
+
     definition
         .arguments_mut()
         .insert(0, Argument::new(STACK_ARGUMENT_NAME, stack::type_()));
     definition.arguments_mut().insert(
         1,
-        Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type.clone()),
+        Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type),
     );
 
     *definition.result_type_mut() = context.cps.result_type().clone();
@@ -57,14 +67,6 @@ fn transform_function_definition(
         .options()
         .clone()
         .set_calling_convention(CallingConvention::Tail);
-
-    // TODO Consider collecting `String` keys.
-    let mut local_variables = local_variable::collect(definition)
-        .into_iter()
-        .map(|(name, type_)| (name.to_owned(), type_))
-        .collect::<FnvHashMap<_, _>>();
-
-    local_variables.insert(CONTINUATION_ARGUMENT_NAME.into(), continuation_type.into());
 
     transform_block(context, definition.body_mut(), &local_variables)?;
 
@@ -241,7 +243,7 @@ fn get_continuation_environment<'a>(
 ) -> Vec<(&'a str, &'a Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .into_iter()
-        .filter(|name| *name != call.name() && *name != STACK_ARGUMENT_NAME)
+        .filter(|name| *name != call.name())
         .flat_map(|name| {
             local_variables
                 .get_key_value(name)
