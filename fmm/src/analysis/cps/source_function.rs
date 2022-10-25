@@ -147,17 +147,16 @@ fn transform_block(
     }
 
     if let TerminalInstruction::Return(return_) = block.terminal_instruction_mut() {
-        let result_name = context.cps.name_generator().borrow_mut().generate();
-        let result_type = replace(return_.type_mut(), context.cps.result_type().clone());
-        let result_expression =
-            replace(return_.expression_mut(), Variable::new(&result_name).into());
+        let name = context.cps.name_generator().borrow_mut().generate();
+        let type_ = replace(return_.type_mut(), context.cps.result_type().clone());
+        let expression = replace(return_.expression_mut(), Variable::new(&name).into());
 
         block.instructions_mut().push(
             Call::new(
-                continuation_type::compile(&result_type, context.cps.result_type()),
+                continuation_type::compile(&type_, context.cps.result_type()),
                 Variable::new(CONTINUATION_ARGUMENT_NAME),
-                vec![Variable::new(STACK_ARGUMENT_NAME).into(), result_expression],
-                result_name,
+                vec![Variable::new(STACK_ARGUMENT_NAME).into(), expression],
+                name,
             )
             .into(),
         );
