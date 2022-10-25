@@ -252,8 +252,6 @@ fn create_continuation(
 
 // Local variables should not include call results because they are
 // passed as continuation arguments.
-//
-// TODO Sort fields to omit extra stack operations.
 fn get_continuation_environment<'a>(
     call: &Call,
     block: &Block,
