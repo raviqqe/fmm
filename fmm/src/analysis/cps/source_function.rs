@@ -110,11 +110,21 @@ fn transform_block(
                         Block::new(rest_instructions, terminal_instruction);
 
                     let initial_environment = if previous_environment.is_none() {
-                        Some(get_continuation_environment(
+                        let mut environment = get_continuation_environment(
                             &call,
                             &continuation_block,
                             local_variables,
-                        ))
+                        );
+
+                        environment.insert(
+                            0,
+                            (
+                                CONTINUATION_ARGUMENT_NAME,
+                                &local_variables[CONTINUATION_ARGUMENT_NAME],
+                            ),
+                        );
+
+                        Some(environment)
                     } else {
                         None
                     };
