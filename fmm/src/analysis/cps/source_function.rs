@@ -110,34 +110,28 @@ fn transform_block(
                         Block::new(rest_instructions, terminal_instruction);
 
                     let initial_environment = if previous_environment.is_none() {
-                        let mut environment = get_continuation_environment(
+                        create_initial_continuation_environment(
                             &call,
                             &continuation_block,
                             local_variables,
-                        );
-
-                        environment.insert(
-                            0,
-                            (
-                                CONTINUATION_ARGUMENT_NAME,
-                                &local_variables[CONTINUATION_ARGUMENT_NAME],
-                            ),
-                        );
-
-                        Some(environment)
+                        )
                     } else {
-                        None
+                        vec![]
                     };
+                    let previous_environment = previous_environment.unwrap_or(&initial_environment);
 
                     transform_block(
                         context,
                         &mut continuation_block,
-                        initial_environment.as_deref().or(previous_environment),
+                        Some(previous_environment),
                         local_variables,
                     )?;
 
-                    let environment =
-                        get_continuation_environment(&call, &continuation_block, local_variables);
+                    let environment = create_continuation_environment(
+                        &call,
+                        &continuation_block,
+                        previous_environment,
+                    );
                     let continuation =
                         create_continuation(context, &call, continuation_block, &environment)?;
 
@@ -260,22 +254,48 @@ fn create_continuation(
     Ok(Variable::new(name).into())
 }
 
-// Local variables should not include call results because they are
-// passed as continuation arguments.
-fn get_continuation_environment<'a>(
+fn create_initial_continuation_environment<'a>(
     call: &Call,
     block: &Block,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
-    free_variable::collect(block.instructions(), block.terminal_instruction())
-        .into_iter()
-        .filter(|name| *name != call.name())
-        .flat_map(|name| {
-            local_variables
-                .get_key_value(name)
-                .map(|(name, type_)| (name.as_str(), type_))
-        })
-        .collect()
+    let mut environment = vec![(
+        CONTINUATION_ARGUMENT_NAME,
+        &local_variables[CONTINUATION_ARGUMENT_NAME],
+    )];
+
+    environment.extend(
+        free_variable::collect(block.instructions(), block.terminal_instruction())
+            .into_iter()
+            .filter(|name| *name != call.name())
+            .flat_map(|name| {
+                local_variables
+                    .get_key_value(name)
+                    .map(|(name, type_)| (name.as_str(), type_))
+            }),
+    );
+
+    environment
+}
+
+// Local variables should not include call results because they are
+// passed as continuation arguments.
+fn create_continuation_environment<'a>(
+    call: &Call,
+    block: &Block,
+    initial_environment: &'a [(&str, &Type)],
+) -> &'a [(&'a str, &'a Type)] {
+    let mut free_variables =
+        free_variable::collect(block.instructions(), block.terminal_instruction());
+    free_variables.remove(call.name());
+
+    &initial_environment[..initial_environment
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(_, (name, _))| free_variables.contains(name))
+        .map(|(index, _)| index + 1)
+        .unwrap_or(0)]
 }
 
 #[cfg(test)]
