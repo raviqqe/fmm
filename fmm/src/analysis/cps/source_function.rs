@@ -54,7 +54,7 @@ fn transform_function_definition(
         continuation_type.clone().into(),
     );
 
-    transform_block(context, definition.body_mut(), &mut None, &local_variables)?;
+    transform_block(context, definition.body_mut(), None, &local_variables)?;
 
     definition
         .arguments_mut()
@@ -75,7 +75,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
-    next_environment: &mut Option<Vec<(&str, &Type)>>,
+    next_environment: Option<&[(&str, &Type)]>,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -131,8 +131,6 @@ fn transform_block(
                         get_environment_record(&environment),
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
-
-                    *next_environment = Some(environment);
 
                     continuation
                 };
