@@ -104,12 +104,18 @@ fn transform_block(
                 {
                     Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                 } else {
+                    let mut continuation_block =
+                        Block::new(rest_instructions, terminal_instruction);
+                    transform_block(context, &mut continuation_block, local_variables)?;
+
                     let environment = get_continuation_environment(
                         &call,
-                        &rest_instructions,
-                        &terminal_instruction,
+                        &continuation_block.instructions(),
+                        &continuation_block.terminal_instruction(),
                         local_variables,
                     );
+                    let continuation =
+                        create_continuation(context, &call, continuation_block, &environment)?;
 
                     let builder = InstructionBuilder::new(context.cps.name_generator());
                     stack::push(
@@ -119,9 +125,7 @@ fn transform_block(
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
-                    let mut block = Block::new(rest_instructions, terminal_instruction);
-                    transform_block(context, &mut block, local_variables)?;
-                    create_continuation(context, &call, block, &environment)?
+                    continuation
                 };
 
                 transform_call(&mut call, continuation, result_name);
@@ -235,10 +239,9 @@ fn get_continuation_environment(
     terminal_instruction: &TerminalInstruction,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Vec<(String, Type)> {
-    [CONTINUATION_ARGUMENT_NAME]
+    free_variable::collect(instructions, terminal_instruction)
         .into_iter()
-        .chain(free_variable::collect(instructions, terminal_instruction))
-        .filter(|name| *name != call.name())
+        .filter(|name| *name != call.name() && *name != STACK_ARGUMENT_NAME)
         .flat_map(|name| {
             local_variables
                 .get(name)
