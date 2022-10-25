@@ -54,6 +54,8 @@ fn transform_function_definition(
         continuation_type.clone().into(),
     );
 
+    transform_block(context, definition.body_mut(), &local_variables)?;
+
     definition
         .arguments_mut()
         .insert(0, Argument::new(STACK_ARGUMENT_NAME, stack::type_()));
@@ -61,14 +63,11 @@ fn transform_function_definition(
         1,
         Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type),
     );
-
     *definition.result_type_mut() = context.cps.result_type().clone();
     *definition.options_mut() = definition
         .options()
         .clone()
         .set_calling_convention(CallingConvention::Tail);
-
-    transform_block(context, definition.body_mut(), &local_variables)?;
 
     Ok(())
 }
