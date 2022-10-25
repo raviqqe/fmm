@@ -54,7 +54,7 @@ fn transform_function_definition(
         continuation_type.clone().into(),
     );
 
-    transform_block(context, definition.body_mut(), &[], &local_variables)?;
+    transform_block(context, definition.body_mut(), &mut None, &local_variables)?;
 
     definition
         .arguments_mut()
@@ -75,7 +75,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
-    environment: &[(&str, &Type)],
+    next_environment: &mut Option<Vec<(&str, &Type)>>,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -108,7 +108,12 @@ fn transform_block(
                 } else {
                     let mut continuation_block =
                         Block::new(rest_instructions, terminal_instruction);
-                    transform_block(context, &mut continuation_block, &[], local_variables)?;
+                    transform_block(
+                        context,
+                        &mut continuation_block,
+                        next_environment,
+                        local_variables,
+                    )?;
 
                     let environment = get_continuation_environment(
                         &call,
@@ -127,6 +132,8 @@ fn transform_block(
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
+                    *next_environment = Some(environment);
+
                     continuation
                 };
 
@@ -136,14 +143,12 @@ fn transform_block(
                 return Ok(());
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), environment, local_variables)?;
-                transform_block(context, if_.else_mut(), environment, local_variables)?;
+                transform_block(context, if_.then_mut(), next_environment, local_variables)?;
+                transform_block(context, if_.else_mut(), next_environment, local_variables)?;
 
                 block.instructions_mut().push(if_.into());
             }
-            instruction => {
-                block.instructions_mut().push(instruction);
-            }
+            instruction => block.instructions_mut().push(instruction),
         }
     }
 
