@@ -115,12 +115,8 @@ fn transform_block(
                         local_variables,
                     )?;
 
-                    let environment = get_continuation_environment(
-                        &call,
-                        continuation_block.instructions(),
-                        continuation_block.terminal_instruction(),
-                        local_variables,
-                    );
+                    let environment =
+                        get_continuation_environment(&call, &continuation_block, local_variables);
                     let continuation =
                         create_continuation(context, &call, continuation_block, &environment)?;
 
@@ -239,11 +235,10 @@ fn create_continuation(
 // TODO Sort fields to omit extra stack operations.
 fn get_continuation_environment<'a>(
     call: &Call,
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
+    block: &Block,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
-    free_variable::collect(instructions, terminal_instruction)
+    free_variable::collect(block.instructions(), block.terminal_instruction())
         .into_iter()
         .filter(|name| *name != call.name())
         .flat_map(|name| {
