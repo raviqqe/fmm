@@ -111,8 +111,8 @@ fn transform_block(
 
                     let environment = get_continuation_environment(
                         &call,
-                        &continuation_block.instructions(),
-                        &continuation_block.terminal_instruction(),
+                        continuation_block.instructions(),
+                        continuation_block.terminal_instruction(),
                         local_variables,
                     );
                     let continuation =
