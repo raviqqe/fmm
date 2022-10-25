@@ -172,11 +172,11 @@ fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_n
     *call.name_mut() = result_name;
 }
 
-fn get_environment_record(environment: &[(String, Type)]) -> Record {
+fn get_environment_record(environment: &[(&str, &Type)]) -> Record {
     build::record(
         environment
             .iter()
-            .map(|(name, type_)| build::variable(name.clone(), type_.clone()))
+            .map(|(name, type_)| build::variable(*name, (*type_).clone()))
             .collect(),
     )
 }
@@ -185,7 +185,7 @@ fn create_continuation(
     context: &mut Context,
     call: &Call,
     mut block: Block,
-    environment: &[(String, Type)],
+    environment: &[(&str, &Type)],
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
     let builder = InstructionBuilder::new(context.cps.name_generator());
@@ -233,19 +233,19 @@ fn create_continuation(
 // passed as continuation arguments.
 //
 // TODO Sort fields to omit extra stack operations.
-fn get_continuation_environment(
+fn get_continuation_environment<'a>(
     call: &Call,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<String, Type>,
-) -> Vec<(String, Type)> {
+    local_variables: &'a FnvHashMap<String, Type>,
+) -> Vec<(&'a str, &'a Type)> {
     free_variable::collect(instructions, terminal_instruction)
         .into_iter()
         .filter(|name| *name != call.name() && *name != STACK_ARGUMENT_NAME)
         .flat_map(|name| {
             local_variables
-                .get(name)
-                .map(|type_| (name.to_owned(), type_.clone()))
+                .get_key_value(name)
+                .map(|(name, type_)| (name.as_str(), type_))
         })
         .collect()
 }
