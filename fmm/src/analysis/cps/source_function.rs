@@ -205,7 +205,7 @@ fn create_continuation(
                 environment_record_type.clone(),
                 environment_record.expression().clone(),
                 index,
-                name,
+                *name,
             )
             .into()
         }))
