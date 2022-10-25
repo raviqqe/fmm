@@ -75,7 +75,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
-    next_environment: Option<&[(&str, &Type)]>,
+    previous_environment: Option<&[(&str, &Type)]>,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -108,10 +108,21 @@ fn transform_block(
                 } else {
                     let mut continuation_block =
                         Block::new(rest_instructions, terminal_instruction);
+
+                    let initial_environment = if previous_environment.is_none() {
+                        Some(get_continuation_environment(
+                            &call,
+                            &continuation_block,
+                            local_variables,
+                        ))
+                    } else {
+                        None
+                    };
+
                     transform_block(
                         context,
                         &mut continuation_block,
-                        next_environment,
+                        initial_environment.as_deref().or(previous_environment),
                         local_variables,
                     )?;
 
@@ -137,8 +148,18 @@ fn transform_block(
                 return Ok(());
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), next_environment, local_variables)?;
-                transform_block(context, if_.else_mut(), next_environment, local_variables)?;
+                transform_block(
+                    context,
+                    if_.then_mut(),
+                    previous_environment,
+                    local_variables,
+                )?;
+                transform_block(
+                    context,
+                    if_.else_mut(),
+                    previous_environment,
+                    local_variables,
+                )?;
 
                 block.instructions_mut().push(if_.into());
             }
