@@ -3,6 +3,7 @@ use crate::{ir::*, types::Type};
 use fnv::FnvHashMap;
 use std::rc::Rc;
 
+#[derive(Debug)]
 pub enum EnvironmentTree<'a> {
     Call(Vec<(&'a str, &'a Type)>, Option<Box<EnvironmentTree<'a>>>),
     If(
