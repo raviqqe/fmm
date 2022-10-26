@@ -109,10 +109,9 @@ fn transform_block(
                         Block::new(rest_instructions, terminal_instruction);
                     transform_block(context, &mut continuation_block, local_variables)?;
 
-                    let environment = get_continuation_environment(
+                    let environment = create_continuation_environment(
                         &call,
-                        continuation_block.instructions(),
-                        continuation_block.terminal_instruction(),
+                        &continuation_block,
                         local_variables,
                     );
                     let continuation =
@@ -122,7 +121,7 @@ fn transform_block(
                     stack::push(
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
-                        get_environment_record(&environment),
+                        create_environment_record(&environment),
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
@@ -140,9 +139,7 @@ fn transform_block(
 
                 block.instructions_mut().push(if_.into());
             }
-            instruction => {
-                block.instructions_mut().push(instruction);
-            }
+            instruction => block.instructions_mut().push(instruction),
         }
     }
 
@@ -172,7 +169,7 @@ fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_n
     *call.name_mut() = result_name;
 }
 
-fn get_environment_record(environment: &[(&str, &Type)]) -> Record {
+fn create_environment_record(environment: &[(&str, &Type)]) -> Record {
     build::record(
         environment
             .iter()
@@ -190,7 +187,7 @@ fn create_continuation(
     let name = context.cps.name_generator().borrow_mut().generate();
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-    let environment_record_type = get_environment_record(environment).type_().clone();
+    let environment_record_type = create_environment_record(environment).type_().clone();
     let environment_record = stack::pop(
         &builder,
         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
@@ -229,17 +226,12 @@ fn create_continuation(
     Ok(Variable::new(name).into())
 }
 
-// Local variables should not include call results because they are
-// passed as continuation arguments.
-//
-// TODO Sort fields to omit extra stack operations.
-fn get_continuation_environment<'a>(
+fn create_continuation_environment<'a>(
     call: &Call,
-    instructions: &[Instruction],
-    terminal_instruction: &TerminalInstruction,
+    block: &Block,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
-    free_variable::collect(instructions, terminal_instruction)
+    free_variable::collect(block.instructions(), block.terminal_instruction())
         .into_iter()
         .filter(|name| *name != call.name())
         .flat_map(|name| {
