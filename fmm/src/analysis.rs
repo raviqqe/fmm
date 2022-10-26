@@ -1,5 +1,6 @@
 pub mod c_calling_convention;
 pub mod cps;
+mod environment_inference;
 pub mod expression_conversion;
 pub mod format;
 mod local_variable;
