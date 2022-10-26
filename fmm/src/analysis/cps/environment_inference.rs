@@ -1,3 +1,4 @@
+use super::free_variable;
 use crate::{
     analysis::local_variable,
     build::{self, InstructionBuilder},
