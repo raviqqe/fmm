@@ -1,25 +1,20 @@
 use crate::ir::*;
 use indexmap::IndexSet;
 
-pub fn collect<'a>(
-    instructions: &'a [Instruction],
-    terminal_instruction: &'a TerminalInstruction,
-) -> IndexSet<&'a str> {
+pub fn collect(instructions: &mut [Instruction], terminal_instruction: &TerminalInstruction) {
     let mut variables = IndexSet::default();
 
     collect_from_instructions(instructions, terminal_instruction, &mut variables);
-
-    variables
 }
 
-fn collect_from_instructions<'a>(
-    instructions: &'a [Instruction],
-    terminal_instruction: &'a TerminalInstruction,
-    variables: &mut IndexSet<&'a str>,
+fn collect_from_instructions(
+    instructions: &mut [Instruction],
+    terminal_instruction: &TerminalInstruction,
+    variables: &mut IndexSet<String>,
 ) {
     collect_from_terminal_instruction(terminal_instruction, variables);
 
-    for instruction in instructions.iter().rev() {
+    for instruction in instructions.iter_mut().rev() {
         if let Some((name, _)) = instruction.value() {
             variables.remove(name);
         }
@@ -28,15 +23,14 @@ fn collect_from_instructions<'a>(
     }
 }
 
-fn collect_from_block<'a>(block: &'a Block, variables: &mut IndexSet<&'a str>) {
-    collect_from_instructions(
-        block.instructions(),
-        block.terminal_instruction(),
-        variables,
-    );
+fn collect_from_block(block: &mut Block, variables: &mut IndexSet<String>) {
+    // TODO Avoid this clone.
+    let terminal_instruction = block.terminal_instruction().clone();
+
+    collect_from_instructions(block.instructions_mut(), &terminal_instruction, variables);
 }
 
-fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut IndexSet<&'a str>) {
+fn collect_from_instruction(instruction: &mut Instruction, variables: &mut IndexSet<String>) {
     let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
 
     match instruction {
@@ -69,8 +63,8 @@ fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut In
         Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
         Instruction::If(if_) => {
             collect_from_expression(if_.condition());
-            collect_from_block(if_.then(), variables);
-            collect_from_block(if_.else_(), variables);
+            collect_from_block(if_.then_mut(), variables);
+            collect_from_block(if_.else_mut(), variables);
         }
         Instruction::Load(load) => collect_from_expression(load.pointer()),
         Instruction::MemoryCopy(copy) => {
@@ -90,9 +84,9 @@ fn collect_from_instruction<'a>(instruction: &'a Instruction, variables: &mut In
     }
 }
 
-fn collect_from_terminal_instruction<'a>(
-    instruction: &'a TerminalInstruction,
-    variables: &mut IndexSet<&'a str>,
+fn collect_from_terminal_instruction(
+    instruction: &TerminalInstruction,
+    variables: &mut IndexSet<String>,
 ) {
     let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
 
@@ -103,7 +97,7 @@ fn collect_from_terminal_instruction<'a>(
     }
 }
 
-fn collect_from_expression<'a>(expression: &'a Expression, variables: &mut IndexSet<&'a str>) {
+fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<String>) {
     let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
 
     match expression {
@@ -134,88 +128,11 @@ fn collect_from_expression<'a>(expression: &'a Expression, variables: &mut Index
         Expression::Union(union) => collect_from_expression(union.member()),
         Expression::UnionAddress(address) => collect_from_expression(address.pointer()),
         Expression::Variable(variable) => {
-            variables.insert(variable.name());
+            variables.insert(variable.name().into());
         }
         Expression::AlignOf(_)
         | Expression::Primitive(_)
         | Expression::SizeOf(_)
         | Expression::Undefined(_) => {}
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types;
-
-    #[test]
-    fn collect_nothing() {
-        assert_eq!(
-            collect(&[], &TerminalInstruction::Unreachable),
-            IndexSet::<&str>::default()
-        );
-    }
-
-    #[test]
-    fn collect_from_terminal_instruction() {
-        assert_eq!(
-            collect(
-                &[],
-                &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
-            ),
-            IndexSet::<&str>::from_iter(["x"])
-        );
-    }
-
-    #[test]
-    fn collect_from_terminal_instruction_with_shadowed_variable() {
-        assert_eq!(
-            collect(
-                &[AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
-                &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
-            ),
-            IndexSet::<&str>::default()
-        );
-    }
-
-    #[test]
-    fn collect_from_instruction_and_terminal_instruction_with_shadowed_variable() {
-        assert_eq!(
-            collect(
-                &[Load::new(types::Primitive::PointerInteger, Variable::new("x"), "x").into()],
-                &Return::new(types::Primitive::PointerInteger, Variable::new("x")).into()
-            ),
-            IndexSet::<&str>::from_iter(["x"])
-        );
-    }
-
-    #[test]
-    fn collect_from_instructions() {
-        assert_eq!(
-            collect(
-                &[
-                    AllocateStack::new(types::Primitive::PointerInteger, "x").into(),
-                    Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y").into()
-                ],
-                &TerminalInstruction::Unreachable
-            ),
-            IndexSet::<&str>::default()
-        );
-    }
-
-    #[test]
-    fn collect_multiple_variables_in_order() {
-        assert_eq!(
-            collect(
-                &[
-                    FreeHeap::new(Variable::new("v")).into(),
-                    FreeHeap::new(Variable::new("w")).into(),
-                    FreeHeap::new(Variable::new("x")).into(),
-                    FreeHeap::new(Variable::new("y")).into(),
-                ],
-                &Return::new(types::Primitive::PointerInteger, Variable::new("z")).into()
-            ),
-            IndexSet::<&str>::from_iter(["z", "y", "x", "w", "v"])
-        );
     }
 }
