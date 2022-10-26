@@ -1,6 +1,6 @@
 use super::expression::Expression;
-use crate::types;
-use indexmap::IndexSet;
+use crate::types::{self, Type};
+use indexmap::IndexMap;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Call(Box<CallInner>);
@@ -11,7 +11,7 @@ struct CallInner {
     function: Expression,
     arguments: Vec<Expression>,
     name: String,
-    environment: Option<IndexSet<String>>,
+    environment: Option<IndexMap<String, Type>>,
 }
 
 impl Call {
@@ -65,11 +65,11 @@ impl Call {
         &mut self.0.name
     }
 
-    pub fn environment(&self) -> Option<&IndexSet<String>> {
+    pub fn environment(&self) -> Option<&IndexMap<String, Type>> {
         self.0.environment.as_ref()
     }
 
-    pub fn environment_mut(&mut self) -> &mut Option<IndexSet<String>> {
+    pub fn environment_mut(&mut self) -> &mut Option<IndexMap<String, Type>> {
         &mut self.0.environment
     }
 }
