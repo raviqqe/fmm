@@ -194,9 +194,7 @@ fn transform_block<'a>(
 
                 rest_instructions.push(if_.into());
             }
-            instruction => {
-                rest_instructions.push(instruction);
-            }
+            instruction => rest_instructions.push(instruction),
         }
     }
 
