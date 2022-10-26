@@ -189,8 +189,21 @@ fn transform_block<'a>(
                 rest_instructions.extend(builder.into_instructions().into_iter().rev());
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), next_environment, local_variables)?;
-                transform_block(context, if_.else_mut(), next_environment, local_variables)?;
+                let mut then_environment = vec![];
+                let mut else_environment = vec![];
+
+                transform_block(
+                    context,
+                    if_.then_mut(),
+                    &mut then_environment,
+                    local_variables,
+                )?;
+                transform_block(
+                    context,
+                    if_.else_mut(),
+                    &mut else_environment,
+                    local_variables,
+                )?;
 
                 rest_instructions.push(if_.into());
             }
