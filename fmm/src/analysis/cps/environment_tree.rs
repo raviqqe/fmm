@@ -43,24 +43,28 @@ fn build_from_instructions<'a>(
                     tree.map(Into::into),
                 )),
                 Instruction::If(if_) => {
-                    let tree = tree.map(Into::into);
+                    let tree = tree.map(Rc::new);
 
                     Some(EnvironmentTree::If(
-                        if if_.then().terminal_instruction().is_branch() {
-                            tree.clone()
-                        } else {
-                            build(if_.then(), local_variables).map(Into::into)
-                        },
-                        if if_.else_().terminal_instruction().is_branch() {
-                            tree.clone()
-                        } else {
-                            build(if_.else_(), local_variables).map(Into::into)
-                        },
+                        build_conditional_block(if_.then(), &tree, local_variables),
+                        build_conditional_block(if_.else_(), &tree, local_variables),
                     ))
                 }
                 _ => tree,
             }
         }
+    }
+}
+
+fn build_conditional_block<'a>(
+    block: &'a Block,
+    tree: &Option<Rc<EnvironmentTree<'a>>>,
+    local_variables: &'a FnvHashMap<String, Type>,
+) -> Option<Rc<EnvironmentTree<'a>>> {
+    if block.terminal_instruction().is_branch() {
+        tree.clone()
+    } else {
+        build(block, local_variables).map(Into::into)
     }
 }
 
