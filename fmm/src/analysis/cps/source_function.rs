@@ -76,11 +76,11 @@ fn transform_function_definition(
     Ok(())
 }
 
-fn transform_block(
+fn transform_block<'a>(
     context: &mut Context,
     block: &mut Block,
-    next_environment: &mut Vec<(&str, &Type)>,
-    local_variables: &FnvHashMap<String, Type>,
+    next_environment: &mut Vec<(&'a str, &'a Type)>,
+    local_variables: &'a FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = Vec::with_capacity(block.instructions().len());
     let mut rest_terminal_instruction = replace(
@@ -178,7 +178,10 @@ fn transform_block(
                         .into(),
                     ),
                     &environment,
+                    &next_environment,
                 )?;
+
+                *next_environment = environment;
 
                 transform_call(&mut call, continuation, result_name);
 
@@ -227,6 +230,7 @@ fn create_continuation(
     instructions: Vec<Instruction>,
     terminal_instruction: TerminalInstruction,
     environment: &[(&str, &Type)],
+    next_environment: &[(&str, &Type)],
 ) -> Result<Expression, BuildError> {
     let name = context.cps.name_generator().borrow_mut().generate();
     let builder = InstructionBuilder::new(context.cps.name_generator());
