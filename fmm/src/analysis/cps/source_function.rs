@@ -107,7 +107,6 @@ fn transform_block(
                 } else {
                     let mut continuation_block =
                         Block::new(rest_instructions, terminal_instruction);
-
                     transform_block(context, &mut continuation_block, local_variables)?;
 
                     let environment = create_continuation_environment(
