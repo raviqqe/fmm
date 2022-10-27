@@ -790,7 +790,7 @@ mod tests {
         }
 
         #[test]
-        fn merge_free_varibles_from_then_and_else_blocks() {
+        fn merge_free_variables_from_then_and_else_blocks() {
             let function_type = types::Function::new(
                 vec![],
                 types::Primitive::PointerInteger,
