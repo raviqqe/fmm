@@ -202,7 +202,7 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![Call::new(function_type.clone(), Variable::new("g"), vec![], "x").into()],
+                    vec![Call::new(function_type, Variable::new("g"), vec![], "x").into()],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 Default::default(),
@@ -242,7 +242,7 @@ mod tests {
             )),
             Module::new(
                 vec![],
-                function_declarations.clone(),
+                function_declarations,
                 vec![],
                 vec![FunctionDefinition::new(
                     "f",
@@ -342,7 +342,7 @@ mod tests {
                 )),
                 Module::new(
                     vec![],
-                    function_declarations.clone(),
+                    function_declarations,
                     vec![],
                     vec![FunctionDefinition::new(
                         "f",
@@ -485,7 +485,7 @@ mod tests {
                 )),
                 Module::new(
                     vec![],
-                    function_declarations.clone(),
+                    function_declarations,
                     vec![],
                     vec![FunctionDefinition::new(
                         "f",
@@ -652,7 +652,7 @@ mod tests {
                 )),
                 Module::new(
                     vec![],
-                    function_declarations.clone(),
+                    function_declarations,
                     vec![],
                     vec![FunctionDefinition::new(
                         "f",
@@ -827,7 +827,7 @@ mod tests {
                 )),
                 Module::new(
                     vec![],
-                    function_declarations.clone(),
+                    function_declarations,
                     vec![],
                     vec![FunctionDefinition::new(
                         "f",
