@@ -17,25 +17,9 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
 }
 
 fn transform_block(block: &mut Block, variables: &mut IndexSet<String>) {
-    let (instructions, terminal_instruction) = block.parts_mut();
+    collect_from_terminal_instruction(block.terminal_instruction_mut(), variables);
 
-    collect_from_instructions(instructions, terminal_instruction, variables);
-}
-
-pub fn collect(instructions: &mut [Instruction], terminal_instruction: &TerminalInstruction) {
-    let mut variables = IndexSet::default();
-
-    collect_from_instructions(instructions, terminal_instruction, &mut variables);
-}
-
-fn collect_from_instructions(
-    instructions: &mut [Instruction],
-    terminal_instruction: &TerminalInstruction,
-    variables: &mut IndexSet<String>,
-) {
-    collect_from_terminal_instruction(terminal_instruction, variables);
-
-    for instruction in instructions.iter_mut().rev() {
+    for instruction in block.instructions_mut().iter_mut().rev() {
         if let Some((name, _)) = instruction.value() {
             variables.remove(name);
         }
@@ -203,29 +187,56 @@ mod tests {
     }
 
     #[test]
-    fn collect_no_free_variable_in_call() {
+    fn collect_no_free_variable() {
         let function_type = types::Function::new(
             vec![],
             types::Primitive::PointerInteger,
             types::CallingConvention::Source,
         );
-        let mut instructions =
-            vec![Call::new(function_type.clone(), Variable::new("f"), vec![], "x").into()];
-        let mut terminal_instruction =
-            Return::new(types::Primitive::PointerInteger, Variable::new("x")).into();
-
-        collect(&mut instructions, &mut terminal_instruction);
+        let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
 
         assert_eq!(
-            instructions,
-            &[{
-                let mut call = Call::new(function_type, Variable::new("f"), vec![], "x");
+            transform_module(Module::new(
+                vec![],
+                function_declarations.clone(),
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
+                                .into()
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("x"))
+                    ),
+                    Default::default(),
+                )],
+            )),
+            Module::new(
+                vec![],
+                function_declarations.clone(),
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![{
+                            let mut call =
+                                Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                *call.environment_mut() = Some(IndexSet::default());
+                            *call.environment_mut() = Some(IndexSet::default());
 
-                call
-            }
-            .into()]
+                            call
+                        }
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("x"))
+                    ),
+                    Default::default(),
+                )],
+            )
         );
     }
 
@@ -236,23 +247,50 @@ mod tests {
             types::Primitive::PointerInteger,
             types::CallingConvention::Source,
         );
-        let mut instructions =
-            vec![Call::new(function_type.clone(), Variable::new("f"), vec![], "x").into()];
-        let mut terminal_instruction =
-            Return::new(types::Primitive::PointerInteger, Variable::new("y")).into();
-
-        collect(&mut instructions, &mut terminal_instruction);
+        let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
 
         assert_eq!(
-            instructions,
-            &[{
-                let mut call = Call::new(function_type, Variable::new("f"), vec![], "x");
+            transform_module(Module::new(
+                vec![],
+                function_declarations.clone(),
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("y", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
+                                .into()
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y"))
+                    ),
+                    Default::default(),
+                )],
+            )),
+            Module::new(
+                vec![],
+                function_declarations.clone(),
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("y", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![{
+                            let mut call =
+                                Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                *call.environment_mut() = Some(IndexSet::<String>::from_iter(["y".into()]));
+                            *call.environment_mut() = Some(IndexSet::from_iter(["y".into()]));
 
-                call
-            }
-            .into()]
+                            call
+                        }
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y"))
+                    ),
+                    Default::default(),
+                )],
+            )
         );
     }
 
@@ -365,7 +403,7 @@ mod tests {
                                                 );
 
                                                 *call.environment_mut() =
-                                                    Some(IndexSet::<String>::from_iter([
+                                                    Some(IndexSet::from_iter([
                                                         "r".into(),
                                                         "q".into(),
                                                         "p".into(),

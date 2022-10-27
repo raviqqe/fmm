@@ -32,8 +32,4 @@ impl Block {
     pub fn terminal_instruction_mut(&mut self) -> &mut TerminalInstruction {
         &mut self.terminal_instruction
     }
-
-    pub fn parts_mut(&mut self) -> (&mut [Instruction], &mut TerminalInstruction) {
-        (&mut self.instructions, &mut self.terminal_instruction)
-    }
 }
