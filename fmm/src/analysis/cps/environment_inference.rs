@@ -5,7 +5,7 @@ use crate::{
     types::{CallingConvention, Type},
 };
 use fnv::FnvHashMap;
-use indexmap::IndexMap;
+use indexmap::IndexSet;
 
 pub fn transform(module: &mut Module) {
     for definition in module.function_definitions_mut() {
@@ -38,7 +38,6 @@ fn transform_block(block: &mut Block, local_variables: &FnvHashMap<String, Type>
                     &call,
                     &instructions,
                     &terminal_instruction,
-                    local_variables,
                 ));
 
                 return;
@@ -56,15 +55,10 @@ fn create_environment(
     call: &Call,
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
-    local_variables: &FnvHashMap<String, Type>,
-) -> IndexMap<String, Type> {
+) -> IndexSet<String> {
     free_variable::collect(instructions, terminal_instruction)
         .into_iter()
         .filter(|name| *name != call.name())
-        .flat_map(|name| {
-            local_variables
-                .get_key_value(name)
-                .map(|(name, type_)| ((*name).clone(), type_.clone()))
-        })
+        .map(|name| name.into())
         .collect()
 }

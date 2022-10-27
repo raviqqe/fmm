@@ -1,5 +1,26 @@
-use crate::ir::*;
+use crate::{ir::*, types};
 use indexmap::IndexSet;
+use std::mem::swap;
+
+pub fn transform(module: &mut Module) {
+    for definition in module.function_definitions_mut() {
+        transform_function_definition(definition);
+    }
+}
+
+fn transform_function_definition(definition: &mut FunctionDefinition) {
+    if definition.type_().calling_convention() != types::CallingConvention::Source {
+        return;
+    }
+
+    transform_block(definition.body_mut(), &mut IndexSet::default());
+}
+
+fn transform_block(block: &mut Block, variables: &mut IndexSet<String>) {
+    let (instructions, terminal_instruction) = block.parts_mut();
+
+    collect_from_instructions(instructions, terminal_instruction, variables);
+}
 
 pub fn collect(instructions: &mut [Instruction], terminal_instruction: &TerminalInstruction) {
     let mut variables = IndexSet::default();
@@ -23,62 +44,68 @@ fn collect_from_instructions(
     }
 }
 
-fn collect_from_block(block: &mut Block, variables: &mut IndexSet<String>) {
-    // TODO Avoid this clone.
-    let terminal_instruction = block.terminal_instruction().clone();
-
-    collect_from_instructions(block.instructions_mut(), &terminal_instruction, variables);
-}
-
 fn collect_from_instruction(instruction: &mut Instruction, variables: &mut IndexSet<String>) {
-    let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
+    let mut collect = |expression| collect_from_expression(expression, variables);
 
     match instruction {
-        Instruction::AllocateHeap(allocate) => collect_from_expression(allocate.size()),
-        Instruction::AtomicLoad(load) => collect_from_expression(load.pointer()),
+        Instruction::AllocateHeap(allocate) => collect(allocate.size()),
+        Instruction::AtomicLoad(load) => collect(load.pointer()),
         Instruction::AtomicOperation(operation) => {
-            collect_from_expression(operation.pointer());
-            collect_from_expression(operation.value());
+            collect(operation.pointer());
+            collect(operation.value());
         }
         Instruction::AtomicStore(store) => {
-            collect_from_expression(store.value());
-            collect_from_expression(store.pointer());
+            collect(store.value());
+            collect(store.pointer());
         }
         Instruction::Call(call) => {
-            collect_from_expression(call.function());
+            if call.type_().calling_convention() == types::CallingConvention::Source {
+                *call.environment_mut() = Some(variables.clone());
+            }
+
+            collect_from_expression(call.function(), variables);
 
             for argument in call.arguments() {
-                collect_from_expression(argument);
+                collect_from_expression(argument, variables);
             }
         }
         Instruction::CompareAndSwap(cas) => {
-            collect_from_expression(cas.pointer());
-            collect_from_expression(cas.old_value());
-            collect_from_expression(cas.new_value());
+            collect(cas.pointer());
+            collect(cas.old_value());
+            collect(cas.new_value());
         }
-        Instruction::DeconstructRecord(deconstruct) => {
-            collect_from_expression(deconstruct.record())
-        }
-        Instruction::DeconstructUnion(deconstruct) => collect_from_expression(deconstruct.union()),
-        Instruction::FreeHeap(free) => collect_from_expression(free.pointer()),
+        Instruction::DeconstructRecord(deconstruct) => collect(deconstruct.record()),
+        Instruction::DeconstructUnion(deconstruct) => collect(deconstruct.union()),
+        Instruction::FreeHeap(free) => collect(free.pointer()),
         Instruction::If(if_) => {
-            collect_from_expression(if_.condition());
-            collect_from_block(if_.then_mut(), variables);
-            collect_from_block(if_.else_mut(), variables);
+            // TODO Optimize this clone.
+            let mut other_variables = variables.clone();
+
+            transform_block(if_.then_mut(), variables);
+            transform_block(if_.else_mut(), &mut other_variables);
+
+            // Choose a longer match.
+            if variables.len() < other_variables.len() {
+                swap(variables, &mut other_variables);
+            }
+
+            variables.union(&other_variables);
+
+            collect_from_expression(if_.condition(), variables);
         }
-        Instruction::Load(load) => collect_from_expression(load.pointer()),
+        Instruction::Load(load) => collect(load.pointer()),
         Instruction::MemoryCopy(copy) => {
-            collect_from_expression(copy.source());
-            collect_from_expression(copy.destination());
-            collect_from_expression(copy.size());
+            collect(copy.source());
+            collect(copy.destination());
+            collect(copy.size());
         }
         Instruction::ReallocateHeap(reallocate) => {
-            collect_from_expression(reallocate.pointer());
-            collect_from_expression(reallocate.size());
+            collect(reallocate.pointer());
+            collect(reallocate.size());
         }
         Instruction::Store(store) => {
-            collect_from_expression(store.value());
-            collect_from_expression(store.pointer());
+            collect(store.value());
+            collect(store.pointer());
         }
         Instruction::Fence(_) | Instruction::AllocateStack(_) => Default::default(),
     }
@@ -88,45 +115,50 @@ fn collect_from_terminal_instruction(
     instruction: &TerminalInstruction,
     variables: &mut IndexSet<String>,
 ) {
-    let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
-
     match instruction {
-        TerminalInstruction::Branch(branch) => collect_from_expression(branch.expression()),
-        TerminalInstruction::Return(return_) => collect_from_expression(return_.expression()),
-        TerminalInstruction::Unreachable => {}
+        TerminalInstruction::Branch(branch) => {
+            collect_from_expression(branch.expression(), variables)
+        }
+        TerminalInstruction::Return(return_) => {
+            variables.clear();
+            collect_from_expression(return_.expression(), variables)
+        }
+        TerminalInstruction::Unreachable => {
+            variables.clear();
+        }
     }
 }
 
 fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<String>) {
-    let mut collect_from_expression = |expression| collect_from_expression(expression, variables);
+    let mut collect = |expression| collect_from_expression(expression, variables);
 
     match expression {
         Expression::ArithmeticOperation(operation) => {
-            collect_from_expression(operation.lhs());
-            collect_from_expression(operation.rhs());
+            collect(operation.lhs());
+            collect(operation.rhs());
         }
-        Expression::BitCast(bit_cast) => collect_from_expression(bit_cast.expression()),
-        Expression::BitwiseNotOperation(operation) => collect_from_expression(operation.value()),
+        Expression::BitCast(bit_cast) => collect(bit_cast.expression()),
+        Expression::BitwiseNotOperation(operation) => collect(operation.value()),
         Expression::BitwiseOperation(operation) => {
-            collect_from_expression(operation.lhs());
-            collect_from_expression(operation.rhs());
+            collect(operation.lhs());
+            collect(operation.rhs());
         }
         Expression::ComparisonOperation(operation) => {
-            collect_from_expression(operation.lhs());
-            collect_from_expression(operation.rhs());
+            collect(operation.lhs());
+            collect(operation.rhs());
         }
         Expression::PointerAddress(address) => {
-            collect_from_expression(address.pointer());
-            collect_from_expression(address.offset());
+            collect(address.pointer());
+            collect(address.offset());
         }
         Expression::Record(record) => {
             for field in record.fields() {
-                collect_from_expression(field);
+                collect(field);
             }
         }
-        Expression::RecordAddress(address) => collect_from_expression(address.pointer()),
-        Expression::Union(union) => collect_from_expression(union.member()),
-        Expression::UnionAddress(address) => collect_from_expression(address.pointer()),
+        Expression::RecordAddress(address) => collect(address.pointer()),
+        Expression::Union(union) => collect(union.member()),
+        Expression::UnionAddress(address) => collect(address.pointer()),
         Expression::Variable(variable) => {
             variables.insert(variable.name().into());
         }
@@ -134,5 +166,589 @@ fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<Str
         | Expression::Primitive(_)
         | Expression::SizeOf(_)
         | Expression::Undefined(_) => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{analysis::validation, types};
+    use indexmap::IndexSet;
+    use pretty_assertions::assert_eq;
+
+    fn transform_module(mut module: Module) -> Module {
+        validation::validate(&module).unwrap();
+        transform(&mut module);
+        validation::validate(&module).unwrap();
+
+        module
+    }
+
+    #[test]
+    fn transform_empty_definition() {
+        let module = Module::new(
+            vec![],
+            vec![],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
+                vec![],
+                types::Primitive::PointerInteger,
+                Block::new(vec![], TerminalInstruction::Unreachable),
+                Default::default(),
+            )],
+        );
+
+        assert_eq!(transform_module(module.clone()), module);
+    }
+
+    #[test]
+    fn collect_no_free_variable_in_call() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+        let mut instructions =
+            vec![Call::new(function_type.clone(), Variable::new("f"), vec![], "x").into()];
+        let mut terminal_instruction =
+            Return::new(types::Primitive::PointerInteger, Variable::new("x")).into();
+
+        collect(&mut instructions, &mut terminal_instruction);
+
+        assert_eq!(
+            instructions,
+            &[{
+                let mut call = Call::new(function_type, Variable::new("f"), vec![], "x");
+
+                *call.environment_mut() = Some(IndexSet::default());
+
+                call
+            }
+            .into()]
+        );
+    }
+
+    #[test]
+    fn collect_free_variable_from_terminal_instruction() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+        let mut instructions =
+            vec![Call::new(function_type.clone(), Variable::new("f"), vec![], "x").into()];
+        let mut terminal_instruction =
+            Return::new(types::Primitive::PointerInteger, Variable::new("y")).into();
+
+        collect(&mut instructions, &mut terminal_instruction);
+
+        assert_eq!(
+            instructions,
+            &[{
+                let mut call = Call::new(function_type, Variable::new("f"), vec![], "x");
+
+                *call.environment_mut() = Some(IndexSet::<String>::from_iter(["y".into()]));
+
+                call
+            }
+            .into()]
+        );
+    }
+
+    mod if_ {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn collect_free_variables_in_then_block() {
+            let function_type = types::Function::new(
+                vec![],
+                types::Primitive::PointerInteger,
+                types::CallingConvention::Source,
+            );
+            let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
+
+            assert_eq!(
+                transform_module(Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    Block::new(
+                                        vec![
+                                            Call::new(
+                                                function_type.clone(),
+                                                Variable::new("g"),
+                                                vec![],
+                                                "i",
+                                            )
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p"),
+                                                "j"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    "k",
+                                )
+                                .into(),
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("q"),
+                                    "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )),
+                Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    Block::new(
+                                        vec![
+                                            {
+                                                let mut call = Call::new(
+                                                    function_type,
+                                                    Variable::new("g"),
+                                                    vec![],
+                                                    "i",
+                                                );
+
+                                                *call.environment_mut() =
+                                                    Some(IndexSet::<String>::from_iter([
+                                                        "r".into(),
+                                                        "q".into(),
+                                                        "p".into(),
+                                                    ]));
+
+                                                call
+                                            }
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p"),
+                                                "j"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    "k",
+                                )
+                                .into(),
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("q"),
+                                    "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )
+            );
+        }
+
+        #[test]
+        fn collect_free_variables_in_else_block() {
+            let function_type = types::Function::new(
+                vec![],
+                types::Primitive::PointerInteger,
+                types::CallingConvention::Source,
+            );
+            let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
+
+            assert_eq!(
+                transform_module(Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![
+                                            Call::new(
+                                                function_type.clone(),
+                                                Variable::new("g"),
+                                                vec![],
+                                                "i",
+                                            )
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p"),
+                                                "j"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    "k",
+                                )
+                                .into(),
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("q"),
+                                    "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )),
+                Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![
+                                            {
+                                                let mut call = Call::new(
+                                                    function_type,
+                                                    Variable::new("g"),
+                                                    vec![],
+                                                    "i",
+                                                );
+
+                                                *call.environment_mut() =
+                                                    Some(IndexSet::<String>::from_iter([
+                                                        "r".into(),
+                                                        "q".into(),
+                                                        "p".into(),
+                                                    ]));
+
+                                                call
+                                            }
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p"),
+                                                "j"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    Block::new(vec![], TerminalInstruction::Unreachable),
+                                    "k",
+                                )
+                                .into(),
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("q"),
+                                    "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )
+            );
+        }
+
+        #[test]
+        fn collect_different_free_variables_in_then_and_else_blocks() {
+            let function_type = types::Function::new(
+                vec![],
+                types::Primitive::PointerInteger,
+                types::CallingConvention::Source,
+            );
+            let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
+
+            assert_eq!(
+                transform_module(Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p1",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "p2",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![
+                                            Call::new(
+                                                function_type.clone(),
+                                                Variable::new("g"),
+                                                vec![],
+                                                "i1",
+                                            )
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p1"),
+                                                "j1"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    Block::new(
+                                        vec![
+                                            Call::new(
+                                                function_type.clone(),
+                                                Variable::new("g"),
+                                                vec![],
+                                                "i2",
+                                            )
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p2"),
+                                                "j2"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    "k",
+                                )
+                                .into(),
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("q"),
+                                    "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )),
+                Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p1",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "p2",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![
+                                            {
+                                                let mut call = Call::new(
+                                                    function_type.clone(),
+                                                    Variable::new("g"),
+                                                    vec![],
+                                                    "i1",
+                                                );
+
+                                                *call.environment_mut() =
+                                                    Some(IndexSet::<String>::from_iter([
+                                                        "r".into(),
+                                                        "q".into(),
+                                                        "p1".into(),
+                                                    ]));
+
+                                                call
+                                            }
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p1"),
+                                                "j1"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    Block::new(
+                                        vec![
+                                            {
+                                                let mut call = Call::new(
+                                                    function_type,
+                                                    Variable::new("g"),
+                                                    vec![],
+                                                    "i2",
+                                                );
+
+                                                *call.environment_mut() =
+                                                    Some(IndexSet::<String>::from_iter([
+                                                        "r".into(),
+                                                        "q".into(),
+                                                        "p2".into(),
+                                                    ]));
+
+                                                call
+                                            }
+                                            .into(),
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p2"),
+                                                "j2"
+                                            )
+                                            .into(),
+                                        ],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    "k",
+                                )
+                                .into(),
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("q"),
+                                    "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )
+            );
+        }
     }
 }
