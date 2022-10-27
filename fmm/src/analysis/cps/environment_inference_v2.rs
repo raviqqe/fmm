@@ -84,12 +84,12 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             transform_block(if_.then_mut(), variables);
             transform_block(if_.else_mut(), &mut other_variables);
 
-            // Choose a longer match.
+            // Choose a bigger one as a left-hand side for merge.
             if variables.len() < other_variables.len() {
                 swap(variables, &mut other_variables);
             }
 
-            variables.union(&other_variables);
+            variables.extend(other_variables);
 
             collect_from_expression(if_.condition(), variables);
         }
@@ -740,6 +740,147 @@ mod tests {
                                     types::Primitive::PointerInteger,
                                     Variable::new("q"),
                                     "l"
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )
+            );
+        }
+
+        #[test]
+        fn merge_free_varibles_from_then_and_else_blocks() {
+            let function_type = types::Function::new(
+                vec![],
+                types::Primitive::PointerInteger,
+                types::CallingConvention::Source,
+            );
+            let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
+
+            assert_eq!(
+                transform_module(Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
+                                    .into(),
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![Load::new(
+                                            types::Primitive::PointerInteger,
+                                            Variable::new("p"),
+                                            "i"
+                                        )
+                                        .into()],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    Block::new(
+                                        vec![Load::new(
+                                            types::Primitive::PointerInteger,
+                                            Variable::new("q"),
+                                            "j"
+                                        )
+                                        .into()],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    "k",
+                                )
+                                .into(),
+                            ],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("r")),
+                        ),
+                        Default::default(),
+                    )],
+                )),
+                Module::new(
+                    vec![],
+                    function_declarations.clone(),
+                    vec![],
+                    vec![FunctionDefinition::new(
+                        "f",
+                        vec![
+                            Argument::new(
+                                "p",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new(
+                                "q",
+                                types::Pointer::new(types::Primitive::PointerInteger)
+                            ),
+                            Argument::new("r", types::Primitive::PointerInteger)
+                        ],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![
+                                {
+                                    let mut call =
+                                        Call::new(function_type, Variable::new("g"), vec![], "x");
+
+                                    *call.environment_mut() =
+                                        Some(IndexSet::<String>::from_iter([
+                                            "r".into(),
+                                            "q".into(),
+                                            "p".into(),
+                                        ]));
+
+                                    call
+                                }
+                                .into(),
+                                If::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::Boolean(true),
+                                    Block::new(
+                                        vec![Load::new(
+                                            types::Primitive::PointerInteger,
+                                            Variable::new("p"),
+                                            "i"
+                                        )
+                                        .into()],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    Block::new(
+                                        vec![Load::new(
+                                            types::Primitive::PointerInteger,
+                                            Variable::new("q"),
+                                            "j"
+                                        )
+                                        .into()],
+                                        Branch::new(
+                                            types::Primitive::PointerInteger,
+                                            Primitive::PointerInteger(0),
+                                        ),
+                                    ),
+                                    "k",
                                 )
                                 .into(),
                             ],
