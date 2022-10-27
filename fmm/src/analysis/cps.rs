@@ -17,6 +17,7 @@ pub fn transform(module: &mut Module, result_type: impl Into<Type>) -> Result<()
     let context = Context::new(result_type.into());
 
     if_::flatten(module);
+    environment_inference::transform(module);
     source_function::transform(&context, module)?;
     target_function::transform(&context, module)?;
     function_type::transform(module, context.result_type())?;
