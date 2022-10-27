@@ -1,7 +1,6 @@
 mod context;
 mod continuation_type;
 mod environment_inference;
-mod environment_inference_v2;
 mod error;
 mod free_variable;
 mod function_type;
