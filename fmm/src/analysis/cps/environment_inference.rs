@@ -44,7 +44,7 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
         }
         Instruction::Call(call) => {
             if call.type_().calling_convention() == types::CallingConvention::Source {
-                *call.environment_mut() = Some(variables.clone());
+                *call.environment_mut() = variables.clone();
             }
 
             collect_from_expression(call.function(), variables);
@@ -193,51 +193,23 @@ mod tests {
             types::Primitive::PointerInteger,
             types::CallingConvention::Source,
         );
-        let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
-
-        assert_eq!(
-            transform_module(Module::new(
+        let module = Module::new(
+            vec![],
+            vec![FunctionDeclaration::new("g", function_type.clone())],
+            vec![],
+            vec![FunctionDefinition::new(
+                "f",
                 vec![],
-                function_declarations.clone(),
-                vec![],
-                vec![FunctionDefinition::new(
-                    "f",
-                    vec![],
-                    types::Primitive::PointerInteger,
-                    Block::new(
-                        vec![
-                            Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
-                                .into()
-                        ],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("x"))
-                    ),
-                    Default::default(),
-                )],
-            )),
-            Module::new(
-                vec![],
-                function_declarations.clone(),
-                vec![],
-                vec![FunctionDefinition::new(
-                    "f",
-                    vec![],
-                    types::Primitive::PointerInteger,
-                    Block::new(
-                        vec![{
-                            let mut call =
-                                Call::new(function_type, Variable::new("g"), vec![], "x");
-
-                            *call.environment_mut() = Some(IndexSet::default());
-
-                            call
-                        }
-                        .into()],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("x"))
-                    ),
-                    Default::default(),
-                )],
-            )
+                types::Primitive::PointerInteger,
+                Block::new(
+                    vec![Call::new(function_type.clone(), Variable::new("g"), vec![], "x").into()],
+                    Return::new(types::Primitive::PointerInteger, Variable::new("x")),
+                ),
+                Default::default(),
+            )],
         );
+
+        assert_eq!(transform_module(module.clone()), module);
     }
 
     #[test]
@@ -281,7 +253,7 @@ mod tests {
                             let mut call =
                                 Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                            *call.environment_mut() = Some(IndexSet::from_iter(["y".into()]));
+                            *call.environment_mut() = IndexSet::from_iter(["y".into()]);
 
                             call
                         }
@@ -402,12 +374,11 @@ mod tests {
                                                     "i",
                                                 );
 
-                                                *call.environment_mut() =
-                                                    Some(IndexSet::from_iter([
-                                                        "r".into(),
-                                                        "q".into(),
-                                                        "p".into(),
-                                                    ]));
+                                                *call.environment_mut() = IndexSet::from_iter([
+                                                    "r".into(),
+                                                    "q".into(),
+                                                    "p".into(),
+                                                ]);
 
                                                 call
                                             }
@@ -545,12 +516,11 @@ mod tests {
                                                     "i",
                                                 );
 
-                                                *call.environment_mut() =
-                                                    Some(IndexSet::<String>::from_iter([
-                                                        "r".into(),
-                                                        "q".into(),
-                                                        "p".into(),
-                                                    ]));
+                                                *call.environment_mut() = IndexSet::from_iter([
+                                                    "r".into(),
+                                                    "q".into(),
+                                                    "p".into(),
+                                                ]);
 
                                                 call
                                             }
@@ -717,12 +687,11 @@ mod tests {
                                                     "i1",
                                                 );
 
-                                                *call.environment_mut() =
-                                                    Some(IndexSet::<String>::from_iter([
-                                                        "r".into(),
-                                                        "q".into(),
-                                                        "p1".into(),
-                                                    ]));
+                                                *call.environment_mut() = IndexSet::from_iter([
+                                                    "r".into(),
+                                                    "q".into(),
+                                                    "p1".into(),
+                                                ]);
 
                                                 call
                                             }
@@ -749,12 +718,11 @@ mod tests {
                                                     "i2",
                                                 );
 
-                                                *call.environment_mut() =
-                                                    Some(IndexSet::<String>::from_iter([
-                                                        "r".into(),
-                                                        "q".into(),
-                                                        "p2".into(),
-                                                    ]));
+                                                *call.environment_mut() = IndexSet::from_iter([
+                                                    "r".into(),
+                                                    "q".into(),
+                                                    "p2".into(),
+                                                ]);
 
                                                 call
                                             }
@@ -882,11 +850,7 @@ mod tests {
                                         Call::new(function_type, Variable::new("g"), vec![], "x");
 
                                     *call.environment_mut() =
-                                        Some(IndexSet::<String>::from_iter([
-                                            "r".into(),
-                                            "q".into(),
-                                            "p".into(),
-                                        ]));
+                                        IndexSet::from_iter(["r".into(), "q".into(), "p".into()]);
 
                                     call
                                 }

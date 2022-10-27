@@ -11,7 +11,7 @@ struct CallInner {
     function: Expression,
     arguments: Vec<Expression>,
     name: String,
-    environment: Option<IndexSet<String>>,
+    environment: IndexSet<String>,
 }
 
 impl Call {
@@ -27,7 +27,7 @@ impl Call {
                 function: function.into(),
                 arguments,
                 name: name.into(),
-                environment: None,
+                environment: Default::default(),
             }
             .into(),
         )
@@ -65,11 +65,11 @@ impl Call {
         &mut self.0.name
     }
 
-    pub fn environment(&self) -> Option<&IndexSet<String>> {
-        self.0.environment.as_ref()
+    pub fn environment(&self) -> &IndexSet<String> {
+        &self.0.environment
     }
 
-    pub fn environment_mut(&mut self) -> &mut Option<IndexSet<String>> {
+    pub fn environment_mut(&mut self) -> &mut IndexSet<String> {
         &mut self.0.environment
     }
 }
