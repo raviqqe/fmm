@@ -62,6 +62,7 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
         Instruction::DeconstructUnion(deconstruct) => collect(deconstruct.union()),
         Instruction::FreeHeap(free) => collect(free.pointer()),
         Instruction::If(if_) => {
+            // TODO Consider including if instructions' results to omit them in if flattening.
             *if_.environment_mut() = variables.clone();
 
             // TODO Optimize this clone.
