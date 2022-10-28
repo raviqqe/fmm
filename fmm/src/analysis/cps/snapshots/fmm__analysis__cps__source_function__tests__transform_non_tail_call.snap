@@ -5,20 +5,20 @@ expression: "format::format_module(&transform_module(Module::new(vec![], vec![],
 (module
   (function f _s _k
     (block
-      (load (record-address _s 1) _k_7)
-      (call _fmm_stack_extend _s (size-of record) _k_8)
-      (load (record-address _s 0) _k_9)
-      (store (record _k) (bit-cast (pointer-address _k_9 _k_7)))
-      (call f _s _k_2 _k_0)
+      (load (record-address _s 1) _k_1)
+      (call _fmm_stack_extend _s (size-of record) _k_2)
+      (load (record-address _s 0) _k_3)
+      (store (record _k) (bit-cast (pointer-address _k_3 _k_1)))
+      (call f _s _k_5 _k_0)
       (return _k_0)))
-  (function _k_2 _s x
+  (function _k_5 _s x
     (block
-      (load (record-address _s 1) _k_3)
-      (call _fmm_stack_align_size (size-of record) _k_4)
-      (store (- _k_3 _k_4) (record-address _s 1))
-      (load (record-address _s 0) _k_5)
-      (load (bit-cast (pointer-address _k_5 (- _k_3 _k_4))) _k_6)
-      (deconstruct-record _k_6 0 _k)
+      (load (record-address _s 1) _k_6)
+      (call _fmm_stack_align_size (size-of record) _k_7)
+      (store (- _k_6 _k_7) (record-address _s 1))
+      (load (record-address _s 0) _k_8)
+      (load (bit-cast (pointer-address _k_8 (- _k_6 _k_7))) _k_9)
+      (deconstruct-record _k_9 0 _k)
       (store undefined x)
-      (call _k _s x _k_1)
-      (return _k_1))))
+      (call _k _s x _k_4)
+      (return _k_4))))
