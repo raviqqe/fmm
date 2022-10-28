@@ -66,53 +66,18 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             // flattening.
             *if_.environment_mut() = variables.clone();
 
-            if if_.then().terminal_instruction().is_branch()
-                && !if_
-                    .then()
-                    .instructions()
-                    .iter()
-                    .any(|instruction| match instruction {
-                        Instruction::Call(call)
-                            if call.type_().calling_convention()
-                                == types::CallingConvention::Source =>
-                        {
-                            true
-                        }
-                        Instruction::If(_) => true,
-                        _ => false,
-                    })
-                && if_.else_().terminal_instruction().is_branch()
-                && !if_
-                    .else_()
-                    .instructions()
-                    .iter()
-                    .any(|instruction| match instruction {
-                        Instruction::Call(call)
-                            if call.type_().calling_convention()
-                                == types::CallingConvention::Source =>
-                        {
-                            true
-                        }
-                        Instruction::If(_) => true,
-                        _ => false,
-                    })
-            {
-                transform_block(if_.then_mut(), variables);
-                transform_block(if_.else_mut(), variables);
-            } else {
-                // TODO Optimize this clone.
-                let mut other_variables = variables.clone();
+            // TODO Optimize this clone.
+            let mut other_variables = variables.clone();
 
-                transform_block(if_.then_mut(), variables);
-                transform_block(if_.else_mut(), &mut other_variables);
+            transform_block(if_.then_mut(), variables);
+            transform_block(if_.else_mut(), &mut other_variables);
 
-                // Choose a bigger one as a left-hand side for merge.
-                if variables.len() < other_variables.len() {
-                    swap(variables, &mut other_variables);
-                }
-
-                variables.extend(other_variables);
+            // Choose a bigger one as a left-hand side for merge.
+            if variables.len() < other_variables.len() {
+                swap(variables, &mut other_variables);
             }
+
+            variables.extend(other_variables);
 
             collect_from_expression(if_.condition(), variables);
         }
