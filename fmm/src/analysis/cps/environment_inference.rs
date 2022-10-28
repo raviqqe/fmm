@@ -80,6 +80,7 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
                 transform_block(if_.else_mut(), variables);
             } else {
                 let mut other_variables = variables.clone();
+                dbg!(variables.len());
 
                 transform_block(if_.then_mut(), variables);
                 transform_block(if_.else_mut(), &mut other_variables);
