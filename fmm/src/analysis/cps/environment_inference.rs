@@ -66,6 +66,8 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             // flattening.
             *if_.environment_mut() = variables.clone();
 
+            // Optimize for branches without instructions whose environments need to be
+            // inferred.
             if if_.then().terminal_instruction().is_branch()
                 && !contains_instructon_with_environment(if_.then())
             {
