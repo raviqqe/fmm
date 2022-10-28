@@ -1,35 +1,71 @@
 use crate::{ir::*, types};
+use fnv::FnvHashSet;
 use indexmap::IndexSet;
 use std::{mem::swap, rc::Rc};
 
+struct Context {
+    global_variables: FnvHashSet<String>,
+}
+
 pub fn transform(module: &mut Module) {
+    let context = Context {
+        global_variables: module
+            .variable_declarations()
+            .iter()
+            .map(|declaration| declaration.name())
+            .chain(
+                module
+                    .function_declarations()
+                    .iter()
+                    .map(|declaration| declaration.name()),
+            )
+            .chain(
+                module
+                    .variable_definitions()
+                    .iter()
+                    .map(|definition| definition.name()),
+            )
+            .chain(
+                module
+                    .function_definitions()
+                    .iter()
+                    .map(|definition| definition.name()),
+            )
+            .map(|string| string.to_owned())
+            .collect(),
+    };
+
     for definition in module.function_definitions_mut() {
-        transform_function_definition(definition);
+        transform_function_definition(&context, definition);
     }
 }
 
-fn transform_function_definition(definition: &mut FunctionDefinition) {
+fn transform_function_definition(context: &Context, definition: &mut FunctionDefinition) {
     if definition.type_().calling_convention() != types::CallingConvention::Source {
         return;
     }
 
-    transform_block(definition.body_mut(), &mut IndexSet::default());
+    transform_block(context, definition.body_mut(), &mut IndexSet::default());
 }
 
-fn transform_block(block: &mut Block, variables: &mut IndexSet<Rc<str>>) {
-    collect_from_terminal_instruction(block.terminal_instruction_mut(), variables);
+fn transform_block(context: &Context, block: &mut Block, variables: &mut IndexSet<Rc<str>>) {
+    collect_from_terminal_instruction(context, block.terminal_instruction_mut(), variables);
 
     for instruction in block.instructions_mut().iter_mut().rev() {
         if let Some((name, _)) = instruction.value() {
             variables.remove(name);
         }
 
-        collect_from_instruction(instruction, variables);
+        collect_from_instruction(context, instruction, variables);
     }
 }
 
-fn collect_from_instruction(instruction: &mut Instruction, variables: &mut IndexSet<Rc<str>>) {
-    let mut collect = |expression| collect_from_expression(expression, variables);
+fn collect_from_instruction(
+    context: &Context,
+    instruction: &mut Instruction,
+    variables: &mut IndexSet<Rc<str>>,
+) {
+    let mut collect = |expression| collect_from_expression(context, expression, variables);
 
     match instruction {
         Instruction::AllocateHeap(allocate) => collect(allocate.size()),
@@ -47,10 +83,10 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
                 *call.environment_mut() = variables.clone();
             }
 
-            collect_from_expression(call.function(), variables);
+            collect_from_expression(context, call.function(), variables);
 
             for argument in call.arguments() {
-                collect_from_expression(argument, variables);
+                collect_from_expression(context, argument, variables);
             }
         }
         Instruction::CompareAndSwap(cas) => {
@@ -72,19 +108,19 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
                 && if_.else_().terminal_instruction().is_branch()
                 && !contains_instructon_with_environment(if_.then())
             {
-                transform_block(if_.else_mut(), variables);
-                transform_block(if_.then_mut(), variables);
+                transform_block(context, if_.else_mut(), variables);
+                transform_block(context, if_.then_mut(), variables);
             } else if if_.then().terminal_instruction().is_branch()
                 && if_.else_().terminal_instruction().is_branch()
                 && !contains_instructon_with_environment(if_.else_())
             {
-                transform_block(if_.then_mut(), variables);
-                transform_block(if_.else_mut(), variables);
+                transform_block(context, if_.then_mut(), variables);
+                transform_block(context, if_.else_mut(), variables);
             } else {
                 let mut other_variables = variables.clone();
 
-                transform_block(if_.then_mut(), variables);
-                transform_block(if_.else_mut(), &mut other_variables);
+                transform_block(context, if_.then_mut(), variables);
+                transform_block(context, if_.else_mut(), &mut other_variables);
 
                 // Choose a bigger one as a left-hand side for merge.
                 if variables.len() < other_variables.len() {
@@ -94,7 +130,7 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
                 variables.extend(other_variables);
             }
 
-            collect_from_expression(if_.condition(), variables);
+            collect_from_expression(context, if_.condition(), variables);
         }
         Instruction::Load(load) => collect(load.pointer()),
         Instruction::MemoryCopy(copy) => {
@@ -130,16 +166,17 @@ fn contains_instructon_with_environment(block: &Block) -> bool {
 }
 
 fn collect_from_terminal_instruction(
+    context: &Context,
     instruction: &TerminalInstruction,
     variables: &mut IndexSet<Rc<str>>,
 ) {
     match instruction {
         TerminalInstruction::Branch(branch) => {
-            collect_from_expression(branch.expression(), variables)
+            collect_from_expression(context, branch.expression(), variables)
         }
         TerminalInstruction::Return(return_) => {
             variables.clear();
-            collect_from_expression(return_.expression(), variables)
+            collect_from_expression(context, return_.expression(), variables)
         }
         TerminalInstruction::Unreachable => {
             variables.clear();
@@ -147,8 +184,12 @@ fn collect_from_terminal_instruction(
     }
 }
 
-fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<Rc<str>>) {
-    let mut collect = |expression| collect_from_expression(expression, variables);
+fn collect_from_expression(
+    context: &Context,
+    expression: &Expression,
+    variables: &mut IndexSet<Rc<str>>,
+) {
+    let mut collect = |expression| collect_from_expression(context, expression, variables);
 
     match expression {
         Expression::ArithmeticOperation(operation) => {
@@ -178,7 +219,9 @@ fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<Rc<
         Expression::Union(union) => collect(union.member()),
         Expression::UnionAddress(address) => collect(address.pointer()),
         Expression::Variable(variable) => {
-            variables.insert(variable.name_rc().clone());
+            if !context.global_variables.contains(variable.name()) {
+                variables.insert(variable.name_rc().clone());
+            }
         }
         Expression::AlignOf(_)
         | Expression::Primitive(_)
