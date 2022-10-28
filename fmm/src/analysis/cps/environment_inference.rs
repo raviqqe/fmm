@@ -76,20 +76,6 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             {
                 transform_block(if_.then_mut(), variables);
                 transform_block(if_.else_mut(), variables);
-            } else if !if_.then().terminal_instruction().is_branch() {
-                let mut other_variables = Default::default();
-
-                transform_block(if_.then_mut(), &mut other_variables);
-                transform_block(if_.else_mut(), variables);
-
-                variables.extend(other_variables);
-            } else if !if_.else_().terminal_instruction().is_branch() {
-                let mut other_variables = Default::default();
-
-                transform_block(if_.then_mut(), variables);
-                transform_block(if_.else_mut(), &mut other_variables);
-
-                variables.extend(other_variables);
             } else {
                 let mut other_variables = variables.clone();
 
