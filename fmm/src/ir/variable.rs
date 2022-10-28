@@ -15,4 +15,8 @@ impl Variable {
     pub fn name(&self) -> &str {
         &self.name
     }
+
+    pub fn name_rc(&self) -> &Rc<str> {
+        &self.name
+    }
 }
