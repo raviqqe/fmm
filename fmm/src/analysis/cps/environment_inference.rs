@@ -67,13 +67,11 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             *if_.environment_mut() = variables.clone();
 
             if if_.then().terminal_instruction().is_branch()
-                && if_.else_().terminal_instruction().is_branch()
                 && !contains_instructon_with_environment(if_.then())
             {
                 transform_block(if_.else_mut(), variables);
                 transform_block(if_.then_mut(), variables);
-            } else if if_.then().terminal_instruction().is_branch()
-                && if_.else_().terminal_instruction().is_branch()
+            } else if if_.else_().terminal_instruction().is_branch()
                 && !contains_instructon_with_environment(if_.else_())
             {
                 transform_block(if_.then_mut(), variables);
