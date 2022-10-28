@@ -16,7 +16,7 @@ impl Variable {
         &self.name
     }
 
-    pub fn name_rc(&self) -> &Rc<str> {
+    pub(crate) fn name_rc(&self) -> &Rc<str> {
         &self.name
     }
 }
