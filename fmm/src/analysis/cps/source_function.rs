@@ -92,7 +92,7 @@ fn transform_block(
                     block.terminal_instruction_mut(),
                     Return::new(
                         context.cps.result_type().clone(),
-                        Variable::new(&result_name),
+                        Variable::new(&*result_name),
                     )
                     .into(),
                 );
@@ -146,7 +146,7 @@ fn transform_block(
     if let TerminalInstruction::Return(return_) = block.terminal_instruction_mut() {
         let name = context.cps.name_generator().borrow_mut().generate();
         let type_ = replace(return_.type_mut(), context.cps.result_type().clone());
-        let expression = replace(return_.expression_mut(), Variable::new(&name).into());
+        let expression = replace(return_.expression_mut(), Variable::new(&*name).into());
 
         block.instructions_mut().push(
             Call::new(

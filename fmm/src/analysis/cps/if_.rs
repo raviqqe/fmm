@@ -228,7 +228,7 @@ fn transform_if_block_with_continuation(
                     if name == if_name {
                         branch.expression().clone()
                     } else {
-                        Variable::new(name).into()
+                        Variable::new(&**name).into()
                     }
                 })
                 .collect(),

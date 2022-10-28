@@ -3,6 +3,7 @@ use crate::{
     ir::*,
     types::{self, Type},
 };
+use std::rc::Rc;
 
 pub fn align_of(type_: impl Into<Type>) -> TypedExpression {
     AlignOf::new(type_.into()).into()
@@ -163,6 +164,6 @@ pub fn union_address(
     ))
 }
 
-pub fn variable(name: impl Into<String>, type_: impl Into<Type>) -> TypedExpression {
+pub fn variable(name: impl Into<Rc<str>>, type_: impl Into<Type>) -> TypedExpression {
     TypedExpression::new(Variable::new(name), type_)
 }

@@ -71,7 +71,7 @@ fn transform_block(
             Store::new(
                 type_.clone(),
                 return_.expression().clone(),
-                Variable::new(pointer_name),
+                Variable::new(&**pointer_name),
             )
             .into(),
         );
