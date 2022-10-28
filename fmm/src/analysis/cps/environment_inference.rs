@@ -68,17 +68,32 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
 
             // Optimize for branches without instructions whose environments need to be
             // inferred.
-            let mut other_variables = variables.clone();
+            if if_.then().terminal_instruction().is_branch()
+                && if_.else_().terminal_instruction().is_branch()
+                && !contains_instructon_with_environment(if_.then())
+            {
+                transform_block(if_.else_mut(), variables);
+                transform_block(if_.then_mut(), variables);
+            } else if if_.then().terminal_instruction().is_branch()
+                && if_.else_().terminal_instruction().is_branch()
+                && !contains_instructon_with_environment(if_.else_())
+            {
+                transform_block(if_.then_mut(), variables);
+                transform_block(if_.else_mut(), variables);
+            } else {
+                let mut other_variables = variables.clone();
+                dbg!(variables.len());
 
-            transform_block(if_.then_mut(), variables);
-            transform_block(if_.else_mut(), &mut other_variables);
+                transform_block(if_.then_mut(), variables);
+                transform_block(if_.else_mut(), &mut other_variables);
 
-            // Choose a bigger one as a left-hand side for merge.
-            if variables.len() < other_variables.len() {
-                swap(variables, &mut other_variables);
+                // Choose a bigger one as a left-hand side for merge.
+                if variables.len() < other_variables.len() {
+                    swap(variables, &mut other_variables);
+                }
+
+                variables.extend(other_variables);
             }
-
-            variables.extend(other_variables);
 
             collect_from_expression(if_.condition(), variables);
         }
