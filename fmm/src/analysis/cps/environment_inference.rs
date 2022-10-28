@@ -66,8 +66,15 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             // flattening.
             *if_.environment_mut() = variables.clone();
 
-            // TODO Optimize this clone.
-            let mut other_variables = variables.clone();
+            let mut other_variables = IndexSet::new();
+
+            if !if_.then().terminal_instruction().is_branch()
+                && if_.else_().terminal_instruction().is_branch()
+            {
+                swap(variables, &mut other_variables);
+            } else if if_.else_().terminal_instruction().is_branch() {
+                other_variables.extend(variables.iter().cloned());
+            }
 
             transform_block(if_.then_mut(), variables);
             transform_block(if_.else_mut(), &mut other_variables);
