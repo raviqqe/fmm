@@ -106,13 +106,13 @@ fn collect_from_instruction(
             // inferred.
             if if_.then().terminal_instruction().is_branch()
                 && if_.else_().terminal_instruction().is_branch()
-                && !contains_instructon_with_environment(if_.then())
+                && !contains_instruction_with_environment(if_.then())
             {
                 transform_block(context, if_.else_mut(), variables);
                 transform_block(context, if_.then_mut(), variables);
             } else if if_.then().terminal_instruction().is_branch()
                 && if_.else_().terminal_instruction().is_branch()
-                && !contains_instructon_with_environment(if_.else_())
+                && !contains_instruction_with_environment(if_.else_())
             {
                 transform_block(context, if_.then_mut(), variables);
                 transform_block(context, if_.else_mut(), variables);
@@ -150,7 +150,7 @@ fn collect_from_instruction(
     }
 }
 
-fn contains_instructon_with_environment(block: &Block) -> bool {
+fn contains_instruction_with_environment(block: &Block) -> bool {
     block
         .instructions()
         .iter()
