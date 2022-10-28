@@ -67,40 +67,32 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
             *if_.environment_mut() = variables.clone();
 
             if if_.then().terminal_instruction().is_branch()
-                && !if_
-                    .then()
-                    .instructions()
-                    .iter()
-                    .any(|instruction| match instruction {
-                        Instruction::Call(call)
-                            if call.type_().calling_convention()
-                                == types::CallingConvention::Source =>
-                        {
-                            true
-                        }
-                        Instruction::If(_) => true,
-                        _ => false,
-                    })
                 && if_.else_().terminal_instruction().is_branch()
-                && !if_
-                    .else_()
-                    .instructions()
-                    .iter()
-                    .any(|instruction| match instruction {
-                        Instruction::Call(call)
-                            if call.type_().calling_convention()
-                                == types::CallingConvention::Source =>
-                        {
-                            true
-                        }
-                        Instruction::If(_) => true,
-                        _ => false,
-                    })
+                && !contains_instructon_with_environment(if_.then())
+            {
+                transform_block(if_.else_mut(), variables);
+                transform_block(if_.then_mut(), variables);
+            } else if if_.then().terminal_instruction().is_branch()
+                && if_.else_().terminal_instruction().is_branch()
+                && !contains_instructon_with_environment(if_.else_())
             {
                 transform_block(if_.then_mut(), variables);
                 transform_block(if_.else_mut(), variables);
+            } else if !if_.then().terminal_instruction().is_branch() {
+                let mut other_variables = Default::default();
+
+                transform_block(if_.then_mut(), &mut other_variables);
+                transform_block(if_.else_mut(), variables);
+
+                variables.extend(other_variables);
+            } else if !if_.else_().terminal_instruction().is_branch() {
+                let mut other_variables = Default::default();
+
+                transform_block(if_.then_mut(), variables);
+                transform_block(if_.else_mut(), &mut other_variables);
+
+                variables.extend(other_variables);
             } else {
-                // TODO Optimize this clone.
                 let mut other_variables = variables.clone();
 
                 transform_block(if_.then_mut(), variables);
@@ -132,6 +124,21 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
         }
         Instruction::Fence(_) | Instruction::AllocateStack(_) => Default::default(),
     }
+}
+
+fn contains_instructon_with_environment(block: &Block) -> bool {
+    block
+        .instructions()
+        .iter()
+        .any(|instruction| match instruction {
+            Instruction::Call(call)
+                if call.type_().calling_convention() == types::CallingConvention::Source =>
+            {
+                true
+            }
+            Instruction::If(_) => true,
+            _ => false,
+        })
 }
 
 fn collect_from_terminal_instruction(
