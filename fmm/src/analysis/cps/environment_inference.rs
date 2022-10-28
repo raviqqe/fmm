@@ -217,6 +217,78 @@ mod tests {
     }
 
     #[test]
+    fn collect_free_variable_from_instruction() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+        let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
+
+        assert_eq!(
+            transform_module(Module::new(
+                vec![],
+                function_declarations.clone(),
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("y", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
+                                .into(),
+                            Store::new(
+                                types::Primitive::PointerInteger,
+                                Variable::new("y"),
+                                Undefined::new(types::Pointer::new(
+                                    types::Primitive::PointerInteger
+                                )),
+                            )
+                            .into(),
+                        ],
+                        TerminalInstruction::Unreachable
+                    ),
+                    Default::default(),
+                )],
+            )),
+            Module::new(
+                vec![],
+                function_declarations,
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new("y", types::Primitive::PointerInteger)],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            {
+                                let mut call =
+                                    Call::new(function_type, Variable::new("g"), vec![], "x");
+
+                                *call.environment_mut() = IndexSet::from_iter(["y".into()]);
+
+                                call
+                            }
+                            .into(),
+                            Store::new(
+                                types::Primitive::PointerInteger,
+                                Variable::new("y"),
+                                Undefined::new(types::Pointer::new(
+                                    types::Primitive::PointerInteger
+                                )),
+                            )
+                            .into()
+                        ],
+                        TerminalInstruction::Unreachable
+                    ),
+                    Default::default(),
+                )],
+            )
+        );
+    }
+
+    #[test]
     fn collect_free_variable_from_terminal_instruction() {
         let function_type = types::Function::new(
             vec![],
@@ -263,6 +335,86 @@ mod tests {
                         }
                         .into()],
                         Return::new(types::Primitive::PointerInteger, Variable::new("y"))
+                    ),
+                    Default::default(),
+                )],
+            )
+        );
+    }
+
+    #[test]
+    fn collect_free_variable_from_instructions_in_order() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+        let function_declarations = vec![FunctionDeclaration::new("g", function_type.clone())];
+        let arguments = vec![
+            Argument::new("y", types::Primitive::PointerInteger),
+            Argument::new("z", types::Primitive::PointerInteger),
+            Argument::new("v", types::Primitive::PointerInteger),
+        ];
+        let instructions = [
+            Store::new(
+                types::Primitive::PointerInteger,
+                Variable::new("y"),
+                Undefined::new(types::Pointer::new(types::Primitive::PointerInteger)),
+            )
+            .into(),
+            Store::new(
+                types::Primitive::PointerInteger,
+                Variable::new("z"),
+                Undefined::new(types::Pointer::new(types::Primitive::PointerInteger)),
+            )
+            .into(),
+        ];
+
+        assert_eq!(
+            transform_module(Module::new(
+                vec![],
+                function_declarations.clone(),
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    arguments.clone(),
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        [
+                            Call::new(function_type.clone(), Variable::new("g"), vec![], "x")
+                                .into(),
+                        ]
+                        .into_iter()
+                        .chain(instructions.clone())
+                        .collect(),
+                        Return::new(types::Primitive::PointerInteger, Variable::new("v"))
+                    ),
+                    Default::default(),
+                )],
+            )),
+            Module::new(
+                vec![],
+                function_declarations,
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    arguments,
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        [{
+                            let mut call =
+                                Call::new(function_type, Variable::new("g"), vec![], "x");
+
+                            *call.environment_mut() =
+                                IndexSet::from_iter(["v".into(), "z".into(), "y".into()]);
+
+                            call
+                        }
+                        .into(),]
+                        .into_iter()
+                        .chain(instructions)
+                        .collect(),
+                        Return::new(types::Primitive::PointerInteger, Variable::new("v"))
                     ),
                     Default::default(),
                 )],
