@@ -102,17 +102,33 @@ fn collect_from_instruction(
             // flattening.
             *if_.environment_mut() = variables.clone();
 
-            let mut other_variables = variables.clone();
+            // Optimize for branches without instructions whose environments need to be
+            // inferred.
+            if if_.then().terminal_instruction().is_branch()
+                && if_.else_().terminal_instruction().is_branch()
+                && !contains_instructon_with_environment(if_.then())
+            {
+                transform_block(context, if_.else_mut(), variables);
+                transform_block(context, if_.then_mut(), variables);
+            } else if if_.then().terminal_instruction().is_branch()
+                && if_.else_().terminal_instruction().is_branch()
+                && !contains_instructon_with_environment(if_.else_())
+            {
+                transform_block(context, if_.then_mut(), variables);
+                transform_block(context, if_.else_mut(), variables);
+            } else {
+                let mut other_variables = variables.clone();
 
-            transform_block(context, if_.then_mut(), variables);
-            transform_block(context, if_.else_mut(), &mut other_variables);
+                transform_block(context, if_.then_mut(), variables);
+                transform_block(context, if_.else_mut(), &mut other_variables);
 
-            // Choose a bigger one as a left-hand side for merge.
-            if variables.len() < other_variables.len() {
-                swap(variables, &mut other_variables);
+                // Choose a bigger one as a left-hand side for merge.
+                if variables.len() < other_variables.len() {
+                    swap(variables, &mut other_variables);
+                }
+
+                variables.extend(other_variables);
             }
-
-            variables.extend(other_variables);
 
             collect_from_expression(context, if_.condition(), variables);
         }
