@@ -1181,7 +1181,7 @@ mod tests {
         );
         let module = Module::new(
             vec![],
-            vec![FunctionDeclaration::new("f", function_type.clone())],
+            vec![FunctionDeclaration::new("f", function_type)],
             vec![],
             vec![create_function_definition(
                 "g",
@@ -1225,6 +1225,6 @@ mod tests {
             )],
         );
 
-        flatten_module(module.clone());
+        flatten_module(module);
     }
 }
