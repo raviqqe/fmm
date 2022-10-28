@@ -1,6 +1,6 @@
 use crate::{ir::*, types};
 use indexmap::IndexSet;
-use std::mem::swap;
+use std::{mem::swap, rc::Rc};
 
 pub fn transform(module: &mut Module) {
     for definition in module.function_definitions_mut() {
@@ -16,7 +16,7 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
     transform_block(definition.body_mut(), &mut IndexSet::default());
 }
 
-fn transform_block(block: &mut Block, variables: &mut IndexSet<String>) {
+fn transform_block(block: &mut Block, variables: &mut IndexSet<Rc<str>>) {
     collect_from_terminal_instruction(block.terminal_instruction_mut(), variables);
 
     for instruction in block.instructions_mut().iter_mut().rev() {
@@ -28,7 +28,7 @@ fn transform_block(block: &mut Block, variables: &mut IndexSet<String>) {
     }
 }
 
-fn collect_from_instruction(instruction: &mut Instruction, variables: &mut IndexSet<String>) {
+fn collect_from_instruction(instruction: &mut Instruction, variables: &mut IndexSet<Rc<str>>) {
     let mut collect = |expression| collect_from_expression(expression, variables);
 
     match instruction {
@@ -101,7 +101,7 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
 
 fn collect_from_terminal_instruction(
     instruction: &TerminalInstruction,
-    variables: &mut IndexSet<String>,
+    variables: &mut IndexSet<Rc<str>>,
 ) {
     match instruction {
         TerminalInstruction::Branch(branch) => {
@@ -117,7 +117,7 @@ fn collect_from_terminal_instruction(
     }
 }
 
-fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<String>) {
+fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<Rc<str>>) {
     let mut collect = |expression| collect_from_expression(expression, variables);
 
     match expression {
@@ -148,7 +148,7 @@ fn collect_from_expression(expression: &Expression, variables: &mut IndexSet<Str
         Expression::Union(union) => collect(union.member()),
         Expression::UnionAddress(address) => collect(address.pointer()),
         Expression::Variable(variable) => {
-            variables.insert(variable.name().into());
+            variables.insert(variable.name_rc().clone());
         }
         Expression::AlignOf(_)
         | Expression::Primitive(_)
