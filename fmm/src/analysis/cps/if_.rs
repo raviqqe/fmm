@@ -276,7 +276,7 @@ fn get_continuation_environment<'a>(
         .iter()
         .flat_map(|name| {
             local_variables
-                .get_key_value(name.as_ref())
+                .get_key_value(name)
                 .map(|(name, type_)| (name.as_str(), type_))
         })
         .collect()

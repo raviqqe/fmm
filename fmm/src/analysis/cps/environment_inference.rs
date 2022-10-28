@@ -1,7 +1,7 @@
 use crate::{ir::*, types};
 use fnv::FnvHashSet;
 use indexmap::IndexSet;
-use std::{mem::swap, rc::Rc};
+use std::mem::swap;
 
 struct Context {
     global_variables: FnvHashSet<String>,
@@ -48,7 +48,7 @@ fn transform_function_definition(context: &Context, definition: &mut FunctionDef
     transform_block(context, definition.body_mut(), &mut IndexSet::default());
 }
 
-fn transform_block(context: &Context, block: &mut Block, variables: &mut IndexSet<Rc<str>>) {
+fn transform_block(context: &Context, block: &mut Block, variables: &mut IndexSet<String>) {
     collect_from_terminal_instruction(context, block.terminal_instruction_mut(), variables);
 
     for instruction in block.instructions_mut().iter_mut().rev() {
@@ -63,7 +63,7 @@ fn transform_block(context: &Context, block: &mut Block, variables: &mut IndexSe
 fn collect_from_instruction(
     context: &Context,
     instruction: &mut Instruction,
-    variables: &mut IndexSet<Rc<str>>,
+    variables: &mut IndexSet<String>,
 ) {
     let mut collect = |expression| collect_from_expression(context, expression, variables);
 
@@ -168,7 +168,7 @@ fn contains_instruction_with_environment(block: &Block) -> bool {
 fn collect_from_terminal_instruction(
     context: &Context,
     instruction: &TerminalInstruction,
-    variables: &mut IndexSet<Rc<str>>,
+    variables: &mut IndexSet<String>,
 ) {
     match instruction {
         TerminalInstruction::Branch(branch) => {
@@ -187,7 +187,7 @@ fn collect_from_terminal_instruction(
 fn collect_from_expression(
     context: &Context,
     expression: &Expression,
-    variables: &mut IndexSet<Rc<str>>,
+    variables: &mut IndexSet<String>,
 ) {
     let mut collect = |expression| collect_from_expression(context, expression, variables);
 
@@ -220,7 +220,7 @@ fn collect_from_expression(
         Expression::UnionAddress(address) => collect(address.pointer()),
         Expression::Variable(variable) => {
             if !context.global_variables.contains(variable.name()) {
-                variables.insert(variable.name_rc().clone());
+                variables.insert(variable.name().into());
             }
         }
         Expression::AlignOf(_)
