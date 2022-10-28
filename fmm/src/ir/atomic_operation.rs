@@ -17,7 +17,7 @@ struct AtomicOperationInner {
     pointer: Expression,
     value: Expression,
     ordering: AtomicOrdering,
-    name: String,
+    name: Rc<str>,
 }
 
 impl AtomicOperation {
@@ -27,7 +27,7 @@ impl AtomicOperation {
         pointer: impl Into<Expression>,
         value: impl Into<Expression>,
         ordering: AtomicOrdering,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             AtomicOperationInner {

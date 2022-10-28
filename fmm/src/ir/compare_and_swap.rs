@@ -12,7 +12,7 @@ struct CompareAndSwapInner {
     new_value: Expression,
     success_ordering: AtomicOrdering,
     failure_ordering: AtomicOrdering,
-    name: String,
+    name: Rc<str>,
 }
 
 impl CompareAndSwap {
@@ -23,7 +23,7 @@ impl CompareAndSwap {
         new_value: impl Into<Expression>,
         success_ordering: AtomicOrdering,
         failure_ordering: AtomicOrdering,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             CompareAndSwapInner {

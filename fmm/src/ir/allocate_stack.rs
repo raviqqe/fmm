@@ -6,11 +6,11 @@ pub struct AllocateStack(Box<AllocateStackInner>);
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct AllocateStackInner {
     type_: Type,
-    name: String,
+    name: Rc<str>,
 }
 
 impl AllocateStack {
-    pub fn new(type_: impl Into<Type>, name: impl Into<String>) -> Self {
+    pub fn new(type_: impl Into<Type>, name: impl Into<Rc<str>>) -> Self {
         Self(
             AllocateStackInner {
                 type_: type_.into(),

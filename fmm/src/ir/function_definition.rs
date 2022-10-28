@@ -4,7 +4,7 @@ use std::cell::RefCell;
 
 #[derive(Clone, Debug)]
 pub struct FunctionDefinition {
-    name: String,
+    name: Rc<str>,
     arguments: Vec<Argument>,
     body: Block,
     result_type: Type,
@@ -14,7 +14,7 @@ pub struct FunctionDefinition {
 
 impl FunctionDefinition {
     pub fn new(
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
         arguments: Vec<Argument>,
         result_type: impl Into<Type>,
         body: Block,

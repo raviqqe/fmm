@@ -10,7 +10,7 @@ struct IfInner {
     condition: Expression,
     then: Block,
     else_: Block,
-    name: String,
+    name: Rc<str>,
 }
 
 impl If {
@@ -19,7 +19,7 @@ impl If {
         condition: impl Into<Expression>,
         then: Block,
         else_: Block,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             IfInner {
@@ -69,7 +69,7 @@ impl If {
         &self.0.name
     }
 
-    pub fn name_mut(&mut self) -> &mut String {
+    pub fn name_mut(&mut self) -> &mut Rc<str> {
         &mut self.0.name
     }
 }

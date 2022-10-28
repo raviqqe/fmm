@@ -6,7 +6,7 @@ pub struct Variable {
 }
 
 impl Variable {
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<Rc<str>>) -> Self {
         Self {
             name: name.into().into(),
         }

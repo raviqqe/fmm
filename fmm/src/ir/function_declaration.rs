@@ -2,12 +2,12 @@ use crate::types;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionDeclaration {
-    name: String,
+    name: Rc<str>,
     type_: types::Function,
 }
 
 impl FunctionDeclaration {
-    pub fn new(name: impl Into<String>, type_: types::Function) -> Self {
+    pub fn new(name: impl Into<Rc<str>>, type_: types::Function) -> Self {
         Self {
             name: name.into(),
             type_,

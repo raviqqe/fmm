@@ -3,7 +3,7 @@ use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VariableDefinition {
-    name: String,
+    name: Rc<str>,
     body: Expression,
     type_: Type,
     options: VariableDefinitionOptions,
@@ -11,7 +11,7 @@ pub struct VariableDefinition {
 
 impl VariableDefinition {
     pub fn new(
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
         body: impl Into<Expression>,
         type_: impl Into<Type>,
         options: VariableDefinitionOptions,

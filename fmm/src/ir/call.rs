@@ -9,7 +9,7 @@ struct CallInner {
     type_: types::Function,
     function: Expression,
     arguments: Vec<Expression>,
-    name: String,
+    name: Rc<str>,
 }
 
 impl Call {
@@ -17,7 +17,7 @@ impl Call {
         type_: types::Function,
         function: impl Into<Expression>,
         arguments: Vec<Expression>,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             CallInner {
@@ -58,7 +58,7 @@ impl Call {
         &self.0.name
     }
 
-    pub fn name_mut(&mut self) -> &mut String {
+    pub fn name_mut(&mut self) -> &mut Rc<str> {
         &mut self.0.name
     }
 }

@@ -6,11 +6,11 @@ pub struct AllocateHeap(Box<AllocateHeapInner>);
 #[derive(Clone, Debug, PartialEq)]
 struct AllocateHeapInner {
     size: Expression,
-    name: String,
+    name: Rc<str>,
 }
 
 impl AllocateHeap {
-    pub fn new(size: impl Into<Expression>, name: impl Into<String>) -> Self {
+    pub fn new(size: impl Into<Expression>, name: impl Into<Rc<str>>) -> Self {
         Self(
             AllocateHeapInner {
                 size: size.into(),

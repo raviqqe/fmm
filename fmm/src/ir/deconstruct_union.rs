@@ -9,7 +9,7 @@ struct DeconstructUnionInner {
     type_: types::Union,
     union: Expression,
     member_index: usize,
-    name: String,
+    name: Rc<str>,
 }
 
 impl DeconstructUnion {
@@ -17,7 +17,7 @@ impl DeconstructUnion {
         type_: types::Union,
         union: impl Into<Expression>,
         member_index: usize,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             DeconstructUnionInner {

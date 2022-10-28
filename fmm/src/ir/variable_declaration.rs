@@ -2,12 +2,12 @@ use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VariableDeclaration {
-    name: String,
+    name: Rc<str>,
     type_: Type,
 }
 
 impl VariableDeclaration {
-    pub fn new(name: impl Into<String>, type_: impl Into<Type>) -> Self {
+    pub fn new(name: impl Into<Rc<str>>, type_: impl Into<Type>) -> Self {
         Self {
             name: name.into(),
             type_: type_.into(),

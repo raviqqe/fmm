@@ -8,14 +8,14 @@ pub struct Load(Box<LoadInner>);
 struct LoadInner {
     type_: Type, // pointer element type
     pointer: Expression,
-    name: String,
+    name: Rc<str>,
 }
 
 impl Load {
     pub fn new(
         type_: impl Into<Type>,
         pointer: impl Into<Expression>,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             LoadInner {

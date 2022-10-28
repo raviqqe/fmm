@@ -7,14 +7,14 @@ pub struct ReallocateHeap(Box<ReallocateHeapInner>);
 struct ReallocateHeapInner {
     pointer: Expression,
     size: Expression,
-    name: String,
+    name: Rc<str>,
 }
 
 impl ReallocateHeap {
     pub fn new(
         pointer: impl Into<Expression>,
         size: impl Into<Expression>,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             ReallocateHeapInner {

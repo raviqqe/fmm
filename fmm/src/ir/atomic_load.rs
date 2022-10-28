@@ -9,7 +9,7 @@ struct AtomicLoadInner {
     type_: Type, // pointer element type
     pointer: Expression,
     ordering: AtomicOrdering,
-    name: String,
+    name: Rc<str>,
 }
 
 impl AtomicLoad {
@@ -17,7 +17,7 @@ impl AtomicLoad {
         type_: impl Into<Type>,
         pointer: impl Into<Expression>,
         ordering: AtomicOrdering,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             AtomicLoadInner {

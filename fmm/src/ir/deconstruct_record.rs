@@ -9,7 +9,7 @@ struct DeconstructRecordInner {
     type_: types::Record,
     record: Expression,
     field_index: usize,
-    name: String,
+    name: Rc<str>,
 }
 
 impl DeconstructRecord {
@@ -17,7 +17,7 @@ impl DeconstructRecord {
         type_: types::Record,
         record: impl Into<Expression>,
         field_index: usize,
-        name: impl Into<String>,
+        name: impl Into<Rc<str>>,
     ) -> Self {
         Self(
             DeconstructRecordInner {
