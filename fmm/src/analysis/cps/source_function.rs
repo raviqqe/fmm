@@ -116,7 +116,8 @@ fn transform_block(
                 {
                     Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                 } else {
-                    let environment = create_continuation_environment(&call, local_variables);
+                    let environment =
+                        create_continuation_environment(call.environment(), local_variables);
 
                     let builder = InstructionBuilder::new(context.cps.name_generator());
                     stack::push(
@@ -237,12 +238,12 @@ fn create_continuation(
 }
 
 fn create_continuation_environment<'a>(
-    call: &Call,
+    environment: &IndexSet<Rc<str>>,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
     [CONTINUATION_ARGUMENT_NAME]
         .into_iter()
-        .chain(call.environment().iter().map(Deref::deref))
+        .chain(environment.iter().map(Deref::deref))
         .flat_map(|name| {
             local_variables
                 .get_key_value(name)
