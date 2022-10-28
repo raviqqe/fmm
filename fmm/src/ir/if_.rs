@@ -1,6 +1,7 @@
 use super::{block::Block, expression::Expression};
 use crate::types::Type;
 use indexmap::IndexSet;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct If(Box<IfInner>);
@@ -12,7 +13,7 @@ struct IfInner {
     then: Block,
     else_: Block,
     name: String,
-    environment: IndexSet<String>,
+    environment: IndexSet<Rc<str>>,
 }
 
 impl If {
@@ -76,11 +77,11 @@ impl If {
         &mut self.0.name
     }
 
-    pub fn environment(&self) -> &IndexSet<String> {
+    pub fn environment(&self) -> &IndexSet<Rc<str>> {
         &self.0.environment
     }
 
-    pub fn environment_mut(&mut self) -> &mut IndexSet<String> {
+    pub fn environment_mut(&mut self) -> &mut IndexSet<Rc<str>> {
         &mut self.0.environment
     }
 }
