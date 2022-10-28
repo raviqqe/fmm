@@ -123,7 +123,11 @@ fn transform_block(
                     create_continuation(context, &call, block, &environment)?
                 };
 
-                transform_call(&mut call, continuation, result_name);
+                call.arguments_mut()
+                    .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
+                call.arguments_mut().insert(1, continuation.into());
+                *call.name_mut() = result_name;
+
                 block.instructions_mut().push(call.into());
 
                 return Ok(());
@@ -155,13 +159,6 @@ fn transform_block(
     }
 
     Ok(())
-}
-
-fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_name: String) {
-    call.arguments_mut()
-        .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
-    call.arguments_mut().insert(1, continuation.into());
-    *call.name_mut() = result_name;
 }
 
 fn create_environment_record(environment: &[(&str, &Type)]) -> Record {
