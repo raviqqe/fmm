@@ -62,6 +62,8 @@ fn collect_from_instruction(instruction: &mut Instruction, variables: &mut Index
         Instruction::DeconstructUnion(deconstruct) => collect(deconstruct.union()),
         Instruction::FreeHeap(free) => collect(free.pointer()),
         Instruction::If(if_) => {
+            *if_.environment_mut() = variables.clone();
+
             // TODO Optimize this clone.
             let mut other_variables = variables.clone();
 
@@ -360,43 +362,51 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Block::new(
                             vec![
-                                If::new(
-                                    types::Primitive::PointerInteger,
-                                    Primitive::Boolean(true),
-                                    Block::new(vec![], TerminalInstruction::Unreachable),
-                                    Block::new(
-                                        vec![
-                                            {
-                                                let mut call = Call::new(
-                                                    function_type,
-                                                    Variable::new("g"),
-                                                    vec![],
-                                                    "i",
-                                                );
+                                {
+                                    let mut if_ = If::new(
+                                        types::Primitive::PointerInteger,
+                                        Primitive::Boolean(true),
+                                        Block::new(vec![], TerminalInstruction::Unreachable),
+                                        Block::new(
+                                            vec![
+                                                {
+                                                    let mut call = Call::new(
+                                                        function_type,
+                                                        Variable::new("g"),
+                                                        vec![],
+                                                        "i",
+                                                    );
 
-                                                *call.environment_mut() = IndexSet::from_iter([
-                                                    "r".into(),
-                                                    "q".into(),
-                                                    "p".into(),
-                                                ]);
+                                                    *call.environment_mut() =
+                                                        IndexSet::from_iter([
+                                                            "r".into(),
+                                                            "q".into(),
+                                                            "p".into(),
+                                                        ]);
 
-                                                call
-                                            }
-                                            .into(),
-                                            Load::new(
+                                                    call
+                                                }
+                                                .into(),
+                                                Load::new(
+                                                    types::Primitive::PointerInteger,
+                                                    Variable::new("p"),
+                                                    "j",
+                                                )
+                                                .into(),
+                                            ],
+                                            Branch::new(
                                                 types::Primitive::PointerInteger,
-                                                Variable::new("p"),
-                                                "j"
-                                            )
-                                            .into(),
-                                        ],
-                                        Branch::new(
-                                            types::Primitive::PointerInteger,
-                                            Primitive::PointerInteger(0),
+                                                Primitive::PointerInteger(0),
+                                            ),
                                         ),
-                                    ),
-                                    "k",
-                                )
+                                        "k",
+                                    );
+
+                                    *if_.environment_mut() =
+                                        IndexSet::from_iter(["r".into(), "q".into()]);
+
+                                    if_
+                                }
                                 .into(),
                                 Load::new(
                                     types::Primitive::PointerInteger,
@@ -503,43 +513,51 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Block::new(
                             vec![
-                                If::new(
-                                    types::Primitive::PointerInteger,
-                                    Primitive::Boolean(true),
-                                    Block::new(
-                                        vec![
-                                            {
-                                                let mut call = Call::new(
-                                                    function_type,
-                                                    Variable::new("g"),
-                                                    vec![],
-                                                    "i",
-                                                );
+                                {
+                                    let mut if_ = If::new(
+                                        types::Primitive::PointerInteger,
+                                        Primitive::Boolean(true),
+                                        Block::new(
+                                            vec![
+                                                {
+                                                    let mut call = Call::new(
+                                                        function_type,
+                                                        Variable::new("g"),
+                                                        vec![],
+                                                        "i",
+                                                    );
 
-                                                *call.environment_mut() = IndexSet::from_iter([
-                                                    "r".into(),
-                                                    "q".into(),
-                                                    "p".into(),
-                                                ]);
+                                                    *call.environment_mut() =
+                                                        IndexSet::from_iter([
+                                                            "r".into(),
+                                                            "q".into(),
+                                                            "p".into(),
+                                                        ]);
 
-                                                call
-                                            }
-                                            .into(),
-                                            Load::new(
+                                                    call
+                                                }
+                                                .into(),
+                                                Load::new(
+                                                    types::Primitive::PointerInteger,
+                                                    Variable::new("p"),
+                                                    "j",
+                                                )
+                                                .into(),
+                                            ],
+                                            Branch::new(
                                                 types::Primitive::PointerInteger,
-                                                Variable::new("p"),
-                                                "j"
-                                            )
-                                            .into(),
-                                        ],
-                                        Branch::new(
-                                            types::Primitive::PointerInteger,
-                                            Primitive::PointerInteger(0),
+                                                Primitive::PointerInteger(0),
+                                            ),
                                         ),
-                                    ),
-                                    Block::new(vec![], TerminalInstruction::Unreachable),
-                                    "k",
-                                )
+                                        Block::new(vec![], TerminalInstruction::Unreachable),
+                                        "k",
+                                    );
+
+                                    *if_.environment_mut() =
+                                        IndexSet::from_iter(["r".into(), "q".into()]);
+
+                                    if_
+                                }
                                 .into(),
                                 Load::new(
                                     types::Primitive::PointerInteger,
@@ -674,73 +692,82 @@ mod tests {
                         types::Primitive::PointerInteger,
                         Block::new(
                             vec![
-                                If::new(
-                                    types::Primitive::PointerInteger,
-                                    Primitive::Boolean(true),
-                                    Block::new(
-                                        vec![
-                                            {
-                                                let mut call = Call::new(
-                                                    function_type.clone(),
-                                                    Variable::new("g"),
-                                                    vec![],
-                                                    "i1",
-                                                );
+                                {
+                                    let mut if_ = If::new(
+                                        types::Primitive::PointerInteger,
+                                        Primitive::Boolean(true),
+                                        Block::new(
+                                            vec![
+                                                {
+                                                    let mut call = Call::new(
+                                                        function_type.clone(),
+                                                        Variable::new("g"),
+                                                        vec![],
+                                                        "i1",
+                                                    );
 
-                                                *call.environment_mut() = IndexSet::from_iter([
-                                                    "r".into(),
-                                                    "q".into(),
-                                                    "p1".into(),
-                                                ]);
+                                                    *call.environment_mut() =
+                                                        IndexSet::from_iter([
+                                                            "r".into(),
+                                                            "q".into(),
+                                                            "p1".into(),
+                                                        ]);
 
-                                                call
-                                            }
-                                            .into(),
-                                            Load::new(
+                                                    call
+                                                }
+                                                .into(),
+                                                Load::new(
+                                                    types::Primitive::PointerInteger,
+                                                    Variable::new("p1"),
+                                                    "j1",
+                                                )
+                                                .into(),
+                                            ],
+                                            Branch::new(
                                                 types::Primitive::PointerInteger,
-                                                Variable::new("p1"),
-                                                "j1"
-                                            )
-                                            .into(),
-                                        ],
-                                        Branch::new(
-                                            types::Primitive::PointerInteger,
-                                            Primitive::PointerInteger(0),
+                                                Primitive::PointerInteger(0),
+                                            ),
                                         ),
-                                    ),
-                                    Block::new(
-                                        vec![
-                                            {
-                                                let mut call = Call::new(
-                                                    function_type,
-                                                    Variable::new("g"),
-                                                    vec![],
-                                                    "i2",
-                                                );
+                                        Block::new(
+                                            vec![
+                                                {
+                                                    let mut call = Call::new(
+                                                        function_type,
+                                                        Variable::new("g"),
+                                                        vec![],
+                                                        "i2",
+                                                    );
 
-                                                *call.environment_mut() = IndexSet::from_iter([
-                                                    "r".into(),
-                                                    "q".into(),
-                                                    "p2".into(),
-                                                ]);
+                                                    *call.environment_mut() =
+                                                        IndexSet::from_iter([
+                                                            "r".into(),
+                                                            "q".into(),
+                                                            "p2".into(),
+                                                        ]);
 
-                                                call
-                                            }
-                                            .into(),
-                                            Load::new(
+                                                    call
+                                                }
+                                                .into(),
+                                                Load::new(
+                                                    types::Primitive::PointerInteger,
+                                                    Variable::new("p2"),
+                                                    "j2",
+                                                )
+                                                .into(),
+                                            ],
+                                            Branch::new(
                                                 types::Primitive::PointerInteger,
-                                                Variable::new("p2"),
-                                                "j2"
-                                            )
-                                            .into(),
-                                        ],
-                                        Branch::new(
-                                            types::Primitive::PointerInteger,
-                                            Primitive::PointerInteger(0),
+                                                Primitive::PointerInteger(0),
+                                            ),
                                         ),
-                                    ),
-                                    "k",
-                                )
+                                        "k",
+                                    );
+
+                                    *if_.environment_mut() =
+                                        IndexSet::from_iter(["r".into(), "q".into()]);
+
+                                    if_
+                                }
                                 .into(),
                                 Load::new(
                                     types::Primitive::PointerInteger,
@@ -855,35 +882,41 @@ mod tests {
                                     call
                                 }
                                 .into(),
-                                If::new(
-                                    types::Primitive::PointerInteger,
-                                    Primitive::Boolean(true),
-                                    Block::new(
-                                        vec![Load::new(
-                                            types::Primitive::PointerInteger,
-                                            Variable::new("p"),
-                                            "i"
-                                        )
-                                        .into()],
-                                        Branch::new(
-                                            types::Primitive::PointerInteger,
-                                            Primitive::PointerInteger(0),
+                                {
+                                    let mut if_ = If::new(
+                                        types::Primitive::PointerInteger,
+                                        Primitive::Boolean(true),
+                                        Block::new(
+                                            vec![Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p"),
+                                                "i",
+                                            )
+                                            .into()],
+                                            Branch::new(
+                                                types::Primitive::PointerInteger,
+                                                Primitive::PointerInteger(0),
+                                            ),
                                         ),
-                                    ),
-                                    Block::new(
-                                        vec![Load::new(
-                                            types::Primitive::PointerInteger,
-                                            Variable::new("q"),
-                                            "j"
-                                        )
-                                        .into()],
-                                        Branch::new(
-                                            types::Primitive::PointerInteger,
-                                            Primitive::PointerInteger(0),
+                                        Block::new(
+                                            vec![Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("q"),
+                                                "j",
+                                            )
+                                            .into()],
+                                            Branch::new(
+                                                types::Primitive::PointerInteger,
+                                                Primitive::PointerInteger(0),
+                                            ),
                                         ),
-                                    ),
-                                    "k",
-                                )
+                                        "k",
+                                    );
+
+                                    *if_.environment_mut() = IndexSet::from_iter(["r".into()]);
+
+                                    if_
+                                }
                                 .into(),
                             ],
                             Return::new(types::Primitive::PointerInteger, Variable::new("r")),
