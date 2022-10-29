@@ -120,12 +120,21 @@ pub fn partial_push(
         .unwrap_or_else(|| old_elements.len().min(new_elements.len()));
 
     if index == new_elements.len() {
-        increase_size(
-            builder,
-            &stack,
-            &create_record_type_from_elements(&new_elements).into(),
-        )?;
-        // TODO Align sizes.
+        let size_pointer = build::record_address(stack.clone(), 1)?;
+        let size = builder.load(size_pointer.clone())?;
+
+        builder.store(
+            build::arithmetic_operation(
+                ArithmeticOperator::Add,
+                size,
+                align(
+                    builder,
+                    &build::size_of(create_record_type_from_elements(&new_elements)),
+                    &MAX_ALIGNMENT_TYPE.into(),
+                )?,
+            )?,
+            size_pointer,
+        );
 
         return Ok(());
     } else if index == 0 {
