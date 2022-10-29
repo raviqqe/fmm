@@ -61,25 +61,13 @@ pub fn push(
 
     extend(builder, &stack, element.type_())?;
 
-    let size_pointer = build::record_address(stack.clone(), 1)?;
-    let size = builder.load(size_pointer.clone())?;
+    let size = builder.load(build::record_address(stack.clone(), 1)?)?;
 
     builder.store(
         element.clone(),
         element_pointer(builder, &stack, &size, element.type_())?,
     );
-    builder.store(
-        build::arithmetic_operation(
-            ArithmeticOperator::Add,
-            size,
-            align(
-                builder,
-                &build::size_of(element.type_().clone()),
-                &MAX_ALIGNMENT_TYPE.into(),
-            )?,
-        )?,
-        size_pointer,
-    );
+    increase_aligned_size(builder, &stack, &size, element.type_())?;
 
     Ok(())
 }
@@ -119,26 +107,17 @@ pub fn partial_push(
         .position(|(one, other)| one != other)
         .unwrap_or_else(|| old_elements.len().min(new_elements.len()));
 
-    if index == new_elements.len() {
-        let size_pointer = build::record_address(stack.clone(), 1)?;
-        let size = builder.load(size_pointer.clone())?;
-
-        builder.store(
-            build::arithmetic_operation(
-                ArithmeticOperator::Add,
-                size,
-                align(
-                    builder,
-                    &build::size_of(utility::create_record_type(&new_elements)),
-                    &MAX_ALIGNMENT_TYPE.into(),
-                )?,
-            )?,
-            size_pointer,
-        );
+    if index == 0 {
+        return push(builder, stack, utility::create_record(new_elements));
+    } else if index == new_elements.len() {
+        increase_aligned_size(
+            builder,
+            &stack,
+            &builder.load(build::record_address(stack.clone(), 1)?)?,
+            &utility::create_record_type(new_elements).into(),
+        )?;
 
         return Ok(());
-    } else if index == 0 {
-        return push(builder, stack, utility::create_record(new_elements));
     }
 
     extend(
@@ -241,6 +220,28 @@ fn increase_size(
             build::size_of(type_.clone()),
         )?,
         pointer,
+    );
+
+    Ok(())
+}
+
+fn increase_aligned_size(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    size: &TypedExpression,
+    type_: &Type,
+) -> Result<(), BuildError> {
+    builder.store(
+        build::arithmetic_operation(
+            ArithmeticOperator::Add,
+            size.clone(),
+            align(
+                builder,
+                &build::size_of(type_.clone()),
+                &MAX_ALIGNMENT_TYPE.into(),
+            )?,
+        )?,
+        build::record_address(stack.clone(), 1)?,
     );
 
     Ok(())
