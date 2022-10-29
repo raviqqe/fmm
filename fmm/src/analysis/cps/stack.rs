@@ -318,7 +318,7 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     )?;
     let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
 
-    // TODO Handle elements larger than stack increase sizes.
+    // TODO Handle elements larger than increase sizes.
     builder.if_(
         build::comparison_operation(
             ComparisonOperator::GreaterThan(false),
