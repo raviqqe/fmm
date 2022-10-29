@@ -101,7 +101,7 @@ fn transform_block(
                         local_variables,
                     );
                 } else {
-                    let environment = get_continuation_environment(
+                    let environment = create_continuation_environment(
                         &rest_instructions,
                         &terminal_instruction,
                         local_variables,
@@ -268,7 +268,7 @@ fn create_continuation(
     Variable::new(name)
 }
 
-fn get_continuation_environment(
+fn create_continuation_environment(
     instructions: &[Instruction],
     terminal_instruction: &TerminalInstruction,
     local_variables: &FnvHashMap<String, Type>,
