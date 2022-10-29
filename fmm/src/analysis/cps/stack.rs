@@ -86,36 +86,30 @@ pub fn pop(
 pub fn partial_push(
     builder: &InstructionBuilder,
     stack: impl Into<TypedExpression>,
-    old_environment: &[(&str, &Type)],
-    new_environment: &[(&str, &Type)],
+    old_elements: &[(&str, &Type)],
+    new_elements: &[(&str, &Type)],
 ) -> Result<(), BuildError> {
     let stack = stack.into();
 
     extend(
         builder,
         &stack,
-        &create_environment_record(new_environment)
-            .type_()
-            .clone()
-            .into(),
+        &create_record_type_from_elements(new_elements).into(),
     )?;
 
-    let index = old_environment
+    let index = old_elements
         .iter()
-        .zip(new_environment)
+        .zip(new_elements)
         .position(|(one, other)| one != other)
-        .unwrap_or_else(|| old_environment.len().max(new_environment.len()));
+        .unwrap_or_else(|| old_elements.len().min(new_elements.len()));
 
     increase_size(
         builder,
         &stack,
-        &create_environment_record(&new_environment[..index])
-            .type_()
-            .clone()
-            .into(),
+        &create_record_type_from_elements(&new_elements[..index]).into(),
     )?;
 
-    for (name, type_) in &new_environment[index..] {
+    for (name, type_) in &new_elements[index..] {
         push_one(builder, &stack, &build::variable(*name, (*type_).clone()))?;
     }
 
@@ -381,12 +375,6 @@ fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
     ))
 }
 
-// TODO Share this with `source_function.rs`.
-fn create_environment_record(environment: &[(&str, &Type)]) -> Record {
-    build::record(
-        environment
-            .iter()
-            .map(|(name, type_)| build::variable(*name, (*type_).clone()))
-            .collect(),
-    )
+fn create_record_type_from_elements(elements: &[(&str, &Type)]) -> types::Record {
+    types::Record::new(elements.iter().map(|(_, type_)| (*type_).clone()).collect())
 }
