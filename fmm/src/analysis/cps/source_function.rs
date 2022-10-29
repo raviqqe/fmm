@@ -116,14 +116,17 @@ fn transform_block(
                 {
                     Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                 } else {
+                    let previous_environment =
+                        create_continuation_environment(previous_environment, local_variables);
                     let environment =
                         create_continuation_environment(call.environment(), local_variables);
 
                     let builder = InstructionBuilder::new(context.cps.name_generator());
-                    stack::push(
+                    stack::partial_push(
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
-                        create_environment_record(&environment),
+                        &previous_environment,
+                        &environment,
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 

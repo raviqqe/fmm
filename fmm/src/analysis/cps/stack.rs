@@ -9,6 +9,7 @@ use std::{cell::RefCell, rc::Rc};
 const EXTEND_FUNCTION_NAME: &str = "_fmm_stack_extend";
 const ALIGN_SIZE_FUNCTION_NAME: &str = "_fmm_stack_align_size";
 const DEFAULT_STACK_SIZE: i64 = 64;
+const MAX_ALIGNMENT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 
 thread_local! {
     static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
@@ -56,24 +57,10 @@ pub fn push(
 ) -> Result<(), BuildError> {
     let stack = stack.into();
     let element = element.into();
-    let size = builder.load(build::record_address(stack.clone(), 1)?)?;
 
-    builder.call(
-        build::variable(
-            EXTEND_FUNCTION_NAME,
-            types::Function::new(
-                vec![type_(), types::Primitive::PointerInteger.into()],
-                void_type(),
-                types::CallingConvention::Target,
-            ),
-        ),
-        vec![stack.clone(), build::size_of(element.type_().clone())],
-    )?;
-
-    builder.store(
-        element.clone(),
-        element_pointer(builder, &stack, &size, element.type_())?,
-    );
+    extend(builder, &stack, element.type_())?;
+    push_one(builder, &stack, &element)?;
+    align_size(builder, &stack, &MAX_ALIGNMENT_TYPE.into())?;
 
     Ok(())
 }
@@ -88,7 +75,7 @@ pub fn pop(
     let size = build::arithmetic_operation(
         ArithmeticOperator::Subtract,
         builder.load(build::record_address(stack.clone(), 1)?)?,
-        align_size(builder, build::size_of(type_.clone()))?,
+        align(builder, build::size_of(type_.clone()))?,
     )?;
 
     builder.store(size.clone(), build::record_address(stack.clone(), 1)?);
@@ -96,11 +83,92 @@ pub fn pop(
     builder.load(element_pointer(builder, &stack, &size.into(), &type_)?)
 }
 
+pub fn partial_push(
+    builder: &InstructionBuilder,
+    stack: impl Into<TypedExpression>,
+    old_environment: &[(&str, &Type)],
+    new_environment: &[(&str, &Type)],
+) -> Result<(), BuildError> {
+    let stack = stack.into();
+
+    extend(
+        builder,
+        &stack,
+        &create_environment_record(new_environment)
+            .type_()
+            .clone()
+            .into(),
+    )?;
+
+    let index = old_environment
+        .iter()
+        .zip(new_environment)
+        .position(|(one, other)| one != other)
+        .unwrap_or_else(|| old_environment.len().max(new_environment.len()));
+
+    increase_size(
+        builder,
+        &stack,
+        &create_environment_record(&new_environment[..index])
+            .type_()
+            .clone()
+            .into(),
+    )?;
+
+    for (name, type_) in &new_environment[index..] {
+        push_one(builder, &stack, &build::variable(*name, (*type_).clone()))?;
+    }
+
+    align_size(builder, &stack, &MAX_ALIGNMENT_TYPE.into())?;
+
+    Ok(())
+}
+
+fn push_one(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    element: &TypedExpression,
+) -> Result<(), BuildError> {
+    align_size(builder, &stack, element.type_())?;
+    builder.store(
+        element.clone(),
+        element_pointer(
+            builder,
+            &stack,
+            &builder.load(build::record_address(stack.clone(), 1)?)?,
+            element.type_(),
+        )?,
+    );
+    increase_size(builder, &stack, element.type_())?;
+
+    Ok(())
+}
+
 pub fn define_utility_functions(module: &mut Module) -> Result<(), BuildError> {
     module.function_definitions_mut().extend([
         extend_function_definition()?,
         align_size_function_definition()?,
     ]);
+
+    Ok(())
+}
+
+fn extend(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    element_type: &Type,
+) -> Result<(), BuildError> {
+    builder.call(
+        build::variable(
+            EXTEND_FUNCTION_NAME,
+            types::Function::new(
+                vec![type_(), types::Primitive::PointerInteger.into()],
+                void_type(),
+                types::CallingConvention::Target,
+            ),
+        ),
+        vec![stack.clone(), build::size_of(element_type.clone())],
+    )?;
 
     Ok(())
 }
@@ -121,7 +189,77 @@ fn element_pointer(
     .into())
 }
 
+fn increase_size(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    type_: &Type,
+) -> Result<(), BuildError> {
+    let size_pointer = build::record_address(stack.clone(), 1)?;
+
+    builder.store(
+        build::arithmetic_operation(
+            ArithmeticOperator::Add,
+            builder.load(size_pointer.clone())?,
+            build::size_of(type_.clone()),
+        )?,
+        size_pointer,
+    );
+
+    Ok(())
+}
+
 fn align_size(
+    builder: &InstructionBuilder,
+    stack: &TypedExpression,
+    type_: &Type,
+) -> Result<(), BuildError> {
+    let size_pointer = build::record_address(stack.clone(), 1)?;
+
+    builder.store(
+        align_v2(builder, &builder.load(size_pointer.clone())?, type_)?,
+        size_pointer,
+    );
+
+    Ok(())
+}
+
+fn align_v2(
+    builder: &InstructionBuilder,
+    size: &TypedExpression,
+    type_: &Type,
+) -> Result<TypedExpression, BuildError> {
+    let alignment = build::align_of(type_.clone());
+
+    builder.if_(
+        build::comparison_operation(
+            ComparisonOperator::Equal,
+            size.clone(),
+            Primitive::PointerInteger(0),
+        )?,
+        |builder| Ok(builder.branch(Primitive::PointerInteger(0))),
+        |builder| {
+            Ok(builder.branch(build::arithmetic_operation(
+                ArithmeticOperator::Multiply,
+                build::arithmetic_operation(
+                    ArithmeticOperator::Add,
+                    build::arithmetic_operation(
+                        ArithmeticOperator::Divide,
+                        build::arithmetic_operation(
+                            ArithmeticOperator::Subtract,
+                            size.clone(),
+                            Primitive::PointerInteger(1),
+                        )?,
+                        alignment.clone(),
+                    )?,
+                    Primitive::PointerInteger(1),
+                )?,
+                alignment.clone(),
+            )?))
+        },
+    )
+}
+
+fn align(
     builder: &InstructionBuilder,
     size: impl Into<TypedExpression>,
 ) -> Result<TypedExpression, BuildError> {
@@ -149,7 +287,7 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     let new_size = build::arithmetic_operation(
         ArithmeticOperator::Add,
         size,
-        align_size(
+        align(
             &builder,
             build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
         )?,
@@ -181,8 +319,6 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
         },
         |builder| Ok(builder.branch(void_value())),
     )?;
-
-    builder.store(new_size, build::record_address(stack, 1)?);
 
     Ok(FunctionDefinition::new(
         EXTEND_FUNCTION_NAME,
@@ -243,4 +379,14 @@ fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
             .set_calling_convention(types::CallingConvention::Target)
             .set_linkage(Linkage::Internal),
     ))
+}
+
+// TODO Share this with `source_function.rs`.
+fn create_environment_record(environment: &[(&str, &Type)]) -> Record {
+    build::record(
+        environment
+            .iter()
+            .map(|(name, type_)| build::variable(*name, (*type_).clone()))
+            .collect(),
+    )
 }
