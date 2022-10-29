@@ -189,7 +189,7 @@ pub fn partial_push(
 pub fn define_utility_functions(module: &mut Module) -> Result<(), BuildError> {
     module.function_definitions_mut().extend([
         extend_function_definition()?,
-        align_size_function_definition()?,
+        align_function_definition()?,
     ]);
 
     Ok(())
@@ -358,7 +358,7 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     ))
 }
 
-fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
+fn align_function_definition() -> Result<FunctionDefinition, BuildError> {
     const SIZE_NAME: &str = "size";
     const ALIGNMENT_NAME: &str = "alignment";
 
