@@ -81,6 +81,7 @@ fn collect_from_instruction(
         Instruction::Call(call) => {
             if call.type_().calling_convention() == types::CallingConvention::Source {
                 *call.environment_mut() = variables.clone();
+                dbg!(call.function(), &variables);
             }
 
             collect_from_expression(context, call.function(), variables);
