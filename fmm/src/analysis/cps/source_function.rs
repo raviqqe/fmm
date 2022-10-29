@@ -137,7 +137,7 @@ fn transform_block(
 
                 call.arguments_mut()
                     .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
-                call.arguments_mut().insert(1, continuation.into());
+                call.arguments_mut().insert(1, continuation);
                 *call.name_mut() = result_name;
 
                 block.instructions_mut().push(call.into());

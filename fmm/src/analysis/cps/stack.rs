@@ -128,17 +128,17 @@ fn push_one(
     stack: &TypedExpression,
     element: &TypedExpression,
 ) -> Result<(), BuildError> {
-    align_size(builder, &stack, element.type_())?;
+    align_size(builder, stack, element.type_())?;
     builder.store(
         element.clone(),
         element_pointer(
             builder,
-            &stack,
+            stack,
             &builder.load(build::record_address(stack.clone(), 1)?)?,
             element.type_(),
         )?,
     );
-    increase_size(builder, &stack, element.type_())?;
+    increase_size(builder, stack, element.type_())?;
 
     Ok(())
 }
@@ -266,7 +266,7 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     builder.if_(
         build::comparison_operation(
             ComparisonOperator::GreaterThan(false),
-            new_size.clone(),
+            new_size,
             capacity.clone(),
         )?,
         |builder| {
