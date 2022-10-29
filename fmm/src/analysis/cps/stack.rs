@@ -108,7 +108,7 @@ pub fn partial_push(
         .position(|(one, other)| one != other)
         .unwrap_or_else(|| old_elements.len().min(new_elements.len()));
 
-    // TODO Optimize the case where `index == 0`.
+    // TODO Optimize the case where `index == 0` and `index == new_elements.len() - 1`.
 
     increase_size(
         builder,
