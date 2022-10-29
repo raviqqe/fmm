@@ -129,7 +129,7 @@ pub fn partial_push(
                 size,
                 align(
                     builder,
-                    &build::size_of(create_record_type_from_elements(&new_elements)),
+                    &build::size_of(utility::create_record_type(&new_elements)),
                     &MAX_ALIGNMENT_TYPE.into(),
                 )?,
             )?,
@@ -144,13 +144,13 @@ pub fn partial_push(
     extend(
         builder,
         &stack,
-        &create_record_type_from_elements(new_elements).into(),
+        &utility::create_record_type(new_elements).into(),
     )?;
 
     increase_size(
         builder,
         &stack,
-        &create_record_type_from_elements(&new_elements[..index]).into(),
+        &utility::create_record_type(&new_elements[..index]).into(),
     )?;
 
     let mut last_element_type = new_elements
@@ -406,8 +406,4 @@ fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
             .set_calling_convention(types::CallingConvention::Target)
             .set_linkage(Linkage::Internal),
     ))
-}
-
-fn create_record_type_from_elements(elements: &[(&str, &Type)]) -> types::Record {
-    types::Record::new(elements.iter().map(|(_, type_)| (*type_).clone()).collect())
 }
