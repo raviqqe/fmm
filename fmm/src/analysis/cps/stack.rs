@@ -13,26 +13,25 @@ const DEFAULT_STACK_SIZE: i64 = 64;
 // TODO Support 16-byte aligned data.
 const MAX_ALIGNMENT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 
-thread_local! {
-    static STACK_TYPE: Lazy<Type> = Lazy::new(|| {
-        types::Pointer::new(types::Record::new(vec![
-            generic_pointer_type(), // base pointer
-            types::Primitive::PointerInteger.into(), // size
-            types::Primitive::PointerInteger.into(), // capacity
-        ]))
-        .into()
-    });
-}
-
 pub fn type_() -> Type {
-    STACK_TYPE.with(|type_| (*type_).clone())
+    thread_local! {
+        static TYPE: Lazy<Type> = Lazy::new(|| {
+            types::Pointer::new(types::Record::new(vec![
+                generic_pointer_type(), // base pointer
+                types::Primitive::PointerInteger.into(), // size
+                types::Primitive::PointerInteger.into(), // capacity
+            ]))
+            .into()
+        });
+    }
+
+    TYPE.with(|type_| (*type_).clone())
 }
 
 pub fn create(builder: &InstructionBuilder) -> Result<TypedExpression, BuildError> {
     let capacity = Primitive::PointerInteger(DEFAULT_STACK_SIZE);
-    let pointer = builder.allocate_heap(capacity);
     let record = build::record(vec![
-        pointer,
+        builder.allocate_heap(capacity),
         Primitive::PointerInteger(0).into(),
         capacity.into(),
     ]);
