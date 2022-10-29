@@ -1,4 +1,4 @@
-use crate::{ir::*, types};
+use crate::{analysis::format::format_block, ir::*, types};
 use fnv::FnvHashSet;
 use indexmap::IndexSet;
 use std::{mem::swap, rc::Rc};
@@ -50,6 +50,7 @@ fn transform_function_definition(context: &Context, definition: &mut FunctionDef
 
 fn transform_block(context: &Context, block: &mut Block, variables: &mut IndexSet<Rc<str>>) {
     collect_from_terminal_instruction(context, block.terminal_instruction_mut(), variables);
+    println!("{}", format_block(block));
 
     for instruction in block.instructions_mut().iter_mut().rev() {
         if let Some((name, _)) = instruction.value() {
@@ -81,7 +82,6 @@ fn collect_from_instruction(
         Instruction::Call(call) => {
             if call.type_().calling_convention() == types::CallingConvention::Source {
                 *call.environment_mut() = variables.clone();
-                dbg!(call.function(), &variables);
             }
 
             collect_from_expression(context, call.function(), variables);
