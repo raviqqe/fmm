@@ -262,7 +262,6 @@ fn align_size(
             build::align_of(type_.clone()),
             build::align_of(last_type.clone()),
         )?,
-        |builder| Ok(builder.branch(void_value())),
         |builder| {
             let pointer = build::record_address(stack.clone(), 1)?;
 
@@ -273,6 +272,7 @@ fn align_size(
 
             Ok(builder.branch(void_value()))
         },
+        |builder| Ok(builder.branch(void_value())),
     )?;
 
     Ok(())
