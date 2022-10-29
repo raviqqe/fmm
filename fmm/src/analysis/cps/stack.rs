@@ -188,15 +188,15 @@ fn increase_size(
     stack: &TypedExpression,
     type_: &Type,
 ) -> Result<(), BuildError> {
-    let size_pointer = build::record_address(stack.clone(), 1)?;
+    let pointer = build::record_address(stack.clone(), 1)?;
 
     builder.store(
         build::arithmetic_operation(
             ArithmeticOperator::Add,
-            builder.load(size_pointer.clone())?,
+            builder.load(pointer.clone())?,
             build::size_of(type_.clone()),
         )?,
-        size_pointer,
+        pointer,
     );
 
     Ok(())
@@ -207,11 +207,11 @@ fn align_size(
     stack: &TypedExpression,
     type_: &Type,
 ) -> Result<(), BuildError> {
-    let size_pointer = build::record_address(stack.clone(), 1)?;
+    let pointer = build::record_address(stack.clone(), 1)?;
 
     builder.store(
-        align_v2(builder, &builder.load(size_pointer.clone())?, type_)?,
-        size_pointer,
+        align_v2(builder, &builder.load(pointer.clone())?, type_)?,
+        pointer,
     );
 
     Ok(())
