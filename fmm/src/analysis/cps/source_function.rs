@@ -59,12 +59,7 @@ fn transform_function_definition(
         continuation_type.clone().into(),
     );
 
-    transform_block(
-        context,
-        definition.body_mut(),
-        &Default::default(),
-        &local_variables,
-    )?;
+    transform_block(context, definition.body_mut(), None, &local_variables)?;
 
     definition
         .arguments_mut()
@@ -85,7 +80,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
-    previous_environment: &IndexSet<Rc<str>>,
+    previous_environment: Option<&IndexSet<Rc<str>>>,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -116,8 +111,11 @@ fn transform_block(
                 {
                     Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                 } else {
-                    let previous_environment =
-                        create_continuation_environment(previous_environment, local_variables);
+                    let previous_environment = if let Some(environment) = previous_environment {
+                        create_continuation_environment(environment, local_variables)
+                    } else {
+                        vec![]
+                    };
                     let environment =
                         create_continuation_environment(call.environment(), local_variables);
 
@@ -131,7 +129,12 @@ fn transform_block(
                     block.instructions_mut().extend(builder.into_instructions());
 
                     let mut block = Block::new(rest_instructions, terminal_instruction);
-                    transform_block(context, &mut block, call.environment(), local_variables)?;
+                    transform_block(
+                        context,
+                        &mut block,
+                        Some(call.environment()),
+                        local_variables,
+                    )?;
                     create_continuation(context, &call, block, &environment)?
                 };
 
