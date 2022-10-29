@@ -12,6 +12,8 @@ struct Context {
     name_generator: NameGenerator,
 }
 
+// TODO Consider integrating this logic deeply with CPS transformation to omit
+// extra CPS stack manipulation.
 pub fn flatten(module: &mut Module) {
     let mut context = Context {
         function_definitions: vec![],
