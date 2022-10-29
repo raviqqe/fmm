@@ -54,7 +54,7 @@ fn transform_function_definition(
         continuation_type.clone().into(),
     );
 
-    transform_block(context, definition.body_mut(), &local_variables)?;
+    transform_block(context, definition.body_mut(), &[], &local_variables)?;
 
     definition
         .arguments_mut()
@@ -75,6 +75,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
+    last_environment: &[(String, Type)],
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -134,8 +135,8 @@ fn transform_block(
                 return Ok(());
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), local_variables)?;
-                transform_block(context, if_.else_mut(), local_variables)?;
+                transform_block(context, if_.then_mut(), last_environment, local_variables)?;
+                transform_block(context, if_.else_mut(), last_environment, local_variables)?;
 
                 block.instructions_mut().push(if_.into());
             }
