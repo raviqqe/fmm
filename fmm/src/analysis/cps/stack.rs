@@ -60,8 +60,26 @@ pub fn push(
     let element = element.into();
 
     extend(builder, &stack, element.type_())?;
-    push_one(builder, &stack, &element)?;
-    align_size(builder, &stack, &MAX_ALIGNMENT_TYPE.into())?;
+
+    let size_pointer = build::record_address(stack.clone(), 1)?;
+    let size = builder.load(size_pointer.clone())?;
+
+    builder.store(
+        element.clone(),
+        element_pointer(builder, &stack, &size, element.type_())?,
+    );
+    builder.store(
+        build::arithmetic_operation(
+            ArithmeticOperator::Add,
+            size,
+            align(
+                builder,
+                &build::size_of(element.type_().clone()),
+                &MAX_ALIGNMENT_TYPE.into(),
+            )?,
+        )?,
+        size_pointer,
+    );
 
     Ok(())
 }
@@ -107,6 +125,7 @@ pub fn partial_push(
             &stack,
             &create_record_type_from_elements(&new_elements).into(),
         )?;
+        // TODO Align sizes.
 
         return Ok(());
     } else if index == 0 {
@@ -129,31 +148,32 @@ pub fn partial_push(
         &create_record_type_from_elements(&new_elements[..index]).into(),
     )?;
 
+    let mut last_element_type = MAX_ALIGNMENT_TYPE.into();
+
     for (name, type_) in &new_elements[index..] {
-        push_one(builder, &stack, &build::variable(*name, (*type_).clone()))?;
+        let element = build::variable(*name, (*type_).clone());
+
+        align_size(builder, &stack, element.type_(), &last_element_type)?;
+        builder.store(
+            element.clone(),
+            element_pointer(
+                builder,
+                &stack,
+                &builder.load(build::record_address(stack.clone(), 1)?)?,
+                element.type_(),
+            )?,
+        );
+        increase_size(builder, &stack, element.type_())?;
+
+        last_element_type = element.type_().clone();
     }
 
-    align_size(builder, &stack, &MAX_ALIGNMENT_TYPE.into())?;
-
-    Ok(())
-}
-
-fn push_one(
-    builder: &InstructionBuilder,
-    stack: &TypedExpression,
-    element: &TypedExpression,
-) -> Result<(), BuildError> {
-    align_size(builder, stack, element.type_())?;
-    builder.store(
-        element.clone(),
-        element_pointer(
-            builder,
-            stack,
-            &builder.load(build::record_address(stack.clone(), 1)?)?,
-            element.type_(),
-        )?,
-    );
-    increase_size(builder, stack, element.type_())?;
+    align_size(
+        builder,
+        &stack,
+        &MAX_ALIGNMENT_TYPE.into(),
+        &last_element_type,
+    )?;
 
     Ok(())
 }
@@ -226,13 +246,26 @@ fn align_size(
     builder: &InstructionBuilder,
     stack: &TypedExpression,
     type_: &Type,
+    last_type: &Type,
 ) -> Result<(), BuildError> {
-    let pointer = build::record_address(stack.clone(), 1)?;
+    builder.if_(
+        build::comparison_operation(
+            ComparisonOperator::Equal,
+            build::align_of(type_.clone()),
+            build::align_of(last_type.clone()),
+        )?,
+        |builder| Ok(builder.branch(void_value())),
+        |builder| {
+            let pointer = build::record_address(stack.clone(), 1)?;
 
-    builder.store(
-        align(builder, &builder.load(pointer.clone())?, type_)?,
-        pointer,
-    );
+            builder.store(
+                align(&builder, &builder.load(pointer.clone())?, type_)?,
+                pointer,
+            );
+
+            Ok(builder.branch(void_value()))
+        },
+    )?;
 
     Ok(())
 }
