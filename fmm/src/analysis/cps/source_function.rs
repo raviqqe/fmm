@@ -195,7 +195,7 @@ fn create_continuation(
     let name = context.cps.name_generator().borrow_mut().generate();
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-    let environment_record_type = utility::create_record(environment).type_().clone();
+    let environment_record_type = utility::create_record_type(environment);
     let environment_record = stack::pop(
         &builder,
         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
