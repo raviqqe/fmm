@@ -258,7 +258,7 @@ fn align_size(
 ) -> Result<(), BuildError> {
     builder.if_(
         build::comparison_operation(
-            ComparisonOperator::Equal,
+            ComparisonOperator::GreaterThan(false),
             build::align_of(type_.clone()),
             build::align_of(last_type.clone()),
         )?,
