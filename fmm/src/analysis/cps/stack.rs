@@ -138,11 +138,7 @@ pub fn partial_push(
 
         return Ok(());
     } else if index == 0 {
-        return push(
-            builder,
-            stack,
-            utility::create_environment_record(new_elements),
-        );
+        return push(builder, stack, utility::create_record(new_elements));
     }
 
     extend(
