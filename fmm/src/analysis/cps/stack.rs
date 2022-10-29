@@ -153,15 +153,12 @@ pub fn partial_push(
         &utility::create_record_type(&new_elements[..index]).into(),
     )?;
 
-    let mut last_element_type = new_elements
-        .get(index - 1)
-        .map(|(_, type_)| (*type_).clone())
-        .unwrap_or_else(|| MAX_ALIGNMENT_TYPE.into());
+    let mut last_element_type = new_elements.get(index - 1).map(|(_, type_)| *type_);
 
     for (name, type_) in &new_elements[index..] {
         let element = build::variable(*name, (*type_).clone());
 
-        align_size(builder, &stack, element.type_(), &last_element_type)?;
+        align_size(builder, &stack, element.type_(), last_element_type)?;
         builder.store(
             element.clone(),
             element_pointer(
@@ -173,24 +170,23 @@ pub fn partial_push(
         );
         increase_size(builder, &stack, element.type_())?;
 
-        last_element_type = element.type_().clone();
+        last_element_type = Some(type_);
     }
 
     align_size(
         builder,
         &stack,
         &MAX_ALIGNMENT_TYPE.into(),
-        &last_element_type,
+        last_element_type,
     )?;
 
     Ok(())
 }
 
 pub fn define_utility_functions(module: &mut Module) -> Result<(), BuildError> {
-    module.function_definitions_mut().extend([
-        extend_function_definition()?,
-        align_function_definition()?,
-    ]);
+    module
+        .function_definitions_mut()
+        .extend([extend_function_definition()?, align_function_definition()?]);
 
     Ok(())
 }
@@ -254,13 +250,17 @@ fn align_size(
     builder: &InstructionBuilder,
     stack: &TypedExpression,
     type_: &Type,
-    last_type: &Type,
+    last_type: Option<&Type>,
 ) -> Result<(), BuildError> {
     builder.if_(
         build::comparison_operation(
             ComparisonOperator::GreaterThan(false),
             build::align_of(type_.clone()),
-            build::align_of(last_type.clone()),
+            build::align_of(
+                last_type
+                    .cloned()
+                    .unwrap_or_else(|| MAX_ALIGNMENT_TYPE.into()),
+            ),
         )?,
         |builder| {
             let pointer = build::record_address(stack.clone(), 1)?;
