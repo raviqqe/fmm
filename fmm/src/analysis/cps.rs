@@ -6,7 +6,6 @@ mod function_type;
 mod if_;
 mod source_function;
 mod stack;
-mod stack_v2;
 mod target_function;
 
 use self::context::Context;
