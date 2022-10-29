@@ -1,4 +1,4 @@
-use super::{context::Context as CpsContext, error::CpsError, stack};
+use super::{context::Context as CpsContext, error::CpsError, free_variable, stack};
 use crate::{
     analysis::{cps::continuation_type, local_variable},
     build::{self, BuildError, InstructionBuilder},
@@ -6,10 +6,7 @@ use crate::{
     types::{CallingConvention, Type},
 };
 use fnv::FnvHashMap;
-use std::{
-    mem::{replace, take},
-    ops::Deref,
-};
+use std::mem::{replace, take};
 
 const STACK_ARGUMENT_NAME: &str = "_s";
 const CONTINUATION_ARGUMENT_NAME: &str = "_k";
@@ -108,7 +105,17 @@ fn transform_block(
                 {
                     Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                 } else {
-                    let environment = create_continuation_environment(&call, local_variables);
+                    let mut continuation_block =
+                        Block::new(rest_instructions, terminal_instruction);
+                    transform_block(context, &mut continuation_block, local_variables)?;
+
+                    let environment = create_continuation_environment(
+                        &call,
+                        &continuation_block,
+                        local_variables,
+                    );
+                    let continuation =
+                        create_continuation(context, &call, continuation_block, &environment)?;
 
                     let builder = InstructionBuilder::new(context.cps.name_generator());
                     stack::push(
@@ -118,9 +125,7 @@ fn transform_block(
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
-                    let mut block = Block::new(rest_instructions, terminal_instruction);
-                    transform_block(context, &mut block, local_variables)?;
-                    create_continuation(context, &call, block, &environment)?
+                    continuation
                 };
 
                 transform_call(&mut call, continuation, result_name);
@@ -223,11 +228,12 @@ fn create_continuation(
 
 fn create_continuation_environment<'a>(
     call: &Call,
+    block: &Block,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
-    [CONTINUATION_ARGUMENT_NAME]
+    free_variable::collect(block.instructions(), block.terminal_instruction())
         .into_iter()
-        .chain(call.environment().iter().map(Deref::deref))
+        .filter(|name| *name != call.name())
         .flat_map(|name| {
             local_variables
                 .get_key_value(name)

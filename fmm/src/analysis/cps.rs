@@ -1,7 +1,7 @@
 mod context;
 mod continuation_type;
-mod environment_inference;
 mod error;
+mod free_variable;
 mod function_type;
 mod if_;
 mod source_function;
@@ -15,7 +15,6 @@ use error::CpsError;
 pub fn transform(module: &mut Module, result_type: impl Into<Type>) -> Result<(), CpsError> {
     let context = Context::new(result_type.into());
 
-    environment_inference::transform(module);
     if_::flatten(module);
     source_function::transform(&context, module)?;
     target_function::transform(&context, module)?;

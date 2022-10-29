@@ -1,3 +1,4 @@
+use super::free_variable;
 use crate::{
     analysis::{expression_conversion, local_variable},
     build::NameGenerator,
@@ -69,7 +70,6 @@ fn transform_block(
                 rest_instructions.reverse();
 
                 let name = if_.name().to_owned();
-                let type_ = if_.type_().clone();
 
                 if rest_instructions.is_empty()
                     || if_.then().terminal_instruction().is_branch()
@@ -101,11 +101,13 @@ fn transform_block(
                         local_variables,
                     );
                 } else {
-                    let environment = get_continuation_environment(&if_, local_variables);
+                    let environment = get_continuation_environment(
+                        &rest_instructions,
+                        &terminal_instruction,
+                        local_variables,
+                    );
                     let continuation = create_continuation(
                         context,
-                        &name,
-                        &type_,
                         Block::new(rest_instructions, terminal_instruction),
                         result_type,
                         &environment,
@@ -114,7 +116,7 @@ fn transform_block(
 
                     transform_if_block_with_continuation(
                         context,
-                        &type_,
+                        &name,
                         if_.then_mut(),
                         result_type,
                         local_variables,
@@ -123,7 +125,7 @@ fn transform_block(
                     );
                     transform_if_block_with_continuation(
                         context,
-                        &type_,
+                        &name,
                         if_.else_mut(),
                         result_type,
                         local_variables,
@@ -204,30 +206,31 @@ fn transform_if_block_with_rest_instructions(
 
 fn transform_if_block_with_continuation(
     context: &mut Context,
-    if_type: &Type,
+    if_name: &str,
     block: &mut Block,
     result_type: &Type,
     local_variables: &FnvHashMap<String, Type>,
     continuation: &Expression,
-    environment: &[(&str, &Type)],
+    environment: &[(String, Type)],
 ) {
     if let TerminalInstruction::Branch(branch) = block.terminal_instruction() {
         let result_name = context.name_generator.generate();
         let call = Call::new(
             types::Function::new(
-                environment
-                    .iter()
-                    .map(|(_, type_)| (*type_).clone())
-                    .chain([if_type.clone()])
-                    .collect(),
+                environment.iter().map(|(_, type_)| type_.clone()).collect(),
                 result_type.clone(),
                 types::CallingConvention::Source,
             ),
             continuation.clone(),
             environment
                 .iter()
-                .map(|(name, _)| Variable::new(*name).into())
-                .chain([branch.expression().clone()])
+                .map(|(name, _)| {
+                    if name == if_name {
+                        branch.expression().clone()
+                    } else {
+                        Variable::new(name).into()
+                    }
+                })
                 .collect(),
             &result_name,
         );
@@ -242,11 +245,9 @@ fn transform_if_block_with_continuation(
 
 fn create_continuation(
     context: &mut Context,
-    if_name: &str,
-    if_type: &Type,
     block: Block,
     result_type: &Type,
-    environment: &[(&str, &Type)],
+    environment: &[(String, Type)],
 ) -> Variable {
     let name = context.name_generator.generate();
 
@@ -254,8 +255,7 @@ fn create_continuation(
         &name,
         environment
             .iter()
-            .map(|(name, type_)| Argument::new(*name, (*type_).clone()))
-            .chain([Argument::new(if_name, if_type.clone())])
+            .map(|(name, type_)| Argument::new(name, type_.clone()))
             .collect(),
         result_type.clone(),
         block,
@@ -268,16 +268,17 @@ fn create_continuation(
     Variable::new(name)
 }
 
-fn get_continuation_environment<'a>(
-    if_: &If,
-    local_variables: &'a FnvHashMap<String, Type>,
-) -> Vec<(&'a str, &'a Type)> {
-    if_.environment()
+fn get_continuation_environment(
+    instructions: &[Instruction],
+    terminal_instruction: &TerminalInstruction,
+    local_variables: &FnvHashMap<String, Type>,
+) -> Vec<(String, Type)> {
+    free_variable::collect(instructions, terminal_instruction)
         .iter()
-        .flat_map(|name| {
+        .flat_map(|&name| {
             local_variables
-                .get_key_value(name.as_ref())
-                .map(|(name, type_)| (name.as_str(), type_))
+                .get(name)
+                .map(|type_| (name.into(), type_.clone()))
         })
         .collect()
 }
@@ -743,12 +744,12 @@ mod tests {
                                         .into(),
                                         Call::new(
                                             types::Function::new(
-                                                vec![pointer_type.clone().into()],
+                                                vec![],
                                                 pointer_type.clone(),
                                                 types::CallingConvention::Source
                                             ),
                                             Variable::new("_if_0"),
-                                            vec![Variable::new("x").into()],
+                                            vec![],
                                             "_if_1",
                                         )
                                         .into(),
@@ -758,12 +759,12 @@ mod tests {
                                 Block::new(
                                     vec![Call::new(
                                         types::Function::new(
-                                            vec![pointer_type.clone().into()],
+                                            vec![],
                                             pointer_type.clone(),
                                             types::CallingConvention::Source
                                         ),
                                         Variable::new("_if_0"),
-                                        vec![Undefined::new(pointer_type.clone()).into()],
+                                        vec![],
                                         "_if_2",
                                     )
                                     .into()],
@@ -777,7 +778,7 @@ mod tests {
                     ),
                     FunctionDefinition::new(
                         "_if_0",
-                        vec![Argument::new("y", pointer_type.clone())],
+                        vec![],
                         pointer_type.clone(),
                         Block::new(
                             vec![AllocateStack::new(types::Primitive::Float64, "p").into()],
@@ -1171,60 +1172,5 @@ mod tests {
         );
 
         assert_eq!(flatten_module(module.clone()), module);
-    }
-
-    #[test]
-    fn use_if_result_in_continuation() {
-        let function_type = create_function_type(
-            vec![types::Primitive::Float64.into()],
-            types::Primitive::Float64,
-        );
-        let module = Module::new(
-            vec![],
-            vec![FunctionDeclaration::new("f", function_type)],
-            vec![],
-            vec![create_function_definition(
-                "g",
-                vec![],
-                types::Primitive::Float64,
-                Block::new(
-                    vec![
-                        If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Load::new(
-                                    types::Primitive::Float64,
-                                    Undefined::new(types::Pointer::new(types::Primitive::Float64)),
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(
-                                vec![Load::new(
-                                    types::Primitive::Float64,
-                                    Undefined::new(types::Pointer::new(types::Primitive::Float64)),
-                                    "y",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("y")),
-                            ),
-                            "z",
-                        )
-                        .into(),
-                        Store::new(
-                            types::Primitive::Float64,
-                            Variable::new("z"),
-                            Undefined::new(types::Pointer::new(types::Primitive::Float64)),
-                        )
-                        .into(),
-                    ],
-                    Return::new(types::Primitive::Float64, Variable::new("z")),
-                ),
-            )],
-        );
-
-        flatten_module(module);
     }
 }
