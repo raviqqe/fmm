@@ -1,4 +1,4 @@
-use super::{context::Context as CpsContext, error::CpsError, stack};
+use super::{context::Context as CpsContext, error::CpsError, stack, utility};
 use crate::{
     analysis::{cps::continuation_type, local_variable},
     build::{self, BuildError, InstructionBuilder},
@@ -186,15 +186,6 @@ fn transform_block(
     Ok(())
 }
 
-fn create_environment_record(environment: &[(&str, &Type)]) -> Record {
-    build::record(
-        environment
-            .iter()
-            .map(|(name, type_)| build::variable(*name, (*type_).clone()))
-            .collect(),
-    )
-}
-
 fn create_continuation(
     context: &mut Context,
     call: &Call,
@@ -204,7 +195,9 @@ fn create_continuation(
     let name = context.cps.name_generator().borrow_mut().generate();
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-    let environment_record_type = create_environment_record(environment).type_().clone();
+    let environment_record_type = utility::create_environment_record(environment)
+        .type_()
+        .clone();
     let environment_record = stack::pop(
         &builder,
         build::variable(STACK_ARGUMENT_NAME, stack::type_()),

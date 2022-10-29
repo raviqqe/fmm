@@ -1,3 +1,4 @@
+use super::utility;
 use crate::{
     build::{self, BuildError, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
@@ -95,20 +96,33 @@ pub fn partial_push(
     new_elements: &[(&str, &Type)],
 ) -> Result<(), BuildError> {
     let stack = stack.into();
-
-    extend(
-        builder,
-        &stack,
-        &create_record_type_from_elements(new_elements).into(),
-    )?;
-
     let index = old_elements
         .iter()
         .zip(new_elements)
         .position(|(one, other)| one != other)
         .unwrap_or_else(|| old_elements.len().min(new_elements.len()));
 
-    // TODO Optimize the case where `index == 0` and `index == new_elements.len() - 1`.
+    if index == new_elements.len() {
+        increase_size(
+            builder,
+            &stack,
+            &create_record_type_from_elements(&new_elements).into(),
+        )?;
+
+        return Ok(());
+    } else if index == 0 {
+        return push(
+            builder,
+            stack,
+            utility::create_environment_record(new_elements),
+        );
+    }
+
+    extend(
+        builder,
+        &stack,
+        &create_record_type_from_elements(new_elements).into(),
+    )?;
 
     increase_size(
         builder,
