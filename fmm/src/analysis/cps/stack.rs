@@ -132,10 +132,10 @@ pub fn partial_push(
         &utility::create_record_type(&new_elements[..index]).into(),
     )?;
 
-    let mut last_element_type = new_elements.get(index - 1).map(|(_, type_)| *type_);
+    let mut last_element_type = new_elements.get(index - 1).map(|&(_, type_)| type_);
 
-    for (name, type_) in &new_elements[index..] {
-        let element = build::variable(*name, (*type_).clone());
+    for &(name, type_) in &new_elements[index..] {
+        let element = build::variable(name, (type_).clone());
 
         align_size(builder, &stack, element.type_(), last_element_type)?;
         builder.store(
