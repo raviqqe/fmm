@@ -148,7 +148,10 @@ pub fn partial_push(
         &create_record_type_from_elements(&new_elements[..index]).into(),
     )?;
 
-    let mut last_element_type = MAX_ALIGNMENT_TYPE.into();
+    let mut last_element_type = new_elements
+        .get(index - 1)
+        .map(|(_, type_)| (*type_).clone())
+        .unwrap_or_else(|| MAX_ALIGNMENT_TYPE.into());
 
     for (name, type_) in &new_elements[index..] {
         let element = build::variable(*name, (*type_).clone());
