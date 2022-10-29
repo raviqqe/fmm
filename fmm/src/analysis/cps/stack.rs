@@ -9,6 +9,7 @@ use std::{cell::RefCell, rc::Rc};
 const EXTEND_FUNCTION_NAME: &str = "_fmm_stack_extend";
 const ALIGN_SIZE_FUNCTION_NAME: &str = "_fmm_stack_align_size";
 const DEFAULT_STACK_SIZE: i64 = 64;
+// TODO Support 16-byte aligned data.
 const MAX_ALIGNMENT_TYPE: types::Primitive = types::Primitive::PointerInteger;
 
 thread_local! {
@@ -75,7 +76,11 @@ pub fn pop(
     let size = build::arithmetic_operation(
         ArithmeticOperator::Subtract,
         builder.load(build::record_address(stack.clone(), 1)?)?,
-        align(builder, build::size_of(type_.clone()))?,
+        align(
+            builder,
+            &build::size_of(type_.clone()),
+            &MAX_ALIGNMENT_TYPE.into(),
+        )?,
     )?;
 
     builder.store(size.clone(), build::record_address(stack.clone(), 1)?);
@@ -210,63 +215,31 @@ fn align_size(
     let pointer = build::record_address(stack.clone(), 1)?;
 
     builder.store(
-        align_v2(builder, &builder.load(pointer.clone())?, type_)?,
+        align(builder, &builder.load(pointer.clone())?, type_)?,
         pointer,
     );
 
     Ok(())
 }
 
-fn align_v2(
+fn align(
     builder: &InstructionBuilder,
     size: &TypedExpression,
     type_: &Type,
-) -> Result<TypedExpression, BuildError> {
-    let alignment = build::align_of(type_.clone());
-
-    builder.if_(
-        build::comparison_operation(
-            ComparisonOperator::Equal,
-            size.clone(),
-            Primitive::PointerInteger(0),
-        )?,
-        |builder| Ok(builder.branch(Primitive::PointerInteger(0))),
-        |builder| {
-            Ok(builder.branch(build::arithmetic_operation(
-                ArithmeticOperator::Multiply,
-                build::arithmetic_operation(
-                    ArithmeticOperator::Add,
-                    build::arithmetic_operation(
-                        ArithmeticOperator::Divide,
-                        build::arithmetic_operation(
-                            ArithmeticOperator::Subtract,
-                            size.clone(),
-                            Primitive::PointerInteger(1),
-                        )?,
-                        alignment.clone(),
-                    )?,
-                    Primitive::PointerInteger(1),
-                )?,
-                alignment.clone(),
-            )?))
-        },
-    )
-}
-
-fn align(
-    builder: &InstructionBuilder,
-    size: impl Into<TypedExpression>,
 ) -> Result<TypedExpression, BuildError> {
     builder.call(
         build::variable(
             ALIGN_SIZE_FUNCTION_NAME,
             types::Function::new(
-                vec![types::Primitive::PointerInteger.into()],
+                vec![
+                    types::Primitive::PointerInteger.into(),
+                    types::Primitive::PointerInteger.into(),
+                ],
                 types::Primitive::PointerInteger,
                 types::CallingConvention::Target,
             ),
         ),
-        vec![size.into()],
+        vec![size.clone(), build::align_of(type_.clone())],
     )
 }
 
@@ -283,7 +256,8 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
         size,
         align(
             &builder,
-            build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+            &build::variable(ELEMENT_SIZE_NAME, types::Primitive::PointerInteger),
+            &MAX_ALIGNMENT_TYPE.into(),
         )?,
     )?;
     let capacity = builder.load(build::record_address(stack.clone(), 2)?)?;
@@ -328,13 +302,13 @@ fn extend_function_definition() -> Result<FunctionDefinition, BuildError> {
     ))
 }
 
-// TODO Support 16-byte aligned data.
 fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
     const SIZE_NAME: &str = "size";
+    const ALIGNMENT_NAME: &str = "alignment";
 
     let builder = InstructionBuilder::new(Rc::new(RefCell::new(NameGenerator::new("x"))));
     let size = build::variable(SIZE_NAME, types::Primitive::PointerInteger);
-    let alignment = build::align_of(types::Primitive::PointerInteger);
+    let alignment = build::variable(ALIGNMENT_NAME, types::Primitive::PointerInteger);
 
     let value = builder.if_(
         build::comparison_operation(
@@ -366,7 +340,10 @@ fn align_size_function_definition() -> Result<FunctionDefinition, BuildError> {
 
     Ok(FunctionDefinition::new(
         ALIGN_SIZE_FUNCTION_NAME,
-        vec![Argument::new(SIZE_NAME, types::Primitive::PointerInteger)],
+        vec![
+            Argument::new(SIZE_NAME, types::Primitive::PointerInteger),
+            Argument::new(ALIGNMENT_NAME, types::Primitive::PointerInteger),
+        ],
         types::Primitive::PointerInteger,
         builder.return_(value),
         FunctionDefinitionOptions::new()
