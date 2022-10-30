@@ -22,7 +22,8 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
 
 fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
     for instruction in block.instructions_mut().iter_mut().rev() {
-        // Currently, we do not sort stack elements in if instructions as they do not use stacks on memory.
+        // Currently, we do not sort stack elements in if instructions as they do not
+        // use stacks on memory.
         if let Instruction::Call(call) = instruction {
             if call.type_().calling_convention() == types::CallingConvention::Source {
                 call.environment_mut().sort_by(|one, other| {
