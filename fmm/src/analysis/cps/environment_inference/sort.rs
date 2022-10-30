@@ -199,9 +199,84 @@ mod tests {
         );
     }
 
-    // TODO Should we respect the last order instead?
     #[test]
     fn transform_two_free_variables_preferring_first_order() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+
+        assert_eq!(
+            transform_module(Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("g", function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["y".into(), "x".into()],
+                                "a"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["x".into(), "y".into()],
+                                "b"
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("b")),
+                    ),
+                    Default::default(),
+                )],
+            )),
+            Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("g", function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["y".into(), "x".into()],
+                                "a"
+                            )
+                            .into(),
+                            create_call(
+                                function_type,
+                                Variable::new("g"),
+                                vec![],
+                                vec!["y".into(), "x".into(),],
+                                "b"
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("b")),
+                    ),
+                    Default::default(),
+                )],
+            )
+        );
+    }
+
+    #[test]
+    fn transform_calls_with_free_variable_introduced_in_middle() {
         let function_type = types::Function::new(
             vec![],
             types::Primitive::PointerInteger,
