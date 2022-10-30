@@ -43,7 +43,7 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, f64>) {
     }
 }
 
-fn collect_from_block<'a>(block: &'a Block, variables: &mut IndexMap<Rc<str>, f64>) {
+fn collect_from_block(block: &Block, variables: &mut IndexMap<Rc<str>, f64>) {
     for instruction in block.instructions() {
         match instruction {
             Instruction::Call(call) => {
