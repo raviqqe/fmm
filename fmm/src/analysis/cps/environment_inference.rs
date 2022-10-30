@@ -80,7 +80,7 @@ fn collect_from_instruction(
         }
         Instruction::Call(call) => {
             if call.type_().calling_convention() == types::CallingConvention::Source {
-                *call.environment_mut() = variables.clone();
+                *call.environment_mut() = variables.iter().cloned().collect();
             }
 
             collect_from_expression(context, call.function(), variables);
@@ -100,7 +100,7 @@ fn collect_from_instruction(
         Instruction::If(if_) => {
             // TODO Consider including if instructions' results to omit them in if
             // flattening.
-            *if_.environment_mut() = variables.clone();
+            *if_.environment_mut() = variables.iter().cloned().collect();
 
             // Optimize for branches without instructions whose environments need to be
             // inferred.
@@ -234,7 +234,6 @@ fn collect_from_expression(
 mod tests {
     use super::*;
     use crate::{analysis::validation, types};
-    use indexmap::IndexSet;
     use pretty_assertions::assert_eq;
 
     fn transform_module(mut module: Module) -> Module {
@@ -339,7 +338,7 @@ mod tests {
                                 let mut call =
                                     Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                                *call.environment_mut() = IndexSet::from_iter(["y".into()]);
+                                *call.environment_mut() = vec!["y".into()];
 
                                 call
                             }
@@ -402,7 +401,7 @@ mod tests {
                             let mut call =
                                 Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                            *call.environment_mut() = IndexSet::from_iter(["y".into()]);
+                            *call.environment_mut() = vec!["y".into()];
 
                             call
                         }
@@ -478,8 +477,7 @@ mod tests {
                             let mut call =
                                 Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                            *call.environment_mut() =
-                                IndexSet::from_iter(["v".into(), "z".into(), "y".into()]);
+                            *call.environment_mut() = vec!["v".into(), "z".into(), "y".into()];
 
                             call
                         }
@@ -605,11 +603,7 @@ mod tests {
                                                     );
 
                                                     *call.environment_mut() =
-                                                        IndexSet::from_iter([
-                                                            "r".into(),
-                                                            "q".into(),
-                                                            "p".into(),
-                                                        ]);
+                                                        vec!["r".into(), "q".into(), "p".into()];
 
                                                     call
                                                 }
@@ -629,8 +623,7 @@ mod tests {
                                         "k",
                                     );
 
-                                    *if_.environment_mut() =
-                                        IndexSet::from_iter(["r".into(), "q".into()]);
+                                    *if_.environment_mut() = vec!["r".into(), "q".into()];
 
                                     if_
                                 }
@@ -755,11 +748,7 @@ mod tests {
                                                     );
 
                                                     *call.environment_mut() =
-                                                        IndexSet::from_iter([
-                                                            "r".into(),
-                                                            "q".into(),
-                                                            "p".into(),
-                                                        ]);
+                                                        vec!["r".into(), "q".into(), "p".into()];
 
                                                     call
                                                 }
@@ -780,8 +769,7 @@ mod tests {
                                         "k",
                                     );
 
-                                    *if_.environment_mut() =
-                                        IndexSet::from_iter(["r".into(), "q".into()]);
+                                    *if_.environment_mut() = vec!["r".into(), "q".into()];
 
                                     if_
                                 }
@@ -934,11 +922,7 @@ mod tests {
                                                     );
 
                                                     *call.environment_mut() =
-                                                        IndexSet::from_iter([
-                                                            "r".into(),
-                                                            "q".into(),
-                                                            "p1".into(),
-                                                        ]);
+                                                        vec!["r".into(), "q".into(), "p1".into()];
 
                                                     call
                                                 }
@@ -966,11 +950,7 @@ mod tests {
                                                     );
 
                                                     *call.environment_mut() =
-                                                        IndexSet::from_iter([
-                                                            "r".into(),
-                                                            "q".into(),
-                                                            "p2".into(),
-                                                        ]);
+                                                        vec!["r".into(), "q".into(), "p2".into()];
 
                                                     call
                                                 }
@@ -990,8 +970,7 @@ mod tests {
                                         "k",
                                     );
 
-                                    *if_.environment_mut() =
-                                        IndexSet::from_iter(["r".into(), "q".into()]);
+                                    *if_.environment_mut() = vec!["r".into(), "q".into()];
 
                                     if_
                                 }
@@ -1104,7 +1083,7 @@ mod tests {
                                         Call::new(function_type, Variable::new("g"), vec![], "x");
 
                                     *call.environment_mut() =
-                                        IndexSet::from_iter(["r".into(), "q".into(), "p".into()]);
+                                        vec!["r".into(), "q".into(), "p".into()];
 
                                     call
                                 }
@@ -1140,7 +1119,7 @@ mod tests {
                                         "k",
                                     );
 
-                                    *if_.environment_mut() = IndexSet::from_iter(["r".into()]);
+                                    *if_.environment_mut() = vec!["r".into()];
 
                                     if_
                                 }

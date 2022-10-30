@@ -6,7 +6,6 @@ use crate::{
     types::{CallingConvention, Type},
 };
 use fnv::FnvHashMap;
-use indexmap::IndexSet;
 use std::{
     mem::{replace, take},
     ops::Deref,
@@ -80,7 +79,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
-    previous_environment: Option<&IndexSet<Rc<str>>>,
+    previous_environment: Option<&[Rc<str>]>,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -235,7 +234,7 @@ fn create_continuation(
 }
 
 fn create_continuation_environment<'a>(
-    environment: &IndexSet<Rc<str>>,
+    environment: &[Rc<str>],
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
     [CONTINUATION_ARGUMENT_NAME]
