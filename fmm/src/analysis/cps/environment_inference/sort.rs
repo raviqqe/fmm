@@ -54,11 +54,7 @@ fn collect_from_block<'a>(
                     variables.insert(
                         name.clone(),
                         variables.get(name).copied().unwrap_or(0)
-                            + if environment.contains(name) {
-                                call.environment().len() as isize - environment.len() as isize
-                            } else {
-                                1
-                            },
+                            + call.environment().len() as isize,
                     );
                 }
 
