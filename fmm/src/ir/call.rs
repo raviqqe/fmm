@@ -1,6 +1,5 @@
 use super::expression::Expression;
 use crate::types;
-use indexmap::IndexSet;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -12,7 +11,7 @@ struct CallInner {
     function: Expression,
     arguments: Vec<Expression>,
     name: String,
-    environment: IndexSet<Rc<str>>,
+    environment: Vec<Rc<str>>,
 }
 
 impl Call {
@@ -66,11 +65,11 @@ impl Call {
         &mut self.0.name
     }
 
-    pub fn environment(&self) -> &IndexSet<Rc<str>> {
+    pub fn environment(&self) -> &[Rc<str>] {
         &self.0.environment
     }
 
-    pub fn environment_mut(&mut self) -> &mut IndexSet<Rc<str>> {
+    pub fn environment_mut(&mut self) -> &mut Vec<Rc<str>> {
         &mut self.0.environment
     }
 }
