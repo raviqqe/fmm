@@ -101,7 +101,7 @@ fn transform_block(
                         local_variables,
                     );
                 } else {
-                    let environment = get_continuation_environment(&if_, local_variables);
+                    let environment = create_continuation_environment(&if_, local_variables);
                     let continuation = create_continuation(
                         context,
                         &name,
@@ -268,7 +268,7 @@ fn create_continuation(
     Variable::new(name)
 }
 
-fn get_continuation_environment<'a>(
+fn create_continuation_environment<'a>(
     if_: &If,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {

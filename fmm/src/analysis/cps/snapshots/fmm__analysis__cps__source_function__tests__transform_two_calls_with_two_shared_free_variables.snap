@@ -5,16 +5,18 @@ expression: "format::format_module(&transform_module(Module::new(vec![], vec![],
 (module
   (function f _s _k x y
     (block
-      (load (record-address _s 1) _k_1)
-      (call _fmm_stack_extend _s (size-of record) _k_2)
+      (call _fmm_stack_extend _s (size-of record) _k_1)
+      (load (record-address _s 1) _k_2)
       (load (record-address _s 0) _k_3)
-      (store (record _k) (bit-cast (pointer-address _k_3 _k_1)))
+      (store (record _k) (bit-cast (pointer-address _k_3 _k_2)))
+      (call _fmm_stack_align_size (size-of record) (align-of pointer-integer) _k_4)
+      (store (+ _k_2 _k_4) (record-address _s 1))
       (call f _s _k_e _k_0)
       (return _k_0)))
   (function _k_9 _s q
     (block
       (load (record-address _s 1) _k_a)
-      (call _fmm_stack_align_size (size-of record) _k_b)
+      (call _fmm_stack_align_size (size-of record) (align-of pointer-integer) _k_b)
       (store (- _k_a _k_b) (record-address _s 1))
       (load (record-address _s 0) _k_c)
       (load (bit-cast (pointer-address _k_c (- _k_a _k_b))) _k_d)
@@ -24,14 +26,13 @@ expression: "format::format_module(&transform_module(Module::new(vec![], vec![],
   (function _k_e _s p
     (block
       (load (record-address _s 1) _k_f)
-      (call _fmm_stack_align_size (size-of record) _k_10)
+      (call _fmm_stack_align_size (size-of record) (align-of pointer-integer) _k_10)
       (store (- _k_f _k_10) (record-address _s 1))
       (load (record-address _s 0) _k_11)
       (load (bit-cast (pointer-address _k_11 (- _k_f _k_10))) _k_12)
       (deconstruct-record _k_12 0 _k)
-      (load (record-address _s 1) _k_5)
-      (call _fmm_stack_extend _s (size-of record) _k_6)
-      (load (record-address _s 0) _k_7)
-      (store (record _k) (bit-cast (pointer-address _k_7 _k_5)))
-      (call f _s _k_9 _k_4)
-      (return _k_4))))
+      (load (record-address _s 1) _k_6)
+      (call _fmm_stack_align_size (size-of record) (align-of pointer-integer) _k_7)
+      (store (+ _k_6 _k_7) (record-address _s 1))
+      (call f _s _k_9 _k_5)
+      (return _k_5))))

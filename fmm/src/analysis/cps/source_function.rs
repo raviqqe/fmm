@@ -1,4 +1,4 @@
-use super::{context::Context as CpsContext, error::CpsError, stack};
+use super::{context::Context as CpsContext, error::CpsError, stack, utility};
 use crate::{
     analysis::{cps::continuation_type, local_variable},
     build::{self, BuildError, InstructionBuilder},
@@ -6,9 +6,11 @@ use crate::{
     types::{CallingConvention, Type},
 };
 use fnv::FnvHashMap;
+use indexmap::IndexSet;
 use std::{
     mem::{replace, take},
     ops::Deref,
+    rc::Rc,
 };
 
 const STACK_ARGUMENT_NAME: &str = "_s";
@@ -57,7 +59,7 @@ fn transform_function_definition(
         continuation_type.clone().into(),
     );
 
-    transform_block(context, definition.body_mut(), &local_variables)?;
+    transform_block(context, definition.body_mut(), None, &local_variables)?;
 
     definition
         .arguments_mut()
@@ -78,6 +80,7 @@ fn transform_function_definition(
 fn transform_block(
     context: &mut Context,
     block: &mut Block,
+    previous_environment: Option<&IndexSet<Rc<str>>>,
     local_variables: &FnvHashMap<String, Type>,
 ) -> Result<(), BuildError> {
     let mut rest_instructions = take(block.instructions_mut());
@@ -108,29 +111,55 @@ fn transform_block(
                 {
                     Variable::new(CONTINUATION_ARGUMENT_NAME).into()
                 } else {
-                    let environment = create_continuation_environment(&call, local_variables);
+                    let previous_environment = if let Some(environment) = previous_environment {
+                        create_continuation_environment(environment, local_variables)
+                    } else {
+                        vec![]
+                    };
+                    let environment =
+                        create_continuation_environment(call.environment(), local_variables);
 
                     let builder = InstructionBuilder::new(context.cps.name_generator());
-                    stack::push(
+                    stack::partial_push(
                         &builder,
                         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
-                        create_environment_record(&environment),
+                        &previous_environment,
+                        &environment,
                     )?;
                     block.instructions_mut().extend(builder.into_instructions());
 
                     let mut block = Block::new(rest_instructions, terminal_instruction);
-                    transform_block(context, &mut block, local_variables)?;
+                    transform_block(
+                        context,
+                        &mut block,
+                        Some(call.environment()),
+                        local_variables,
+                    )?;
                     create_continuation(context, &call, block, &environment)?
                 };
 
-                transform_call(&mut call, continuation, result_name);
+                call.arguments_mut()
+                    .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
+                call.arguments_mut().insert(1, continuation);
+                *call.name_mut() = result_name;
+
                 block.instructions_mut().push(call.into());
 
                 return Ok(());
             }
             Instruction::If(mut if_) => {
-                transform_block(context, if_.then_mut(), local_variables)?;
-                transform_block(context, if_.else_mut(), local_variables)?;
+                transform_block(
+                    context,
+                    if_.then_mut(),
+                    previous_environment,
+                    local_variables,
+                )?;
+                transform_block(
+                    context,
+                    if_.else_mut(),
+                    previous_environment,
+                    local_variables,
+                )?;
 
                 block.instructions_mut().push(if_.into());
             }
@@ -157,22 +186,6 @@ fn transform_block(
     Ok(())
 }
 
-fn transform_call(call: &mut Call, continuation: impl Into<Expression>, result_name: String) {
-    call.arguments_mut()
-        .insert(0, Variable::new(STACK_ARGUMENT_NAME).into());
-    call.arguments_mut().insert(1, continuation.into());
-    *call.name_mut() = result_name;
-}
-
-fn create_environment_record(environment: &[(&str, &Type)]) -> Record {
-    build::record(
-        environment
-            .iter()
-            .map(|(name, type_)| build::variable(*name, (*type_).clone()))
-            .collect(),
-    )
-}
-
 fn create_continuation(
     context: &mut Context,
     call: &Call,
@@ -182,7 +195,7 @@ fn create_continuation(
     let name = context.cps.name_generator().borrow_mut().generate();
     let builder = InstructionBuilder::new(context.cps.name_generator());
 
-    let environment_record_type = create_environment_record(environment).type_().clone();
+    let environment_record_type = utility::create_record_type(environment);
     let environment_record = stack::pop(
         &builder,
         build::variable(STACK_ARGUMENT_NAME, stack::type_()),
@@ -222,12 +235,12 @@ fn create_continuation(
 }
 
 fn create_continuation_environment<'a>(
-    call: &Call,
+    environment: &IndexSet<Rc<str>>,
     local_variables: &'a FnvHashMap<String, Type>,
 ) -> Vec<(&'a str, &'a Type)> {
     [CONTINUATION_ARGUMENT_NAME]
         .into_iter()
-        .chain(call.environment().iter().map(Deref::deref))
+        .chain(environment.iter().map(Deref::deref))
         .flat_map(|name| {
             local_variables
                 .get_key_value(name)

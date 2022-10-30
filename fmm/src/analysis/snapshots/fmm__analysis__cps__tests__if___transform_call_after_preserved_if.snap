@@ -1,6 +1,6 @@
 ---
 source: fmm/src/analysis/cps.rs
-expression: "format::format_module(&transform(&Module::new(vec![],\n                        vec![FunctionDeclaration ::\n                            new(\"f\", function_type.clone())], vec![],\n                        vec![create_function_definition(\"g\", vec! [], types ::\n                            Primitive :: Float64, Block ::\n                            new(vec!\n                            [If ::\n                            new(types :: Primitive :: Float64, Primitive ::\n                            Boolean(true), Block ::\n                            new(vec!\n                            [Load ::\n                            new(types :: Primitive :: Float64, Undefined ::\n                            new(types :: Pointer :: new(types :: Primitive :: Float64)),\n                            \"x\").into()], Branch ::\n                            new(types :: Primitive :: Float64, Variable :: new(\"x\")),),\n                            Block :: new(vec! [], TerminalInstruction :: Unreachable),\n                            \"y\",).into(), Call ::\n                            new(function_type, Variable :: new(\"f\"), vec!\n                            [Variable :: new(\"y\").into()], \"z\",).into()], Return ::\n                            new(types :: Primitive :: Float64, Variable ::\n                            new(\"z\")),),)]), void_type()).unwrap())"
+expression: "format::format_module(&transform_module(Module::new(vec![],\n                vec![FunctionDeclaration :: new(\"f\", function_type.clone())],\n                vec![],\n                vec![create_function_definition(\"g\", vec! [], types ::\n                    Primitive :: Float64, Block ::\n                    new(vec!\n                    [If ::\n                    new(types :: Primitive :: Float64, Primitive ::\n                    Boolean(true), Block ::\n                    new(vec!\n                    [Load ::\n                    new(types :: Primitive :: Float64, Undefined ::\n                    new(types :: Pointer :: new(types :: Primitive :: Float64)),\n                    \"x\").into()], Branch ::\n                    new(types :: Primitive :: Float64, Variable :: new(\"x\")),),\n                    Block :: new(vec! [], TerminalInstruction :: Unreachable),\n                    \"y\",).into(), Call ::\n                    new(function_type, Variable :: new(\"f\"), vec!\n                    [Variable :: new(\"y\").into()], \"z\",).into()], Return ::\n                    new(types :: Primitive :: Float64, Variable ::\n                    new(\"z\")),),)])))"
 ---
 (module
   (function g _s _k
@@ -17,7 +17,7 @@ expression: "format::format_module(&transform(&Module::new(vec![],\n            
   (function _fmm_stack_extend s e
     (block
       (load (record-address s 1) x0)
-      (call _fmm_stack_align_size e x1)
+      (call _fmm_stack_align_size e (align-of pointer-integer) x1)
       (load (record-address s 2) x2)
       (if (> (+ x0 x1) x2)
         (block
@@ -29,14 +29,13 @@ expression: "format::format_module(&transform(&Module::new(vec![],\n            
         (block
           (branch (record)))
         x5)
-      (store (+ x0 x1) (record-address s 1))
       (return (record))))
-  (function _fmm_stack_align_size size
+  (function _fmm_stack_align_size size alignment
     (block
       (if (== size 0)
         (block
           (branch 0))
         (block
-          (branch (* (+ (/ (- size 1) (align-of pointer-integer)) 1) (align-of pointer-integer))))
+          (branch (* (+ (/ (- size 1) alignment) 1) alignment)))
         x0)
       (return x0))))
