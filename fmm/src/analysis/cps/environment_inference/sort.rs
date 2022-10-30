@@ -387,7 +387,7 @@ mod tests {
                                     )
                                     .into(),
                                     create_call(
-                                        function_type.clone(),
+                                        function_type,
                                         Variable::new("g"),
                                         vec![],
                                         vec!["y".into(), "x".into()],
