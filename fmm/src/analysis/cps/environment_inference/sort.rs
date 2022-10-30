@@ -48,6 +48,7 @@ fn collect_from_block(block: &Block, variables: &mut IndexMap<Rc<str>, f64>) {
         match instruction {
             Instruction::Call(call) => {
                 for name in call.environment() {
+                    // TODO Is this the best weight strategy?
                     variables.insert(
                         name.clone(),
                         variables.get(name).copied().unwrap_or(0.0)
@@ -362,7 +363,7 @@ mod tests {
                                 function_type.clone(),
                                 Variable::new("g"),
                                 vec![],
-                                // TODO Is there better any weighting algorithm?
+                                // TODO Is this the better order?
                                 vec!["v".into(), "x".into(), "z".into(), "y".into()],
                                 "b"
                             )
