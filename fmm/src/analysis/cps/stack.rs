@@ -408,3 +408,142 @@ fn align_function_definition() -> Result<FunctionDefinition, BuildError> {
             .set_linkage(Linkage::Internal),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analysis::format;
+
+    mod partial_push {
+        use super::*;
+
+        #[test]
+        fn push_nothing() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(&builder, Undefined::new(type_()), &[], &[]).unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn push_one() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[],
+                &[("x", &types::Primitive::PointerInteger.into())],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn push_two() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[],
+                &[
+                    ("x", &types::Primitive::PointerInteger.into()),
+                    ("y", &types::Primitive::PointerInteger.into()),
+                ],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn pop_one() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[("x", &types::Primitive::PointerInteger.into())],
+                &[],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn pop_two() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[
+                    ("x", &types::Primitive::PointerInteger.into()),
+                    ("y", &types::Primitive::PointerInteger.into()),
+                ],
+                &[],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn keep_one() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[("x", &types::Primitive::PointerInteger.into())],
+                &[("x", &types::Primitive::PointerInteger.into())],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn keep_one_and_push_one() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[("x", &types::Primitive::PointerInteger.into())],
+                &[
+                    ("x", &types::Primitive::PointerInteger.into()),
+                    ("y", &types::Primitive::PointerInteger.into()),
+                ],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+    }
+}
