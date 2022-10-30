@@ -298,7 +298,7 @@ mod tests {
                                 function_type.clone(),
                                 Variable::new("g"),
                                 vec![],
-                                vec!["y".into(), "x".into()],
+                                vec!["v".into(), "x".into(), "y".into()],
                                 "a"
                             )
                             .into(),
@@ -306,12 +306,36 @@ mod tests {
                                 function_type.clone(),
                                 Variable::new("g"),
                                 vec![],
-                                vec!["x".into(), "y".into()],
+                                vec!["z".into(), "v".into(), "x".into(), "y".into()],
                                 "b"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["z".into(), "v".into(), "x".into()],
+                                "c"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["z".into(), "v".into()],
+                                "d"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["z".into()],
+                                "e"
                             )
                             .into()
                         ],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("b")),
+                        Return::new(types::Primitive::PointerInteger, Variable::new("e")),
                     ),
                     Default::default(),
                 )],
@@ -330,20 +354,45 @@ mod tests {
                                 function_type.clone(),
                                 Variable::new("g"),
                                 vec![],
-                                vec!["y".into(), "x".into()],
+                                vec!["v".into(), "x".into(), "y".into()],
                                 "a"
                             )
                             .into(),
                             create_call(
-                                function_type,
+                                function_type.clone(),
                                 Variable::new("g"),
                                 vec![],
-                                vec!["y".into(), "x".into(),],
+                                // TODO Is there better any weighting algorithm?
+                                vec!["v".into(), "x".into(), "z".into(), "y".into()],
                                 "b"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["v".into(), "x".into(), "z".into()],
+                                "c"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["v".into(), "z".into()],
+                                "d"
+                            )
+                            .into(),
+                            create_call(
+                                function_type.clone(),
+                                Variable::new("g"),
+                                vec![],
+                                vec!["z".into()],
+                                "e"
                             )
                             .into()
                         ],
-                        Return::new(types::Primitive::PointerInteger, Variable::new("b")),
+                        Return::new(types::Primitive::PointerInteger, Variable::new("e")),
                     ),
                     Default::default(),
                 )],
