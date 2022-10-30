@@ -506,5 +506,44 @@ mod tests {
                 TerminalInstruction::Unreachable
             )));
         }
+
+        #[test]
+        fn keep_one() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[("x", &types::Primitive::PointerInteger.into())],
+                &[("x", &types::Primitive::PointerInteger.into())],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
+
+        #[test]
+        fn keep_one_and_push_one() {
+            let builder = InstructionBuilder::new(Rc::new(NameGenerator::new("x").into()));
+
+            partial_push(
+                &builder,
+                Undefined::new(type_()),
+                &[("x", &types::Primitive::PointerInteger.into())],
+                &[
+                    ("x", &types::Primitive::PointerInteger.into()),
+                    ("y", &types::Primitive::PointerInteger.into()),
+                ],
+            )
+            .unwrap();
+
+            insta::assert_snapshot!(format::format_block(&Block::new(
+                builder.into_instructions(),
+                TerminalInstruction::Unreachable
+            )));
+        }
     }
 }
