@@ -46,7 +46,10 @@ fn collect_from_block(block: &Block, variables: &mut IndexMap<Rc<str>, usize>) {
         match instruction {
             Instruction::Call(call) => {
                 for name in call.environment() {
-                    variables.insert(name.clone(), variables.get(name).copied().unwrap_or(0) + 1);
+                    variables.insert(
+                        name.clone(),
+                        variables.get(name).copied().unwrap_or(0) + call.environment().len(),
+                    );
                 }
             }
             Instruction::If(if_) => {
