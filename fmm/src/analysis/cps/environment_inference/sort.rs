@@ -15,7 +15,7 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
 
     let mut variables = Default::default();
 
-    collect_from_block(definition.body(), &[], &mut variables);
+    collect_from_block(definition.body(), &mut variables);
 
     transform_block(definition.body_mut(), &variables);
 }
@@ -32,7 +32,6 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, f64>) {
                             .partial_cmp(&variable_order(other, variables))
                             .unwrap_or(Ordering::Equal)
                     });
-                    dbg!(call.environment());
                 }
             }
             Instruction::If(if_) => {
@@ -44,11 +43,7 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, f64>) {
     }
 }
 
-fn collect_from_block<'a>(
-    block: &'a Block,
-    mut environment: &'a [Rc<str>],
-    variables: &mut IndexMap<Rc<str>, f64>,
-) {
+fn collect_from_block<'a>(block: &'a Block, variables: &mut IndexMap<Rc<str>, f64>) {
     for instruction in block.instructions() {
         match instruction {
             Instruction::Call(call) => {
@@ -60,12 +55,10 @@ fn collect_from_block<'a>(
                                 .powi(call.environment().len() as i32),
                     );
                 }
-
-                environment = call.environment();
             }
             Instruction::If(if_) => {
-                collect_from_block(if_.then(), environment, variables);
-                collect_from_block(if_.else_(), environment, variables);
+                collect_from_block(if_.then(), variables);
+                collect_from_block(if_.else_(), variables);
             }
             _ => {}
         }
