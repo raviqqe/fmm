@@ -1,3 +1,5 @@
+mod sort;
+
 use crate::{ir::*, types};
 use fnv::FnvHashSet;
 use indexmap::IndexSet;
@@ -38,6 +40,8 @@ pub fn transform(module: &mut Module) {
     for definition in module.function_definitions_mut() {
         transform_function_definition(&context, definition);
     }
+
+    sort::transform(module);
 }
 
 fn transform_function_definition(context: &Context, definition: &mut FunctionDefinition) {
