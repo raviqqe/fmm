@@ -17,6 +17,7 @@
     "llvmc",
     "malloc",
     "petgraph",
+    "powi",
     "realloc",
     "reloc",
     "stdalign",
