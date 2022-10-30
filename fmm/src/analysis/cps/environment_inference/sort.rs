@@ -1,6 +1,6 @@
 use crate::{ir::*, types};
 use indexmap::IndexMap;
-use std::rc::Rc;
+use std::{cmp::Ordering, rc::Rc};
 
 pub fn transform(module: &mut Module) {
     for definition in module.function_definitions_mut() {
@@ -20,7 +20,7 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
     transform_block(definition.body_mut(), &variables);
 }
 
-fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
+fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, f64>) {
     for instruction in block.instructions_mut().iter_mut().rev() {
         // Currently, we do not sort stack elements in if instructions as they do not
         // use stacks on memory.
@@ -28,7 +28,9 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
             Instruction::Call(call) => {
                 if call.type_().calling_convention() == types::CallingConvention::Source {
                     call.environment_mut().sort_by(|one, other| {
-                        variable_order(one, variables).cmp(&variable_order(other, variables))
+                        variable_order(one, variables)
+                            .partial_cmp(&variable_order(other, variables))
+                            .unwrap_or(Ordering::Equal)
                     });
                     dbg!(call.environment());
                 }
@@ -45,7 +47,7 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
 fn collect_from_block<'a>(
     block: &'a Block,
     mut environment: &'a [Rc<str>],
-    variables: &mut IndexMap<Rc<str>, usize>,
+    variables: &mut IndexMap<Rc<str>, f64>,
 ) {
     for instruction in block.instructions() {
         match instruction {
@@ -53,8 +55,9 @@ fn collect_from_block<'a>(
                 for name in call.environment() {
                     variables.insert(
                         name.clone(),
-                        variables.get(name).copied().unwrap_or(0)
-                            + call.environment().len() * call.environment().len(),
+                        variables.get(name).copied().unwrap_or(0.0)
+                            + (call.environment().len() as f64)
+                                .powi(call.environment().len() as i32),
                     );
                 }
 
@@ -69,9 +72,9 @@ fn collect_from_block<'a>(
     }
 }
 
-fn variable_order(name: &str, variables: &IndexMap<Rc<str>, usize>) -> (usize, usize) {
+fn variable_order(name: &str, variables: &IndexMap<Rc<str>, f64>) -> (f64, usize) {
     (
-        usize::MAX - variables[name],
+        f64::MAX - variables[name],
         variables.get_index_of(name).unwrap(),
     )
 }
