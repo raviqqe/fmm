@@ -1,0 +1,32 @@
+---
+source: fmm/src/analysis/cps/stack.rs
+expression: "format::format_block(&Block::new(builder.into_instructions(),\n            TerminalInstruction::Unreachable))"
+---
+(block
+  (call _fmm_stack_extend undefined (size-of record) x0)
+  (load (record-address undefined 1) x1)
+  (store (+ x1 (size-of record)) (record-address undefined 1))
+  (if (> (align-of pointer-integer) (align-of pointer-integer))
+    (block
+      (load (record-address undefined 1) x2)
+      (call _fmm_stack_align_size x2 (align-of pointer-integer) x3)
+      (store x3 (record-address undefined 1))
+      (branch (record)))
+    (block
+      (branch (record)))
+    x4)
+  (load (record-address undefined 1) x5)
+  (load (record-address undefined 0) x6)
+  (store y (bit-cast (pointer-address x6 x5)))
+  (load (record-address undefined 1) x7)
+  (store (+ x7 (size-of pointer-integer)) (record-address undefined 1))
+  (if (> (align-of pointer-integer) (align-of pointer-integer))
+    (block
+      (load (record-address undefined 1) x8)
+      (call _fmm_stack_align_size x8 (align-of pointer-integer) x9)
+      (store x9 (record-address undefined 1))
+      (branch (record)))
+    (block
+      (branch (record)))
+    xa)
+  (unreachable))
