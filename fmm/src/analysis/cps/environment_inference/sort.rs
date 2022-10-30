@@ -15,7 +15,7 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
 
     let mut variables = Default::default();
 
-    collect_from_block(definition.body(), &mut variables);
+    collect_from_block(definition.body(), &[], &mut variables);
 
     transform_block(definition.body_mut(), &variables);
 }
@@ -42,20 +42,31 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
     }
 }
 
-fn collect_from_block(block: &Block, variables: &mut IndexMap<Rc<str>, usize>) {
+fn collect_from_block<'a>(
+    block: &'a Block,
+    mut environment: &'a [Rc<str>],
+    variables: &mut IndexMap<Rc<str>, usize>,
+) {
     for instruction in block.instructions() {
         match instruction {
             Instruction::Call(call) => {
                 for name in call.environment() {
                     variables.insert(
                         name.clone(),
-                        variables.get(name).copied().unwrap_or(0) + call.environment().len(),
+                        variables.get(name).copied().unwrap_or(0)
+                            + if environment.contains(name) {
+                                call.environment().len()
+                            } else {
+                                1
+                            },
                     );
                 }
+
+                environment = call.environment();
             }
             Instruction::If(if_) => {
-                collect_from_block(if_.then(), variables);
-                collect_from_block(if_.else_(), variables);
+                collect_from_block(if_.then(), environment, variables);
+                collect_from_block(if_.else_(), environment, variables);
             }
             _ => {}
         }
