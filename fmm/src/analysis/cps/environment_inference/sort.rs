@@ -26,7 +26,7 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
         if let Instruction::Call(call) = instruction {
             if call.type_().calling_convention() == types::CallingConvention::Source {
                 call.environment_mut().sort_by(|one, other| {
-                    variable_order(&one, variables).cmp(&variable_order(&other, variables))
+                    variable_order(one, variables).cmp(&variable_order(other, variables))
                 });
             }
         }
@@ -164,7 +164,7 @@ mod tests {
                             )
                             .into(),
                             create_call(
-                                function_type.clone(),
+                                function_type,
                                 Variable::new("g"),
                                 vec![],
                                 vec!["y".into(), "x".into(),],
@@ -241,7 +241,7 @@ mod tests {
                             )
                             .into(),
                             create_call(
-                                function_type.clone(),
+                                function_type,
                                 Variable::new("g"),
                                 vec![],
                                 vec!["y".into(), "x".into(),],
