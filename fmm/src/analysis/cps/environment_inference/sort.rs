@@ -73,10 +73,7 @@ fn collect_from_block<'a>(
 }
 
 fn variable_order(name: &str, variables: &IndexMap<Rc<str>, f64>) -> (f64, usize) {
-    (
-        f64::MAX - variables[name],
-        variables.get_index_of(name).unwrap(),
-    )
+    (-variables[name], variables.get_index_of(name).unwrap())
 }
 
 #[cfg(test)]
