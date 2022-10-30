@@ -20,7 +20,7 @@ fn transform_function_definition(definition: &mut FunctionDefinition) {
     transform_block(definition.body_mut(), &variables);
 }
 
-fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, isize>) {
+fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, usize>) {
     for instruction in block.instructions_mut().iter_mut().rev() {
         // Currently, we do not sort stack elements in if instructions as they do not
         // use stacks on memory.
@@ -45,7 +45,7 @@ fn transform_block(block: &mut Block, variables: &IndexMap<Rc<str>, isize>) {
 fn collect_from_block<'a>(
     block: &'a Block,
     mut environment: &'a [Rc<str>],
-    variables: &mut IndexMap<Rc<str>, isize>,
+    variables: &mut IndexMap<Rc<str>, usize>,
 ) {
     for instruction in block.instructions() {
         match instruction {
@@ -54,7 +54,7 @@ fn collect_from_block<'a>(
                     variables.insert(
                         name.clone(),
                         variables.get(name).copied().unwrap_or(0)
-                            + call.environment().len() as isize,
+                            + call.environment().len() * call.environment().len(),
                     );
                 }
 
@@ -69,8 +69,11 @@ fn collect_from_block<'a>(
     }
 }
 
-fn variable_order(name: &str, variables: &IndexMap<Rc<str>, isize>) -> (isize, usize) {
-    (0 - variables[name], variables.get_index_of(name).unwrap())
+fn variable_order(name: &str, variables: &IndexMap<Rc<str>, usize>) -> (usize, usize) {
+    (
+        usize::MAX - variables[name],
+        variables.get_index_of(name).unwrap(),
+    )
 }
 
 #[cfg(test)]
