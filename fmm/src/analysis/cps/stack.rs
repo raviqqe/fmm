@@ -119,19 +119,6 @@ pub fn partial_push(
 
         return Ok(());
     }
-    dbg!(
-        index,
-        old_elements.len(),
-        new_elements.len(),
-        old_elements
-            .iter()
-            .map(|(name, _)| name)
-            .collect::<Vec<_>>(),
-        new_elements
-            .iter()
-            .map(|(name, _)| name)
-            .collect::<Vec<_>>()
-    );
 
     extend(
         builder,
