@@ -13,7 +13,7 @@ impl ArgumentOptions {
     }
 
     pub fn set_alias(self, alias: bool) -> Self {
-        Self { alias, ..self }
+        Self { alias }
     }
 }
 

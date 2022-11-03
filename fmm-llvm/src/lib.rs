@@ -11,7 +11,6 @@ use context::Context;
 pub use error::CompileError;
 use fmm::ir::*;
 use fnv::FnvHashMap;
-use inkwell::values::BasicValue;
 pub use instruction_configuration::InstructionConfiguration;
 use instruction_configuration::InstructionFunctionSet;
 
