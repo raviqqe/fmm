@@ -271,6 +271,19 @@ fn compile_function_definition<'c, 'a>(
     instruction_function_set: &InstructionFunctionSet<'c>,
 ) -> Result<(), CompileError> {
     let function = module.get_function(definition.name()).unwrap();
+
+    for (index, argument) in definition.arguments().iter().enumerate() {
+        if !argument.options().alias() {
+            function.add_attribute(
+                inkwell::attributes::AttributeLoc::Param(index as u32),
+                context.inkwell().create_enum_attribute(
+                    inkwell::attributes::Attribute::get_named_enum_kind_id("noalias"),
+                    0,
+                ),
+            );
+        }
+    }
+
     let builder = context.inkwell().create_builder();
 
     builder.position_at_end(context.inkwell().append_basic_block(function, "entry"));
@@ -883,6 +896,26 @@ mod tests {
                         ),
                     ),
                     FunctionDefinitionOptions::new().set_address_named(false),
+                )],
+            ));
+        }
+
+        #[test]
+        fn compile_no_alias_argument() {
+            compile_module(Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "x",
+                    vec![Argument::with_options(
+                        "x",
+                        types::Pointer::new(types::Primitive::PointerInteger),
+                        ArgumentOptions::new().set_alias(false),
+                    )],
+                    types::Primitive::PointerInteger,
+                    Block::new(vec![], TerminalInstruction::Unreachable),
+                    Default::default(),
                 )],
             ));
         }

@@ -60,9 +60,7 @@ fn transform_function_definition(
 
     transform_block(context, definition.body_mut(), None, &local_variables)?;
 
-    definition
-        .arguments_mut()
-        .insert(0, Argument::new(STACK_ARGUMENT_NAME, stack::type_()));
+    definition.arguments_mut().insert(0, stack_argument());
     definition.arguments_mut().insert(
         1,
         Argument::new(CONTINUATION_ARGUMENT_NAME, continuation_type),
@@ -219,7 +217,7 @@ fn create_continuation(
     context.function_definitions.push(FunctionDefinition::new(
         &name,
         vec![
-            Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+            stack_argument(),
             Argument::new(call.name(), call.type_().result().clone()),
         ],
         context.cps.result_type().clone(),
@@ -246,6 +244,14 @@ fn create_continuation_environment<'a>(
                 .map(|(name, type_)| (name.as_str(), type_))
         })
         .collect()
+}
+
+fn stack_argument() -> Argument {
+    Argument::with_options(
+        STACK_ARGUMENT_NAME,
+        stack::type_(),
+        ArgumentOptions::new().set_alias(false),
+    )
 }
 
 #[cfg(test)]
@@ -290,7 +296,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![
-                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+                        stack_argument(),
                         Argument::new(
                             CONTINUATION_ARGUMENT_NAME,
                             continuation_type::compile(
@@ -340,7 +346,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![
-                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+                        stack_argument(),
                         Argument::new(
                             CONTINUATION_ARGUMENT_NAME,
                             continuation_type::compile(
@@ -403,7 +409,7 @@ mod tests {
                 vec![FunctionDefinition::new(
                     "f",
                     vec![
-                        Argument::new(STACK_ARGUMENT_NAME, stack::type_()),
+                        stack_argument(),
                         Argument::new(
                             CONTINUATION_ARGUMENT_NAME,
                             continuation_type::compile(
