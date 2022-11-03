@@ -213,6 +213,7 @@ fn compile_function_definition(
     global_variables: &FnvHashSet<String>,
     type_ids: &FnvHashMap<fmm::types::Type, String>,
 ) -> String {
+    // TODO Support argument options.
     compile_linkage(definition.options().linkage()).to_owned()
         + &type_::compile_name(
             definition.result_type(),
