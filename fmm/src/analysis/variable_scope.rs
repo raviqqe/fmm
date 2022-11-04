@@ -8,7 +8,7 @@ use crate::{
 pub use error::*;
 use fnv::FnvHashMap;
 
-pub fn check(module: &Module) -> Result<(), TypeCheckError> {
+pub fn check(module: &Module) -> Result<(), VariableScopeError> {
     check_variable_declarations(module)?;
     check_function_declarations(module)?;
 
@@ -52,7 +52,7 @@ pub fn check(module: &Module) -> Result<(), TypeCheckError> {
     Ok(())
 }
 
-fn check_variable_declarations(module: &Module) -> Result<(), TypeCheckError> {
+fn check_variable_declarations(module: &Module) -> Result<(), VariableScopeError> {
     let variables = module
         .variable_declarations()
         .iter()
@@ -68,7 +68,7 @@ fn check_variable_declarations(module: &Module) -> Result<(), TypeCheckError> {
     Ok(())
 }
 
-fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
+fn check_function_declarations(module: &Module) -> Result<(), VariableScopeError> {
     let functions = module
         .function_declarations()
         .iter()
@@ -87,7 +87,7 @@ fn check_function_declarations(module: &Module) -> Result<(), TypeCheckError> {
 fn check_variable_definition(
     definition: &VariableDefinition,
     variables: &FnvHashMap<&str, Type>,
-) -> Result<(), TypeCheckError> {
+) -> Result<(), VariableScopeError> {
     check_equality(
         &check_expression(definition.body(), variables)?,
         definition.type_(),
@@ -97,7 +97,7 @@ fn check_variable_definition(
 fn check_function_definition<'a>(
     definition: &'a FunctionDefinition,
     variables: &mut FnvHashMap<&'a str, Type>,
-) -> Result<(), TypeCheckError> {
+) -> Result<(), VariableScopeError> {
     let local_variables = local_variable::collect(definition);
 
     variables.extend(local_variables.clone());
@@ -116,7 +116,7 @@ fn check_block(
     return_type: &Type,
     branch_type: Option<&Type>,
     variables: &FnvHashMap<&str, Type>,
-) -> Result<(), TypeCheckError> {
+) -> Result<(), VariableScopeError> {
     for instruction in block.instructions() {
         match instruction {
             Instruction::AllocateHeap(allocate) => {
@@ -154,7 +154,7 @@ fn check_block(
             }
             Instruction::Call(call) => {
                 if call.arguments().len() != call.type_().arguments().len() {
-                    return Err(TypeCheckError::FunctionArguments(call.clone()));
+                    return Err(VariableScopeError::FunctionArguments(call.clone()));
                 }
 
                 check_equality(
@@ -257,7 +257,7 @@ fn check_block(
     match block.terminal_instruction() {
         TerminalInstruction::Branch(branch) => {
             let branch_type =
-                branch_type.ok_or_else(|| TypeCheckError::InvalidBranch(branch.clone()))?;
+                branch_type.ok_or_else(|| VariableScopeError::InvalidBranch(branch.clone()))?;
 
             check_equality(branch.type_(), branch_type)?;
             check_equality(
@@ -281,7 +281,7 @@ fn check_block(
 fn check_expression(
     expression: &Expression,
     variables: &FnvHashMap<&str, Type>,
-) -> Result<Type, TypeCheckError> {
+) -> Result<Type, VariableScopeError> {
     Ok(match expression {
         Expression::AlignOf(_) => AlignOf::RESULT_TYPE.into(),
         Expression::ArithmeticOperation(operation) => {
@@ -352,7 +352,7 @@ fn check_expression(
         Expression::Primitive(primitive) => primitive.type_().into(),
         Expression::Record(record) => {
             if record.fields().len() != record.type_().fields().len() {
-                return Err(TypeCheckError::RecordFields(record.clone()));
+                return Err(VariableScopeError::RecordFields(record.clone()));
             }
 
             for (field, type_) in record.fields().iter().zip(record.type_().fields()) {
@@ -380,7 +380,7 @@ fn check_expression(
                     .type_()
                     .members()
                     .get(union.member_index())
-                    .ok_or(TypeCheckError::IndexOutOfRange)?,
+                    .ok_or(VariableScopeError::IndexOutOfRange)?,
             )?;
 
             union.type_().clone().into()
@@ -398,31 +398,34 @@ fn check_expression(
         Expression::Variable(variable) => variables
             .get(variable.name())
             .cloned()
-            .ok_or_else(|| TypeCheckError::VariableNotFound(variable.clone()))?,
+            .ok_or_else(|| VariableScopeError::VariableNotFound(variable.clone()))?,
     })
 }
 
-fn check_record_index(index: usize, type_: &types::Record) -> Result<(), TypeCheckError> {
+fn check_record_index(index: usize, type_: &types::Record) -> Result<(), VariableScopeError> {
     if index < type_.fields().len() {
         Ok(())
     } else {
-        Err(TypeCheckError::IndexOutOfRange)
+        Err(VariableScopeError::IndexOutOfRange)
     }
 }
 
-fn check_union_index(index: usize, type_: &types::Union) -> Result<(), TypeCheckError> {
+fn check_union_index(index: usize, type_: &types::Union) -> Result<(), VariableScopeError> {
     if index < type_.members().len() {
         Ok(())
     } else {
-        Err(TypeCheckError::IndexOutOfRange)
+        Err(VariableScopeError::IndexOutOfRange)
     }
 }
 
-fn check_equality(one: &Type, other: &Type) -> Result<(), TypeCheckError> {
+fn check_equality(one: &Type, other: &Type) -> Result<(), VariableScopeError> {
     if one == other {
         Ok(())
     } else {
-        Err(TypeCheckError::TypesNotMatched(one.clone(), other.clone()))
+        Err(VariableScopeError::TypesNotMatched(
+            one.clone(),
+            other.clone(),
+        ))
     }
 }
 
@@ -445,12 +448,12 @@ mod tests {
     }
 
     #[test]
-    fn check_empty_module() -> Result<(), TypeCheckError> {
+    fn check_empty_module() -> Result<(), VariableScopeError> {
         check(&Module::new(vec![], vec![], vec![], vec![]))
     }
 
     #[test]
-    fn check_variable_declaration() -> Result<(), TypeCheckError> {
+    fn check_variable_declaration() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![VariableDeclaration::new(
                 "x",
@@ -479,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn check_variable_definition() -> Result<(), TypeCheckError> {
+    fn check_variable_definition() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -510,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn check_function_declaration() -> Result<(), TypeCheckError> {
+    fn check_function_declaration() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![FunctionDeclaration::new(
@@ -543,7 +546,7 @@ mod tests {
     }
 
     #[test]
-    fn check_return() -> Result<(), TypeCheckError> {
+    fn check_return() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -564,7 +567,7 @@ mod tests {
     }
 
     #[test]
-    fn check_allocate_heap() -> Result<(), TypeCheckError> {
+    fn check_allocate_heap() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -582,7 +585,7 @@ mod tests {
     }
 
     #[test]
-    fn check_reallocate_heap() -> Result<(), TypeCheckError> {
+    fn check_reallocate_heap() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -605,7 +608,7 @@ mod tests {
     }
 
     #[test]
-    fn check_allocate_stack() -> Result<(), TypeCheckError> {
+    fn check_allocate_stack() -> Result<(), VariableScopeError> {
         let pointer_type = types::Pointer::new(types::Primitive::Float64);
 
         check(&Module::new(
@@ -625,7 +628,7 @@ mod tests {
     }
 
     #[test]
-    fn check_call() -> Result<(), TypeCheckError> {
+    fn check_call() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -687,7 +690,7 @@ mod tests {
     }
 
     #[test]
-    fn check_if() -> Result<(), TypeCheckError> {
+    fn check_if() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -718,7 +721,7 @@ mod tests {
     }
 
     #[test]
-    fn check_load() -> Result<(), TypeCheckError> {
+    fn check_load() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -741,7 +744,7 @@ mod tests {
     }
 
     #[test]
-    fn check_memory_copy() -> Result<(), TypeCheckError> {
+    fn check_memory_copy() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -767,7 +770,7 @@ mod tests {
     }
 
     #[test]
-    fn check_store() -> Result<(), TypeCheckError> {
+    fn check_store() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -796,7 +799,7 @@ mod tests {
     }
 
     #[test]
-    fn check_atomic_load() -> Result<(), TypeCheckError> {
+    fn check_atomic_load() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -823,7 +826,7 @@ mod tests {
     }
 
     #[test]
-    fn check_atomic_store() -> Result<(), TypeCheckError> {
+    fn check_atomic_store() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -853,7 +856,7 @@ mod tests {
     }
 
     #[test]
-    fn check_pointer_address() -> Result<(), TypeCheckError> {
+    fn check_pointer_address() -> Result<(), VariableScopeError> {
         let pointer_type = types::Pointer::new(types::Primitive::PointerInteger);
 
         check(&Module::new(
@@ -880,7 +883,7 @@ mod tests {
     }
 
     #[test]
-    fn check_record_address() -> Result<(), TypeCheckError> {
+    fn check_record_address() -> Result<(), VariableScopeError> {
         let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
 
         check(&Module::new(
@@ -903,7 +906,7 @@ mod tests {
     }
 
     #[test]
-    fn check_union_address() -> Result<(), TypeCheckError> {
+    fn check_union_address() -> Result<(), VariableScopeError> {
         let union_type = types::Union::new(vec![types::Primitive::PointerInteger.into()]);
 
         check(&Module::new(
@@ -926,7 +929,7 @@ mod tests {
     }
 
     #[test]
-    fn check_align_of() -> Result<(), TypeCheckError> {
+    fn check_align_of() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -941,7 +944,7 @@ mod tests {
     }
 
     #[test]
-    fn check_size_of() -> Result<(), TypeCheckError> {
+    fn check_size_of() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -956,7 +959,7 @@ mod tests {
     }
 
     #[test]
-    fn check_bit_cast() -> Result<(), TypeCheckError> {
+    fn check_bit_cast() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -975,7 +978,7 @@ mod tests {
     }
 
     #[test]
-    fn check_atomic_operation() -> Result<(), TypeCheckError> {
+    fn check_atomic_operation() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -1004,7 +1007,7 @@ mod tests {
     }
 
     #[test]
-    fn check_free_heap() -> Result<(), TypeCheckError> {
+    fn check_free_heap() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -1025,7 +1028,7 @@ mod tests {
     }
 
     #[test]
-    fn check_bitwise_operation() -> Result<(), TypeCheckError> {
+    fn check_bitwise_operation() -> Result<(), VariableScopeError> {
         check(&Module::new(
             vec![],
             vec![],
@@ -1067,7 +1070,7 @@ mod tests {
                 )],
                 vec![],
             )),
-            Err(TypeCheckError::TypesNotMatched(..))
+            Err(VariableScopeError::TypesNotMatched(..))
         ));
     }
 
@@ -1092,7 +1095,7 @@ mod tests {
                     Block::new(vec![], TerminalInstruction::Unreachable),
                 )],
             )),
-            Err(TypeCheckError::TypesNotMatched(..))
+            Err(VariableScopeError::TypesNotMatched(..))
         ));
     }
 }
