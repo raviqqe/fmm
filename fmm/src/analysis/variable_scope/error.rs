@@ -1,10 +1,10 @@
-use crate::{ir::*, types::Type};
+use crate::ir::*;
 use std::{
     error::Error,
     fmt::{self, Display, Formatter},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum VariableScopeError {
     VariableNotFound(Variable),
 }
