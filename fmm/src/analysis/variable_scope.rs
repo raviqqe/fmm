@@ -329,4 +329,166 @@ mod tests {
             Ok(())
         );
     }
+
+    #[test]
+    fn check_instruction() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new(
+                        "x",
+                        types::Pointer::new(types::Primitive::PointerInteger)
+                    )],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                                .into()
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_instruction_in_block() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new(
+                        "x",
+                        types::Pointer::new(types::Primitive::PointerInteger)
+                    )],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("x"),
+                                    "y"
+                                )
+                                .into()],
+                                Branch::new(types::Primitive::PointerInteger, Variable::new("y")),
+                            ),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "z"
+                        )
+                        .into()],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("z")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_instruction_in_parent_block() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![Argument::new(
+                        "x",
+                        types::Pointer::new(types::Primitive::PointerInteger)
+                    )],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                                .into(),
+                            If::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("y")
+                                    ),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "z"
+                            )
+                            .into()
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("z")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_previous_instruction() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            AllocateStack::new(types::Primitive::PointerInteger, "x").into(),
+                            Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                                .into(),
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_next_instruction() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Primitive::PointerInteger,
+                    Block::new(
+                        vec![
+                            Load::new(types::Primitive::PointerInteger, Variable::new("x"), "y")
+                                .into(),
+                            AllocateStack::new(types::Primitive::PointerInteger, "x").into(),
+                        ],
+                        Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Err(VariableScopeError::VariableNotFound(Variable::new("x")))
+        );
+    }
 }
