@@ -10,3 +10,4 @@ pub mod type_collection;
 pub mod type_conversion;
 pub mod type_size;
 pub mod validation;
+pub mod variable_scope;

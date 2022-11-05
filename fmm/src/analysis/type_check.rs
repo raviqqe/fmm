@@ -113,7 +113,7 @@ fn check_function_definition<'a>(
 
 fn check_block(
     block: &Block,
-    return_type: &Type,
+    result_type: &Type,
     branch_type: Option<&Type>,
     variables: &FnvHashMap<&str, Type>,
 ) -> Result<(), TypeCheckError> {
@@ -211,8 +211,8 @@ fn check_block(
                     &types::Primitive::Boolean.into(),
                 )?;
 
-                check_block(if_.then(), return_type, Some(if_.type_()), variables)?;
-                check_block(if_.else_(), return_type, Some(if_.type_()), variables)?;
+                check_block(if_.then(), result_type, Some(if_.type_()), variables)?;
+                check_block(if_.else_(), result_type, Some(if_.type_()), variables)?;
             }
             Instruction::Load(load) => {
                 check_equality(
@@ -266,10 +266,10 @@ fn check_block(
             )?;
         }
         TerminalInstruction::Return(return_) => {
-            check_equality(return_.type_(), return_type)?;
+            check_equality(return_.type_(), result_type)?;
             check_equality(
                 &check_expression(return_.expression(), variables)?,
-                return_type,
+                result_type,
             )?;
         }
         TerminalInstruction::Unreachable => {}
