@@ -55,7 +55,7 @@ fn check_function_definition<'a>(
         variables.insert(argument.name());
     }
 
-    check_block(definition.body(), definition.result_type(), variables)?;
+    check_block(definition.body(), variables)?;
 
     for argument in definition.arguments() {
         variables.remove(argument.name());
@@ -66,7 +66,6 @@ fn check_function_definition<'a>(
 
 fn check_block<'a>(
     block: &'a Block,
-    return_type: &Type,
     variables: &mut FnvHashSet<&'a str>,
 ) -> Result<(), VariableScopeError> {
     for instruction in block.instructions() {
@@ -105,8 +104,8 @@ fn check_block<'a>(
             Instruction::If(if_) => {
                 check_expression(if_.condition(), variables)?;
 
-                check_block(if_.then(), return_type, variables)?;
-                check_block(if_.else_(), return_type, variables)?;
+                check_block(if_.then(), variables)?;
+                check_block(if_.else_(), variables)?;
             }
             Instruction::Load(load) => check_expression(load.pointer(), variables)?,
             Instruction::MemoryCopy(copy) => {
