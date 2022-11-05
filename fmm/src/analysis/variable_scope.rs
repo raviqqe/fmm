@@ -1,10 +1,6 @@
 mod error;
 
-use super::local_variable;
-use crate::{
-    ir::*,
-    types::{self, generic_pointer_type, Type},
-};
+use crate::{ir::*, types::Type};
 pub use error::*;
 use fnv::FnvHashSet;
 
@@ -12,31 +8,26 @@ pub fn check(module: &Module) -> Result<(), VariableScopeError> {
     let mut variables = module
         .variable_declarations()
         .iter()
-        .map(|declaration| {
-            (
-                declaration.name(),
-                types::Pointer::new(declaration.type_().clone()).into(),
-            )
-        })
+        .map(|declaration| declaration.name())
         .chain(
             module
                 .function_declarations()
                 .iter()
-                .map(|declaration| (declaration.name(), declaration.type_().clone().into())),
+                .map(|declaration| declaration.name()),
         )
-        .chain(module.variable_definitions().iter().map(|definition| {
-            (
-                definition.name(),
-                types::Pointer::new(definition.type_().clone()).into(),
-            )
-        }))
+        .chain(
+            module
+                .variable_definitions()
+                .iter()
+                .map(|definition| definition.name()),
+        )
         .chain(
             module
                 .function_definitions()
                 .iter()
-                .map(|definition| (definition.name(), definition.type_().into())),
+                .map(|definition| definition.name()),
         )
-        .collect::<FnvHashSet<_, _>>();
+        .collect::<FnvHashSet<_>>();
 
     for definition in module.variable_definitions() {
         check_variable_definition(definition, &variables)?;
@@ -49,70 +40,26 @@ pub fn check(module: &Module) -> Result<(), VariableScopeError> {
     Ok(())
 }
 
-fn check_variable_declarations(module: &Module) -> Result<(), VariableScopeError> {
-    let variables = module
-        .variable_declarations()
-        .iter()
-        .map(|declaration| (declaration.name(), declaration.type_().clone()))
-        .collect::<FnvHashSet<_, _>>();
-
-    for definition in module.variable_definitions() {
-        if let Some(type_) = variables.get(definition.name()) {
-            check_equality(definition.type_(), type_)?;
-        }
-    }
-
-    Ok(())
-}
-
-fn check_function_declarations(module: &Module) -> Result<(), VariableScopeError> {
-    let functions = module
-        .function_declarations()
-        .iter()
-        .map(|declaration| (declaration.name(), declaration.type_().clone()))
-        .collect::<FnvHashSet<_, _>>();
-
-    for definition in module.function_definitions() {
-        if let Some(type_) = functions.get(definition.name()) {
-            check_equality(&definition.type_().clone().into(), &type_.clone().into())?;
-        }
-    }
-
-    Ok(())
-}
-
 fn check_variable_definition(
     definition: &VariableDefinition,
     variables: &FnvHashSet<&str>,
 ) -> Result<(), VariableScopeError> {
-    check_equality(
-        &check_expression(definition.body(), variables)?,
-        definition.type_(),
-    )
+    check_expression(definition.body(), variables)
 }
 
 fn check_function_definition<'a>(
     definition: &'a FunctionDefinition,
     variables: &mut FnvHashSet<&'a str>,
 ) -> Result<(), VariableScopeError> {
-    let local_variables = local_variable::collect(definition);
-
-    variables.extend(local_variables.clone());
-
-    check_block(definition.body(), definition.result_type(), None, variables)?;
-
-    for name in local_variables.keys() {
-        variables.remove(name);
-    }
+    check_block(definition.body(), definition.result_type(), variables)?;
 
     Ok(())
 }
 
-fn check_block(
-    block: &Block,
+fn check_block<'a>(
+    block: &'a Block,
     return_type: &Type,
-    branch_type: Option<&Type>,
-    variables: &FnvHashSet<&str, Type>,
+    variables: &mut FnvHashSet<&'a str>,
 ) -> Result<(), VariableScopeError> {
     for instruction in block.instructions() {
         match instruction {
@@ -150,8 +97,8 @@ fn check_block(
             Instruction::If(if_) => {
                 check_expression(if_.condition(), variables)?;
 
-                check_block(if_.then(), return_type, Some(if_.type_()), variables)?;
-                check_block(if_.else_(), return_type, Some(if_.type_()), variables)?;
+                check_block(if_.then(), return_type, variables)?;
+                check_block(if_.else_(), return_type, variables)?;
             }
             Instruction::Load(load) => check_expression(load.pointer(), variables)?,
             Instruction::MemoryCopy(copy) => {
@@ -168,12 +115,24 @@ fn check_block(
                 check_expression(store.pointer(), variables)?;
             }
         }
+
+        for instruction in block.instructions() {
+            if let Some((name, _)) = instruction.value() {
+                variables.insert(name);
+            }
+        }
     }
 
     match block.terminal_instruction() {
         TerminalInstruction::Branch(branch) => check_expression(branch.expression(), variables)?,
         TerminalInstruction::Return(return_) => check_expression(return_.expression(), variables)?,
         TerminalInstruction::Unreachable => {}
+    }
+
+    for instruction in block.instructions() {
+        if let Some((name, _)) = instruction.value() {
+            variables.remove(name);
+        }
     }
 
     Ok(())
