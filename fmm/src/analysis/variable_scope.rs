@@ -252,10 +252,7 @@ mod tests {
                     "f",
                     vec![],
                     function_type.clone(),
-                    Block::new(
-                        vec![],
-                        Return::new(function_type.clone(), Variable::new("x")),
-                    ),
+                    Block::new(vec![], Return::new(function_type, Variable::new("x")),),
                     Default::default()
                 )],
             )),
@@ -324,10 +321,7 @@ mod tests {
                         "g",
                         vec![],
                         function_type.clone(),
-                        Block::new(
-                            vec![],
-                            Return::new(function_type.clone(), Variable::new("f")),
-                        ),
+                        Block::new(vec![], Return::new(function_type, Variable::new("f")),),
                         Default::default()
                     )
                 ],
