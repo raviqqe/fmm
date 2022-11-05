@@ -51,9 +51,7 @@ fn check_function_definition<'a>(
     definition: &'a FunctionDefinition,
     variables: &mut FnvHashSet<&'a str>,
 ) -> Result<(), VariableScopeError> {
-    check_block(definition.body(), definition.result_type(), variables)?;
-
-    Ok(())
+    check_block(definition.body(), definition.result_type(), variables)
 }
 
 fn check_block<'a>(
