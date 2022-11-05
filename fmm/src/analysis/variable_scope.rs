@@ -491,4 +491,46 @@ mod tests {
             Err(VariableScopeError::VariableNotFound(Variable::new("x")))
         );
     }
+
+    #[test]
+    fn check_instruction_in_other_function_definition() {
+        assert_eq!(
+            check(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![
+                    FunctionDefinition::new(
+                        "f",
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![Load::new(
+                                types::Primitive::PointerInteger,
+                                Variable::new("x"),
+                                "y"
+                            )
+                            .into(),],
+                            Return::new(types::Primitive::PointerInteger, Variable::new("y")),
+                        ),
+                        Default::default()
+                    ),
+                    FunctionDefinition::new(
+                        "g",
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![AllocateStack::new(types::Primitive::PointerInteger, "x").into()],
+                            Return::new(
+                                types::Primitive::PointerInteger,
+                                Undefined::new(types::Primitive::PointerInteger)
+                            ),
+                        ),
+                        Default::default()
+                    )
+                ],
+            )),
+            Err(VariableScopeError::VariableNotFound(Variable::new("x")))
+        );
+    }
 }
