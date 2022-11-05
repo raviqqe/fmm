@@ -195,3 +195,144 @@ fn check_expression(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{analysis::type_check, types};
+
+    fn check_module(module: &Module) -> Result<(), VariableScopeError> {
+        type_check::check(module).unwrap();
+
+        check(module)
+    }
+
+    #[test]
+    fn check_variable_declaration() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![VariableDeclaration::new(
+                    "x",
+                    types::Primitive::PointerInteger,
+                )],
+                vec![],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            types::Pointer::new(types::Primitive::PointerInteger),
+                            Variable::new("x")
+                        ),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_function_declaration() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![FunctionDeclaration::new("x", function_type.clone())],
+                vec![],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    function_type.clone(),
+                    Block::new(
+                        vec![],
+                        Return::new(function_type.clone(), Variable::new("x")),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_variable_definition() {
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![VariableDefinition::new(
+                    "x",
+                    Primitive::PointerInteger(42),
+                    types::Primitive::PointerInteger,
+                    Default::default(),
+                )],
+                vec![FunctionDefinition::new(
+                    "f",
+                    vec![],
+                    types::Pointer::new(types::Primitive::PointerInteger),
+                    Block::new(
+                        vec![],
+                        Return::new(
+                            types::Pointer::new(types::Primitive::PointerInteger),
+                            Variable::new("x")
+                        ),
+                    ),
+                    Default::default()
+                )],
+            )),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn check_function_definition() {
+        let function_type = types::Function::new(
+            vec![],
+            types::Primitive::PointerInteger,
+            types::CallingConvention::Source,
+        );
+
+        assert_eq!(
+            check_module(&Module::new(
+                vec![],
+                vec![],
+                vec![],
+                vec![
+                    FunctionDefinition::new(
+                        "f",
+                        vec![],
+                        types::Primitive::PointerInteger,
+                        Block::new(
+                            vec![],
+                            Return::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::PointerInteger(42)
+                            ),
+                        ),
+                        Default::default()
+                    ),
+                    FunctionDefinition::new(
+                        "g",
+                        vec![],
+                        function_type.clone(),
+                        Block::new(
+                            vec![],
+                            Return::new(function_type.clone(), Variable::new("f")),
+                        ),
+                        Default::default()
+                    )
+                ],
+            )),
+            Ok(())
+        );
+    }
+}
