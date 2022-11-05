@@ -1,6 +1,6 @@
 mod error;
 
-use crate::{ir::*, types::Type};
+use crate::ir::*;
 pub use error::*;
 use fnv::FnvHashSet;
 
@@ -51,7 +51,17 @@ fn check_function_definition<'a>(
     definition: &'a FunctionDefinition,
     variables: &mut FnvHashSet<&'a str>,
 ) -> Result<(), VariableScopeError> {
-    check_block(definition.body(), definition.result_type(), variables)
+    for argument in definition.arguments() {
+        variables.insert(argument.name());
+    }
+
+    check_block(definition.body(), definition.result_type(), variables)?;
+
+    for argument in definition.arguments() {
+        variables.remove(argument.name());
+    }
+
+    Ok(())
 }
 
 fn check_block<'a>(
@@ -75,7 +85,7 @@ fn check_block<'a>(
             Instruction::Call(call) => {
                 check_expression(call.function(), variables)?;
 
-                for (argument, type_) in call.arguments().iter().zip(call.type_().arguments()) {
+                for argument in call.arguments() {
                     check_expression(argument, variables)?;
                 }
             }
@@ -166,7 +176,7 @@ fn check_expression(
                 check_expression(expression, variables)?;
             }
         }
-        Expression::Primitive(primitive) => {}
+        Expression::Primitive(_) => {}
         Expression::Record(record) => {
             for field in record.fields() {
                 check_expression(field, variables)?;
@@ -174,7 +184,7 @@ fn check_expression(
         }
         Expression::RecordAddress(address) => check_expression(address.pointer(), variables)?,
         Expression::SizeOf(_) => {}
-        Expression::Undefined(undefined) => {}
+        Expression::Undefined(_) => {}
         Expression::Union(union) => check_expression(union.member(), variables)?,
         Expression::UnionAddress(address) => check_expression(address.pointer(), variables)?,
         Expression::Variable(variable) => {
