@@ -52,8 +52,7 @@ fn collect_from_block(block: &Block, variables: &mut IndexMap<Rc<str>, f64>) {
                     variables.insert(
                         name.clone(),
                         variables.get(name).copied().unwrap_or(0.0)
-                            + (call.environment().len() as f64)
-                                .powi(call.environment().len() as i32),
+                            + 2.0f64.powi(call.environment().len() as i32),
                     );
                 }
             }
