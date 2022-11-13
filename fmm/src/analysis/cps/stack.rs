@@ -120,6 +120,8 @@ pub fn partial_push(
         return Ok(());
     }
 
+    dbg!(old_elements.len(), new_elements.len(), index);
+
     extend(
         builder,
         &stack,
