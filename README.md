@@ -1,6 +1,6 @@
 # F--
 
-[![GitHub Action](https://img.shields.io/github/workflow/status/raviqqe/fmm/test?style=flat-square)](https://github.com/raviqqe/fmm/actions?query=workflow%3Atest)
+[![GitHub Action](https://img.shields.io/github/actions/workflow/status/raviqqe/fmm/test.yaml?branch=main&style=flat-square)](https://github.com/raviqqe/fmm/actions)
 [![License](https://img.shields.io/github/license/raviqqe/fmm.svg?style=flat-square)](LICENSE)
 
 The uncurried minimal functional programming language
