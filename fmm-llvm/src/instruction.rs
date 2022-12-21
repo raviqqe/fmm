@@ -175,7 +175,7 @@ fn compile_instruction<'c, 'a>(
                         context
                             .inkwell()
                             .i8_type()
-                            .ptr_type(type_::DEFAULT_ADDRESS_SPACE),
+                            .ptr_type(Default::default()),
                         "",
                     )
                     .into()],

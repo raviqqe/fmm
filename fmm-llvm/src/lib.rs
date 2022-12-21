@@ -119,7 +119,7 @@ fn compile_heap_functions<'c>(
     let pointer_type = context
         .inkwell()
         .i8_type()
-        .ptr_type(type_::DEFAULT_ADDRESS_SPACE);
+        .ptr_type(Default::default());
     let pointer_integer_type = type_::compile_pointer_integer(context);
 
     InstructionFunctionSet {

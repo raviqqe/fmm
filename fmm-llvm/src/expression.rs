@@ -489,7 +489,7 @@ fn compile_union_address<'c>(
                 .build_bitcast(
                     compile_expression(address.pointer()),
                     type_::compile_union_member(context, address.type_(), address.member_index())
-                        .ptr_type(type_::DEFAULT_ADDRESS_SPACE),
+                        .ptr_type(Default::default()),
                     "",
                 )
                 .into_pointer_value(),
