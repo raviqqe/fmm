@@ -150,7 +150,7 @@ fn get_pointer_integer_array_size(size: usize, pointer_size: usize) -> usize {
     if size == 0 {
         0
     } else {
-        ((size - 1) / pointer_size + 1) as usize
+        (size - 1) / pointer_size + 1
     }
 }
 
