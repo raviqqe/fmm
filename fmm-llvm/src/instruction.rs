@@ -172,10 +172,7 @@ fn compile_instruction<'c, 'a>(
                 &[builder
                     .build_bitcast(
                         compile_expression(free.pointer()),
-                        context
-                            .inkwell()
-                            .i8_type()
-                            .ptr_type(Default::default()),
+                        context.inkwell().i8_type().ptr_type(Default::default()),
                         "",
                     )
                     .into()],

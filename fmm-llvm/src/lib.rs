@@ -116,10 +116,7 @@ fn compile_heap_functions<'c>(
     context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
 ) -> InstructionFunctionSet<'c> {
-    let pointer_type = context
-        .inkwell()
-        .i8_type()
-        .ptr_type(Default::default());
+    let pointer_type = context.inkwell().i8_type().ptr_type(Default::default());
     let pointer_integer_type = type_::compile_pointer_integer(context);
 
     InstructionFunctionSet {
