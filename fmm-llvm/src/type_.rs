@@ -2,8 +2,6 @@ use crate::context::Context;
 use fmm::types::{self, Type};
 use inkwell::types::BasicType;
 
-pub const DEFAULT_ADDRESS_SPACE: inkwell::AddressSpace = inkwell::AddressSpace::Generic;
-
 pub fn compile<'c>(context: &Context<'c>, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
     // We cache compiled types for optimization because there are too many of them.
     if let Some(&type_) = context.types().borrow().get(type_) {
@@ -46,14 +44,14 @@ pub fn compile_function_pointer<'c>(
     context: &Context<'c>,
     function: &types::Function,
 ) -> inkwell::types::PointerType<'c> {
-    compile_function(context, function).ptr_type(DEFAULT_ADDRESS_SPACE)
+    compile_function(context, function).ptr_type(Default::default())
 }
 
 pub fn compile_pointer<'c>(
     context: &Context<'c>,
     pointer: &types::Pointer,
 ) -> inkwell::types::PointerType<'c> {
-    compile(context, pointer.element()).ptr_type(DEFAULT_ADDRESS_SPACE)
+    compile(context, pointer.element()).ptr_type(Default::default())
 }
 
 pub fn compile_primitive<'c>(
@@ -152,7 +150,7 @@ fn get_pointer_integer_array_size(size: usize, pointer_size: usize) -> usize {
     if size == 0 {
         0
     } else {
-        ((size - 1) / pointer_size + 1) as usize
+        (size - 1) / pointer_size + 1
     }
 }
 

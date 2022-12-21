@@ -1,4 +1,3 @@
-use crate::type_::DEFAULT_ADDRESS_SPACE;
 use inkwell::types::BasicType;
 
 pub fn compile_union_cast<'c>(
@@ -12,7 +11,7 @@ pub fn compile_union_cast<'c>(
 
     builder.build_load(
         builder
-            .build_bitcast(pointer, to.ptr_type(DEFAULT_ADDRESS_SPACE), "")
+            .build_bitcast(pointer, to.ptr_type(Default::default()), "")
             .into_pointer_value(),
         "",
     )

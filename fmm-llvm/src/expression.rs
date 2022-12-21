@@ -382,7 +382,7 @@ fn compile_size_of<'c>(context: &Context<'c>, size_of: &SizeOf) -> inkwell::valu
         context,
         context
             .target_data()
-            .get_store_size(&type_::compile(context, size_of.type_())) as u64,
+            .get_store_size(&type_::compile(context, size_of.type_())),
     )
 }
 
@@ -421,11 +421,7 @@ fn compile_primitive<'c>(
             .f32_type()
             .const_float(number as f64)
             .into(),
-        Primitive::Float64(number) => context
-            .inkwell()
-            .f64_type()
-            .const_float(number as f64)
-            .into(),
+        Primitive::Float64(number) => context.inkwell().f64_type().const_float(number).into(),
         Primitive::Integer8(number) => context
             .inkwell()
             .i8_type()
@@ -489,7 +485,7 @@ fn compile_union_address<'c>(
                 .build_bitcast(
                     compile_expression(address.pointer()),
                     type_::compile_union_member(context, address.type_(), address.member_index())
-                        .ptr_type(type_::DEFAULT_ADDRESS_SPACE),
+                        .ptr_type(Default::default()),
                     "",
                 )
                 .into_pointer_value(),
