@@ -421,11 +421,7 @@ fn compile_primitive<'c>(
             .f32_type()
             .const_float(number as f64)
             .into(),
-        Primitive::Float64(number) => context
-            .inkwell()
-            .f64_type()
-            .const_float(number)
-            .into(),
+        Primitive::Float64(number) => context.inkwell().f64_type().const_float(number).into(),
         Primitive::Integer8(number) => context
             .inkwell()
             .i8_type()
