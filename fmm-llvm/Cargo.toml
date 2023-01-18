@@ -11,7 +11,7 @@ fmm = { path = "../fmm" }
 fnv = "1"
 hamt = { git = "https://github.com/raviqqe/hamt-rs", branch = "main" }
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
-  "llvm14-0",
+  "llvm15-0",
 ] }
 llvm-sys = "150"
 once_cell = "1"
