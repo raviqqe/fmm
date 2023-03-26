@@ -50,9 +50,9 @@ pub fn check(module: &Module) -> Result<(), NameError> {
     Ok(())
 }
 
-fn check_function_definition<'a>(
+fn check_function_definition(
     definition: &FunctionDefinition,
-    global_names: &FnvHashSet<&'a str>,
+    global_names: &FnvHashSet<&str>,
 ) -> Result<(), NameError> {
     let mut local_names = FnvHashSet::default();
 
