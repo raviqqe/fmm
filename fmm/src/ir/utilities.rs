@@ -7,5 +7,5 @@ thread_local! {
 }
 
 pub fn void_value() -> Record {
-    VOID_VALUE.with(|record| (&**record).clone())
+    VOID_VALUE.with(|record| (**record).clone())
 }
