@@ -10,6 +10,7 @@ pub fn compile_union_cast<'c>(
     builder.build_store(pointer, union);
 
     builder.build_load(
+        to,
         builder
             .build_bitcast(pointer, to.ptr_type(Default::default()), "")
             .into_pointer_value(),

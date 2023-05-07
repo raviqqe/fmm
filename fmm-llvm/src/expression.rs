@@ -28,7 +28,7 @@ pub fn compile<'c>(
             compile_comparison_operation(builder, operation, &compile)
         }
         Expression::PointerAddress(address) => {
-            compile_pointer_address(builder, address, &compile).into()
+            compile_pointer_address(context, builder, address, &compile).into()
         }
         Expression::Primitive(primitive) => compile_primitive(context, *primitive),
         Expression::Record(record) => {
@@ -119,6 +119,7 @@ pub fn compile_constant<'c>(
             &compile_expression,
         ),
         Expression::PointerAddress(address) => compile_pointer_address(
+            context,
             &context.inkwell().create_builder(),
             address,
             &compile_expression,
@@ -240,6 +241,7 @@ fn compile_bit_cast<'c>(
         builder.build_store(pointer, compile_expression(bit_cast.expression()));
 
         builder.build_load(
+            type_::compile(context, bit_cast.to()),
             builder
                 .build_bitcast(
                     pointer,
@@ -364,6 +366,7 @@ fn compile_record_address<'c>(
 ) -> inkwell::values::PointerValue<'c> {
     unsafe {
         builder.build_gep(
+            type_::compile_record(context, address.type_()),
             compile_expression(address.pointer()).into_pointer_value(),
             &[
                 context.inkwell().i32_type().const_zero(),
@@ -447,12 +450,14 @@ pub fn compile_pointer_integer<'c>(
 }
 
 fn compile_pointer_address<'c>(
+    context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     address: &PointerAddress,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
 ) -> inkwell::values::PointerValue<'c> {
     unsafe {
         builder.build_gep(
+            type_::compile(context, address.type_().element()),
             compile_expression(address.pointer()).into_pointer_value(),
             &[compile_expression(address.offset()).into_int_value()],
             "",
@@ -479,13 +484,15 @@ fn compile_union_address<'c>(
     address: &UnionAddress,
     compile_expression: &impl Fn(&Expression) -> inkwell::values::BasicValueEnum<'c>,
 ) -> inkwell::values::PointerValue<'c> {
+    let type_ = type_::compile_union_member(context, address.type_(), address.member_index());
+
     unsafe {
         builder.build_gep(
+            type_,
             builder
                 .build_bitcast(
                     compile_expression(address.pointer()),
-                    type_::compile_union_member(context, address.type_(), address.member_index())
-                        .ptr_type(Default::default()),
+                    type_.ptr_type(Default::default()),
                     "",
                 )
                 .into_pointer_value(),
