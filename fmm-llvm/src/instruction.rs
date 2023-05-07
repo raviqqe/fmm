@@ -5,7 +5,6 @@ use crate::{
 use fmm::ir::*;
 use fnv::FnvHashMap;
 use inkwell::values::BasicValue;
-use std::convert::TryFrom;
 
 pub fn compile_block<'c, 'a>(
     context: &Context<'c>,
