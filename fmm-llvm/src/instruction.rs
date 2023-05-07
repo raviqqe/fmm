@@ -107,7 +107,7 @@ fn compile_instruction<'c, 'a>(
         }
         Instruction::Call(call) => {
             let value = builder.build_call(
-                inkwell::values::CallableValue::try_from(
+                inkwell::values::CallSiteValue::try_from(
                     compile_expression(call.function()).into_pointer_value(),
                 )
                 .unwrap(),
