@@ -5,7 +5,6 @@ use crate::{
 use fmm::ir::*;
 use fnv::FnvHashMap;
 use inkwell::values::BasicValue;
-use std::convert::TryFrom;
 
 pub fn compile_block<'c, 'a>(
     context: &Context<'c>,
@@ -71,6 +70,7 @@ fn compile_instruction<'c, 'a>(
         ),
         Instruction::AtomicLoad(load) => {
             let value = builder.build_load(
+                compile_type(load.type_()),
                 compile_expression(load.pointer()).into_pointer_value(),
                 load.name(),
             );
@@ -106,11 +106,9 @@ fn compile_instruction<'c, 'a>(
             None
         }
         Instruction::Call(call) => {
-            let value = builder.build_call(
-                inkwell::values::CallableValue::try_from(
-                    compile_expression(call.function()).into_pointer_value(),
-                )
-                .unwrap(),
+            let value = builder.build_indirect_call(
+                type_::compile_function(context, call.type_()),
+                compile_expression(call.function()).into_pointer_value(),
                 &call
                     .arguments()
                     .iter()
@@ -232,6 +230,7 @@ fn compile_instruction<'c, 'a>(
             }
         }
         Instruction::Load(load) => Some(builder.build_load(
+            compile_type(load.type_()),
             compile_expression(load.pointer()).into_pointer_value(),
             load.name(),
         )),
