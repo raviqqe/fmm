@@ -7,6 +7,7 @@ pub struct PointerAddress(Rc<PointerAddressInner>);
 
 #[derive(Clone, Debug, PartialEq)]
 struct PointerAddressInner {
+    // TODO Change this to a pointee type?
     type_: types::Pointer, // type of the pointer value
     pointer: Expression,
     offset: Expression,
