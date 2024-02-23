@@ -30,14 +30,14 @@ pub fn compile_block<'c, 'a>(
         }
     }
 
-    Ok(compile_terminal_instruction(
+    compile_terminal_instruction(
         context,
         builder,
         block.terminal_instruction(),
         destination,
         variables,
         instruction_function_set,
-    ))
+    )
 }
 
 fn compile_instruction<'c, 'a>(
@@ -56,24 +56,24 @@ fn compile_instruction<'c, 'a>(
             builder
                 .build_call(
                     instruction_function_set.allocate_function,
-                    &[compile_expression(allocate.size()).into()],
+                    &[compile_expression(allocate.size())?.into()],
                     allocate.name(),
-                )
+                )?
                 .try_as_basic_value()
                 .left()
                 .unwrap(),
         ),
         Instruction::AllocateStack(allocate) => Some(
             builder
-                .build_alloca(compile_type(allocate.type_()), allocate.name())
+                .build_alloca(compile_type(allocate.type_()), allocate.name())?
                 .into(),
         ),
         Instruction::AtomicLoad(load) => {
             let value = builder.build_load(
                 compile_type(load.type_()),
-                compile_expression(load.pointer()).into_pointer_value(),
+                compile_expression(load.pointer())?.into_pointer_value(),
                 load.name(),
-            );
+            )?;
 
             let instruction_value = value.as_instruction_value().unwrap();
             instruction_value.set_atomic_ordering(compile_atomic_ordering(load.ordering()))?;
@@ -88,17 +88,17 @@ fn compile_instruction<'c, 'a>(
                         AtomicOperator::Add => inkwell::AtomicRMWBinOp::Add,
                         AtomicOperator::Subtract => inkwell::AtomicRMWBinOp::Sub,
                     },
-                    compile_expression(operation.pointer()).into_pointer_value(),
-                    compile_expression(operation.value()).into_int_value(),
+                    compile_expression(operation.pointer())?.into_pointer_value(),
+                    compile_expression(operation.value())?.into_int_value(),
                     compile_atomic_ordering(operation.ordering()),
                 )?
                 .into(),
         ),
         Instruction::AtomicStore(store) => {
             let value = builder.build_store(
-                compile_expression(store.pointer()).into_pointer_value(),
-                compile_expression(store.value()),
-            );
+                compile_expression(store.pointer())?.into_pointer_value(),
+                compile_expression(store.value())?,
+            )?;
 
             value.set_atomic_ordering(compile_atomic_ordering(store.ordering()))?;
             set_alignment(context, &value, store.type_())?;
@@ -108,14 +108,14 @@ fn compile_instruction<'c, 'a>(
         Instruction::Call(call) => {
             let value = builder.build_indirect_call(
                 type_::compile_function(context, call.type_()),
-                compile_expression(call.function()).into_pointer_value(),
+                compile_expression(call.function())?.into_pointer_value(),
                 &call
                     .arguments()
                     .iter()
-                    .map(|expression| compile_expression(expression).into())
-                    .collect::<Vec<_>>(),
+                    .map(|expression| Ok(compile_expression(expression)?.into()))
+                    .collect::<Result<Vec<_>, CompileError>>()?,
                 call.name(),
-            );
+            )?;
 
             value.set_tail_call(true);
             value.set_call_convention(calling_convention::compile(
@@ -128,9 +128,9 @@ fn compile_instruction<'c, 'a>(
             builder
                 .build_extract_value(
                     builder.build_cmpxchg(
-                        compile_expression(cas.pointer()).into_pointer_value(),
-                        compile_expression(cas.old_value()),
-                        compile_expression(cas.new_value()),
+                        compile_expression(cas.pointer())?.into_pointer_value(),
+                        compile_expression(cas.old_value())?,
+                        compile_expression(cas.new_value())?,
                         compile_atomic_ordering(cas.success_ordering()),
                         compile_atomic_ordering(cas.failure_ordering()),
                     )?,
@@ -139,28 +139,30 @@ fn compile_instruction<'c, 'a>(
                 )
                 .unwrap(),
         ),
-        Instruction::DeconstructRecord(deconstruct) => builder.build_extract_value(
-            compile_expression(deconstruct.record()).into_struct_value(),
+        Instruction::DeconstructRecord(deconstruct) => Some(builder.build_extract_value(
+            compile_expression(deconstruct.record())?.into_struct_value(),
             deconstruct.field_index() as u32,
             deconstruct.name(),
-        ),
-        Instruction::DeconstructUnion(deconstruct) => builder.build_extract_value(
-            compile_union_cast(
-                builder,
-                compile_expression(deconstruct.union()),
-                type_::compile_union_member(
-                    context,
-                    deconstruct.type_(),
-                    deconstruct.member_index(),
-                )
-                .into(),
-            )
-            .into_struct_value(),
-            0,
-            deconstruct.name(),
+        )?),
+        Instruction::DeconstructUnion(deconstruct) => Some(
+            builder.build_extract_value(
+                compile_union_cast(
+                    builder,
+                    compile_expression(deconstruct.union())?,
+                    type_::compile_union_member(
+                        context,
+                        deconstruct.type_(),
+                        deconstruct.member_index(),
+                    )
+                    .into(),
+                )?
+                .into_struct_value(),
+                0,
+                deconstruct.name(),
+            )?,
         ),
         Instruction::Fence(fence) => {
-            builder.build_fence(compile_atomic_ordering(fence.ordering()), 0, "");
+            builder.build_fence(compile_atomic_ordering(fence.ordering()), 0, "")?;
 
             None
         }
@@ -169,13 +171,13 @@ fn compile_instruction<'c, 'a>(
                 instruction_function_set.free_function,
                 &[builder
                     .build_bitcast(
-                        compile_expression(free.pointer()),
+                        compile_expression(free.pointer())?,
                         context.inkwell().i8_type().ptr_type(Default::default()),
                         "",
-                    )
+                    )?
                     .into()],
                 "",
-            );
+            )?;
 
             None
         }
@@ -190,10 +192,10 @@ fn compile_instruction<'c, 'a>(
             let mut cases = vec![];
 
             builder.build_conditional_branch(
-                compile_expression(if_.condition()).into_int_value(),
+                compile_expression(if_.condition())?.into_int_value(),
                 then,
                 else_,
-            );
+            )?;
 
             for (llvm_block, block) in &[(then, if_.then()), (else_, if_.else_())] {
                 builder.position_at_end(*llvm_block);
@@ -217,7 +219,7 @@ fn compile_instruction<'c, 'a>(
             if cases.is_empty() {
                 None
             } else {
-                let phi = builder.build_phi(compile_type(if_.type_()), if_.name());
+                let phi = builder.build_phi(compile_type(if_.type_()), if_.name())?;
 
                 phi.add_incoming(
                     &cases
@@ -231,16 +233,16 @@ fn compile_instruction<'c, 'a>(
         }
         Instruction::Load(load) => Some(builder.build_load(
             compile_type(load.type_()),
-            compile_expression(load.pointer()).into_pointer_value(),
+            compile_expression(load.pointer())?.into_pointer_value(),
             load.name(),
-        )),
+        )?),
         Instruction::MemoryCopy(copy) => {
             builder.build_memcpy(
-                compile_expression(copy.destination()).into_pointer_value(),
+                compile_expression(copy.destination())?.into_pointer_value(),
                 1,
-                compile_expression(copy.source()).into_pointer_value(),
+                compile_expression(copy.source())?.into_pointer_value(),
                 1,
-                compile_expression(copy.size()).into_int_value(),
+                compile_expression(copy.size())?.into_int_value(),
             )?;
 
             None
@@ -249,18 +251,18 @@ fn compile_instruction<'c, 'a>(
             .build_call(
                 instruction_function_set.reallocate_function,
                 &[
-                    compile_expression(reallocate.pointer()).into(),
-                    compile_expression(reallocate.size()).into(),
+                    compile_expression(reallocate.pointer())?.into(),
+                    compile_expression(reallocate.size())?.into(),
                 ],
                 reallocate.name(),
-            )
+            )?
             .try_as_basic_value()
             .left(),
         Instruction::Store(store) => {
             builder.build_store(
-                compile_expression(store.pointer()).into_pointer_value(),
-                compile_expression(store.value()),
-            );
+                compile_expression(store.pointer())?.into_pointer_value(),
+                compile_expression(store.value())?,
+            )?;
 
             None
         }
@@ -274,32 +276,32 @@ fn compile_terminal_instruction<'c>(
     destination: Option<inkwell::basic_block::BasicBlock<'c>>,
     variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
     instruction_function_set: &InstructionFunctionSet<'c>,
-) -> Option<inkwell::values::BasicValueEnum<'c>> {
+) -> Result<Option<inkwell::values::BasicValueEnum<'c>>, CompileError> {
     let compile_expression =
         |expression| expression::compile(context, builder, expression, variables);
 
-    match instruction {
+    Ok(match instruction {
         TerminalInstruction::Branch(branch) => {
-            let value = compile_expression(branch.expression());
+            let value = compile_expression(branch.expression())?;
 
-            builder.build_unconditional_branch(destination.unwrap());
+            builder.build_unconditional_branch(destination.unwrap())?;
 
             Some(value)
         }
         TerminalInstruction::Return(return_) => {
-            builder.build_return(Some(&compile_expression(return_.expression())));
+            builder.build_return(Some(&compile_expression(return_.expression())?))?;
             None
         }
         TerminalInstruction::Unreachable => {
             if let Some(function) = instruction_function_set.unreachable_function {
-                builder.build_call(function, &[], "");
+                builder.build_call(function, &[], "")?;
             }
 
-            builder.build_unreachable();
+            builder.build_unreachable()?;
 
             None
         }
-    }
+    })
 }
 
 fn compile_atomic_ordering(ordering: AtomicOrdering) -> inkwell::AtomicOrdering {

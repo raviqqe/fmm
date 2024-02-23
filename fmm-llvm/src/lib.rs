@@ -94,7 +94,7 @@ fn compile_module<'c>(
     }
 
     for definition in module.variable_definitions() {
-        compile_variable_definition(context, &llvm_module, definition, &variables);
+        compile_variable_definition(context, &llvm_module, definition, &variables)?;
     }
 
     for definition in module.function_definitions() {
@@ -213,7 +213,7 @@ fn compile_variable_definition<'c>(
     module: &inkwell::module::Module<'c>,
     definition: &VariableDefinition,
     variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
-) {
+) -> Result<(), CompileError> {
     module
         .get_global(definition.name())
         .unwrap()
@@ -221,7 +221,9 @@ fn compile_variable_definition<'c>(
             context,
             definition.body(),
             variables,
-        ));
+        )?);
+
+    Ok(())
 }
 
 fn declare_function_definition<'c>(
