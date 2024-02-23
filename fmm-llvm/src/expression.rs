@@ -92,12 +92,9 @@ pub fn compile_constant<'c>(
         Expression::ArithmeticOperation(operation) => {
             compile_constant_arithmetic_operation(operation, &compile_expression)?
         }
-        Expression::BitCast(bit_cast) => compile_constant_bit_cast(
-            context,
-            &context.inkwell().create_builder(),
-            bit_cast,
-            &compile_expression,
-        )?,
+        Expression::BitCast(bit_cast) => {
+            compile_constant_bit_cast(context, bit_cast, &compile_expression)?
+        }
         Expression::BitwiseNotOperation(operation) => compile_expression(operation.value())?
             .into_int_value()
             .const_not()
@@ -249,7 +246,7 @@ fn compile_bit_cast<'c>(
         if is_constant_bit_cast_supported(bit_cast.from())
             && is_constant_bit_cast_supported(bit_cast.to())
         {
-            compile_constant_bit_cast(context, builder, bit_cast, compile_expression)?
+            compile_static_bit_cast(context, builder, bit_cast, compile_expression)?
         } else {
             let pointer = builder.build_alloca(type_::compile(context, bit_cast.from()), "")?;
 
@@ -273,7 +270,7 @@ fn compile_bit_cast<'c>(
     )
 }
 
-fn compile_constant_bit_cast<'c>(
+fn compile_static_bit_cast<'c>(
     context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
     bit_cast: &BitCast,
@@ -307,6 +304,53 @@ fn compile_constant_bit_cast<'c>(
     Ok(if to_type.is_pointer_type() {
         builder
             .build_int_to_ptr(value.into_int_value(), to_type.into_pointer_type(), "")?
+            .into()
+    } else {
+        value
+    })
+}
+
+fn compile_constant_bit_cast<'c>(
+    context: &Context<'c>,
+    bit_cast: &BitCast,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError> {
+    let argument = compile_expression(bit_cast.expression())?;
+    let to_type = type_::compile(context, bit_cast.to());
+
+    let value = if argument.is_pointer_value() {
+        argument
+            .into_pointer_value()
+            .const_to_int(type_::compile_pointer_integer(context))
+            .into()
+    } else {
+        argument
+    };
+
+    let intermediate_type = if to_type.is_pointer_type() {
+        type_::compile_pointer_integer(context).into()
+    } else {
+        to_type
+    };
+    let value: inkwell::values::BasicValueEnum = match value {
+        inkwell::values::BasicValueEnum::FloatValue(value) => value
+            .const_bit_cast(intermediate_type.into_pointer_type())
+            .into(),
+        inkwell::values::BasicValueEnum::IntValue(value) => value
+            .const_bit_cast(intermediate_type.into_int_type())
+            .into(),
+        inkwell::values::BasicValueEnum::PointerValue(value) => value
+            .const_cast(intermediate_type.into_pointer_type())
+            .into(),
+        _ => panic!(),
+    };
+
+    Ok(if to_type.is_pointer_type() {
+        value
+            .into_int_value()
+            .const_to_pointer(to_type.into_pointer_type())
             .into()
     } else {
         value
