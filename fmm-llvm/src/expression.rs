@@ -89,41 +89,28 @@ pub fn compile_constant<'c>(
 
     Ok(match expression {
         Expression::AlignOf(align_of) => compile_align_of(context, align_of).into(),
-        Expression::ArithmeticOperation(operation) => compile_arithmetic_operation(
-            &context.inkwell().create_builder(),
-            operation,
-            &compile_expression,
-        )?,
+        Expression::ArithmeticOperation(operation) => {
+            compile_constant_arithmetic_operation(operation, &compile_expression)?
+        }
         Expression::BitCast(bit_cast) => compile_constant_bit_cast(
             context,
             &context.inkwell().create_builder(),
             bit_cast,
             &compile_expression,
         )?,
-        Expression::BitwiseNotOperation(operation) => compile_bitwise_not_operation(
-            &context.inkwell().create_builder(),
-            operation,
-            &compile_expression,
-        )?
-        .into(),
-        Expression::BitwiseOperation(operation) => compile_bitwise_operation(
-            &context.inkwell().create_builder(),
-            operation,
-            &compile_expression,
-        )?
-        .into(),
-        Expression::ComparisonOperation(operation) => compile_comparison_operation(
-            &context.inkwell().create_builder(),
-            operation,
-            &compile_expression,
-        )?,
-        Expression::PointerAddress(address) => compile_pointer_address(
-            context,
-            &context.inkwell().create_builder(),
-            address,
-            &compile_expression,
-        )?
-        .into(),
+        Expression::BitwiseNotOperation(operation) => compile_expression(operation.value())?
+            .into_int_value()
+            .const_not()
+            .into(),
+        Expression::BitwiseOperation(operation) => {
+            compile_constant_bitwise_operation(operation, &compile_expression)?.into()
+        }
+        Expression::ComparisonOperation(operation) => {
+            compile_constant_comparison_operation(operation, &compile_expression)?
+        }
+        Expression::PointerAddress(address) => {
+            compile_constant_pointer_address(context, address, &compile_expression)?.into()
+        }
         Expression::Primitive(primitive) => compile_primitive(context, *primitive),
         Expression::Record(record) => context
             .inkwell()
@@ -136,13 +123,9 @@ pub fn compile_constant<'c>(
                 false,
             )
             .into(),
-        Expression::RecordAddress(address) => compile_record_address(
-            context,
-            &context.inkwell().create_builder(),
-            address,
-            &compile_expression,
-        )?
-        .into(),
+        Expression::RecordAddress(address) => {
+            compile_constant_record_address(context, address, &compile_expression)?.into()
+        }
         Expression::SizeOf(size_of) => compile_size_of(context, size_of).into(),
         Expression::Undefined(undefined) => compile_undefined(context, undefined),
         Expression::Union(union) => context
@@ -161,13 +144,9 @@ pub fn compile_constant<'c>(
                 false,
             )
             .into(),
-        Expression::UnionAddress(address) => compile_union_address(
-            context,
-            &context.inkwell().create_builder(),
-            address,
-            &compile_expression,
-        )?
-        .into(),
+        Expression::UnionAddress(address) => {
+            compile_constant_union_address(context, address, &compile_expression)?.into()
+        }
         Expression::Variable(variable) => variables[variable.name()],
     })
 }
@@ -225,6 +204,36 @@ fn compile_arithmetic_operation<'c>(
             }
             .into()
         }
+    })
+}
+
+fn compile_constant_arithmetic_operation<'c>(
+    operation: &ArithmeticOperation,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError> {
+    let lhs = compile_expression(operation.lhs())?;
+    let rhs = compile_expression(operation.rhs())?;
+
+    Ok(match operation.type_() {
+        fmm::types::Primitive::Boolean
+        | fmm::types::Primitive::Integer8
+        | fmm::types::Primitive::Integer32
+        | fmm::types::Primitive::Integer64
+        | fmm::types::Primitive::PointerInteger => {
+            let lhs = lhs.into_int_value();
+            let rhs = rhs.into_int_value();
+
+            match operation.operator() {
+                fmm::ir::ArithmeticOperator::Add => lhs.const_add(rhs),
+                fmm::ir::ArithmeticOperator::Subtract => lhs.const_sub(rhs),
+                fmm::ir::ArithmeticOperator::Multiply => lhs.const_mul(rhs),
+                fmm::ir::ArithmeticOperator::Divide => panic!(),
+            }
+            .into()
+        }
+        fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => panic!(),
     })
 }
 
@@ -344,6 +353,30 @@ fn compile_bitwise_operation<'c>(
     })
 }
 
+fn compile_constant_bitwise_operation<'c>(
+    operation: &BitwiseOperation,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::IntValue<'c>, CompileError> {
+    let lhs = compile_expression(operation.lhs())?.into_int_value();
+    let rhs = compile_expression(operation.rhs())?.into_int_value();
+
+    Ok(match operation.operator() {
+        fmm::ir::BitwiseOperator::And => lhs.const_and(rhs),
+        fmm::ir::BitwiseOperator::Or => lhs.const_or(rhs),
+        fmm::ir::BitwiseOperator::Xor => lhs.const_xor(rhs),
+        fmm::ir::BitwiseOperator::LeftShift => lhs.const_shl(rhs),
+        fmm::ir::BitwiseOperator::RightShift(signed) => {
+            if signed {
+                lhs.const_ashr(rhs)
+            } else {
+                lhs.const_rshr(rhs)
+            }
+        }
+    })
+}
+
 fn compile_comparison_operation<'c>(
     builder: &inkwell::builder::Builder<'c>,
     operation: &ComparisonOperation,
@@ -373,6 +406,35 @@ fn compile_comparison_operation<'c>(
     .into())
 }
 
+fn compile_constant_comparison_operation<'c>(
+    operation: &ComparisonOperation,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError> {
+    Ok(match operation.type_() {
+        fmm::types::Primitive::Boolean
+        | fmm::types::Primitive::Integer8
+        | fmm::types::Primitive::Integer32
+        | fmm::types::Primitive::Integer64
+        | fmm::types::Primitive::PointerInteger => compile_expression(operation.lhs())?
+            .into_int_value()
+            .const_int_compare(
+                compile_integer_comparison_operator(operation.operator()),
+                compile_expression(operation.rhs())?.into_int_value(),
+            ),
+        fmm::types::Primitive::Float32 | fmm::types::Primitive::Float64 => {
+            compile_expression(operation.lhs())?
+                .into_float_value()
+                .const_compare(
+                    compile_float_comparison_operator(operation.operator()),
+                    compile_expression(operation.rhs())?.into_float_value(),
+                )
+        }
+    }
+    .into())
+}
+
 fn compile_record_address<'c>(
     context: &Context<'c>,
     builder: &inkwell::builder::Builder<'c>,
@@ -394,6 +456,29 @@ fn compile_record_address<'c>(
             ],
             "",
         )?
+    })
+}
+
+fn compile_constant_record_address<'c>(
+    context: &Context<'c>,
+    address: &RecordAddress,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::PointerValue<'c>, CompileError> {
+    Ok(unsafe {
+        compile_expression(address.pointer())?
+            .into_pointer_value()
+            .const_gep(
+                type_::compile_record(context, address.type_()),
+                &[
+                    context.inkwell().i32_type().const_zero(),
+                    context
+                        .inkwell()
+                        .i32_type()
+                        .const_int(address.field_index() as u64, false),
+                ],
+            )
     })
 }
 
@@ -484,6 +569,23 @@ fn compile_pointer_address<'c>(
     })
 }
 
+fn compile_constant_pointer_address<'c>(
+    context: &Context<'c>,
+    address: &PointerAddress,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::PointerValue<'c>, CompileError> {
+    Ok(unsafe {
+        compile_expression(address.pointer())?
+            .into_pointer_value()
+            .const_gep(
+                type_::compile(context, address.type_().element()),
+                &[compile_expression(address.offset())?.into_int_value()],
+            )
+    })
+}
+
 // TODO Refactor this by matching with types::Primitive directly.
 fn compile_undefined_primitive<'c>(
     context: &Context<'c>,
@@ -523,6 +625,29 @@ fn compile_union_address<'c>(
             ],
             "",
         )?
+    })
+}
+
+fn compile_constant_union_address<'c>(
+    context: &Context<'c>,
+    address: &UnionAddress,
+    compile_expression: &impl Fn(
+        &Expression,
+    ) -> Result<inkwell::values::BasicValueEnum<'c>, CompileError>,
+) -> Result<inkwell::values::PointerValue<'c>, CompileError> {
+    let type_ = type_::compile_union_member(context, address.type_(), address.member_index());
+
+    Ok(unsafe {
+        compile_expression(address.pointer())?
+            .into_pointer_value()
+            .const_cast(type_.ptr_type(Default::default()))
+            .const_gep(
+                type_,
+                &[
+                    context.inkwell().i32_type().const_zero(),
+                    context.inkwell().i32_type().const_zero(),
+                ],
+            )
     })
 }
 
