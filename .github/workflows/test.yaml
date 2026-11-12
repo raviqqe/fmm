@@ -5,33 +5,33 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.8.0
       - uses: raviqqe/enable-homebrew@main
       - run: tools/setup.sh
       - run: cargo build
   test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.8.0
       - uses: raviqqe/enable-homebrew@main
       - run: tools/setup.sh
       - run: cargo test
   format:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.8.0
       - run: cargo fmt -- --check
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.8.0
       - uses: raviqqe/enable-homebrew@main
       - run: tools/setup.sh
       - run: cargo clippy -- -D warnings
   spell-check:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.8.0
       - uses: streetsidesoftware/cspell-action@main
         with:
           files: "**/*.{md,rs}"
