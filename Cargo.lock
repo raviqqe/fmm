@@ -107,7 +107,6 @@ dependencies = [
  "fnv",
  "once_cell",
  "pretty_assertions",
- "tempfile",
 ]
 
 [[package]]
