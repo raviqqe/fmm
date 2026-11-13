@@ -23,11 +23,10 @@ pub fn compile_block<'c, 'a>(
             instruction_function_set,
         )?;
 
-        if let Some(value) = value {
-            if let Some((name, _)) = instruction.value() {
+        if let Some(value) = value
+            && let Some((name, _)) = instruction.value() {
                 variables.insert(name, value);
             }
-        }
     }
 
     compile_terminal_instruction(
