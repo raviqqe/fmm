@@ -326,14 +326,16 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            void_type(),
-                            Primitive::Boolean(true),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "_",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                void_type(),
+                                Primitive::Boolean(true),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "_",
+                            )
+                            .into()
+                        ],
                         TerminalInstruction::Unreachable,
                     ),
                     Default::default()
@@ -357,14 +359,16 @@ mod tests {
                     ],
                     void_type(),
                     Block::new(
-                        vec![If::new(
-                            void_type(),
-                            Primitive::Boolean(true),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "_",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                void_type(),
+                                Primitive::Boolean(true),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "_",
+                            )
+                            .into()
+                        ],
                         TerminalInstruction::Unreachable,
                     ),
                     FunctionDefinitionOptions::new()
@@ -386,17 +390,19 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![Call::new(
-                            types::Function::new(
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
                                 vec![],
-                                types::Primitive::Float64,
-                                types::CallingConvention::Source
-                            ),
-                            Variable::new("f"),
-                            vec![],
-                            "x",
-                        )
-                        .into()],
+                                "x",
+                            )
+                            .into()
+                        ],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
                     Default::default()
@@ -420,17 +426,19 @@ mod tests {
                     ],
                     void_type(),
                     Block::new(
-                        vec![Call::new(
-                            types::Function::new(
-                                vec![],
-                                types::Primitive::Float64,
-                                types::CallingConvention::Source
-                            ),
-                            Variable::new("f"),
-                            vec![Variable::new("_s").into(), Variable::new("_k").into()],
-                            "_k_0",
-                        )
-                        .into()],
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::Float64,
+                                    types::CallingConvention::Source
+                                ),
+                                Variable::new("f"),
+                                vec![Variable::new("_s").into(), Variable::new("_k").into()],
+                                "_k_0",
+                            )
+                            .into()
+                        ],
                         Return::new(void_type(), Variable::new("_k_0")),
                     ),
                     FunctionDefinitionOptions::new()
@@ -492,35 +500,37 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            void_type(),
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![
-                                    Call::new(
-                                        types::Function::new(
+                        vec![
+                            If::new(
+                                void_type(),
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            types::Function::new(
+                                                vec![],
+                                                types::Primitive::Float64,
+                                                types::CallingConvention::Source
+                                            ),
+                                            Variable::new("f"),
                                             vec![],
+                                            "x",
+                                        )
+                                        .into(),
+                                        Store::new(
                                             types::Primitive::Float64,
-                                            types::CallingConvention::Source
-                                        ),
-                                        Variable::new("f"),
-                                        vec![],
-                                        "x",
-                                    )
-                                    .into(),
-                                    Store::new(
-                                        types::Primitive::Float64,
-                                        Undefined::new(types::Primitive::Float64),
-                                        Variable::new("x")
-                                    )
-                                    .into()
-                                ],
-                                Return::new(types::Primitive::Float64, Variable::new("x"))
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "_",
-                        )
-                        .into()],
+                                            Undefined::new(types::Primitive::Float64),
+                                            Variable::new("x")
+                                        )
+                                        .into()
+                                    ],
+                                    Return::new(types::Primitive::Float64, Variable::new("x"))
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "_",
+                            )
+                            .into()
+                        ],
                         TerminalInstruction::Unreachable,
                     ),
                     Default::default()

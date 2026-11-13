@@ -479,17 +479,19 @@ mod tests {
                         vec![],
                         types::Primitive::PointerInteger,
                         Block::new(
-                            vec![Call::new(
-                                types::Function::new(
-                                    vec![],
-                                    types::Primitive::PointerInteger,
-                                    types::CallingConvention::Target
-                                ),
-                                Variable::new("f"),
-                                vec![Undefined::new(types::Primitive::Integer32).into()],
-                                "x"
-                            )
-                            .into()],
+                            vec![
+                                Call::new(
+                                    types::Function::new(
+                                        vec![],
+                                        types::Primitive::PointerInteger,
+                                        types::CallingConvention::Target
+                                    ),
+                                    Variable::new("f"),
+                                    vec![Undefined::new(types::Primitive::Integer32).into()],
+                                    "x"
+                                )
+                                .into()
+                            ],
                             TerminalInstruction::Unreachable
                         ),
                         Default::default(),
@@ -510,17 +512,19 @@ mod tests {
                     vec![],
                     types::Primitive::PointerInteger,
                     Block::new(
-                        vec![Call::new(
-                            types::Function::new(
-                                vec![],
-                                types::Primitive::PointerInteger,
-                                types::CallingConvention::Target
-                            ),
-                            Variable::new("f"),
-                            vec![Undefined::new(types::Primitive::PointerInteger).into()],
-                            "x"
-                        )
-                        .into()],
+                        vec![
+                            Call::new(
+                                types::Function::new(
+                                    vec![],
+                                    types::Primitive::PointerInteger,
+                                    types::CallingConvention::Target
+                                ),
+                                Variable::new("f"),
+                                vec![Undefined::new(types::Primitive::PointerInteger).into()],
+                                "x"
+                            )
+                            .into()
+                        ],
                         TerminalInstruction::Unreachable
                     ),
                     Default::default(),

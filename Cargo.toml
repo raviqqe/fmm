@@ -1,7 +1,8 @@
 [workspace]
+resolver = "3"
 members = ["fmm", "fmm-c", "fmm-llvm"]
 
 [workspace.package]
 version = "0.2.0"
+edition = "2024"
 license = "MIT"
-edition = "2021"

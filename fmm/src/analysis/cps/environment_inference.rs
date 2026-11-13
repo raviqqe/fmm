@@ -401,15 +401,17 @@ mod tests {
                     vec![Argument::new("y", types::Primitive::PointerInteger)],
                     types::Primitive::PointerInteger,
                     Block::new(
-                        vec![{
-                            let mut call =
-                                Call::new(function_type, Variable::new("g"), vec![], "x");
+                        vec![
+                            {
+                                let mut call =
+                                    Call::new(function_type, Variable::new("g"), vec![], "x");
 
-                            *call.environment_mut() = vec!["y".into()];
+                                *call.environment_mut() = vec!["y".into()];
 
-                            call
-                        }
-                        .into()],
+                                call
+                            }
+                            .into()
+                        ],
                         Return::new(types::Primitive::PointerInteger, Variable::new("y"))
                     ),
                     Default::default(),
@@ -1030,24 +1032,28 @@ mod tests {
                                     types::Primitive::PointerInteger,
                                     Primitive::Boolean(true),
                                     Block::new(
-                                        vec![Load::new(
-                                            types::Primitive::PointerInteger,
-                                            Variable::new("p"),
-                                            "i"
-                                        )
-                                        .into()],
+                                        vec![
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("p"),
+                                                "i"
+                                            )
+                                            .into()
+                                        ],
                                         Branch::new(
                                             types::Primitive::PointerInteger,
                                             Primitive::PointerInteger(0),
                                         ),
                                     ),
                                     Block::new(
-                                        vec![Load::new(
-                                            types::Primitive::PointerInteger,
-                                            Variable::new("q"),
-                                            "j"
-                                        )
-                                        .into()],
+                                        vec![
+                                            Load::new(
+                                                types::Primitive::PointerInteger,
+                                                Variable::new("q"),
+                                                "j"
+                                            )
+                                            .into()
+                                        ],
                                         Branch::new(
                                             types::Primitive::PointerInteger,
                                             Primitive::PointerInteger(0),
@@ -1097,24 +1103,28 @@ mod tests {
                                         types::Primitive::PointerInteger,
                                         Primitive::Boolean(true),
                                         Block::new(
-                                            vec![Load::new(
-                                                types::Primitive::PointerInteger,
-                                                Variable::new("p"),
-                                                "i",
-                                            )
-                                            .into()],
+                                            vec![
+                                                Load::new(
+                                                    types::Primitive::PointerInteger,
+                                                    Variable::new("p"),
+                                                    "i",
+                                                )
+                                                .into(),
+                                            ],
                                             Branch::new(
                                                 types::Primitive::PointerInteger,
                                                 Primitive::PointerInteger(0),
                                             ),
                                         ),
                                         Block::new(
-                                            vec![Load::new(
-                                                types::Primitive::PointerInteger,
-                                                Variable::new("q"),
-                                                "j",
-                                            )
-                                            .into()],
+                                            vec![
+                                                Load::new(
+                                                    types::Primitive::PointerInteger,
+                                                    Variable::new("q"),
+                                                    "j",
+                                                )
+                                                .into(),
+                                            ],
                                             Branch::new(
                                                 types::Primitive::PointerInteger,
                                                 Primitive::PointerInteger(0),

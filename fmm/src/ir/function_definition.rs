@@ -1,4 +1,4 @@
-use super::{argument::Argument, block::Block, FunctionDefinitionOptions};
+use super::{FunctionDefinitionOptions, argument::Argument, block::Block};
 use crate::types::{self, Type};
 use std::cell::RefCell;
 

@@ -576,10 +576,9 @@ mod tests {
             compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Record::new(vec![types::Union::new(vec![
-                        types::Primitive::PointerInteger.into(),
-                    ])
-                    .into()]),
+                    types::Record::new(vec![
+                        types::Union::new(vec![types::Primitive::PointerInteger.into()]).into(),
+                    ]),
                 )],
                 vec![],
                 vec![],
@@ -605,10 +604,9 @@ mod tests {
             compile_module(Module::new(
                 vec![VariableDeclaration::new(
                     "x",
-                    types::Union::new(vec![types::Union::new(vec![
-                        types::Primitive::PointerInteger.into(),
-                    ])
-                    .into()]),
+                    types::Union::new(vec![
+                        types::Union::new(vec![types::Primitive::PointerInteger.into()]).into(),
+                    ]),
                 )],
                 vec![],
                 vec![],
@@ -852,17 +850,19 @@ mod tests {
                             "y",
                             Record::new(
                                 record_type.clone(),
-                                vec![ArithmeticOperation::new(
-                                    types::Primitive::PointerInteger,
-                                    ArithmeticOperator::Divide,
-                                    BitCast::new(
-                                        types::Pointer::new(types::Primitive::PointerInteger),
+                                vec![
+                                    ArithmeticOperation::new(
                                         types::Primitive::PointerInteger,
-                                        Variable::new("x"),
-                                    ),
-                                    Primitive::PointerInteger(2),
-                                )
-                                .into()],
+                                        ArithmeticOperator::Divide,
+                                        BitCast::new(
+                                            types::Pointer::new(types::Primitive::PointerInteger),
+                                            types::Primitive::PointerInteger,
+                                            Variable::new("x"),
+                                        ),
+                                        Primitive::PointerInteger(2),
+                                    )
+                                    .into()
+                                ],
                             ),
                             record_type,
                             Default::default(),
@@ -1527,17 +1527,19 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![Call::new(
-                        types::Function::new(
+                    vec![
+                        Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::PointerInteger,
+                                CallingConvention::Source,
+                            ),
+                            Variable::new("f"),
                             vec![],
-                            types::Primitive::PointerInteger,
-                            CallingConvention::Source,
-                        ),
-                        Variable::new("f"),
-                        vec![],
-                        "x",
-                    )
-                    .into()],
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
             ));
@@ -1550,17 +1552,19 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![Call::new(
-                        types::Function::new(
+                    vec![
+                        Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::PointerInteger,
+                                CallingConvention::Tail,
+                            ),
+                            Variable::new("f"),
                             vec![],
-                            types::Primitive::PointerInteger,
-                            CallingConvention::Tail,
-                        ),
-                        Variable::new("f"),
-                        vec![],
-                        "x",
-                    )
-                    .into()],
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
                 FunctionDefinitionOptions::new().set_calling_convention(CallingConvention::Tail),
@@ -1658,13 +1662,15 @@ mod tests {
                 )],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![AtomicLoad::new(
-                        types::Primitive::PointerInteger,
-                        Variable::new("x"),
-                        AtomicOrdering::Relaxed,
-                        "y",
-                    )
-                    .into()],
+                    vec![
+                        AtomicLoad::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("x"),
+                            AtomicOrdering::Relaxed,
+                            "y",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
             ));
@@ -1685,13 +1691,15 @@ mod tests {
                 )],
                 function_type.clone(),
                 Block::new(
-                    vec![AtomicLoad::new(
-                        function_type.clone(),
-                        Variable::new("x"),
-                        AtomicOrdering::Relaxed,
-                        "y",
-                    )
-                    .into()],
+                    vec![
+                        AtomicLoad::new(
+                            function_type.clone(),
+                            Variable::new("x"),
+                            AtomicOrdering::Relaxed,
+                            "y",
+                        )
+                        .into(),
+                    ],
                     Return::new(function_type, Variable::new("y")),
                 ),
             ));
@@ -1707,13 +1715,15 @@ mod tests {
                 )],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![AtomicStore::new(
-                        types::Primitive::PointerInteger,
-                        Undefined::new(types::Primitive::PointerInteger),
-                        Variable::new("x"),
-                        AtomicOrdering::Relaxed,
-                    )
-                    .into()],
+                    vec![
+                        AtomicStore::new(
+                            types::Primitive::PointerInteger,
+                            Undefined::new(types::Primitive::PointerInteger),
+                            Variable::new("x"),
+                            AtomicOrdering::Relaxed,
+                        )
+                        .into(),
+                    ],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
@@ -1737,13 +1747,15 @@ mod tests {
                 )],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![AtomicStore::new(
-                        function_type.clone(),
-                        Undefined::new(function_type),
-                        Variable::new("x"),
-                        AtomicOrdering::Relaxed,
-                    )
-                    .into()],
+                    vec![
+                        AtomicStore::new(
+                            function_type.clone(),
+                            Undefined::new(function_type),
+                            Variable::new("x"),
+                            AtomicOrdering::Relaxed,
+                        )
+                        .into(),
+                    ],
                     Return::new(
                         types::Primitive::PointerInteger,
                         Primitive::PointerInteger(42),
@@ -1772,26 +1784,28 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![If::new(
-                        types::Primitive::PointerInteger,
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![],
-                            Branch::new(
-                                types::Primitive::PointerInteger,
-                                Primitive::PointerInteger(42),
+                    vec![
+                        If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(42),
+                                ),
                             ),
-                        ),
-                        Block::new(
-                            vec![],
-                            Branch::new(
-                                types::Primitive::PointerInteger,
-                                Primitive::PointerInteger(42),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(42),
+                                ),
                             ),
-                        ),
-                        "x",
-                    )
-                    .into()],
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
             ));
@@ -1804,26 +1818,28 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![If::new(
-                        types::Primitive::PointerInteger,
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![],
-                            Return::new(
-                                types::Primitive::PointerInteger,
-                                Primitive::PointerInteger(42),
+                    vec![
+                        If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(42),
+                                ),
                             ),
-                        ),
-                        Block::new(
-                            vec![],
-                            Branch::new(
-                                types::Primitive::PointerInteger,
-                                Primitive::PointerInteger(42),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(42),
+                                ),
                             ),
-                        ),
-                        "x",
-                    )
-                    .into()],
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
             ));
@@ -1836,20 +1852,22 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![If::new(
-                        types::Primitive::PointerInteger,
-                        Primitive::Boolean(true),
-                        Block::new(vec![], TerminalInstruction::Unreachable),
-                        Block::new(
-                            vec![],
-                            Branch::new(
-                                types::Primitive::PointerInteger,
-                                Primitive::PointerInteger(42),
+                    vec![
+                        If::new(
+                            types::Primitive::PointerInteger,
+                            Primitive::Boolean(true),
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            Block::new(
+                                vec![],
+                                Branch::new(
+                                    types::Primitive::PointerInteger,
+                                    Primitive::PointerInteger(42),
+                                ),
                             ),
-                        ),
-                        "x",
-                    )
-                    .into()],
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
             ));
@@ -1864,24 +1882,28 @@ mod tests {
                 vec![],
                 pointer_type.clone(),
                 Block::new(
-                    vec![If::new(
-                        pointer_type.clone(),
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![],
-                            Branch::new(
-                                pointer_type.clone(),
-                                BitCast::new(
-                                    types::Pointer::new(types::Primitive::Float64),
+                    vec![
+                        If::new(
+                            pointer_type.clone(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Branch::new(
                                     pointer_type.clone(),
-                                    Undefined::new(types::Pointer::new(types::Primitive::Float64)),
+                                    BitCast::new(
+                                        types::Pointer::new(types::Primitive::Float64),
+                                        pointer_type.clone(),
+                                        Undefined::new(types::Pointer::new(
+                                            types::Primitive::Float64,
+                                        )),
+                                    ),
                                 ),
                             ),
-                        ),
-                        Block::new(vec![], TerminalInstruction::Unreachable),
-                        "x",
-                    )
-                    .into()],
+                            Block::new(vec![], TerminalInstruction::Unreachable),
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(pointer_type, Variable::new("x")),
                 ),
             ));
@@ -1896,13 +1918,15 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![DeconstructRecord::new(
-                        record_type.clone(),
-                        Record::new(record_type, vec![Primitive::PointerInteger(42).into()]),
-                        0,
-                        "x",
-                    )
-                    .into()],
+                    vec![
+                        DeconstructRecord::new(
+                            record_type.clone(),
+                            Record::new(record_type, vec![Primitive::PointerInteger(42).into()]),
+                            0,
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
             ));
@@ -1917,13 +1941,15 @@ mod tests {
                 vec![],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![DeconstructUnion::new(
-                        union_type.clone(),
-                        Union::new(union_type, 0, Primitive::PointerInteger(42)),
-                        0,
-                        "x",
-                    )
-                    .into()],
+                    vec![
+                        DeconstructUnion::new(
+                            union_type.clone(),
+                            Union::new(union_type, 0, Primitive::PointerInteger(42)),
+                            0,
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("x")),
                 ),
             ));
@@ -1939,16 +1965,18 @@ mod tests {
                 )],
                 types::Primitive::Boolean,
                 Block::new(
-                    vec![CompareAndSwap::new(
-                        types::Primitive::PointerInteger,
-                        Variable::new("x"),
-                        Primitive::PointerInteger(0),
-                        Primitive::PointerInteger(1),
-                        AtomicOrdering::Relaxed,
-                        AtomicOrdering::Relaxed,
-                        "y",
-                    )
-                    .into()],
+                    vec![
+                        CompareAndSwap::new(
+                            types::Primitive::PointerInteger,
+                            Variable::new("x"),
+                            Primitive::PointerInteger(0),
+                            Primitive::PointerInteger(1),
+                            AtomicOrdering::Relaxed,
+                            AtomicOrdering::Relaxed,
+                            "y",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::Boolean, Variable::new("y")),
                 ),
             ));
@@ -1964,15 +1992,17 @@ mod tests {
                 )],
                 types::Primitive::PointerInteger,
                 Block::new(
-                    vec![AtomicOperation::new(
-                        types::Primitive::PointerInteger,
-                        AtomicOperator::Add,
-                        Variable::new("x"),
-                        Primitive::PointerInteger(42),
-                        AtomicOrdering::Relaxed,
-                        "y",
-                    )
-                    .into()],
+                    vec![
+                        AtomicOperation::new(
+                            types::Primitive::PointerInteger,
+                            AtomicOperator::Add,
+                            Variable::new("x"),
+                            Primitive::PointerInteger(42),
+                            AtomicOrdering::Relaxed,
+                            "y",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                 ),
             ));
@@ -1995,15 +2025,17 @@ mod tests {
                     )],
                     types::Primitive::PointerInteger,
                     Block::new(
-                        vec![AtomicOperation::new(
-                            types::Primitive::PointerInteger,
-                            AtomicOperator::Add,
-                            Variable::new("x"),
-                            Primitive::PointerInteger(42),
-                            ordering,
-                            "y",
-                        )
-                        .into()],
+                        vec![
+                            AtomicOperation::new(
+                                types::Primitive::PointerInteger,
+                                AtomicOperator::Add,
+                                Variable::new("x"),
+                                Primitive::PointerInteger(42),
+                                ordering,
+                                "y",
+                            )
+                            .into(),
+                        ],
                         Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                     ),
                 ));
@@ -2056,12 +2088,14 @@ mod tests {
                 ],
                 types::void_type(),
                 Block::new(
-                    vec![MemoryCopy::new(
-                        Variable::new("x"),
-                        Variable::new("y"),
-                        Primitive::PointerInteger(42),
-                    )
-                    .into()],
+                    vec![
+                        MemoryCopy::new(
+                            Variable::new("x"),
+                            Variable::new("y"),
+                            Primitive::PointerInteger(42),
+                        )
+                        .into(),
+                    ],
                     Return::new(types::void_type(), void_value()),
                 ),
             ));

@@ -31,7 +31,7 @@ mod tests {
     use super::*;
     use crate::{
         analysis::{format, validation},
-        types::{self, void_type, CallingConvention, Type},
+        types::{self, CallingConvention, Type, void_type},
     };
 
     fn create_function_type(arguments: Vec<Type>, result: impl Into<Type>) -> types::Function {
@@ -101,13 +101,15 @@ mod tests {
                 vec![],
                 types::Primitive::Float64,
                 Block::new(
-                    vec![Call::new(
-                        function_type,
-                        Variable::new("f"),
-                        vec![Primitive::Float64(42.0).into()],
-                        "x",
-                    )
-                    .into()],
+                    vec![
+                        Call::new(
+                            function_type,
+                            Variable::new("f"),
+                            vec![Primitive::Float64(42.0).into()],
+                            "x",
+                        )
+                        .into(),
+                    ],
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
             )],
@@ -192,13 +194,15 @@ mod tests {
                 vec![],
                 types::Primitive::Float64,
                 Block::new(
-                    vec![Call::new(
-                        function_type,
-                        Variable::new("f"),
-                        vec![Primitive::Float64(42.0).into()],
-                        "x",
-                    )
-                    .into()],
+                    vec![
+                        Call::new(
+                            function_type,
+                            Variable::new("f"),
+                            vec![Primitive::Float64(42.0).into()],
+                            "x",
+                        )
+                        .into()
+                    ],
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
             )],
@@ -326,23 +330,27 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type,
-                                    Variable::new("f"),
-                                    vec![Primitive::Float64(42.0).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into(),
+                                    ],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into(),
+                        ],
                         Return::new(types::Primitive::Float64, Variable::new("y")),
                     ),
                 )],
@@ -365,23 +373,27 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type,
-                                    Variable::new("f"),
-                                    vec![Primitive::Float64(42.0).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into()
+                        ],
                         Return::new(types::Primitive::Float64, Variable::new("y")),
                     ),
                 )],
@@ -404,23 +416,27 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            void_type(),
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type,
-                                    Variable::new("f"),
-                                    vec![Primitive::Float64(42.0).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Return::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "_",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                void_type(),
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into(),
+                                    ],
+                                    Return::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "_",
+                            )
+                            .into(),
+                        ],
                         TerminalInstruction::Unreachable,
                     ),
                 )],
@@ -443,23 +459,27 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type,
-                                    Variable::new("f"),
-                                    vec![Primitive::Float64(42.0).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into()
+                        ],
                         Return::new(
                             types::Primitive::Float64,
                             ArithmeticOperation::new(
@@ -495,13 +515,15 @@ mod tests {
                                 types::Primitive::PointerInteger,
                                 Primitive::Boolean(true),
                                 Block::new(
-                                    vec![Call::new(
-                                        function_type.clone(),
-                                        Variable::new("f"),
-                                        vec![Primitive::PointerInteger(42).into()],
-                                        "x",
-                                    )
-                                    .into()],
+                                    vec![
+                                        Call::new(
+                                            function_type.clone(),
+                                            Variable::new("f"),
+                                            vec![Primitive::PointerInteger(42).into()],
+                                            "x",
+                                        )
+                                        .into(),
+                                    ],
                                     Branch::new(
                                         types::Primitive::PointerInteger,
                                         Variable::new("x"),
@@ -546,14 +568,16 @@ mod tests {
                                 types::Primitive::Float64,
                                 Primitive::Boolean(true),
                                 Block::new(
-                                    vec![Load::new(
-                                        types::Primitive::Float64,
-                                        Undefined::new(types::Pointer::new(
-                                            types::Primitive::Float64
-                                        )),
-                                        "x"
-                                    )
-                                    .into()],
+                                    vec![
+                                        Load::new(
+                                            types::Primitive::Float64,
+                                            Undefined::new(types::Pointer::new(
+                                                types::Primitive::Float64
+                                            )),
+                                            "x"
+                                        )
+                                        .into()
+                                    ],
                                     Branch::new(types::Primitive::Float64, Variable::new("x")),
                                 ),
                                 Block::new(vec![], TerminalInstruction::Unreachable),
@@ -593,23 +617,27 @@ mod tests {
                     ],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Call::new(
-                                    function_type,
-                                    Variable::new("f"),
-                                    vec![Primitive::Float64(42.0).into()],
-                                    "x",
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into(),
+                                    ],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into(),
+                        ],
                         Return::new(
                             types::Primitive::Float64,
                             ArithmeticOperation::new(
@@ -652,8 +680,10 @@ mod tests {
                                 types::Primitive::PointerInteger,
                                 Primitive::Boolean(true),
                                 Block::new(
-                                    vec![Call::new(function_type, Variable::new("f"), vec![], "a")
-                                        .into()],
+                                    vec![
+                                        Call::new(function_type, Variable::new("f"), vec![], "a")
+                                            .into(),
+                                    ],
                                     Branch::new(
                                         types::Primitive::PointerInteger,
                                         Variable::new("a"),
@@ -712,33 +742,35 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::Float64,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![
-                                    If::new(
-                                        types::Primitive::Float64,
-                                        Primitive::Boolean(true),
-                                        Block::new(vec![], TerminalInstruction::Unreachable),
-                                        Block::new(vec![], TerminalInstruction::Unreachable),
-                                        "",
-                                    )
-                                    .into(),
-                                    Call::new(
-                                        function_type,
-                                        Variable::new("f"),
-                                        vec![Primitive::Float64(42.0).into()],
-                                        "x",
-                                    )
-                                    .into(),
-                                ],
-                                Branch::new(types::Primitive::Float64, Variable::new("x")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "y",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::Float64,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        If::new(
+                                            types::Primitive::Float64,
+                                            Primitive::Boolean(true),
+                                            Block::new(vec![], TerminalInstruction::Unreachable),
+                                            Block::new(vec![], TerminalInstruction::Unreachable),
+                                            "",
+                                        )
+                                        .into(),
+                                        Call::new(
+                                            function_type,
+                                            Variable::new("f"),
+                                            vec![Primitive::Float64(42.0).into()],
+                                            "x",
+                                        )
+                                        .into(),
+                                    ],
+                                    Branch::new(types::Primitive::Float64, Variable::new("x")),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "y",
+                            )
+                            .into(),
+                        ],
                         Return::new(types::Primitive::Float64, Variable::new("y")),
                     ),
                 )],
@@ -787,13 +819,15 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![Call::new(
-                            function_type,
-                            Variable::new("g"),
-                            vec![Primitive::Float64(42.0).into()],
-                            "x",
-                        )
-                        .into()],
+                        vec![
+                            Call::new(
+                                function_type,
+                                Variable::new("g"),
+                                vec![Primitive::Float64(42.0).into()],
+                                "x",
+                            )
+                            .into(),
+                        ],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
                     FunctionDefinitionOptions::new()
@@ -821,16 +855,18 @@ mod tests {
                     vec![],
                     types::Primitive::Float64,
                     Block::new(
-                        vec![Call::new(
-                            function_type,
-                            Variable::new("g"),
-                            vec![
-                                Primitive::Float64(42.0).into(),
-                                Primitive::Integer64(42).into(),
-                            ],
-                            "x",
-                        )
-                        .into()],
+                        vec![
+                            Call::new(
+                                function_type,
+                                Variable::new("g"),
+                                vec![
+                                    Primitive::Float64(42.0).into(),
+                                    Primitive::Integer64(42).into(),
+                                ],
+                                "x",
+                            )
+                            .into(),
+                        ],
                         Return::new(types::Primitive::Float64, Variable::new("x")),
                     ),
                     FunctionDefinitionOptions::new()

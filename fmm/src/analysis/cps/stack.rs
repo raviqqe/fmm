@@ -2,7 +2,7 @@ use super::utility;
 use crate::{
     build::{self, BuildError, InstructionBuilder, NameGenerator, TypedExpression},
     ir::*,
-    types::{self, generic_pointer_type, void_type, Type},
+    types::{self, Type, generic_pointer_type, void_type},
 };
 use once_cell::unsync::Lazy;
 use std::{cell::RefCell, rc::Rc};

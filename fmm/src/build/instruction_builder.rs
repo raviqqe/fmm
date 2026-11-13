@@ -3,7 +3,7 @@ use super::{
 };
 use crate::{
     ir::*,
-    types::{self, generic_pointer_type, void_type, Type},
+    types::{self, Type, generic_pointer_type, void_type},
 };
 use std::{cell::RefCell, mem::take, rc::Rc};
 

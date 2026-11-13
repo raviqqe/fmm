@@ -418,54 +418,62 @@ mod tests {
                     vec![],
                     types::Primitive::PointerInteger,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::PointerInteger,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["y".into()],
-                                        "a"
-                                    )
-                                    .into(),
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["x".into(), "y".into()],
-                                        "b"
-                                    )
-                                    .into()
-                                ],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("b")),
-                            ),
-                            Block::new(
-                                vec![
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["y".into()],
-                                        "c"
-                                    )
-                                    .into(),
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["x".into(), "y".into()],
-                                        "d"
-                                    )
-                                    .into()
-                                ],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("d")),
-                            ),
-                            "e",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["y".into()],
+                                            "a"
+                                        )
+                                        .into(),
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["x".into(), "y".into()],
+                                            "b"
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("b")
+                                    ),
+                                ),
+                                Block::new(
+                                    vec![
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["y".into()],
+                                            "c"
+                                        )
+                                        .into(),
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["x".into(), "y".into()],
+                                            "d"
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("d")
+                                    ),
+                                ),
+                                "e",
+                            )
+                            .into()
+                        ],
                         Return::new(types::Primitive::PointerInteger, Variable::new("e")),
                     ),
                     Default::default(),
@@ -480,54 +488,62 @@ mod tests {
                     vec![],
                     types::Primitive::PointerInteger,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::PointerInteger,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["y".into()],
-                                        "a"
-                                    )
-                                    .into(),
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["y".into(), "x".into()],
-                                        "b"
-                                    )
-                                    .into()
-                                ],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("b")),
-                            ),
-                            Block::new(
-                                vec![
-                                    create_call(
-                                        function_type.clone(),
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["y".into()],
-                                        "c"
-                                    )
-                                    .into(),
-                                    create_call(
-                                        function_type,
-                                        Variable::new("g"),
-                                        vec![],
-                                        vec!["y".into(), "x".into()],
-                                        "d"
-                                    )
-                                    .into()
-                                ],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("d")),
-                            ),
-                            "e",
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["y".into()],
+                                            "a"
+                                        )
+                                        .into(),
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["y".into(), "x".into()],
+                                            "b"
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("b")
+                                    ),
+                                ),
+                                Block::new(
+                                    vec![
+                                        create_call(
+                                            function_type.clone(),
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["y".into()],
+                                            "c"
+                                        )
+                                        .into(),
+                                        create_call(
+                                            function_type,
+                                            Variable::new("g"),
+                                            vec![],
+                                            vec!["y".into(), "x".into()],
+                                            "d"
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("d")
+                                    ),
+                                ),
+                                "e",
+                            )
+                            .into()
+                        ],
                         Return::new(types::Primitive::PointerInteger, Variable::new("e")),
                     ),
                     Default::default(),

@@ -267,12 +267,14 @@ mod tests {
                         )],
                         void_type(),
                         Block::new(
-                            vec![Store::new(
-                                record_type.clone(),
-                                Undefined::new(record_type),
-                                Variable::new("f_p")
-                            )
-                            .into()],
+                            vec![
+                                Store::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type),
+                                    Variable::new("f_p")
+                                )
+                                .into()
+                            ],
                             Return::new(void_type(), void_value()),
                         ),
                         FunctionDefinitionOptions::new()
@@ -355,12 +357,14 @@ mod tests {
                             )],
                             void_type(),
                             Block::new(
-                                vec![Store::new(
-                                    record_type.clone(),
-                                    Undefined::new(record_type.clone()),
-                                    Variable::new("f_p")
-                                )
-                                .into()],
+                                vec![
+                                    Store::new(
+                                        record_type.clone(),
+                                        Undefined::new(record_type.clone()),
+                                        Variable::new("f_p")
+                                    )
+                                    .into()
+                                ],
                                 Return::new(void_type(), void_value()),
                             ),
                             FunctionDefinitionOptions::new()
@@ -424,17 +428,19 @@ mod tests {
                         vec![],
                         types::Primitive::Integer64,
                         Block::new(
-                            vec![Call::new(
-                                types::Function::new(
-                                    vec![record_type.clone().into()],
-                                    types::Primitive::Integer64,
-                                    types::CallingConvention::Target,
-                                ),
-                                Variable::new("f"),
-                                vec![Undefined::new(record_type.clone()).into()],
-                                "x",
-                            )
-                            .into()],
+                            vec![
+                                Call::new(
+                                    types::Function::new(
+                                        vec![record_type.clone().into()],
+                                        types::Primitive::Integer64,
+                                        types::CallingConvention::Target,
+                                    ),
+                                    Variable::new("f"),
+                                    vec![Undefined::new(record_type.clone()).into()],
+                                    "x",
+                                )
+                                .into()
+                            ],
                             Return::new(types::Primitive::Integer64, Variable::new("x")),
                         ),
                         FunctionDefinitionOptions::new()

@@ -373,22 +373,29 @@ mod tests {
                     )],
                     types::Primitive::PointerInteger,
                     Block::new(
-                        vec![If::new(
-                            types::Primitive::PointerInteger,
-                            Primitive::Boolean(true),
-                            Block::new(
-                                vec![Load::new(
-                                    types::Primitive::PointerInteger,
-                                    Variable::new("x"),
-                                    "y"
-                                )
-                                .into()],
-                                Branch::new(types::Primitive::PointerInteger, Variable::new("y")),
-                            ),
-                            Block::new(vec![], TerminalInstruction::Unreachable),
-                            "z"
-                        )
-                        .into()],
+                        vec![
+                            If::new(
+                                types::Primitive::PointerInteger,
+                                Primitive::Boolean(true),
+                                Block::new(
+                                    vec![
+                                        Load::new(
+                                            types::Primitive::PointerInteger,
+                                            Variable::new("x"),
+                                            "y"
+                                        )
+                                        .into()
+                                    ],
+                                    Branch::new(
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("y")
+                                    ),
+                                ),
+                                Block::new(vec![], TerminalInstruction::Unreachable),
+                                "z"
+                            )
+                            .into()
+                        ],
                         Return::new(types::Primitive::PointerInteger, Variable::new("z")),
                     ),
                     Default::default()
@@ -505,12 +512,14 @@ mod tests {
                         vec![],
                         types::Primitive::PointerInteger,
                         Block::new(
-                            vec![Load::new(
-                                types::Primitive::PointerInteger,
-                                Variable::new("x"),
-                                "y"
-                            )
-                            .into(),],
+                            vec![
+                                Load::new(
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("x"),
+                                    "y"
+                                )
+                                .into(),
+                            ],
                             Return::new(types::Primitive::PointerInteger, Variable::new("y")),
                         ),
                         Default::default()
