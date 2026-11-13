@@ -3,7 +3,6 @@ name = "fmm-c"
 description = "C backend for F--"
 version.workspace = true
 license.workspace = true
-authors.workspace = true
 edition.workspace = true
 
 [dependencies]
