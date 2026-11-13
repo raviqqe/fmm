@@ -57,7 +57,7 @@ fn transform_block(context: &Context, block: &mut Block, variables: &mut IndexSe
 
     for instruction in block.instructions_mut().iter_mut().rev() {
         if let Some((name, _)) = instruction.value() {
-            variables.remove(name);
+            variables.swap_remove(name);
         }
 
         collect_from_instruction(context, instruction, variables);
