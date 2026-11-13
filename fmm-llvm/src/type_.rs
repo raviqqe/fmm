@@ -3,16 +3,16 @@ use fmm::types::{self, Type};
 use inkwell::types::BasicType;
 
 pub fn compile<'c>(context: &Context<'c>, type_: &Type) -> inkwell::types::BasicTypeEnum<'c> {
-    // We cache compiled types for optimization because there are too many of them.
+    // We cache compiled types for optimization because there are too many of
+    // them.
     if let Some(&type_) = context.types().borrow().get(type_) {
         return type_;
     }
 
     let llvm_type = match type_ {
-        Type::Function(function) => compile_function_pointer(context, function).into(),
+        Type::Function(_) | Type::Pointer(_) => compile_pointer(context).into(),
         Type::Primitive(primitive) => compile_primitive(context, *primitive),
         Type::Record(record) => compile_record(context, record).into(),
-        Type::Pointer(pointer) => compile_pointer(context, pointer).into(),
         Type::Union(union) => compile_union(context, union).into(),
     };
 
@@ -40,18 +40,8 @@ pub fn compile_function<'c>(
     )
 }
 
-pub fn compile_function_pointer<'c>(
-    context: &Context<'c>,
-    function: &types::Function,
-) -> inkwell::types::PointerType<'c> {
-    compile_function(context, function).ptr_type(Default::default())
-}
-
-pub fn compile_pointer<'c>(
-    context: &Context<'c>,
-    pointer: &types::Pointer,
-) -> inkwell::types::PointerType<'c> {
-    compile(context, pointer.element()).ptr_type(Default::default())
+pub fn compile_pointer<'c>(context: &Context<'c>) -> inkwell::types::PointerType<'c> {
+    context.inkwell().ptr_type(Default::default())
 }
 
 pub fn compile_primitive<'c>(

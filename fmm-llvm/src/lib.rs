@@ -93,8 +93,23 @@ fn compile_module<'c>(
         );
     }
 
+    // Builders must be positioned in functions even to fold constants.
+    let constant_module = context.inkwell().create_module("");
+    let constant_builder = context.inkwell().create_builder();
+
+    constant_builder.position_at_end(context.inkwell().append_basic_block(
+        constant_module.add_function("", context.inkwell().void_type().fn_type(&[], false), None),
+        "",
+    ));
+
     for definition in module.variable_definitions() {
-        compile_variable_definition(context, &llvm_module, definition, &variables);
+        compile_variable_definition(
+            context,
+            &llvm_module,
+            &constant_builder,
+            definition,
+            &variables,
+        )?;
     }
 
     for definition in module.function_definitions() {
@@ -116,7 +131,7 @@ fn compile_heap_functions<'c>(
     context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
 ) -> InstructionFunctionSet<'c> {
-    let pointer_type = context.inkwell().i8_type().ptr_type(Default::default());
+    let pointer_type = type_::compile_pointer(context);
     let pointer_integer_type = type_::compile_pointer_integer(context);
 
     InstructionFunctionSet {
@@ -211,17 +226,21 @@ fn declare_variable_definition<'c>(
 fn compile_variable_definition<'c>(
     context: &Context<'c>,
     module: &inkwell::module::Module<'c>,
+    builder: &inkwell::builder::Builder<'c>,
     definition: &VariableDefinition,
     variables: &FnvHashMap<&str, inkwell::values::BasicValueEnum<'c>>,
-) {
+) -> Result<(), CompileError> {
     module
         .get_global(definition.name())
         .unwrap()
         .set_initializer(&expression::compile_constant(
             context,
+            builder,
             definition.body(),
             variables,
-        ));
+        )?);
+
+    Ok(())
 }
 
 fn declare_function_definition<'c>(
@@ -782,6 +801,80 @@ mod tests {
                 vec![],
             ));
         }
+
+        #[test]
+        fn fail_to_fold_constant() {
+            assert_eq!(
+                compile_to_object(
+                    &Module::new(
+                        vec![VariableDeclaration::new(
+                            "x",
+                            types::Primitive::PointerInteger,
+                        )],
+                        vec![],
+                        vec![VariableDefinition::new(
+                            "y",
+                            ArithmeticOperation::new(
+                                types::Primitive::PointerInteger,
+                                ArithmeticOperator::Divide,
+                                BitCast::new(
+                                    types::Pointer::new(types::Primitive::PointerInteger),
+                                    types::Primitive::PointerInteger,
+                                    Variable::new("x"),
+                                ),
+                                Primitive::PointerInteger(2),
+                            ),
+                            types::Primitive::PointerInteger,
+                            Default::default(),
+                        )],
+                        vec![],
+                    ),
+                    &DUMMY_INSTRUCTION_CONFIGURATION,
+                    None,
+                ),
+                Err(CompileError::ConstantNotFolded)
+            );
+        }
+
+        #[test]
+        fn fail_to_fold_constant_in_record() {
+            let record_type = types::Record::new(vec![types::Primitive::PointerInteger.into()]);
+
+            assert_eq!(
+                compile_to_object(
+                    &Module::new(
+                        vec![VariableDeclaration::new(
+                            "x",
+                            types::Primitive::PointerInteger,
+                        )],
+                        vec![],
+                        vec![VariableDefinition::new(
+                            "y",
+                            Record::new(
+                                record_type.clone(),
+                                vec![ArithmeticOperation::new(
+                                    types::Primitive::PointerInteger,
+                                    ArithmeticOperator::Divide,
+                                    BitCast::new(
+                                        types::Pointer::new(types::Primitive::PointerInteger),
+                                        types::Primitive::PointerInteger,
+                                        Variable::new("x"),
+                                    ),
+                                    Primitive::PointerInteger(2),
+                                )
+                                .into()],
+                            ),
+                            record_type,
+                            Default::default(),
+                        )],
+                        vec![],
+                    ),
+                    &DUMMY_INSTRUCTION_CONFIGURATION,
+                    None,
+                ),
+                Err(CompileError::ConstantNotFolded)
+            );
+        }
     }
 
     mod function_definition {
@@ -1002,21 +1095,24 @@ mod tests {
 
         #[test]
         fn compile_bit_cast_to_pointer() {
-            compile_module(Module::new(
-                vec![],
-                vec![],
-                vec![VariableDefinition::new(
-                    "x",
-                    BitCast::new(
-                        types::Primitive::Float64,
+            compile_module_with_targets(
+                Module::new(
+                    vec![],
+                    vec![],
+                    vec![VariableDefinition::new(
+                        "x",
+                        BitCast::new(
+                            types::Primitive::Float64,
+                            types::Pointer::new(types::Primitive::Float64),
+                            Primitive::Float64(42.0),
+                        ),
                         types::Pointer::new(types::Primitive::Float64),
-                        Primitive::Float64(42.0),
-                    ),
-                    types::Pointer::new(types::Primitive::Float64),
-                    Default::default(),
-                )],
-                vec![],
-            ));
+                        Default::default(),
+                    )],
+                    vec![],
+                ),
+                POINTER_64_BIT_TARGETS,
+            );
         }
 
         #[test]
