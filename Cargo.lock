@@ -88,7 +88,7 @@ checksum = "5905ec755cc8386d7928353e4d356d2be3e89e81e5ca01fe630a1ca4d08dc175"
 
 [[package]]
 name = "fmm"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "fnv",
  "indexmap",
@@ -101,7 +101,7 @@ dependencies = [
 
 [[package]]
 name = "fmm-c"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "fmm",
  "fnv",
@@ -112,7 +112,7 @@ dependencies = [
 
 [[package]]
 name = "fmm-llvm"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "fmm",
  "fnv",
