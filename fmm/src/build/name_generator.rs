@@ -13,7 +13,7 @@ impl NameGenerator {
     }
 
     pub fn generate(&mut self) -> String {
-        let name = format!("{}{:x}", &self.prefix, self.index);
+        let name = format!("{}{:x}", self.prefix, self.index);
 
         self.index += 1;
 

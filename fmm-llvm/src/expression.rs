@@ -132,7 +132,7 @@ pub fn compile_constant<'c>(
                 &record
                     .fields()
                     .iter()
-                    .map(|expression| compile_expression(expression))
+                    .map(&compile_expression)
                     .collect::<Vec<_>>(),
                 false,
             )
