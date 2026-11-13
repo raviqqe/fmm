@@ -3,33 +3,33 @@ on:
   - push
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: raviqqe/enable-homebrew@main
       - run: tools/setup.sh
       - run: cargo build
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: raviqqe/enable-homebrew@main
       - run: tools/setup.sh
       - run: cargo test
   format:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
       - run: cargo fmt -- --check
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: raviqqe/enable-homebrew@main
       - run: tools/setup.sh
       - run: cargo clippy -- -D warnings
   spell-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: streetsidesoftware/cspell-action@main
