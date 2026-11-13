@@ -1,7 +1,7 @@
 use super::{context::Context, type_};
 use crate::{
     ir::*,
-    types::{self, void_type, Type},
+    types::{self, Type, void_type},
 };
 
 pub fn transform(context: &Context, definition: &mut FunctionDefinition) {
@@ -181,12 +181,14 @@ mod tests {
                 )],
                 void_type(),
                 Block::new(
-                    vec![Store::new(
-                        record_type.clone(),
-                        Undefined::new(record_type),
-                        Variable::new("f_p")
-                    )
-                    .into()],
+                    vec![
+                        Store::new(
+                            record_type.clone(),
+                            Undefined::new(record_type),
+                            Variable::new("f_p")
+                        )
+                        .into()
+                    ],
                     Return::new(void_type(), void_value()),
                 ),
                 FunctionDefinitionOptions::new()
@@ -223,12 +225,14 @@ mod tests {
                 ],
                 void_type(),
                 Block::new(
-                    vec![Store::new(
-                        record_type.clone(),
-                        Undefined::new(record_type),
-                        Variable::new("f_p")
-                    )
-                    .into()],
+                    vec![
+                        Store::new(
+                            record_type.clone(),
+                            Undefined::new(record_type),
+                            Variable::new("f_p")
+                        )
+                        .into()
+                    ],
                     Return::new(void_type(), void_value()),
                 ),
                 FunctionDefinitionOptions::new()
@@ -251,20 +255,28 @@ mod tests {
                 vec![],
                 record_type.clone(),
                 Block::new(
-                    vec![If::new(
-                        void_type(),
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![],
-                            Return::new(record_type.clone(), Undefined::new(record_type.clone())),
-                        ),
-                        Block::new(
-                            vec![],
-                            Return::new(record_type.clone(), Undefined::new(record_type.clone())),
-                        ),
-                        "x"
-                    )
-                    .into()],
+                    vec![
+                        If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            Block::new(
+                                vec![],
+                                Return::new(
+                                    record_type.clone(),
+                                    Undefined::new(record_type.clone())
+                                ),
+                            ),
+                            "x"
+                        )
+                        .into()
+                    ],
                     TerminalInstruction::Unreachable
                 ),
                 FunctionDefinitionOptions::new()
@@ -278,30 +290,36 @@ mod tests {
                 )],
                 void_type(),
                 Block::new(
-                    vec![If::new(
-                        void_type(),
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![Store::new(
-                                record_type.clone(),
-                                Undefined::new(record_type.clone()),
-                                Variable::new("f_p")
-                            )
-                            .into()],
-                            Return::new(void_type(), void_value()),
-                        ),
-                        Block::new(
-                            vec![Store::new(
-                                record_type.clone(),
-                                Undefined::new(record_type),
-                                Variable::new("f_p")
-                            )
-                            .into()],
-                            Return::new(void_type(), void_value()),
-                        ),
-                        "x"
-                    )
-                    .into(),],
+                    vec![
+                        If::new(
+                            void_type(),
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![
+                                    Store::new(
+                                        record_type.clone(),
+                                        Undefined::new(record_type.clone()),
+                                        Variable::new("f_p")
+                                    )
+                                    .into()
+                                ],
+                                Return::new(void_type(), void_value()),
+                            ),
+                            Block::new(
+                                vec![
+                                    Store::new(
+                                        record_type.clone(),
+                                        Undefined::new(record_type),
+                                        Variable::new("f_p")
+                                    )
+                                    .into()
+                                ],
+                                Return::new(void_type(), void_value()),
+                            ),
+                            "x"
+                        )
+                        .into(),
+                    ],
                     TerminalInstruction::Unreachable
                 ),
                 FunctionDefinitionOptions::new()

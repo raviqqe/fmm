@@ -1,7 +1,7 @@
 use super::context::Context;
 use crate::{
     analysis::type_size,
-    types::{self, void_type, Type},
+    types::{self, Type, void_type},
 };
 
 pub fn transform_memory_class(type_: &Type) -> Type {

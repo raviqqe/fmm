@@ -328,17 +328,19 @@ mod tests {
                 vec![],
                 types::Primitive::Boolean,
                 Block::new(
-                    vec![Call::new(
-                        types::Function::new(
-                            vec![],
-                            types::Primitive::Boolean,
-                            types::CallingConvention::Source
-                        ),
-                        Variable::new("f"),
-                        vec![Variable::new("a1").into(), Variable::new("a2").into()],
-                        "result",
-                    )
-                    .into()],
+                    vec![
+                        Call::new(
+                            types::Function::new(
+                                vec![],
+                                types::Primitive::Boolean,
+                                types::CallingConvention::Source
+                            ),
+                            Variable::new("f"),
+                            vec![Variable::new("a1").into(), Variable::new("a2").into()],
+                            "result",
+                        )
+                        .into()
+                    ],
                     Return::new(types::Primitive::Boolean, Primitive::Boolean(true))
                 ),
                 Default::default()
@@ -399,20 +401,22 @@ mod tests {
                 vec![],
                 types::Primitive::Float64,
                 Block::new(
-                    vec![If::new(
-                        types::Primitive::Float64,
-                        Primitive::Boolean(true),
-                        Block::new(
-                            vec![],
-                            Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
-                        ),
-                        Block::new(
-                            vec![],
-                            Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
-                        ),
-                        "x",
-                    )
-                    .into()],
+                    vec![
+                        If::new(
+                            types::Primitive::Float64,
+                            Primitive::Boolean(true),
+                            Block::new(
+                                vec![],
+                                Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
+                            ),
+                            Block::new(
+                                vec![],
+                                Branch::new(types::Primitive::Float64, Primitive::Float64(42.0)),
+                            ),
+                            "x",
+                        )
+                        .into()
+                    ],
                     Return::new(types::Primitive::Float64, Variable::new("x")),
                 ),
                 Default::default()

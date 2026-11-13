@@ -1,4 +1,4 @@
-use super::{expression::Expression, VariableDefinitionOptions};
+use super::{VariableDefinitionOptions, expression::Expression};
 use crate::types::Type;
 
 #[derive(Clone, Debug, PartialEq)]

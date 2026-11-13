@@ -1,4 +1,4 @@
-use super::{typed_expression::TypedExpression, BuildError};
+use super::{BuildError, typed_expression::TypedExpression};
 use crate::{
     ir::*,
     types::{self, Type},

@@ -1,11 +1,11 @@
 use super::{
-    allocate_heap::AllocateHeap, allocate_stack::AllocateStack, atomic_load::AtomicLoad,
-    atomic_operation::AtomicOperation, atomic_store::AtomicStore, call::Call,
-    compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
+    MemoryCopy, allocate_heap::AllocateHeap, allocate_stack::AllocateStack,
+    atomic_load::AtomicLoad, atomic_operation::AtomicOperation, atomic_store::AtomicStore,
+    call::Call, compare_and_swap::CompareAndSwap, deconstruct_record::DeconstructRecord,
     deconstruct_union::DeconstructUnion, fence::Fence, free_heap::FreeHeap, if_::If, load::Load,
-    reallocate_heap::ReallocateHeap, store::Store, MemoryCopy,
+    reallocate_heap::ReallocateHeap, store::Store,
 };
-use crate::types::{self, generic_pointer_type, Type};
+use crate::types::{self, Type, generic_pointer_type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Instruction {
